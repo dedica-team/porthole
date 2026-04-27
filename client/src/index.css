@@ -1,0 +1,256 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TRON INTERFACE THEME
+   Black grid / cyan neon / electric-blue glow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* Core palette – near-black base, cyan/electric-blue accents */
+    --tron-cyan:      185 100% 54%;    /* #0ff / #17e9ff   */
+    --tron-blue:      200 100% 45%;    /* #00a8e8           */
+    --tron-dark:        0   0%  2%;    /* #050505           */
+    --tron-surface:   200  20%  6%;    /* #090f12           */
+    --tron-panel:     200  18% 10%;    /* #111c22           */
+    --tron-line:      185 100% 22%;    /* dim cyan border   */
+    --tron-glow:      185 100% 54%;    /* glow colour       */
+
+    --background:        var(--tron-dark);
+    --foreground:        var(--tron-cyan);
+    --card:              var(--tron-surface);
+    --card-foreground:   var(--tron-cyan);
+    --popover:           var(--tron-panel);
+    --popover-foreground:var(--tron-cyan);
+    --primary:           var(--tron-cyan);
+    --primary-foreground:var(--tron-dark);
+    --secondary:         var(--tron-panel);
+    --secondary-foreground: var(--tron-cyan);
+    --muted:             var(--tron-panel);
+    --muted-foreground:  185 60% 45%;
+    --accent:            185 60% 14%;
+    --accent-foreground: var(--tron-cyan);
+    --destructive:         0 90% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border:            var(--tron-line);
+    --input:             var(--tron-line);
+    --ring:              var(--tron-cyan);
+    --radius: 0.15rem;           /* sharp corners for the Tron look */
+    --sidebar-width: 320px;
+  }
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius: var(--radius);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Tron scanline overlay on the root ───────────────────────────────────── */
+#root::before {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 240, 255, 0.018) 3px,
+    rgba(0, 240, 255, 0.018) 4px
+  );
+}
+
+body {
+  font-family: 'Orbitron', 'Share Tech Mono', 'Consolas', 'Courier New', monospace;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  /* faint circuit-grid background */
+  background-image:
+    linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ── Global Tron glow on interactive elements ────────────────────────────── */
+a, button, [role="button"] {
+  transition: text-shadow 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+/* ── Tron-styled borders / panels ───────────────────────────────────────── */
+header,
+aside,
+[class*="border-border"] {
+  border-color: hsl(var(--tron-line)) !important;
+}
+
+/* Navbar / header – glowing top stripe */
+header {
+  background: hsl(var(--tron-surface)) !important;
+  box-shadow:
+    0 1px 0 hsl(var(--tron-line)),
+    0 2px 16px rgba(0, 240, 255, 0.12);
+  border-bottom: 1px solid hsl(var(--tron-line)) !important;
+}
+
+/* Sidebar */
+aside {
+  background: hsl(var(--tron-surface)) !important;
+  box-shadow: -2px 0 20px rgba(0, 240, 255, 0.07);
+}
+
+/* Cards / popovers */
+[data-radix-popper-content-wrapper],
+[role="dialog"],
+.popover-content,
+[class*="bg-card"] {
+  background: hsl(var(--tron-panel)) !important;
+  border-color: hsl(var(--tron-line)) !important;
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.12), inset 0 0 0 1px rgba(0, 240, 255, 0.08);
+}
+
+/* Inputs */
+input, textarea, select {
+  background: hsl(var(--tron-dark)) !important;
+  color: hsl(var(--tron-cyan)) !important;
+  border-color: hsl(var(--tron-line)) !important;
+  caret-color: hsl(var(--tron-cyan));
+  outline: none;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: hsl(var(--tron-cyan)) !important;
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.2) !important;
+}
+
+/* Primary buttons – glowing cyan */
+button[class*="bg-primary"],
+[class*="btn-primary"] {
+  background: transparent !important;
+  color: hsl(var(--tron-cyan)) !important;
+  border: 1px solid hsl(var(--tron-cyan)) !important;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+button[class*="bg-primary"]:hover,
+[class*="btn-primary"]:hover {
+  background: rgba(0, 240, 255, 0.12) !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.55), inset 0 0 12px rgba(0, 240, 255, 0.12);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--tron-dark)); }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--tron-line));
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--tron-cyan));
+  box-shadow: 0 0 6px hsl(var(--tron-cyan));
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 240, 255, 0.25);
+  color: #fff;
+}
+
+/* Text that uses muted-foreground – keep readable but tinted */
+[class*="text-muted-foreground"] {
+  color: hsl(185 60% 38%) !important;
+}
+
+/* Separator */
+[data-orientation="vertical"].bg-border,
+[data-orientation="horizontal"].bg-border {
+  background: hsl(var(--tron-line)) !important;
+  opacity: 0.6;
+}
+
+/* Avatar ring – glow colour matches ring */
+[class*="ring-offset-card"] {
+  --tw-ring-offset-color: hsl(var(--tron-surface));
+}
+
+/* Table – tron grid lines */
+table {
+  border-collapse: collapse;
+}
+th, td {
+  border-color: hsl(var(--tron-line)) !important;
+}
+thead th {
+  background: hsl(var(--tron-surface)) !important;
+  color: hsl(var(--tron-cyan)) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.65rem;
+}
+tr:hover td:not(.group-stripe) {
+  background: rgba(0, 240, 255, 0.04) !important;
+}
+
+/* Alert destructive */
+[class*="alert-destructive"],
+[data-variant="destructive"] {
+  border-color: hsl(0 90% 55% / 0.6) !important;
+  background: hsl(0 90% 10%) !important;
+}
+
+/* Tron glow on logo text */
+.tron-logo {
+  text-shadow: 0 0 8px hsl(var(--tron-cyan)), 0 0 20px hsl(var(--tron-cyan));
+  color: hsl(var(--tron-cyan));
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Active nav / sidebar items */
+[class*="bg-accent"] {
+  background: rgba(0, 240, 255, 0.10) !important;
+  border-left: 2px solid hsl(var(--tron-cyan));
+}
+
+/* Code / mono spans */
+code, .font-mono {
+  color: hsl(var(--tron-cyan));
+  background: rgba(0, 240, 255, 0.06);
+}
+
+
+

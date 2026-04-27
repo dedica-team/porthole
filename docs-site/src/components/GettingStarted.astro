@@ -1,0 +1,114 @@
+---
+---
+<section id="install" style="background:var(--surface);">
+  <div class="container">
+    <h2 class="section-title">Get started in minutes</h2>
+    <p class="section-sub">Prerequisites: Java 21, Node 22, Docker, a GitHub OAuth App.</p>
+
+    <!-- Tab switcher (pure CSS) -->
+    <style>
+      .tabs { display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+      .tab-btn {
+        padding: 0.4rem 1rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 0.72rem;
+        font-family: 'Orbitron', monospace;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .tab-btn.active, .tab-btn:hover {
+        background: rgba(0,240,255,0.1);
+        color: var(--accent);
+        border-color: var(--accent);
+        font-weight: 700;
+      }
+      .tab-pane { display: none; }
+      .tab-pane.active { display: block; }
+    </style>
+
+    <!-- storage info callout -->
+    <div style="
+      max-width:720px; margin: 0 auto 2rem;
+      background:var(--bg); border:1px solid var(--border); border-left: 3px solid var(--accent);
+      border-radius:var(--radius); padding:1rem 1.25rem;
+      display:flex; gap:1rem; align-items:flex-start;
+    ">
+      <span style="font-size:1.3rem; line-height:1; flex-shrink:0;">💾</span>
+      <div style="font-family:'Share Tech Mono',monospace; font-size:0.78rem; color:var(--muted); line-height:1.75;">
+        <strong style="color:var(--accent); font-family:'Orbitron',monospace; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase;">No database required.</strong><br/>
+        All map and user data is persisted as plain <strong style="color:var(--text);">JSON files</strong> in the <code>data/</code> directory — no PostgreSQL, no Redis, nothing to install or configure.
+        <br/>
+        <span style="color:var(--accent); opacity:0.7;">⚠</span>&nbsp;<strong style="color:var(--text);">Backups advised:</strong> simply copy or snapshot the <code>data/</code> folder regularly. When running via Docker, mount it as a volume so data survives container restarts.
+      </div>
+    </div>
+
+    <div style="max-width:720px; margin:0 auto;">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('dev')">Dev Mode</button>
+        <button class="tab-btn" onclick="showTab('docker')">Docker</button>
+        <button class="tab-btn" onclick="showTab('build')">Full Build</button>
+      </div>
+
+      <div id="tab-dev" class="tab-pane active">
+        <pre><code><span style="color:#8b949e"># 1. Clone &amp; configure</span>
+git clone https://github.com/dedica-team/porthole.git
+cd porthole
+cp .env.example .env    <span style="color:#8b949e"># add PORTHOLE_GITHUB_CLIENT_ID / SECRET</span>
+
+<span style="color:#8b949e"># 2. Install dependencies</span>
+make setup
+
+<span style="color:#8b949e"># 3. Start (Spring Boot :8080 + Vite :5173)</span>
+make dev</code></pre>
+        <p style="color:var(--muted); font-size:0.875rem; margin-top:0.75rem;">
+          Open <a href="http://localhost:5173">localhost:5173</a> for the React dev server
+          or <a href="http://localhost:8080">localhost:8080</a> for the API.
+        </p>
+      </div>
+
+      <div id="tab-docker" class="tab-pane">
+        <pre><code><span style="color:#8b949e"># 1. Clone &amp; configure</span>
+git clone https://github.com/dedica-team/porthole.git
+cd porthole
+cp .env.example .env    <span style="color:#8b949e"># add PORTHOLE_GITHUB_CLIENT_ID / SECRET</span>
+
+<span style="color:#8b949e"># 2. Build &amp; run the container</span>
+make docker-build
+make docker-run</code></pre>
+        <p style="color:var(--muted); font-size:0.875rem; margin-top:0.75rem;">
+          Full app (API + UI) available at <a href="http://localhost:8080">localhost:8080</a>.
+        </p>
+      </div>
+
+      <div id="tab-build" class="tab-pane">
+        <pre><code><span style="color:#8b949e"># Build server JAR + client dist</span>
+make build
+
+<span style="color:#8b949e"># Run the JAR directly</span>
+java -jar server/target/porthole-*.jar</code></pre>
+        <p style="color:var(--muted); font-size:0.875rem; margin-top:0.75rem;">
+          The client's <code>dist/</code> is automatically served by Spring Boot from the JAR.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function showTab(id: string) {
+    document.querySelectorAll<HTMLElement>('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach(b => b.classList.remove('active'));
+    const pane = document.getElementById('tab-' + id);
+    if (pane) pane.classList.add('active');
+    document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach(b => {
+      if (b.getAttribute('onclick') === `showTab('${id}')`) b.classList.add('active');
+    });
+  }
+  (window as any).showTab = showTab;
+</script>
+

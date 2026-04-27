@@ -1,0 +1,142 @@
+---
+---
+<section style="padding: 7rem 1.5rem 5rem; position:relative; overflow:hidden; text-align:center;">
+  <!-- hex-grid background overlay -->
+  <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.05;pointer-events:none;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="hex" x="0" y="0" width="56" height="64" patternUnits="userSpaceOnUse">
+        <polygon points="28,2 54,18 54,46 28,62 2,46 2,18" fill="none" stroke="hsl(185,100%,54%)" stroke-width="1"/>
+        <polygon points="28,34 54,50 54,78 28,94 2,78 2,50" fill="none" stroke="hsl(185,100%,54%)" stroke-width="1"/>
+        <polygon points="-28,2 -2,18 -2,46 -28,62 -54,46 -54,18" fill="none" stroke="hsl(185,100%,54%)" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#hex)"/>
+  </svg>
+
+  <div class="container" style="position:relative; z-index:1;">
+    <!-- logo -->
+    <div style="display:flex; justify-content:center; margin-bottom:2.5rem;">
+      <img src="/porthole/logo.svg" width="96" height="96" alt="Porthole" style="filter: drop-shadow(0 0 12px rgba(0,240,255,0.4));" />
+    </div>
+
+    <h1 style="font-size: clamp(2rem, 5.5vw, 3.6rem); font-weight:800; line-height:1.15; margin-bottom:1.25rem; letter-spacing:0.04em; text-transform:uppercase;">
+      Assess your landscape.<br/><span style="color:var(--accent);">Together.</span>
+    </h1>
+    <p style="font-size:0.95rem; color:var(--muted); max-width:580px; margin:0 auto 2.5rem; font-family:'Share Tech Mono',monospace; line-height:1.8;">
+      Porthole is a collaborative workspace for software teams to map their application landscape,
+      track NFRs and quality metrics, assess risks, and build a shared understanding of what the
+      team is working on — all in real time.
+    </p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+      <a href="https://landmarks-b9jo.onrender.com/" target="_blank" rel="noopener"
+         style="background:var(--accent); color:#000; padding:0.7rem 1.75rem; border-radius:var(--radius); font-weight:800; font-size:0.8rem; border:1px solid var(--accent); letter-spacing:0.1em; text-transform:uppercase; transition:background 0.15s, box-shadow 0.15s;"
+         onmouseenter="this.style.background='hsl(185,100%,44%)';this.style.boxShadow='var(--glow-sm)'"
+         onmouseleave="this.style.background='var(--accent)';this.style.boxShadow='none'">
+        ▶ Live Demo
+      </a>
+      <a href="#install"
+         style="background:transparent; color:var(--accent); padding:0.7rem 1.75rem; border-radius:var(--radius); font-weight:700; font-size:0.8rem; border:1px solid var(--accent); letter-spacing:0.1em; text-transform:uppercase; transition:background 0.15s, box-shadow 0.15s;"
+         onmouseenter="this.style.background='rgba(0,240,255,0.1)';this.style.boxShadow='var(--glow-sm)'"
+         onmouseleave="this.style.background='transparent';this.style.boxShadow='none'">
+        Get Started
+      </a>
+      <a href="https://github.com/dedica-team/porthole" target="_blank" rel="noopener"
+         style="border:1px solid var(--border); padding:0.7rem 1.75rem; border-radius:var(--radius); font-weight:600; font-size:0.8rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; transition:border-color 0.15s, color 0.15s;"
+         onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+         onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        View on GitHub ↗
+      </a>
+    </div>
+
+    <!-- screenshot carousel -->
+    <div id="carousel" style="
+      margin-top: 4rem;
+      position: relative;
+      max-width: 860px;
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--glow-sm);
+      max-height: 340px;
+    ">
+      <div id="carousel-track" style="display:flex; transition: transform 0.4s ease; height:340px;">
+        <video autoplay muted loop playsinline class="carousel-item"
+               style="min-width:100%; width:100%; height:340px; display:block; object-fit:cover; object-position:top; cursor:zoom-in;"
+               data-src="/porthole/animated.webm">
+          <source src="/porthole/animated.webm" type="video/webm" />
+        </video>
+        <img src="/porthole/screen_nfrs.png" alt="Quality metrics" class="carousel-item carousel-img"
+             style="min-width:100%; width:100%; height:340px; display:block; object-fit:cover; object-position:top; cursor:zoom-in;" />
+        <img src="/porthole/screen1.png" alt="Screenshot 1" class="carousel-item carousel-img"
+             style="min-width:100%; width:100%; height:340px; display:block; object-fit:cover; object-position:top; cursor:zoom-in;" />
+        <img src="/porthole/screen2.png" alt="Screenshot 2" class="carousel-item carousel-img"
+             style="min-width:100%; width:100%; height:340px; display:block; object-fit:cover; object-position:top; cursor:zoom-in;" />
+      </div>
+
+      <!-- prev / next buttons -->
+      <button id="carousel-prev" aria-label="Previous" style="
+        position:absolute; left:0.75rem; top:50%; transform:translateY(-50%);
+        background:rgba(0,0,0,0.55); border:1px solid var(--border); color:var(--accent);
+        width:2.2rem; height:2.2rem; border-radius:2px; cursor:pointer;
+        font-size:1.1rem; display:flex; align-items:center; justify-content:center;
+        font-family:'Orbitron',sans-serif;">‹</button>
+      <button id="carousel-next" aria-label="Next" style="
+        position:absolute; right:0.75rem; top:50%; transform:translateY(-50%);
+        background:rgba(0,0,0,0.55); border:1px solid var(--border); color:var(--accent);
+        width:2.2rem; height:2.2rem; border-radius:2px; cursor:pointer;
+        font-size:1.1rem; display:flex; align-items:center; justify-content:center;
+        font-family:'Orbitron',sans-serif;">›</button>
+
+      <!-- dots -->
+      <div style="position:absolute; bottom:0.6rem; left:50%; transform:translateX(-50%); display:flex; gap:0.5rem;">
+        <button class="dot active" data-index="0" aria-label="Slide 1" style="width:8px;height:8px;border-radius:50%;border:1px solid var(--accent);background:var(--accent);cursor:pointer;padding:0;"></button>
+        <button class="dot" data-index="1" aria-label="Slide 2" style="width:8px;height:8px;border-radius:50%;border:1px solid var(--accent);background:transparent;cursor:pointer;padding:0;"></button>
+        <button class="dot" data-index="2" aria-label="Slide 3" style="width:8px;height:8px;border-radius:50%;border:1px solid var(--accent);background:transparent;cursor:pointer;padding:0;"></button>
+        <button class="dot" data-index="3" aria-label="Slide 4" style="width:8px;height:8px;border-radius:50%;border:1px solid var(--accent);background:transparent;cursor:pointer;padding:0;"></button>
+      </div>
+    </div>
+
+    <!-- lightbox -->
+    <div id="lightbox" style="display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.88); align-items:center; justify-content:center; cursor:zoom-out;" onclick="document.getElementById('lightbox').style.display='none'">
+      <img id="lightbox-img" src="" alt="" style="max-width:92vw; max-height:90vh; object-fit:contain; border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 0 40px rgba(0,240,255,0.2);" />
+    </div>
+
+    <script>
+      (function () {
+        const track = document.getElementById('carousel-track') as HTMLElement | null;
+        const dots = document.querySelectorAll<HTMLElement>('.dot');
+        let current = 0;
+        const total = 4;
+
+        function goTo(idx: number) {
+          current = (idx + total) % total;
+          if (track) track.style.transform = `translateX(-${current * 100}%)`;
+          dots.forEach((d, i) => {
+            d.style.background = i === current ? 'var(--accent)' : 'transparent';
+          });
+        }
+
+        document.getElementById('carousel-prev')?.addEventListener('click', () => goTo(current - 1));
+        document.getElementById('carousel-next')?.addEventListener('click', () => goTo(current + 1));
+        dots.forEach(d => d.addEventListener('click', () => goTo(+(d as HTMLElement).dataset.index!)));
+
+        // zoom on click – images only (not video)
+        document.querySelectorAll<HTMLImageElement>('.carousel-img').forEach(img => {
+          img.addEventListener('click', () => {
+            const lb = document.getElementById('lightbox') as HTMLElement;
+            const lbImg = document.getElementById('lightbox-img') as HTMLImageElement;
+            lbImg.src = img.src;
+            lbImg.alt = img.alt;
+            lb.style.display = 'flex';
+          });
+        });
+
+        // auto-advance every 10 s
+        setInterval(() => goTo(current + 1), 10000);
+      })();
+    </script>
+  </div>
+</section>
+

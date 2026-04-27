@@ -1,0 +1,30 @@
+package team.dedica.porthole.adapter.out.persistence
+
+import org.springframework.context.annotation.Primary
+import org.springframework.stereotype.Repository
+import team.dedica.porthole.adapter.out.repository.UserRecord
+import team.dedica.porthole.application.port.UserWritePort
+
+/**
+ * [UserWritePort] implementation backed by [JsonStore].
+ */
+@Primary
+@Repository
+class JsonUserRepository(private val store: JsonStore) : UserWritePort {
+
+    override fun findByUsername(username: String): UserRecord? =
+        store.users.values.find { it.username.equals(username, ignoreCase = true) }
+
+    override fun findByGithubId(githubId: String): UserRecord? =
+        store.users.values.find { it.githubId == githubId }
+
+    override fun findById(id: String): UserRecord? = store.users[id]
+
+    override fun findByCredentialId(credentialId: String): UserRecord? =
+        store.users.values.find { it.passkeyCredential?.credentialId == credentialId }
+
+    override fun save(user: UserRecord) {
+        store.users[user.id] = user
+        store.markUsersDirty()
+    }
+}

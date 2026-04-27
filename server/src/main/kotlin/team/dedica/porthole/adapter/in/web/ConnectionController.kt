@@ -1,0 +1,57 @@
+package team.dedica.porthole.adapter.`in`.web
+
+import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.web.bind.annotation.*
+import jakarta.validation.Valid
+import team.dedica.porthole.adapter.`in`.web.dto.CreateConnectionRequest
+import team.dedica.porthole.adapter.`in`.web.dto.EditConnectionRequest
+import team.dedica.porthole.application.session.landscaping.CreateConnectionUseCase
+import team.dedica.porthole.application.session.landscaping.EditConnectionUseCase
+import team.dedica.porthole.application.session.landscaping.RemoveConnectionUseCase
+import team.dedica.porthole.domain.ConnectionType
+
+@RestController
+@RequestMapping("/api/maps/{id}/connections")
+class ConnectionController(
+    private val createConnectionUseCase: CreateConnectionUseCase,
+    private val editConnectionUseCase: EditConnectionUseCase,
+    private val removeConnectionUseCase: RemoveConnectionUseCase,
+) {
+    @PostMapping
+    fun createConnection(
+        @PathVariable id: String,
+        @Valid @RequestBody request: CreateConnectionRequest,
+        @AuthenticationPrincipal user: UserDetails,
+    ): ResponseEntity<Any> {
+        val type = runCatching { ConnectionType.valueOf(request.type.uppercase()) }
+            .getOrElse { return ResponseEntity.badRequest().body("Unknown connection type: ${request.type}") }
+        return ResponseEntity.ok(createConnectionUseCase.execute(id, request.fromTowerId, request.toTowerId, type, request.name, request.description, user.username))
+    }
+
+    @PatchMapping("/{connectionId}")
+    fun editConnection(
+        @PathVariable id: String,
+        @PathVariable connectionId: String,
+        @Valid @RequestBody request: EditConnectionRequest,
+        @AuthenticationPrincipal user: UserDetails,
+    ): ResponseEntity<Any> {
+        val type = request.type?.let {
+            runCatching { ConnectionType.valueOf(it.uppercase()) }
+                .getOrElse { return ResponseEntity.badRequest().body("Unknown connection type: $it") }
+        }
+        return ResponseEntity.ok(editConnectionUseCase.execute(
+            id, connectionId, type, request.name, request.description, request.clearName, request.clearDescription, user.username,
+        ))
+    }
+
+    @DeleteMapping("/{connectionId}")
+    fun removeConnection(
+        @PathVariable id: String,
+        @PathVariable connectionId: String,
+        @AuthenticationPrincipal user: UserDetails,
+    ): ResponseEntity<Any> {
+        return ResponseEntity.ok(removeConnectionUseCase.execute(id, connectionId, user.username))
+    }
+}

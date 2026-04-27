@@ -1,0 +1,17 @@
+package team.dedica.porthole.adapter.out.repository
+
+data class PasskeyCredential(
+    val credentialId: String,   // Base64url-encoded
+    val publicKeyCose: String,  // Base64url-encoded COSE public key
+    val signCount: Long,
+    val createdAt: String,      // ISO-8601
+)
+
+data class UserRecord(
+    val id: String,
+    val username: String,
+    val githubId: String? = null,
+    val email: String? = null,
+    val avatarUrl: String? = null,
+    val passkeyCredential: PasskeyCredential? = null,
+)

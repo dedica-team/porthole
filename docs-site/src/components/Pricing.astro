@@ -1,0 +1,112 @@
+---
+const tiers = [
+  {
+    name: 'Community',
+    badge: null,
+    price: 'Free',
+    sub: 'Self-hosted forever',
+    cta: { label: 'Get the source', href: 'https://github.com/dedica-team/porthole' },
+    items: [
+      'Unlimited maps & collaborators',
+      'Full hex-grid editor & terrain tools',
+      'Landmark management (14 types)',
+      'Connections & process flows',
+      'GitHub SSO / WebAuthn planned',
+      'AGPL-3.0 open-source licence',
+    ],
+    highlight: false,
+  },
+  {
+    name: 'Enterprise',
+    badge: 'Contact us',
+    price: 'Custom',
+    sub: 'On-premises + SLA',
+    cta: { label: 'Get in touch', href: 'mailto:hello@dedica.team' },
+    items: [
+      'Everything in Community',
+      'Commercial (non-AGPL) licence',
+      'Priority support & SLA',
+      'SSO / SAML integration',
+      'Custom integrations & consulting',
+      'On-premises deployment support',
+    ],
+    highlight: true,
+  },
+];
+---
+<section id="pricing" style="background:var(--bg);">
+  <div class="container">
+    <h2 class="section-title">Pricing</h2>
+    <p class="section-sub">
+      Dual-licensed: <strong style="color:var(--accent);">AGPL-3.0</strong> for open-source use &amp; a commercial licence for proprietary deployments.
+    </p>
+
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      max-width: 720px;
+      margin: 0 auto;
+    ">
+      {tiers.map(t => (
+        <div style={`
+          background: var(--surface);
+          border: 1px solid ${t.highlight ? 'var(--accent2)' : 'var(--border)'};
+          border-radius: var(--radius);
+          padding: 2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+          position: relative;
+          ${t.highlight ? 'box-shadow: 0 0 20px rgba(74,222,128,0.12);' : ''}
+        `}>
+          {t.badge && (
+            <span style="
+              position:absolute; top:-1px; right:1.25rem;
+              background:var(--accent2); color:#050505;
+              font-size:0.65rem; font-weight:700; letter-spacing:0.1em;
+              padding:0.2rem 0.75rem; border-radius:0 0 var(--radius) var(--radius); text-transform:uppercase;
+              font-family:'Orbitron',monospace;
+            ">{t.badge}</span>
+          )}
+          <div>
+            <p style="font-size:0.65rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem; font-family:'Orbitron',monospace;">{t.name}</p>
+            <p style={`font-size:2.4rem; font-weight:800; line-height:1; color:${t.highlight ? 'var(--accent2)' : 'var(--accent)'};`}>{t.price}</p>
+            <p style="color:var(--muted); font-size:0.78rem; margin-top:0.3rem; font-family:'Share Tech Mono',monospace;">{t.sub}</p>
+          </div>
+          <ul style="list-style:none; display:flex; flex-direction:column; gap:0.55rem; flex:1;">
+            {t.items.map(item => (
+              <li style="display:flex; align-items:flex-start; gap:0.6rem; font-size:0.78rem; color:var(--muted); font-family:'Share Tech Mono',monospace;">
+                <span style={`color:${t.highlight ? 'var(--accent2)' : 'var(--accent)'}; flex-shrink:0; margin-top:1px;`}>✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <a href={t.cta.href}
+             target={t.cta.href.startsWith('http') ? '_blank' : undefined}
+             rel={t.cta.href.startsWith('http') ? 'noopener' : undefined}
+             style={`
+               display:block; text-align:center;
+               padding:0.65rem 1rem; border-radius:var(--radius);
+               font-weight:700; font-size:0.72rem;
+               letter-spacing:0.1em; text-transform:uppercase;
+               font-family:'Orbitron',monospace;
+               background:transparent;
+               color:${t.highlight ? 'var(--accent2)' : 'var(--accent)'};
+               border:1px solid ${t.highlight ? 'var(--accent2)' : 'var(--accent)'};
+               transition:background 0.15s;
+             `}
+             onmouseenter={`this.style.background='rgba(${t.highlight ? '74,222,128' : '0,240,255'},0.1)'`}
+             onmouseleave="this.style.background='transparent'">
+            {t.cta.label}
+          </a>
+        </div>
+      ))}
+    </div>
+
+    <p style="text-align:center; color:var(--muted); font-size:0.73rem; margin-top:2.5rem; font-family:'Share Tech Mono',monospace;">
+      Prices and tiers are illustrative. Reach out for a tailored quote.
+    </p>
+  </div>
+</section>
+

@@ -1,0 +1,34 @@
+---
+const cases = [
+  { scenario: 'Architecture review', help: 'Walk the team through the live map; colour-coded health status highlights where quality is degrading.' },
+  { scenario: 'NFR definition & tracking', help: 'Define SLOs as quality metrics, set target levels, and assign owners — all on the map.' },
+  { scenario: 'Incident post-mortem', help: 'Update metric levels and link to the postmortem; the history is preserved in the map.' },
+  { scenario: 'Onboarding new engineers', help: 'The map is the first stop — systems, their quality, and their connections in one place.' },
+  { scenario: 'Risk workshop', help: 'Collaboratively mark systems as WARNING / ERROR and model mitigation paths together.' },
+  { scenario: 'Sprint planning', help: 'Use the map to identify which systems need quality investment in the upcoming sprint.' },
+];
+---
+<section id="use-cases" style="background:var(--surface);">
+  <div class="container">
+    <h2 class="section-title">Typical Use Cases</h2>
+    <p class="section-sub">Real scenarios where Porthole replaces slides, wikis, and spreadsheets.</p>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.25rem;">
+      {cases.map(c => (
+        <div style="
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 1.4rem 1.6rem;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        "
+        onmouseenter="this.style.borderColor='var(--accent)';this.style.boxShadow='var(--glow-sm)'"
+        onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
+        >
+          <p style="color:var(--accent); font-weight:700; font-size:0.75rem; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.6rem;">{c.scenario}</p>
+          <p style="color:var(--muted); font-size:0.8rem; line-height:1.7; font-family:'Share Tech Mono',monospace;">{c.help}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

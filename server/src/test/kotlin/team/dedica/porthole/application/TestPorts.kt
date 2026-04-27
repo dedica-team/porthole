@@ -1,0 +1,29 @@
+package team.dedica.porthole.application
+
+import team.dedica.porthole.adapter.out.repository.UserRecord
+import team.dedica.porthole.application.port.BroadcastPort
+import team.dedica.porthole.application.port.MapStatePort
+import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.domain.MapState
+
+class InMemoryMapStatePort : MapStatePort {
+    private val store = mutableMapOf<String, MapState>()
+    override fun findById(id: String): MapState? = store[id]
+    override fun save(state: MapState) { store[state.id] = state }
+    override fun findAll(): List<MapState> = store.values.toList()
+    override fun delete(id: String) { store.remove(id) }
+}
+
+class InMemoryTestUserRepository : UserWritePort {
+    private val store = mutableMapOf<String, UserRecord>()
+    override fun findByUsername(username: String): UserRecord? = store.values.find { it.username == username }
+    override fun findByGithubId(githubId: String): UserRecord? = store.values.find { it.githubId == githubId }
+    override fun findById(id: String): UserRecord? = store[id]
+    override fun findByCredentialId(credentialId: String): UserRecord? =
+        store.values.find { it.passkeyCredential?.credentialId == credentialId }
+    override fun save(user: UserRecord) { store[user.id] = user }
+}
+
+class NoOpBroadcastPort : BroadcastPort {
+    override fun send(mapId: String, state: MapState) {}
+}

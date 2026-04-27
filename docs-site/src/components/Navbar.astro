@@ -1,0 +1,132 @@
+---
+---
+<header style="
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5,5,5,0.95);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 var(--border), 0 2px 12px rgba(0,240,255,0.08);
+">
+  <div class="container nav-inner">
+    <a href="/porthole/" class="nav-logo">
+      <img src="/porthole/logo.svg" width="36" height="36" alt="Porthole logo" style="display:block;" />
+      Porthole
+    </a>
+
+    <!-- hamburger – visible only on mobile -->
+    <button id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" class="nav-toggle">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav id="nav-menu" class="nav-menu">
+      <a href="#problem">Why</a>
+      <a href="#benefits">Features</a>
+      <a href="#use-cases">Use Cases</a>
+      <a href="#concepts">Concepts</a>
+      <a href="#install">Install</a>
+      <a href="#pricing">Pricing</a>
+      <a href="https://github.com/dedica-team/porthole" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+    position: relative;
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .nav-logo:hover { color: #fff; }
+
+  .nav-menu {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.7rem;
+    align-items: center;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .nav-menu a { color: var(--muted); transition: color 0.15s; }
+  .nav-menu a:hover { color: var(--accent); }
+
+  /* hamburger button */
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: 1px solid var(--border);
+    padding: 0.45rem 0.55rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+  .nav-toggle span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--accent);
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  /* open state */
+  .nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── Mobile ── */
+  @media (max-width: 700px) {
+    .nav-toggle { display: flex; }
+
+    .nav-menu {
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+      position: absolute;
+      top: calc(100% + 1px);
+      left: 0; right: 0;
+      background: rgba(5,5,5,0.98);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem 1rem;
+    }
+    .nav-menu.open { display: flex; }
+    .nav-menu a {
+      width: 100%;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(0,240,255,0.07);
+      font-size: 0.75rem;
+    }
+    .nav-menu .nav-gh { display: none; }
+  }
+</style>
+
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const menu   = document.getElementById('nav-menu');
+  toggle?.addEventListener('click', () => {
+    const open = menu?.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(!!open));
+  });
+  // close when a link is clicked
+  menu?.querySelectorAll('a').forEach(a =>
+    a.addEventListener('click', () => {
+      menu.classList.remove('open');
+      toggle?.setAttribute('aria-expanded', 'false');
+    })
+  );
+</script>
+

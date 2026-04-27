@@ -1,0 +1,138 @@
+---
+export interface Props {
+  title?: string;
+}
+const { title = 'Porthole – Assess your application landscape quality together' } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Porthole – Assess and maintain your application landscape quality together. Track NFRs, quality metrics and risks collaboratively." />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/porthole/favicon.svg" />
+    <style is:global>
+      /* ── Fonts ──────────────────────────────────────────────────────────── */
+      @font-face {
+        font-family: 'Orbitron';
+        font-style: normal;
+        font-weight: 400 800;
+        font-display: swap;
+        src: url('/porthole/orbitron.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Share Tech Mono';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/porthole/share-tech-mono.woff2') format('woff2');
+      }
+
+      /* ── Design tokens – Tron palette (subdued) ─────────────────────────── */
+      :root {
+        --bg:        #050505;
+        --surface:   #090f12;
+        --panel:     #111c22;
+        --border:    hsl(185 100% 22%);      /* dim cyan */
+        --accent:    hsl(185 100% 54%);      /* electric cyan */
+        --accent2:   hsl(140  80% 45%);      /* green-ish for highlights */
+        --text:      hsl(185  60% 88%);
+        --muted:     hsl(185  30% 48%);
+        --radius:    2px;                    /* sharp Tron corners */
+        --max:       1100px;
+        --glow-sm:   0 0 8px  rgba(0,240,255,0.25);
+        --glow-md:   0 0 16px rgba(0,240,255,0.35);
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html { scroll-behavior: smooth; overflow-x: hidden; }
+
+      body {
+        overflow-x: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Orbitron', 'Share Tech Mono', 'Consolas', monospace;
+        font-size: 15px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        /* subtle circuit-grid */
+        background-image:
+          linear-gradient(rgba(0,240,255,0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,240,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+      }
+
+      /* links */
+      a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
+      a:hover { color: #fff; }
+
+      /* sections */
+      section { padding: 5rem 1.5rem; }
+      .container { max-width: var(--max); margin: 0 auto; }
+
+      /* headings */
+      h2.section-title {
+        font-size: clamp(1.4rem, 2.8vw, 2rem);
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        color: var(--accent);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .section-sub {
+        text-align: center;
+        color: var(--muted);
+        margin-bottom: 3rem;
+        font-size: 0.9rem;
+        font-family: 'Share Tech Mono', monospace;
+        letter-spacing: 0.04em;
+      }
+
+      /* code */
+      code {
+        font-family: 'Share Tech Mono', 'Consolas', monospace;
+        font-size: 0.88em;
+        color: var(--accent);
+        background: rgba(0,240,255,0.06);
+        padding: 0 0.25em;
+      }
+      pre {
+        background: #010409;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem 1.5rem;
+        overflow-x: auto;
+        font-size: 0.85rem;
+        line-height: 1.75;
+        font-family: 'Share Tech Mono', monospace;
+      }
+
+      /* scrollbar */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: var(--bg); }
+      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 0; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+      /* selection */
+      ::selection { background: rgba(0,240,255,0.2); color: #fff; }
+
+      /* table defaults */
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border-color: var(--border) !important; }
+      thead th {
+        background: var(--surface);
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        font-size: 0.7rem;
+      }
+    </style>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+

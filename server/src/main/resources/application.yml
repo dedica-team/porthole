@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientWebMvcSecurityConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${PORTHOLE_GITHUB_CLIENT_ID:}
+            client-secret: ${PORTHOLE_GITHUB_CLIENT_SECRET:}
+            scope: read:user, user:email
+        provider:
+          github:
+            authorization-uri: https://github.com/login/oauth/authorize
+            token-uri: https://github.com/login/oauth/access_token
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: login
+
+porthole:
+  auth:
+    cookie-name: ${PORTHOLE_AUTH_COOKIE_NAME:porthole_auth}
+    cookie-path: ${PORTHOLE_AUTH_COOKIE_PATH:/}
+    cookie-same-site: ${PORTHOLE_AUTH_COOKIE_SAME_SITE:Lax}
+    cookie-secure: ${PORTHOLE_AUTH_COOKIE_SECURE:false}
+  jwt:
+    secret: ${PORTHOLE_JWT_SECRET}
+    expiration-ms: ${PORTHOLE_JWT_EXPIRATION_MS:86400000}
+    issuer: ${PORTHOLE_JWT_ISSUER:porthole}
+    audience: ${PORTHOLE_JWT_AUDIENCE:porthole-api}
+  storage:
+    path: ${PORTHOLE_STORAGE_PATH:../data/json}
+    flush-interval-ms: 5000
+    debounce-ms: 5000
+  allowed-origins: ${PORTHOLE_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
+  demo:
+    enabled: ${PORTHOLE_DEMO_ENABLED:false}
+  github:
+    redirect-uri: ${PORTHOLE_GITHUB_REDIRECT_URI:http://localhost:5173/auth/github/callback}
+  webauthn:
+    rp-id:   ${PORTHOLE_WEBAUTHN_RP_ID:localhost}
+    rp-name: ${PORTHOLE_WEBAUTHN_RP_NAME:Landmarks}
+    origin:  ${PORTHOLE_WEBAUTHN_ORIGIN:http://localhost:5173}
+  admin:
+    user-ids: ${PORTHOLE_ADMIN_USER_IDS:}
+

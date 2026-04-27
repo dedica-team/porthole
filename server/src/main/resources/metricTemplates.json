@@ -1,0 +1,137 @@
+[
+  {
+    "id": "codebase",
+    "name": "Codebase",
+    "description": "One codebase tracked in version control, many deploys. Every service has exactly one codebase; multiple environments are deployed from the same repo."
+  },
+  {
+    "id": "dependencies",
+    "name": "Dependencies",
+    "description": "Explicitly declare and isolate dependencies. A service never relies on implicit system-wide packages; all dependencies are declared in a manifest."
+  },
+  {
+    "id": "config",
+    "name": "Config",
+    "description": "Store config in the environment. Everything that varies between deploys (credentials, resource handles) is stored in env vars, not in code."
+  },
+  {
+    "id": "backing-services",
+    "name": "Backing Services",
+    "description": "Treat backing services as attached resources. Databases, queues, caches are bound via URL/credentials and are swappable without code changes."
+  },
+  {
+    "id": "build-release-run",
+    "name": "Build / Release / Run",
+    "description": "Strictly separate build and run stages. The build stage creates an immutable artifact; release combines it with config; run executes it."
+  },
+  {
+    "id": "processes",
+    "name": "Processes",
+    "description": "Execute the app as one or more stateless processes. Processes share nothing; any persistent state lives in a backing service."
+  },
+  {
+    "id": "port-binding",
+    "name": "Port Binding",
+    "description": "Export services via port binding. The service is self-contained and exposes its HTTP interface by binding to a port, not via an external web server."
+  },
+  {
+    "id": "concurrency",
+    "name": "Concurrency",
+    "description": "Scale out via the process model. Work is divided into process types (web, worker); horizontal scaling is achieved by increasing the process count."
+  },
+  {
+    "id": "disposability",
+    "name": "Disposability",
+    "description": "Maximize robustness with fast startup and graceful shutdown. Processes start in seconds and handle SIGTERM cleanly to allow zero-downtime deploys."
+  },
+  {
+    "id": "dev-prod-parity",
+    "name": "Dev / Prod Parity",
+    "description": "Keep development, staging, and production as similar as possible. Minimise the time, personnel, and tool gap between environments."
+  },
+  {
+    "id": "logs",
+    "name": "Logs",
+    "description": "Treat logs as event streams. The service writes unbuffered log lines to stdout; the execution environment routes them to the appropriate destination."
+  },
+  {
+    "id": "admin-processes",
+    "name": "Admin Processes",
+    "description": "Run admin/management tasks as one-off processes. Migrations, scripts, and REPL sessions run in the same environment as the production processes."
+  },
+  {
+    "id": "availability",
+    "name": "Availability",
+    "description": "Percentage of time the service is operational and reachable. Typically expressed as an SLA (e.g. 99.9% = max 8.7 h downtime/year). Measured via uptime monitoring."
+  },
+  {
+    "id": "response-time",
+    "name": "Response Time",
+    "description": "Latency from request to response under normal load. Usually tracked as p50, p95, and p99 percentiles. Degraded response time is often the first sign of a capacity problem."
+  },
+  {
+    "id": "throughput",
+    "name": "Throughput",
+    "description": "Number of requests or transactions the service can handle per unit of time (e.g. req/s, events/min). Determines whether the service can sustain expected peak load."
+  },
+  {
+    "id": "error-rate",
+    "name": "Error Rate",
+    "description": "Percentage of requests that result in an error (5xx, unhandled exceptions, timeouts). A low error rate is a primary indicator of service health and reliability."
+  },
+  {
+    "id": "scalability",
+    "name": "Scalability",
+    "description": "Ability to handle increasing load by adding resources (horizontal or vertical). Includes auto-scaling behaviour, statelessness of instances, and absence of coordination bottlenecks."
+  },
+  {
+    "id": "recoverability",
+    "name": "Recoverability",
+    "description": "Speed and completeness with which the service recovers after a failure. Measured by RTO (Recovery Time Objective) and RPO (Recovery Point Objective)."
+  },
+  {
+    "id": "mttr",
+    "name": "Mean Time to Recover (MTTR)",
+    "description": "Average time between a production incident being detected and the service returning to normal. A key DORA metric; lower MTTR indicates a mature incident response process."
+  },
+  {
+    "id": "security",
+    "name": "Security",
+    "description": "Degree to which the service protects data and resists attacks. Covers authentication, authorisation, encryption in transit and at rest, dependency vulnerability scanning, and least-privilege principles."
+  },
+  {
+    "id": "observability",
+    "name": "Observability",
+    "description": "Ability to understand the internal state of the service from its external outputs. Requires structured logs, distributed traces, and metrics exposed to a centralised platform."
+  },
+  {
+    "id": "api-stability",
+    "name": "API Stability",
+    "description": "Degree to which the public API contract is stable over time. Includes versioning strategy, backward-compatibility guarantees, and a deprecation policy for consumers."
+  },
+  {
+    "id": "data-consistency",
+    "name": "Data Consistency",
+    "description": "Guarantee that data remains accurate and coherent across operations and replicas. Defines the consistency model (strong, eventual) and how conflicts or partial failures are handled."
+  },
+  {
+    "id": "test-coverage",
+    "name": "Test Coverage",
+    "description": "Proportion of production code exercised by automated tests (unit, integration, contract). High coverage reduces regression risk; coverage alone does not guarantee quality."
+  },
+  {
+    "id": "deployment-frequency",
+    "name": "Deployment Frequency",
+    "description": "How often new versions are released to production. A key DORA metric; high frequency (multiple times per day) signals a mature CI/CD pipeline and low-risk deployments."
+  },
+  {
+    "id": "slo-compliance",
+    "name": "SLO Compliance",
+    "description": "Percentage of time the service meets its defined Service Level Objectives. Tracks error budget consumption and triggers reliability work when the budget is close to exhausted."
+  },
+  {
+    "id": "documentation",
+    "name": "Documentation",
+    "description": "Completeness and accuracy of technical documentation: API reference (e.g. OpenAPI), runbooks, architecture decision records (ADRs), and onboarding guides."
+  }
+]

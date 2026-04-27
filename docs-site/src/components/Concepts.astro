@@ -1,0 +1,77 @@
+---
+const concepts = [
+  { term: 'Map', def: 'The workspace — contains all landmarks, connections, and metric definitions for one application landscape.' },
+  { term: 'Landmark', def: 'A system, service, component, or external dependency placed on the map.' },
+  { term: 'Connection', def: 'A directed or undirected link between two landmarks representing a dependency or integration.' },
+  { term: 'Quality Metric', def: 'A map-wide metric definition (name + description) that can be evaluated for each landmark.' },
+  { term: 'Landmark Metric Entry', def: 'The concrete evaluation of a metric for a specific landmark: value, link, and quality level.' },
+  { term: 'Quality Level', def: 'NONE / OK / WARNING / ERROR — the health status of a single metric entry.' },
+  { term: 'Worst-of Status', def: 'The highest (worst) quality level across all metric entries for a landmark, shown as a blinking status light on the map.' },
+];
+
+const levels = [
+  { level: 'NONE',    color: '#6b7280', label: 'Grey',  meaning: 'Metric defined, no value set yet' },
+  { level: 'OK',      color: '#22c55e', label: 'Green', meaning: 'Within acceptable range' },
+  { level: 'WARNING', color: '#f59e0b', label: 'Amber', meaning: 'Needs attention' },
+  { level: 'ERROR',   color: '#ef4444', label: 'Red',   meaning: 'Critical — immediate action required' },
+];
+---
+<section id="concepts" style="background:var(--bg);">
+  <div class="container">
+    <h2 class="section-title">Key Concepts</h2>
+    <p class="section-sub">The domain vocabulary you need to understand Porthole.</p>
+
+    <div style="max-width:900px; margin:0 auto; display:flex; flex-direction:column; gap:2.5rem;">
+
+      <!-- Glossary -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(350px,1fr)); gap:0.85rem;">
+        {concepts.map(c => (
+          <div style="
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            background: var(--surface);
+            display: flex;
+            gap: 0.75rem;
+            align-items: baseline;
+          ">
+            <span style="color:var(--accent); font-weight:700; font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">{c.term}</span>
+            <span style="color:var(--border); flex-shrink:0;">—</span>
+            <p style="color:var(--muted); font-size:0.78rem; line-height:1.65; font-family:'Share Tech Mono',monospace;">{c.def}</p>
+          </div>
+        ))}
+      </div>
+
+      <!-- Quality Level table -->
+      <div style="border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+        <table style="width:100%; font-size:0.8rem; font-family:'Share Tech Mono',monospace;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:0.65rem 1.1rem;">Level</th>
+              <th style="text-align:left; padding:0.65rem 1.1rem;">Colour</th>
+              <th style="text-align:left; padding:0.65rem 1.1rem;">Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            {levels.map(l => (
+              <tr style="border-top:1px solid var(--border);">
+                <td style="padding:0.65rem 1.1rem;">
+                  <span style={`color:${l.color}; font-weight:700;`}>{l.level}</span>
+                </td>
+                <td style="padding:0.65rem 1.1rem; color:var(--muted);">
+                  <span style={`display:inline-block;width:9px;height:9px;border-radius:50%;background:${l.color};margin-right:7px;vertical-align:middle;`}></span>
+                  {l.label}
+                </td>
+                <td style="padding:0.65rem 1.1rem; color:var(--muted);">{l.meaning}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p style="color:var(--muted); font-size:0.73rem; padding:0.65rem 1.1rem; border-top:1px solid var(--border); font-family:'Share Tech Mono',monospace; letter-spacing:0.04em;">
+          Worst-of roll-up: <code>ERROR &gt; WARNING &gt; OK &gt; NONE</code>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>

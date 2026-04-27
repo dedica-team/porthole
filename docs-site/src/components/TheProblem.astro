@@ -1,0 +1,40 @@
+---
+---
+<section id="problem" style="background:var(--bg);">
+  <div class="container" style="max-width:860px;">
+    <h2 class="section-title">The Problem</h2>
+    <p class="section-sub">Sound familiar?</p>
+
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    ">
+      {[
+        { icon: '🧠', text: "Architecture lives in people's heads, out-of-date diagrams, and scattered wikis." },
+        { icon: '📉', text: 'NFRs like availability or security posture are tracked in dashboards nobody looks at during planning.' },
+        { icon: '🔥', text: 'Risks are discovered late — after an incident, not before.' },
+        { icon: '🗓️', text: 'New team members spend weeks just understanding what is where.' },
+        { icon: '🤷', text: 'Nobody agrees on the current quality state of each system.' },
+        { icon: '📊', text: 'Quality reviews produce slide-decks that are outdated the moment they are shared.' },
+      ].map(p => (
+        <div style="
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 1.25rem;
+          display: flex;
+          gap: 0.85rem;
+          align-items: flex-start;
+        ">
+          <span style="font-size:1.4rem; flex-shrink:0; margin-top:0.1rem;">{p.icon}</span>
+          <p style="color:var(--muted); font-size:0.8rem; line-height:1.7; font-family:'Share Tech Mono',monospace;">{p.text}</p>
+        </div>
+      ))}
+    </div>
+
+    <p style="text-align:center; margin-top:3rem; font-size:0.85rem; color:var(--text); font-family:'Share Tech Mono',monospace; line-height:1.8;">
+      Porthole turns these conversations into a&nbsp;<span style="color:var(--accent); font-weight:700;">continuously maintained, collaborative artefact</span>&nbsp;that lives alongside your code.
+    </p>
+  </div>
+</section>

@@ -1,0 +1,64 @@
+---
+const features = [
+  {
+    icon: '🗺️',
+    title: 'Collaborative Application Landscape Map',
+    text: 'Place every system, service, component, or external dependency as a Landmark on an interactive hex-grid map. Multiple team members edit simultaneously — all changes are broadcast in real time via WebSocket.',
+  },
+  {
+    icon: '📋',
+    title: 'NFR & Quality Metric Tracking',
+    text: 'Define Quality Metrics at the map level (Availability, P99 Latency, MTTR, Security Score, Test Coverage …). Assign a value, an optional link, and a quality level (OK / WARNING / ERROR) per system. A worst-of roll-up shows a colour-coded status light directly on the 3-D model.',
+  },
+  {
+    icon: '⚠️',
+    title: 'Risk Assessment',
+    text: 'Blinking status lights make critical systems immediately visible without opening a spreadsheet. Link metric entries to incident postmortems, runbooks, or risk registers. Drive your next architecture review with WARNING and ERROR signals.',
+  },
+  {
+    icon: '👥',
+    title: 'Shared Team Picture',
+    text: 'Every edit — a new landmark, an updated metric, a changed connection — is pushed to all connected clients instantly. The Collaborator Matrix view shows who is responsible for which part of the landscape.',
+  },
+  {
+    icon: '🔗',
+    title: 'Dependency Modelling',
+    text: 'Draw typed connections between landmarks to represent REST calls, event streams, database access, or any integration. Visualise cascading risk: if a foundational service is in ERROR, its dependants are easy to identify.',
+  },
+  {
+    icon: '🧠',
+    title: 'Knowledge & Accountability Matrix',
+    text: 'The Collaborator–Landmark Bus Matrix maps every team member against every system at three levels — Expert, Advanced, Beginner — making knowledge gaps and single points of failure visible at a glance. Use it to balance on-call duties, plan cross-training, and document clear ownership before the next incident.',
+  },
+];
+---
+<section id="benefits" style="background:var(--surface);">
+  <div class="container">
+    <h2 class="section-title">Reasons to use Porthole</h2>
+    <p class="section-sub">From NFR tracking to risk assessment — in a single collaborative canvas.</p>
+
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.25rem;
+    ">
+      {features.map(f => (
+        <div style="
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 1.5rem 1.75rem;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        "
+        onmouseenter="this.style.borderColor='var(--accent)';this.style.boxShadow='var(--glow-sm)'"
+        onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
+        >
+          <div style="font-size:1.75rem; margin-bottom:0.9rem;">{f.icon}</div>
+          <h3 style="font-size:0.8rem; font-weight:700; margin-bottom:0.5rem; color:var(--accent); letter-spacing:0.08em; text-transform:uppercase;">{f.title}</h3>
+          <p style="color:var(--muted); font-size:0.82rem; line-height:1.7; font-family:'Share Tech Mono',monospace;">{f.text}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
