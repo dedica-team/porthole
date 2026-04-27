@@ -40,6 +40,7 @@ RUN addgroup -S app && adduser -S -G app app
 COPY --from=backend --chown=app:app /app/server/target/server-1.0-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
+EXPOSE 8081
 
 USER app
 
