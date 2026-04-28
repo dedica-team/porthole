@@ -57,7 +57,7 @@ porthole:
     redirect-uri: ${PORTHOLE_GITHUB_REDIRECT_URI:http://localhost:5173/auth/github/callback}
   webauthn:
     rp-id:   ${PORTHOLE_WEBAUTHN_RP_ID:localhost}
-    rp-name: ${PORTHOLE_WEBAUTHN_RP_NAME:Landmarks}
+    rp-name: ${PORTHOLE_WEBAUTHN_RP_NAME:porthole}
     origin:  ${PORTHOLE_WEBAUTHN_ORIGIN:http://localhost:5173}
   admin:
     user-ids: ${PORTHOLE_ADMIN_USER_IDS:}
