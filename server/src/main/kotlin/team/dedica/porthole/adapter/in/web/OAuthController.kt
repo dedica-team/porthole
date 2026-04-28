@@ -1,6 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
@@ -16,32 +15,35 @@ import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.GitHubOAuthStateService
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.config.PortholeAuthProperties
 import jakarta.servlet.http.HttpServletRequest
 import java.time.Duration
 
-data class AuthResponse(val userId: String, val username: String, val avatarUrl: String?, val token: String? = null, val isAdmin: Boolean = false, val githubEnabled: Boolean = false)
-data class AuthFeatures(val githubEnabled: Boolean)
+data class AuthResponse(val userId: String, val username: String, val avatarUrl: String?, val token: String? = null, val isAdmin: Boolean = false, val githubEnabled: Boolean = false, val keycloakEnabled: Boolean = false)
+data class AuthFeatures(val githubEnabled: Boolean, val keycloakEnabled: Boolean = false, val webAuthnEnabled: Boolean = true)
 data class OAuthStartResponse(val authorizationUrl: String)
 
 @RestController
 @RequestMapping("/api/auth")
-class GitHubOAuthController(
+class OAuthController(
     private val gitHubOAuthService: GitHubOAuthService,
     private val gitHubOAuthStateService: GitHubOAuthStateService,
     private val jwtTokenProvider: JwtTokenProvider,
     private val authCookieService: AuthCookieService,
     private val userRepository: UserWritePort,
     private val adminService: AdminService,
-    @param:Value("\${spring.security.oauth2.client.registration.github.client-id:}") private val githubClientId: String,
-    @param:Value("\${porthole.github.redirect-uri:http://localhost:5173/auth/github/callback}") private val githubRedirectUri: String,
+    private val props: PortholeAuthProperties,
 ) {
-    private val githubEnabled: Boolean get() = githubClientId.isNotBlank()
+    private val githubEnabled: Boolean get() = props.github.isEnabled()
+    private val keycloakEnabled: Boolean get() = props.keycloak.isEnabled()
+    private val webAuthnEnabled: Boolean get() = props.webauthn.isEnabled()
+    private val githubRedirectUri: String get() = props.github.redirectUri
 
     @GetMapping("/config")
-    fun config(): AuthFeatures = AuthFeatures(githubEnabled)
+    fun config(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled)
 
     @GetMapping("/features")
-    fun features(): AuthFeatures = AuthFeatures(githubEnabled)
+    fun features(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled)
 
     @PostMapping("/github/start")
     fun githubStart(): ResponseEntity<OAuthStartResponse> {
@@ -78,7 +80,7 @@ class GitHubOAuthController(
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, clearStateCookie)
             .header(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString())
-            .body(AuthResponse(user.id, user.username, user.avatarUrl, isAdmin = adminService.isAdmin(user.id), githubEnabled = githubEnabled))
+            .body(AuthResponse(user.id, user.username, user.avatarUrl, isAdmin = adminService.isAdmin(user.id), githubEnabled = githubEnabled, keycloakEnabled = keycloakEnabled))
     }
 
     @GetMapping("/session")
@@ -86,7 +88,7 @@ class GitHubOAuthController(
         val authenticatedUser = user ?: return ResponseEntity.status(401).build()
         val userRecord = userRepository.findByUsername(authenticatedUser.username)
             ?: return ResponseEntity.status(401).build()
-        return ResponseEntity.ok(AuthResponse(userRecord.id, userRecord.username, userRecord.avatarUrl, isAdmin = adminService.isAdmin(userRecord.id), githubEnabled = githubEnabled))
+        return ResponseEntity.ok(AuthResponse(userRecord.id, userRecord.username, userRecord.avatarUrl, isAdmin = adminService.isAdmin(userRecord.id), githubEnabled = githubEnabled, keycloakEnabled = keycloakEnabled))
     }
 
     @PostMapping("/logout")

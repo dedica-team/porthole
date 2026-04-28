@@ -1,6 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
@@ -11,6 +10,7 @@ import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.util.UriComponentsBuilder
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.config.PortholeAuthProperties
 import java.util.UUID
 
 data class GitHubUserInfo(
@@ -22,14 +22,15 @@ data class GitHubUserInfo(
 
 /**
  * Encapsulates all GitHub OAuth API interactions.
- * Keeps [GitHubOAuthController] thin and allows this logic to be tested independently.
+ * Keeps [OAuthController] thin and allows this logic to be tested independently.
  */
 @Service
 class GitHubOAuthService(
     private val userRepository: UserWritePort,
-    @param:Value("\${spring.security.oauth2.client.registration.github.client-id}") private val clientId: String,
-    @param:Value("\${spring.security.oauth2.client.registration.github.client-secret}") private val clientSecret: String,
+    props: PortholeAuthProperties,
 ) {
+    private val clientId = props.github.clientId
+    private val clientSecret = props.github.clientSecret
     // RestTemplate is intentionally not a shared Bean here – OAuth calls are infrequent
     // and do not benefit from connection pooling. Replace with WebClient if async is needed.
     private val restTemplate = RestTemplate()

@@ -58,7 +58,7 @@ describe('AuthPage – all buttons have cursor-pointer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ token: null, userId: null, username: null, avatarUrl: null, isAuthenticated: false });
-    vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: true });
+    vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: true, keycloakEnabled: true, webAuthnEnabled: true });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ githubClientId: 'gh-id' }),

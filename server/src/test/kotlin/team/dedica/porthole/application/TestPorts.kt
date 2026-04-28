@@ -18,6 +18,7 @@ class InMemoryTestUserRepository : UserWritePort {
     private val store = mutableMapOf<String, UserRecord>()
     override fun findByUsername(username: String): UserRecord? = store.values.find { it.username == username }
     override fun findByGithubId(githubId: String): UserRecord? = store.values.find { it.githubId == githubId }
+    override fun findByKeycloakId(keycloakId: String): UserRecord? = store.values.find { it.keycloakId == keycloakId }
     override fun findById(id: String): UserRecord? = store[id]
     override fun findByCredentialId(credentialId: String): UserRecord? =
         store.values.find { it.passkeyCredential?.credentialId == credentialId }

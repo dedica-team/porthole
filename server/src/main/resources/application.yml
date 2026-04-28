@@ -25,42 +25,40 @@ spring:
   security:
     oauth2:
       client:
-        registration:
-          github:
-            client-id: ${PORTHOLE_GITHUB_CLIENT_ID:}
-            client-secret: ${PORTHOLE_GITHUB_CLIENT_SECRET:}
-            scope: read:user, user:email
-        provider:
-          github:
-            authorization-uri: https://github.com/login/oauth/authorize
-            token-uri: https://github.com/login/oauth/access_token
-            user-info-uri: https://api.github.com/user
-            user-name-attribute: login
+        registration: {}
 
 porthole:
   auth:
-    cookie-name: ${PORTHOLE_AUTH_COOKIE_NAME:porthole_auth}
-    cookie-path: ${PORTHOLE_AUTH_COOKIE_PATH:/}
-    cookie-same-site: ${PORTHOLE_AUTH_COOKIE_SAME_SITE:Lax}
-    cookie-secure: ${PORTHOLE_AUTH_COOKIE_SECURE:false}
-  jwt:
-    secret: ${PORTHOLE_JWT_SECRET}
-    expiration-ms: ${PORTHOLE_JWT_EXPIRATION_MS:86400000}
-    issuer: ${PORTHOLE_JWT_ISSUER:porthole}
-    audience: ${PORTHOLE_JWT_AUDIENCE:porthole-api}
+    cookie:
+      cookie-name: ${PORTHOLE_AUTH_COOKIE_NAME:porthole_auth}
+      cookie-path: ${PORTHOLE_AUTH_COOKIE_PATH:/}
+      cookie-same-site: ${PORTHOLE_AUTH_COOKIE_SAME_SITE:Lax}
+      cookie-secure: ${PORTHOLE_AUTH_COOKIE_SECURE:false}
+    jwt:
+      secret: ${PORTHOLE_JWT_SECRET:change-me-in-production-this-is-not-a-real-secret!!}
+      expiration-ms: ${PORTHOLE_JWT_EXPIRATION_MS:86400000}
+      issuer: ${PORTHOLE_JWT_ISSUER:porthole}
+      audience: ${PORTHOLE_JWT_AUDIENCE:porthole-api}
+    allowed-origins: ${PORTHOLE_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
+    github:
+      client-id: ${PORTHOLE_GITHUB_CLIENT_ID:}
+      client-secret: ${PORTHOLE_GITHUB_CLIENT_SECRET:}
+      redirect-uri: ${PORTHOLE_GITHUB_REDIRECT_URI:http://localhost:5173/auth/github/callback}
+    keycloak:
+      client-id: ${PORTHOLE_KEYCLOAK_CLIENT_ID:}
+      client-secret: ${PORTHOLE_KEYCLOAK_CLIENT_SECRET:}
+      issuer-uri: ${PORTHOLE_KEYCLOAK_ISSUER_URI:}
+      redirect-uri: ${PORTHOLE_KEYCLOAK_REDIRECT_URI:http://localhost:5173/auth/keycloak/callback}
+    webauthn:
+      rp-id: ${PORTHOLE_WEBAUTHN_RP_ID:}
+      rp-name: ${PORTHOLE_WEBAUTHN_RP_NAME:porthole}
+      origin: ${PORTHOLE_WEBAUTHN_ORIGIN:http://localhost:5173}
+  demo:
+    enabled: ${PORTHOLE_DEMO_ENABLED:false}
   storage:
     path: ${PORTHOLE_STORAGE_PATH:../data/json}
     flush-interval-ms: 5000
     debounce-ms: 5000
-  allowed-origins: ${PORTHOLE_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
-  demo:
-    enabled: ${PORTHOLE_DEMO_ENABLED:false}
-  github:
-    redirect-uri: ${PORTHOLE_GITHUB_REDIRECT_URI:http://localhost:5173/auth/github/callback}
-  webauthn:
-    rp-id:   ${PORTHOLE_WEBAUTHN_RP_ID:localhost}
-    rp-name: ${PORTHOLE_WEBAUTHN_RP_NAME:porthole}
-    origin:  ${PORTHOLE_WEBAUTHN_ORIGIN:http://localhost:5173}
   admin:
     user-ids: ${PORTHOLE_ADMIN_USER_IDS:}
 

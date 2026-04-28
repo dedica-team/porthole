@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   githubStart,
+  keycloakStart,
   getAuthFeatures,
   webauthnRegisterStart,
   webauthnRegisterFinish,
@@ -19,13 +20,15 @@ export default function AuthPage() {
   const [passkeyUsername, setPasskeyUsername] = useState('');
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [githubEnabled, setGithubEnabled] = useState<boolean | null>(null);
+  const [keycloakEnabled, setKeycloakEnabled] = useState<boolean | null>(null);
+  const [webAuthnServerEnabled, setWebAuthnServerEnabled] = useState<boolean>(true);
   const navigate = useNavigate();
   const authLogin = useAuthStore((s) => s.login);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const sessionLoading = useAuthStore((s) => s.sessionLoading);
   const sessionResolved = useAuthStore((s) => s.sessionResolved);
 
-  const webAuthnSupported = typeof window !== 'undefined' && !!window.PublicKeyCredential;
+  const webAuthnSupported = typeof window !== 'undefined' && !!window.PublicKeyCredential && webAuthnServerEnabled;
 
   useEffect(() => {
     if (sessionResolved && isAuthenticated) {
@@ -35,8 +38,8 @@ export default function AuthPage() {
 
   useEffect(() => {
     getAuthFeatures()
-      .then((f) => setGithubEnabled(f.githubEnabled))
-      .catch(() => setGithubEnabled(false));
+      .then((f) => { setGithubEnabled(f.githubEnabled); setKeycloakEnabled(f.keycloakEnabled); setWebAuthnServerEnabled(f.webAuthnEnabled ?? true); })
+      .catch(() => { setGithubEnabled(false); setKeycloakEnabled(false); });
   }, []);
 
   const handleGitHubLogin = async () => {
@@ -47,6 +50,11 @@ export default function AuthPage() {
     } catch (err: unknown) {
       setOauthError(err instanceof Error ? err.message : 'GitHub login could not be started');
     }
+  };
+
+  const handleKeycloakLogin = () => {
+    setOauthError(null);
+    keycloakStart();
   };
 
   // ── Passkey helpers ────────────────────────────────────────────────────────
@@ -271,6 +279,30 @@ export default function AuthPage() {
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
               </svg>
               Access via GitHub
+            </Button>
+          )}
+
+          {keycloakEnabled && (
+            <Button
+              onClick={handleKeycloakLogin}
+              className="w-full gap-2 uppercase tracking-widest text-xs h-11"
+              size="lg"
+              style={{
+                background: 'transparent',
+                border: '1px solid hsl(25,100%,54%)',
+                color: 'hsl(25,100%,65%)',
+                boxShadow: '0 0 10px rgba(255,120,0,0.25), inset 0 0 10px rgba(255,120,0,0.06)',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(255,120,0,0.10)';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(255,120,0,0.45), inset 0 0 14px rgba(255,120,0,0.10)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 10px rgba(255,120,0,0.25), inset 0 0 10px rgba(255,120,0,0.06)';
+              }}
+            >
+              🔐 Access via Keycloak
             </Button>
           )}
 

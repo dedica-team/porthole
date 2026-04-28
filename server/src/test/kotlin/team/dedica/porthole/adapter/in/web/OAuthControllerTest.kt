@@ -7,36 +7,36 @@ import org.mockito.kotlin.*
 import org.springframework.mock.web.MockCookie
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.security.core.userdetails.User
-import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.application.port.UserWritePort
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.GitHubOAuthStateService
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.out.repository.UserRecord
+import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
 
-class GitHubOAuthControllerTest {
+class OAuthControllerTest {
 
     private val gitHubOAuthService = mock<GitHubOAuthService>()
     private val jwtTokenProvider = mock<JwtTokenProvider>()
     private val userRepository = mock<UserWritePort>()
     private val gitHubOAuthStateService = GitHubOAuthStateService()
-    private val authCookieService = AuthCookieService(expirationMs = 3_600_000L)
+    private val props = PortholeAuthPropertiesTestFactory.withGitHub()
+    private val authCookieService = AuthCookieService(props)
     private val adminService = AdminService("")
-    private lateinit var controller: GitHubOAuthController
+    private lateinit var controller: OAuthController
 
     @BeforeEach
     fun setUp() {
-        controller = GitHubOAuthController(
+        controller = OAuthController(
             gitHubOAuthService,
             gitHubOAuthStateService,
             jwtTokenProvider,
             authCookieService,
             userRepository,
             adminService,
-            "test-client-id",
-            "http://localhost:5173/auth/github/callback",
+            props = props,
         )
-        whenever(jwtTokenProvider.generateToken(any(), any())).thenAnswer { "token-${it.arguments[1]}" }
     }
 
     @Test

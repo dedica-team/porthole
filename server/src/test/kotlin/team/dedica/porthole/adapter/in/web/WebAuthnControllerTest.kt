@@ -10,13 +10,15 @@ import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
 import java.time.Instant
 
 class WebAuthnControllerTest {
 
     private val userRepository = mock<UserWritePort>()
     private val jwtTokenProvider = mock<JwtTokenProvider>()
-    private val authCookieService = AuthCookieService(expirationMs = 3_600_000L)
+    private val props = PortholeAuthPropertiesTestFactory.withWebAuthn()
+    private val authCookieService = AuthCookieService(props)
     private val adminService = AdminService("")
     private lateinit var controller: WebAuthnController
 
@@ -27,9 +29,7 @@ class WebAuthnControllerTest {
             jwtTokenProvider = jwtTokenProvider,
             authCookieService = authCookieService,
             adminService = adminService,
-            rpId = "localhost",
-            rpName = "Landmarks Test",
-            origin = "http://localhost:5173",
+            props = props,
         )
         whenever(jwtTokenProvider.generateToken(any(), any())).thenAnswer { "token-${it.arguments[1]}" }
     }

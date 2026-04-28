@@ -67,13 +67,18 @@ The WebAuthn authentication start flow has been hardened to reduce username enum
 
 Review and set at least:
 - `PORTHOLE_JWT_SECRET`
-- `GITHUB_CLIENT_ID`
-- `GITHUB_CLIENT_SECRET`
-- `PORTHOLE_GITHUB_REDIRECT_URI`
+- `PORTHOLE_GITHUB_CLIENT_ID` *(GitHub OAuth)*
+- `PORTHOLE_GITHUB_CLIENT_SECRET` *(GitHub OAuth)*
+- `PORTHOLE_GITHUB_REDIRECT_URI` *(GitHub OAuth)*
+- `PORTHOLE_KEYCLOAK_CLIENT_ID` *(Keycloak OIDC)*
+- `PORTHOLE_KEYCLOAK_ISSUER_URI` *(Keycloak OIDC — required to enable the provider and used for OIDC Discovery at startup)*
+- `PORTHOLE_KEYCLOAK_REDIRECT_URI` *(Keycloak OIDC)*
 - `PORTHOLE_ALLOWED_ORIGINS`
 - `PORTHOLE_WEBAUTHN_RP_ID`
 - `PORTHOLE_WEBAUTHN_RP_NAME`
 - `PORTHOLE_WEBAUTHN_ORIGIN`
+
+> **Keycloak activation:** the provider is enabled when both `PORTHOLE_KEYCLOAK_CLIENT_ID` **and** `PORTHOLE_KEYCLOAK_ISSUER_URI` are non-empty. On startup Porthole fetches `{PORTHOLE_KEYCLOAK_ISSUER_URI}/.well-known/openid-configuration` to discover all endpoint URLs. If that request fails, startup is aborted.
 
 ### Cookie settings
 

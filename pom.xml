@@ -19,7 +19,7 @@
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
         <java.version>21</java.version>
-        <spring.boot.version>3.5.13</spring.boot.version>
+        <spring.boot.version>3.5.14</spring.boot.version>
         <jsonwebtoken.version>0.13.0</jsonwebtoken.version>
     </properties>
 

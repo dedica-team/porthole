@@ -1,11 +1,10 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
-
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import team.dedica.porthole.config.PortholeAuthProperties
 import java.nio.charset.StandardCharsets
 import java.util.Date
 import java.util.UUID
@@ -14,12 +13,13 @@ import javax.crypto.SecretKey
 data class AuthTokenClaims(val userId: String, val username: String)
 
 @Component
-class JwtTokenProvider(
-    @param:Value("\${porthole.jwt.secret}") private val secret: String,
-    @param:Value("\${porthole.jwt.expiration-ms}") private val expirationMs: Long,
-    @param:Value("\${porthole.jwt.issuer:porthole}") private val issuer: String = "porthole",
-    @param:Value("\${porthole.jwt.audience:porthole-api}") private val audience: String = "porthole-api",
-) {
+class JwtTokenProvider(props: PortholeAuthProperties) {
+
+
+    private val secret: String = props.jwt.secret
+    private val expirationMs: Long =props.jwt.expirationMs
+    private val issuer: String = props.jwt.issuer
+    private val audience: String = props.jwt.audience
     private val key: SecretKey = createSigningKey(secret)
 
     fun generateToken(userId: String, username: String): String {

@@ -36,7 +36,7 @@ beforeEach(() => {
   });
 
   // Default: GitHub is enabled
-  vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: true });
+  vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: true, keycloakEnabled: false, webAuthnEnabled: false });
 
   // Default: GitHub config returns a clientId
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -73,7 +73,7 @@ describe('AuthPage – WebAuthn feature detection', () => {
   });
 
   it('GitHub button hidden when githubEnabled is false', async () => {
-    vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: false });
+    vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: false, keycloakEnabled: false, webAuthnEnabled: false });
     renderAuthPage();
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: /access via github/i })).not.toBeInTheDocument();
@@ -81,6 +81,7 @@ describe('AuthPage – WebAuthn feature detection', () => {
   });
 
   it('both buttons visible when WebAuthn is supported', async () => {
+    vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: true, keycloakEnabled: false, webAuthnEnabled: true });
     vi.stubGlobal('PublicKeyCredential', class {});
     renderAuthPage();
     await waitFor(() =>

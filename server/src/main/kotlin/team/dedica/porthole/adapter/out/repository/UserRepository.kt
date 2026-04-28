@@ -11,6 +11,7 @@ data class UserRecord(
     val id: String,
     val username: String,
     val githubId: String? = null,
+    val keycloakId: String? = null,
     val email: String? = null,
     val avatarUrl: String? = null,
     val passkeyCredential: PasskeyCredential? = null,

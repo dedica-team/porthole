@@ -19,7 +19,6 @@ import com.yubico.webauthn.data.ResidentKeyRequirement
 import com.yubico.webauthn.data.UserIdentity
 import com.yubico.webauthn.data.UserVerificationRequirement
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -28,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.config.PortholeAuthProperties
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
@@ -125,10 +125,12 @@ class WebAuthnController(
     private val jwtTokenProvider: JwtTokenProvider,
     private val authCookieService: AuthCookieService,
     private val adminService: AdminService,
-    @param:Value("\${porthole.webauthn.rp-id:localhost}") private val rpId: String,
-    @param:Value("\${porthole.webauthn.rp-name:Landmarks}") private val rpName: String,
-    @param:Value("\${porthole.webauthn.origin:http://localhost:5173}") private val origin: String,
+    props: PortholeAuthProperties,
 ) {
+    private val rpId = props.webauthn.rpId
+    private val rpName = props.webauthn.rpName
+    private val origin = props.webauthn.origin
+    private val webAuthnEnabled: Boolean get() = rpId.isNotBlank()
     private val log = LoggerFactory.getLogger(WebAuthnController::class.java)
     private val credentialRepository = YubicoCredentialRepository(userRepository)
 
@@ -293,6 +295,7 @@ class WebAuthnController(
 
     @PostMapping("/authenticate/finish")
     fun authFinish(@RequestBody req: AuthFinishRequest): ResponseEntity<AuthResponse> {
+        if (!webAuthnEnabled) return ResponseEntity.status(404).build()
         evictExpired()
         val pending = pendingAssertions.remove(req.sessionId) ?: run {
             log.warn("WebAuthn auth/finish: unknown sessionId={}", req.sessionId)

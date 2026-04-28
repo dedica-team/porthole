@@ -10,7 +10,7 @@ function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> 
 }
 
 function authHeaders(): HeadersInit {
-  return { 'Content-Type': 'application/json' };
+  return { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -36,8 +36,11 @@ interface GitHubStartResponse {
   authorizationUrl: string;
 }
 
+
 export interface AuthFeatures {
   githubEnabled: boolean;
+  keycloakEnabled: boolean;
+  webAuthnEnabled: boolean;
 }
 
 export async function getAuthFeatures(): Promise<AuthFeatures> {
@@ -48,6 +51,7 @@ export async function getAuthFeatures(): Promise<AuthFeatures> {
 export async function githubStart(): Promise<GitHubStartResponse> {
   const res = await fetch(`${BASE_URL}/auth/github/start`, {
     method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
   });
   return handleResponse<GitHubStartResponse>(res);
 }
@@ -56,9 +60,16 @@ export async function githubCallback(code: string, state: string): Promise<AuthR
   const params = new URLSearchParams({ code, state });
   const res = await fetch(`${BASE_URL}/auth/github/callback?${params.toString()}`, {
     method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
   });
   return handleResponse<AuthResponse>(res);
 }
+
+/** Initiates Keycloak OIDC login via Spring OAuth2 Client (authorization code flow + PKCE). */
+export function keycloakStart(): void {
+  window.location.assign('/oauth2/authorization/keycloak');
+}
+
 
 export async function getSession(): Promise<AuthSession> {
   const res = await fetch(`${BASE_URL}/auth/session`);
@@ -68,6 +79,7 @@ export async function getSession(): Promise<AuthSession> {
 export async function logoutSession(): Promise<void> {
   const res = await fetch(`${BASE_URL}/auth/logout`, {
     method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -115,7 +127,7 @@ interface AuthStartResponse {
 export async function webauthnRegisterStart(username: string): Promise<RegisterStartResponse> {
   const res = await fetch(`${BASE_URL}/auth/webauthn/register/start`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ username }),
   });
   return handleResponse<RegisterStartResponse>(res);
@@ -138,7 +150,7 @@ export async function webauthnRegisterFinish(
   };
   const res = await fetch(`${BASE_URL}/auth/webauthn/register/finish`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(body),
   });
   return handleResponse<AuthResponse>(res);
@@ -147,7 +159,7 @@ export async function webauthnRegisterFinish(
 export async function webauthnAuthStart(username?: string): Promise<AuthStartResponse> {
   const res = await fetch(`${BASE_URL}/auth/webauthn/authenticate/start`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ username: username ?? null }),
   });
   return handleResponse<AuthStartResponse>(res);
@@ -172,7 +184,7 @@ export async function webauthnAuthFinish(
   };
   const res = await fetch(`${BASE_URL}/auth/webauthn/authenticate/finish`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(body),
   });
   return handleResponse<AuthResponse>(res);

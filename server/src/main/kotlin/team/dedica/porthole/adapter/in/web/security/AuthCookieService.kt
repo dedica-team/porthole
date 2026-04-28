@@ -1,19 +1,20 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
 import jakarta.servlet.http.HttpServletRequest
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseCookie
 import org.springframework.stereotype.Component
+import team.dedica.porthole.config.PortholeAuthProperties
 import java.time.Duration
 
 @Component
-class AuthCookieService(
-    @param:Value("\${porthole.auth.cookie-name:porthole_auth}") private val cookieName: String = "porthole_auth",
-    @param:Value("\${porthole.auth.cookie-path:/}") private val cookiePath: String = "/",
-    @param:Value("\${porthole.auth.cookie-same-site:Lax}") private val sameSite: String = "Lax",
-    @param:Value("\${porthole.auth.cookie-secure:false}") private val secureCookie: Boolean = false,
-    @param:Value("\${porthole.jwt.expiration-ms}") private val expirationMs: Long,
-) {
+class AuthCookieService(private val props: PortholeAuthProperties) {
+
+    private val cookieName get() = props.cookie.cookieName
+    private val cookiePath get() = props.cookie.cookiePath
+    private val sameSite get() = props.cookie.cookieSameSite
+    private val secureCookie get() = props.cookie.cookieSecure
+    private val expirationMs get() = props.jwt.expirationMs
+
     fun createAuthCookie(token: String): ResponseCookie =
         ResponseCookie.from(cookieName, token)
             .httpOnly(true)

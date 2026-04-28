@@ -4,6 +4,7 @@ import team.dedica.porthole.adapter.out.repository.UserRecord
 
 interface UserWritePort {
     fun findByGithubId(githubId: String): UserRecord?
+    fun findByKeycloakId(keycloakId: String): UserRecord?
     fun findByUsername(username: String): UserRecord?
     fun findById(id: String): UserRecord?
     fun findByCredentialId(credentialId: String): UserRecord?

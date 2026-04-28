@@ -14,9 +14,23 @@ Porthole turns architecture discussions, quality reviews, and risk assessments f
 
 ---
 
+## Authentication providers
+
+Porthole supports three login methods that can be combined freely:
+
+| Provider | When to use |
+|---|---|
+| **GitHub OAuth** | Teams whose members already have GitHub accounts |
+| **Keycloak OIDC** | Enterprises with an existing Keycloak / SSO infrastructure |
+| **Passkey (WebAuthn)** | Password-free login without any external provider |
+
+All three providers follow the same pattern: on successful login a porthole-issued JWT cookie is set. No Keycloak or GitHub token is ever stored server-side.
+
+---
+
 ## Deployment with GitHub OAuth / local development
 
-Create a github OAuth app for local development and create a `.env` file in the with the following content:
+Create a GitHub OAuth App for local development and create a `.env` file with the following content:
 
     # GitHub OAuth App credentials
     # Create an OAuth App at: https://github.com/settings/developers
@@ -24,12 +38,42 @@ Create a github OAuth app for local development and create a `.env` file in the 
     PORTHOLE_GITHUB_CLIENT_ID=xxx
     PORTHOLE_GITHUB_CLIENT_SECRET=foo
     PORTHOLE_GITHUB_REDIRECT_URI=https://porthole.myhost.com/auth/github/callback
-    
-    # Full GitHub authorization URL used by the Vite client (optional override)
-    VITE_PORTHOLE_GITHUB_AUTH_URL=https://github.com/login/oauth/authorize?client_id=xxx&scope=read:user,user:email
 
     # JWT secret (min 256 bit)
     PORTHOLE_JWT_SECRET=change-me-in-production
+
+---
+
+## Deployment with Keycloak OIDC
+
+Porthole integrates with any Keycloak realm (or any OIDC-compliant provider) via the authorization code flow with **PKCE** (no client secret required for public clients).
+
+Endpoint metadata (authorization URI, token URI, JWK set URI, etc.) is fetched automatically at startup via **OIDC Discovery** (`{issuerUri}/.well-known/openid-configuration`). You do not need to configure individual endpoint URLs.
+
+### 1 · Create a Keycloak client
+
+1. In your realm, create a new client with **Client type = OpenID Connect**.
+2. Set **Valid redirect URIs** to `https://porthole.myhost.com/auth/keycloak/callback`.
+3. For a *public* client: disable **Client authentication** (no client secret needed).
+4. For a *confidential* client: enable **Client authentication** and copy the generated secret.
+
+### 2 · Set environment variables
+
+    # Keycloak realm issuer URL — used for OIDC Discovery at startup (required)
+    PORTHOLE_KEYCLOAK_ISSUER_URI=https://keycloak.myhost.com/realms/myrealm
+    # Client ID created in your Keycloak realm (required)
+    PORTHOLE_KEYCLOAK_CLIENT_ID=porthole-client
+    # Client secret — leave blank for public (PKCE-only) clients
+    PORTHOLE_KEYCLOAK_CLIENT_SECRET=
+    # Must match "Valid redirect URIs" in Keycloak
+    PORTHOLE_KEYCLOAK_REDIRECT_URI=https://porthole.myhost.com/auth/keycloak/callback
+
+    # JWT secret (min 256 bit)
+    PORTHOLE_JWT_SECRET=change-me-in-production
+
+> **Feature flag:** Keycloak is enabled when **both** `PORTHOLE_KEYCLOAK_CLIENT_ID` and `PORTHOLE_KEYCLOAK_ISSUER_URI` are non-empty. Setting both variables is all that is needed — the "Access via Keycloak" button appears automatically and all OIDC endpoints are discovered from the issuer URI at startup.
+
+> **Startup requirement:** Porthole fetches the OIDC discovery document from the issuer URI during startup. The Keycloak server must be reachable when the application starts. If discovery fails, startup is aborted with a clear error message.
 
 Repository: https://github.com/dedica-team/porthole
 

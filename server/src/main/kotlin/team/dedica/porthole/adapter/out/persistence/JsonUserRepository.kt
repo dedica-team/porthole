@@ -18,6 +18,9 @@ class JsonUserRepository(private val store: JsonStore) : UserWritePort {
     override fun findByGithubId(githubId: String): UserRecord? =
         store.users.values.find { it.githubId == githubId }
 
+    override fun findByKeycloakId(keycloakId: String): UserRecord? =
+        store.users.values.find { it.keycloakId == keycloakId }
+
     override fun findById(id: String): UserRecord? = store.users[id]
 
     override fun findByCredentialId(credentialId: String): UserRecord? =

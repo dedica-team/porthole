@@ -3,7 +3,6 @@ package team.dedica.porthole.adapter.`in`.web.security
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
@@ -16,7 +15,7 @@ import team.dedica.porthole.application.port.UserWritePort
 class JwtAuthenticationFilter(
     private val jwtTokenProvider: JwtTokenProvider,
     private val userRepository: UserWritePort,
-    @param:Value("\${porthole.auth.cookie-name:porthole_auth}") private val authCookieName: String = "porthole_auth",
+    private val authCookieService: AuthCookieService,
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -49,12 +48,7 @@ class JwtAuthenticationFilter(
             ?.trim()
             ?.takeIf { it.isNotBlank() }
         if (bearer != null) return bearer
-
-        return request.cookies
-            ?.firstOrNull { it.name == authCookieName }
-            ?.value
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
+        return authCookieService.resolveToken(request)
     }
 }
 

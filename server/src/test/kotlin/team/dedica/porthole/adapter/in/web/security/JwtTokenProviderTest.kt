@@ -4,6 +4,7 @@ import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
 import java.nio.charset.StandardCharsets
 import java.util.Date
 import java.util.UUID
@@ -14,13 +15,10 @@ import java.util.UUID
  */
 class JwtTokenProviderTest {
 
-    private val secret = "landmarks-super-secret-key-change-in-production-must-be-256-bits!!"
-    private val provider = JwtTokenProvider(
-        secret = secret,
-        expirationMs = 3_600_000,
-        issuer = "porthole-test",
-        audience = "porthole-test-api",
-    )
+    private val secret = PortholeAuthPropertiesTestFactory.DEFAULT_JWT.secret
+    private val issuer = PortholeAuthPropertiesTestFactory.DEFAULT_JWT.issuer
+    private val audience = PortholeAuthPropertiesTestFactory.DEFAULT_JWT.audience
+    private val provider = JwtTokenProvider(PortholeAuthPropertiesTestFactory.build())
 
     @Test
     fun `generated token is not blank`() {
@@ -74,7 +72,7 @@ class JwtTokenProviderTest {
     @Test
     fun `validateToken returns false for an expired token`() {
         // expirationMs = -1 → already expired when issued
-        val expiredProvider = JwtTokenProvider(secret = secret, expirationMs = -1, issuer = "porthole-test", audience = "porthole-test-api")
+        val expiredProvider = JwtTokenProvider(PortholeAuthPropertiesTestFactory.withJwt(expirationMs = -1))
         val token = expiredProvider.generateToken("u1", "alice")
         assertFalse(provider.validateToken(token))
     }
@@ -90,7 +88,7 @@ class JwtTokenProviderTest {
     @Test
     fun `validateToken returns false when issuer does not match`() {
         val token = provider.generateToken("u1", "alice")
-        val otherIssuerProvider = JwtTokenProvider(secret = secret, expirationMs = 3_600_000, issuer = "other", audience = "porthole-test-api")
+        val otherIssuerProvider = JwtTokenProvider(PortholeAuthPropertiesTestFactory.withJwt(issuer = "other"))
 
         assertFalse(otherIssuerProvider.validateToken(token))
     }
@@ -98,7 +96,7 @@ class JwtTokenProviderTest {
     @Test
     fun `validateToken returns false when audience does not match`() {
         val token = provider.generateToken("u1", "alice")
-        val otherAudienceProvider = JwtTokenProvider(secret = secret, expirationMs = 3_600_000, issuer = "porthole-test", audience = "other-audience")
+        val otherAudienceProvider = JwtTokenProvider(PortholeAuthPropertiesTestFactory.withJwt(audience = "other-audience"))
 
         assertFalse(otherAudienceProvider.validateToken(token))
     }
@@ -116,8 +114,8 @@ class JwtTokenProviderTest {
     fun `getTokenClaims rejects token without username claim`() {
         val token = Jwts.builder()
             .subject("u1")
-            .issuer("porthole-test")
-            .audience().add("porthole-test-api").and()
+            .issuer(issuer)
+            .audience().add(audience).and()
             .id(UUID.randomUUID().toString())
             .issuedAt(Date())
             .expiration(Date(System.currentTimeMillis() + 3_600_000))
@@ -134,7 +132,7 @@ class JwtTokenProviderTest {
     @Test
     fun `provider rejects too short secret`() {
         val error = assertThrows(IllegalArgumentException::class.java) {
-            JwtTokenProvider(secret = "too-short-secret", expirationMs = 3_600_000, issuer = "porthole-test", audience = "porthole-test-api")
+            JwtTokenProvider(PortholeAuthPropertiesTestFactory.withJwt(secret = "too-short-secret"))
         }
 
         assertEquals("JWT secret must be at least 32 bytes for HS256", error.message)
