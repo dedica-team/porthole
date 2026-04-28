@@ -26,6 +26,7 @@ class SecurityConfig(
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
+                it.requestMatchers("/actuator/**").permitAll()
                 it.requestMatchers("/api/auth/**").permitAll()
                 it.requestMatchers("/ws/**").permitAll()
                 it.requestMatchers("/ws-native/**").permitAll()
