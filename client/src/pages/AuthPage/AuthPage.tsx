@@ -42,7 +42,7 @@ export default function AuthPage() {
     getAuthFeatures()
       .then((f) => { setGithubEnabled(f.githubEnabled); setKeycloakEnabled(f.keycloakEnabled); setWebAuthnServerEnabled(f.webAuthnEnabled ?? true); if (f.tagline) setTagline(f.tagline); })
       .catch(() => { setGithubEnabled(false); setKeycloakEnabled(false); });
-  }, []);
+  }, [setTagline]);
 
   const handleGitHubLogin = async () => {
     setOauthError(null);

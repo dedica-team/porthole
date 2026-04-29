@@ -474,6 +474,9 @@ export default function Navbar() {
                   <div className="flex flex-col gap-0.5">
                     <p className="text-xs font-semibold text-foreground truncate">{username}</p>
                     <p className="text-xs text-muted-foreground">Signed in</p>
+                    {userId && (
+                      <p className="text-[10px] text-muted-foreground font-mono truncate select-all mt-0.5" title={userId}>{userId}</p>
+                    )}
                   </div>
                   <Separator />
                   <Button
