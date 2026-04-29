@@ -22,7 +22,7 @@ class KeycloakLoginSuccessHandler(
     private val keycloakOAuthService: KeycloakOAuthService,
     private val jwtTokenProvider: JwtTokenProvider,
     private val authCookieService: AuthCookieService,
-    @param:Value("\${porthole.keycloak.redirect-uri:http://localhost:5173/auth/keycloak/callback}")
+    @param:Value($$"${porthole.auth.keycloak.redirect-uri}")
     private val frontendCallbackUrl: String,
 ) : AuthenticationSuccessHandler {
 

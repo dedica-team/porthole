@@ -1,7 +1,8 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.beans.factory.annotation.Autowired
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -23,9 +24,11 @@ class SecurityConfig(
     private val keycloakClientRegistrationConfig: KeycloakClientRegistrationConfig,
     private val clientRegistrationRepository: ClientRegistrationRepository,
     private val props: PortholeAuthProperties,
+    private val keycloakLoginSuccessHandlerProvider: ObjectProvider<KeycloakLoginSuccessHandler>,
 ) {
-    @Autowired(required = false)
-    private var keycloakLoginSuccessHandler: KeycloakLoginSuccessHandler? = null
+
+    private val log = LoggerFactory.getLogger(SecurityConfig::class.java)
+
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
@@ -57,10 +60,11 @@ class SecurityConfig(
                 oauth2
                     .clientRegistrationRepository(clientRegistrationRepository)
                     .also { cfg ->
-                        keycloakLoginSuccessHandler?.let { cfg.successHandler(it) }
+                        keycloakLoginSuccessHandlerProvider.getIfAvailable()?.let { cfg.successHandler(it) }
                     }
                     .failureHandler { _, response, ex ->
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.message)
+                        log.warn("OAuth2 login failure", ex)
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed")
                     }
             }
         }
