@@ -11,6 +11,8 @@ interface AuthState {
   isAuthenticated: boolean;
   sessionLoading: boolean;
   sessionResolved: boolean;
+  tagline: string;
+  setTagline: (tagline: string) => void;
   login: (userId: string, username: string, avatarUrl: string | null, isAdmin?: boolean) => void;
   logout: () => void;
   setSession: (session: { userId: string; username: string; avatarUrl: string | null; isAdmin?: boolean } | null) => void;
@@ -26,6 +28,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   sessionLoading: false,
   sessionResolved: false,
+  tagline: 'for teams',
+  setTagline: (tagline) => set({ tagline }),
   login: (userId, username, avatarUrl, isAdmin = false) => {
     set({ token: null, userId, username, avatarUrl, isAdmin, isAuthenticated: true, sessionLoading: false, sessionResolved: true });
   },

@@ -27,6 +27,8 @@ export default function AuthPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const sessionLoading = useAuthStore((s) => s.sessionLoading);
   const sessionResolved = useAuthStore((s) => s.sessionResolved);
+  const tagline = useAuthStore((s) => s.tagline);
+  const setTagline = useAuthStore((s) => s.setTagline);
 
   const webAuthnSupported = typeof window !== 'undefined' && !!window.PublicKeyCredential && webAuthnServerEnabled;
 
@@ -38,7 +40,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     getAuthFeatures()
-      .then((f) => { setGithubEnabled(f.githubEnabled); setKeycloakEnabled(f.keycloakEnabled); setWebAuthnServerEnabled(f.webAuthnEnabled ?? true); })
+      .then((f) => { setGithubEnabled(f.githubEnabled); setKeycloakEnabled(f.keycloakEnabled); setWebAuthnServerEnabled(f.webAuthnEnabled ?? true); if (f.tagline) setTagline(f.tagline); })
       .catch(() => { setGithubEnabled(false); setKeycloakEnabled(false); });
   }, []);
 
@@ -246,7 +248,7 @@ export default function AuthPage() {
           <div className="flex flex-col items-center gap-1">
             <h1 className="tron-logo text-2xl">Porthole</h1>
             <p className="text-xs tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
-              <strong>for teams</strong>
+              <strong>{tagline}</strong>
             </p>
           </div>
         </div>

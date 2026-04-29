@@ -22,6 +22,7 @@ export default function Navbar() {
   const logout = useAuthStore((s) => s.logout);
   const userId = useAuthStore((s) => s.userId);
   const isAdmin = useAuthStore((s) => s.isAdmin);
+  const tagline = useAuthStore((s) => s.tagline);
   const currentMap = useMapStore((s) => s.currentMap);
   const updateMap = useMapStore((s) => s.updateMap);
   const mainView = useMapStore((s) => s.mainView);
@@ -142,7 +143,7 @@ export default function Navbar() {
           onClick={() => navigate(isOnMap ? '/lobby' : '/')}
           className="flex items-center select-none transition-all group shrink-0 cursor-pointer"
           style={{ textDecoration: 'none' }}
-          title={isOnMap ? 'Back to lobby' : 'Porthole'}
+          title={isOnMap ? 'Back to lobby' : tagline}
         >
           <img
             src="/logo.svg"
@@ -156,7 +157,7 @@ export default function Navbar() {
 
         {/* Static title when not in a session */}
         {!isOnMap && (
-          <span className="hidden sm:inline tron-logo text-sm">Porthole</span>
+          <span className="hidden sm:inline tron-logo text-sm" title={tagline}>Porthole</span>
         )}
 
         {/* Map session area */}

@@ -12,6 +12,7 @@ class PortholeAuthProperties(
     var github: GitHub = GitHub(),
     var keycloak: Keycloak = Keycloak(),
     var webauthn: WebAuthn = WebAuthn(),
+    @DefaultValue("for teams") var tagline: String = "for teams",
 ) {
     class Cookie(
         @DefaultValue("porthole_auth") var cookieName: String = "porthole_auth",

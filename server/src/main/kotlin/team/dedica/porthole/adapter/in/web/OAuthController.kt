@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletRequest
 import java.time.Duration
 
 data class AuthResponse(val userId: String, val username: String, val avatarUrl: String?, val token: String? = null, val isAdmin: Boolean = false, val githubEnabled: Boolean = false, val keycloakEnabled: Boolean = false)
-data class AuthFeatures(val githubEnabled: Boolean, val keycloakEnabled: Boolean = false, val webAuthnEnabled: Boolean = true)
+data class AuthFeatures(val githubEnabled: Boolean, val keycloakEnabled: Boolean = false, val webAuthnEnabled: Boolean = true, val tagline: String = "for teams")
 data class OAuthStartResponse(val authorizationUrl: String)
 
 @RestController
@@ -40,10 +40,10 @@ class OAuthController(
     private val githubRedirectUri: String get() = props.github.redirectUri
 
     @GetMapping("/config")
-    fun config(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled)
+    fun config(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled, props.tagline)
 
     @GetMapping("/features")
-    fun features(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled)
+    fun features(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled, props.tagline)
 
     @PostMapping("/github/start")
     fun githubStart(): ResponseEntity<OAuthStartResponse> {

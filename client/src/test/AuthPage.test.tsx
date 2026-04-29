@@ -50,6 +50,22 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// ── Tagline ───────────────────────────────────────────────────────────────────
+
+describe('AuthPage – tagline', () => {
+  it('shows default "for teams" tagline when none is returned by the server', async () => {
+    vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: false, keycloakEnabled: false, webAuthnEnabled: false });
+    renderAuthPage();
+    await waitFor(() => expect(screen.getByText(/for teams/i)).toBeInTheDocument());
+  });
+
+  it('shows custom tagline returned by the server', async () => {
+    vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: false, keycloakEnabled: false, webAuthnEnabled: false, tagline: '🚀 für dein Team' });
+    renderAuthPage();
+    await waitFor(() => expect(screen.getByText('🚀 für dein Team')).toBeInTheDocument());
+  });
+});
+
 // ── Feature detection ─────────────────────────────────────────────────────────
 
 describe('AuthPage – WebAuthn feature detection', () => {

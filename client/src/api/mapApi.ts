@@ -41,6 +41,7 @@ export interface AuthFeatures {
   githubEnabled: boolean;
   keycloakEnabled: boolean;
   webAuthnEnabled: boolean;
+  tagline?: string;
 }
 
 export async function getAuthFeatures(): Promise<AuthFeatures> {

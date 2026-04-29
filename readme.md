@@ -96,6 +96,18 @@ The **Relying Party ID** must match the hostname of the deployed app, otherwise 
 
 ---
 
+## Custom tagline
+
+The short claim displayed beneath the Porthole logo on the login screen ("for teams" by default) can be replaced via an environment variable:
+
+    PORTHOLE_TAGLINE=for teams
+
+Any UTF-8 string is accepted, so emoji and non-ASCII characters work fine:
+
+    PORTHOLE_TAGLINE=🚀 für dein Team
+
+---
+
 ## Admin roles
 
 Porthole supports a lightweight admin role driven entirely by an environment variable — no database changes required.

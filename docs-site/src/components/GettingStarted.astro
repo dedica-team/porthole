@@ -89,6 +89,15 @@
         <span style="color:var(--accent); opacity:0.7;">&#x26A0;</span>&nbsp;<strong style="color:var(--text);">Backups advised:</strong> simply copy or snapshot the <code>data/</code> folder regularly. When running via Docker, mount it as a volume so data survives container restarts.
       </div>
     </div>
+    <div style="max-width:720px; margin: 0 auto 2rem; background:var(--bg); border:1px solid var(--border); border-left: 3px solid hsl(270,80%,60%); border-radius:var(--radius); padding:1rem 1.25rem; display:flex; gap:1rem; align-items:flex-start;">
+      <span style="font-size:1.3rem; line-height:1; flex-shrink:0;">&#x1F3F7;&#xFE0F;</span>
+      <div style="font-family:'Share Tech Mono',monospace; font-size:0.78rem; color:var(--muted); line-height:1.75;">
+        <strong style="color:hsl(270,80%,70%); font-family:'Orbitron',monospace; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase;">Custom tagline.</strong><br/>
+        The claim shown beneath the logo on the login screen defaults to <code>for teams</code>. Override it with:<br/>
+        <code>PORTHOLE_TAGLINE=🚀 your custom text</code><br/>
+        Any UTF-8 string (including emoji) is accepted.
+      </div>
+    </div>
     <div style="max-width:720px; margin:0 auto;">
       <div class="tabs">
         <button class="tab-btn active" onclick="showTab('dev')">Dev Mode</button>

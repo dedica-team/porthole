@@ -53,6 +53,7 @@ porthole:
       rp-id: ${PORTHOLE_WEBAUTHN_RP_ID:}
       rp-name: ${PORTHOLE_WEBAUTHN_RP_NAME:porthole}
       origin: ${PORTHOLE_WEBAUTHN_ORIGIN:http://localhost:5173}
+    tagline: ${PORTHOLE_TAGLINE:for teams}
   demo:
     enabled: ${PORTHOLE_DEMO_ENABLED:false}
   storage:
