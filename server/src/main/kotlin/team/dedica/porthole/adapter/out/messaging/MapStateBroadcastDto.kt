@@ -28,18 +28,23 @@ data class MapStateBroadcastDto(
         fun from(state: MapState) = MapStateBroadcastDto(
             id = state.id,
             map = state.map,
-            collaborators = state.collaborators,
-            landmarks = state.landmarks,
-            connections = state.connections,
-            groups = state.groups,
-            metrics = state.metrics,
+            collaborators = state.collaborators.toList(),
+            landmarks = state.landmarks.toMap(),
+            connections = state.connections.toMap(),
+            groups = state.groups.toMap(),
+            metrics = state.metrics.toMap(),
             createdAt = state.createdAt,
             name = state.name,
             description = state.description,
             collaborationMode = state.collaborationMode,
-            joinRequests = state.joinRequests,
-            collaboratorMatrix = state.collaboratorMatrix,
-            choreLists = state.choreLists,
+            joinRequests = state.joinRequests.toList(),
+            collaboratorMatrix = state.collaboratorMatrix.let { m ->
+                CollaboratorMatrix(
+                    name = m.name,
+                    entries = m.entries.entries.associate { (k, v) -> k to v.toMap().toMutableMap() }.toMutableMap(),
+                )
+            },
+            choreLists = state.choreLists.toMap(),
         )
     }
 }

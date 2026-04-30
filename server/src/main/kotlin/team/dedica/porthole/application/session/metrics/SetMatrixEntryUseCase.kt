@@ -7,6 +7,7 @@ import team.dedica.porthole.application.port.UserWritePort
 import team.dedica.porthole.domain.CollaboratorMatrixEntry
 import team.dedica.porthole.domain.MapState
 import team.dedica.porthole.domain.MatrixLevel
+import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class SetMatrixEntryUseCase(
@@ -22,7 +23,7 @@ class SetMatrixEntryUseCase(
         state.requireCollaborator(user.id)
         require(state.landmarks.containsKey(landmarkId)) { "Landmark $landmarkId not found" }
         require(state.collaborators.any { it.id == collaboratorId }) { "Collaborator $collaboratorId not found" }
-        val byLandmark = state.collaboratorMatrix.entries.getOrPut(landmarkId) { mutableMapOf() }
+        val byLandmark = state.collaboratorMatrix.entries.getOrPut(landmarkId) { ConcurrentHashMap() }
         byLandmark[collaboratorId] = CollaboratorMatrixEntry(level)
         mapStatePort.save(state)
         broadcastPort.send(mapId, state)
