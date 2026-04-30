@@ -672,5 +672,8 @@ class JsonMapStateRepositoryTest {
                 "flushAllDirtyMaps must write immediately regardless of debounce")
         }
     }
-}
 
+
+    // ── Chore Lists persistence ────────────────────────────────────────────────
+    // tests in ChoreListPersistenceTest.kt
+}

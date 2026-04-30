@@ -2,6 +2,7 @@ package team.dedica.porthole.adapter.`in`.web.dto
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import team.dedica.porthole.domain.ChoreEntryState
 
 data class ChangeLandmarkOwnerRequest(
     val ownerId: String?,  // null or blank → unset owner
@@ -149,6 +150,31 @@ data class EditProcessStageRequest(
 
 data class ReorderProcessStagesRequest(
     val stageIds: List<String>,
+)
+
+// ── Chore Lists ───────────────────────────────────────────────────────────────
+
+data class CreateChoreListRequest(
+    @field:NotBlank @field:Size(max = 200) val title: String,
+    val landmarkIds: List<String> = emptyList(),
+    @field:Size(max = 2000) val link: String? = null,
+)
+
+data class EditChoreListRequest(
+    @field:Size(max = 200) val title: String? = null,
+    val landmarkIds: List<String>? = null,
+    @field:Size(max = 2000) val link: String? = null,
+    val clearLink: Boolean = false,
+)
+
+data class UpdateChoreEntryRequest(
+    val state: ChoreEntryState? = null,
+    val assigneeId: String? = null,
+    val clearAssignee: Boolean = false,
+    val link: String? = null,
+    val clearLink: Boolean = false,
+    val note: String? = null,
+    val clearNote: Boolean = false,
 )
 
 

@@ -18,7 +18,7 @@ applyTo: '**/*.java, **/*.kt, **/*.ts, **/*.tsx'
 
 ## General Instructions
 
-- brief answers, no pleasantries, get to the point
+- be brief, no pleasantries
 - Make only high confidence suggestions when reviewing code changes.
 - Write code with good maintainability practices, including comments on why certain design decisions were made.
 - Handle edge cases and write clear exception handling.

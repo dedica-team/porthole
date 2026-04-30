@@ -22,6 +22,7 @@ data class MapStateBroadcastDto(
     val collaborationMode: CollaborationMode,
     val joinRequests: List<JoinRequest>,
     val collaboratorMatrix: CollaboratorMatrix,
+    val choreLists: Map<String, ChoreList>,
 ) {
     companion object {
         fun from(state: MapState) = MapStateBroadcastDto(
@@ -38,6 +39,7 @@ data class MapStateBroadcastDto(
             collaborationMode = state.collaborationMode,
             joinRequests = state.joinRequests,
             collaboratorMatrix = state.collaboratorMatrix,
+            choreLists = state.choreLists,
         )
     }
 }

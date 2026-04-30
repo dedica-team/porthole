@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
-import type { MapState } from '../types/map';
+import type { MapState, ChoreList } from '../types/map';
 import { useMapStore } from '../store/mapStore';
 
 function buildWsUrl(): string {
@@ -13,10 +13,11 @@ function buildWsUrl(): string {
 export function useMapWebSocket(mapId: string | undefined) {
   const clientRef   = useRef<Client | null>(null);
   const updateMap   = useMapStore((s) => s.updateMap);
-  // Keep a stable ref so the WebSocket effect never restarts due to a new
-  // function reference from Zustand.
+  const setChoreLists = useMapStore((s) => s.setChoreLists);
   const updateMapRef = useRef(updateMap);
+  const setChoreListsRef = useRef(setChoreLists);
   useEffect(() => { updateMapRef.current = updateMap; }, [updateMap]);
+  useEffect(() => { setChoreListsRef.current = setChoreLists; }, [setChoreLists]);
 
   useEffect(() => {
     if (!mapId) return;
@@ -28,8 +29,11 @@ export function useMapWebSocket(mapId: string | undefined) {
       onConnect: () => {
         client.subscribe(`/topic/map/${mapId}`, (message) => {
           try {
-            const mapState: MapState = JSON.parse(message.body);
-            updateMapRef.current(mapState);
+            const payload = JSON.parse(message.body) as MapState & { choreLists?: Record<string, ChoreList> };
+            if (payload.choreLists) {
+              setChoreListsRef.current(Object.values(payload.choreLists));
+            }
+            updateMapRef.current(payload);
           } catch {
             console.error('Failed to parse map update', message.body);
           }
@@ -47,6 +51,6 @@ export function useMapWebSocket(mapId: string | undefined) {
       client.deactivate();
       clientRef.current = null;
     };
-  }, [mapId]); // updateMap intentionally excluded – accessed via stable ref
+  }, [mapId]);
 }
 

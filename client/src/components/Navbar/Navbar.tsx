@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2 } from 'lucide-react';
+import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -367,23 +367,15 @@ export default function Navbar() {
               </Popover>
             )}
             {/* View switcher buttons */}
-            {(['metrics', 'matrix', 'idle'] as const).map((view) => {
-              const isActive =
-                view === 'idle'
-                  ? mainView !== 'metrics' && mainView !== 'matrix' && !processMode
-                  : mainView === view;
-              const icon =
-                view === 'idle' ? (
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-                  </svg>
-                ) : view === 'metrics' ? (
-                  <BarChart2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Bus className="h-3.5 w-3.5" />
-                );
-              const label = view === 'idle' ? 'Flight mode' : view === 'metrics' ? 'Quality Metrics' : 'Bus Matrix';
-              const tooltip = view === 'idle' ? 'A 10.000ft view' : view === 'metrics' ? 'Manage quality metrics and goals' : 'Who knows what';
+            {(['metrics', 'matrix'] as const).map((view) => {
+              const isActive = mainView === view;
+              const icon = view === 'metrics' ? (
+                <BarChart2 className="h-3.5 w-3.5" />
+              ) : (
+                <Bus className="h-3.5 w-3.5" />
+              );
+              const label = view === 'metrics' ? 'Quality Metrics' : 'Bus Matrix';
+              const tooltip = view === 'metrics' ? 'Manage quality metrics and goals' : 'Who knows what';
               return (
                 <Tooltip key={view}>
                   <TooltipTrigger asChild>
@@ -393,7 +385,7 @@ export default function Navbar() {
                           ? 'border-[hsl(185,100%,54%)] text-[hsl(185,100%,54%)]'
                           : 'border-transparent text-muted-foreground hover:text-foreground'
                       }`}
-                      onClick={() => !isActive && setMainView(view === 'idle' ? 'idle' : view)}
+                      onClick={() => !isActive && setMainView(view)}
                       aria-current={isActive ? 'page' : undefined}
                     >
                       {icon}
@@ -404,6 +396,44 @@ export default function Navbar() {
                 </Tooltip>
               );
             })}
+            {/* Chores nav entry */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
+                    mainView === 'chores'
+                      ? 'border-[hsl(185,100%,54%)] text-[hsl(185,100%,54%)]'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                  onClick={() => setMainView('chores')}
+                  aria-current={mainView === 'chores' ? 'page' : undefined}
+                >
+                  <CheckSquare className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Chores</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Chore todo lists per landmark</TooltipContent>
+            </Tooltip>
+            {/* Flight mode nav entry */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
+                    mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && !processMode
+                      ? 'border-[hsl(185,100%,54%)] text-[hsl(185,100%,54%)]'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                  onClick={() => setMainView('idle')}
+                  aria-current={mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && !processMode ? 'page' : undefined}
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+                  </svg>
+                  <span className="hidden sm:inline">Flight mode</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">A 10.000ft view</TooltipContent>
+            </Tooltip>
             {/* Processes nav entry */}
             <Tooltip>
               <TooltipTrigger asChild>

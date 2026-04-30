@@ -26,6 +26,7 @@ data class MapState(
     val joinRequests: MutableList<JoinRequest> = mutableListOf(),
     var collaboratorMatrix: CollaboratorMatrix = CollaboratorMatrix(),
     val processes: MutableMap<String, Process> = mutableMapOf(),
+    val choreLists: MutableMap<String, ChoreList> = mutableMapOf(),
 ) {
 
     fun getCollaborator(collaboratorId: String): Collaborator? = collaborators.find { it.id == collaboratorId }

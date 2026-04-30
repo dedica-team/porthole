@@ -1,4 +1,4 @@
-import type { AuthResponse, AuthSession, MapState, Terrain, LandmarkType, ConnectionType, QualityLevel, MetricTemplate, CollaborationMode, MatrixLevel, Process, StageConnectionDirection } from '../types/map';
+import type { AuthResponse, AuthSession, MapState, Terrain, LandmarkType, ConnectionType, QualityLevel, MetricTemplate, CollaborationMode, MatrixLevel, Process, StageConnectionDirection, ChoreList, ChoreEntryState } from '../types/map';
 
 const BASE_URL = '/api';
 
@@ -771,5 +771,76 @@ export async function removeCollaborator(mapId: string, collaboratorId: string):
     { method: 'DELETE', headers: authHeaders() },
   );
   return handleResponse<MapState>(res);
+}
+
+// ── Chore Lists ──────────────────────────────────────────────────────────────
+
+export async function fetchChoreLists(mapId: string): Promise<ChoreList[]> {
+  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists`, {
+    headers: authHeaders(),
+  });
+  return handleResponse<ChoreList[]>(res);
+}
+
+export async function createChoreList(mapId: string, title: string, landmarkIds: string[], link?: string): Promise<ChoreList[]> {
+  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ title, landmarkIds, link: link ?? null }),
+  });
+  return handleResponse<ChoreList[]>(res);
+}
+
+export async function editChoreList(mapId: string, listId: string, title?: string, landmarkIds?: string[], link?: string): Promise<ChoreList[]> {
+  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ title: title ?? null, landmarkIds: landmarkIds ?? null, link: link !== undefined ? link : null, clearLink: link === undefined }),
+  });
+  return handleResponse<ChoreList[]>(res);
+}
+
+export async function toggleChoreListCompleted(mapId: string, listId: string): Promise<ChoreList> {
+  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/complete`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+  });
+  return handleResponse<ChoreList>(res);
+}
+
+export async function deleteChoreList(mapId: string, listId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(body || `HTTP ${res.status}`);
+  }
+}
+
+export async function updateChoreEntry(
+  mapId: string,
+  listId: string,
+  landmarkId: string,
+  patch: { state?: ChoreEntryState; assigneeId?: string | null; clearAssignee?: boolean; link?: string | null; clearLink?: boolean; note?: string | null; clearNote?: boolean },
+): Promise<ChoreList> {
+  const res = await fetch(
+    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/entries/${encodeURIComponent(landmarkId)}`,
+    {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        state: patch.state ?? null,
+        assigneeId: patch.assigneeId ?? null,
+        clearAssignee: patch.clearAssignee ?? false,
+        link: patch.link ?? null,
+        clearLink: patch.clearLink ?? false,
+        note: patch.note ?? null,
+        clearNote: patch.clearNote ?? false,
+      }),
+    },
+  );
+  return handleResponse<ChoreList>(res);
 }
 

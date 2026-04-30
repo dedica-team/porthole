@@ -14,6 +14,7 @@ import MetricsView from '@/components/MetricsView/MetricsView';
 import CollaboratorMatrixView from '@/components/CollaboratorMatrixView/CollaboratorMatrixView';
 import RegularMapView from './RegularMapView';
 import ProcessMapView from './ProcessMapView';
+import ChoreListsView from '@/components/ChoreListsView/ChoreListsView';
 import { useMapPageActions } from './useMapPageActions';
 
 export default function MapPage() {
@@ -135,7 +136,7 @@ export default function MapPage() {
   );
 
   return (
-    <AppShell sidebar={mainView !== 'metrics' && mainView !== 'matrix' ? sidebar : undefined}>
+    <AppShell sidebar={mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' ? sidebar : undefined}>
       {mainView === 'metrics' ? (
         <MetricsView
           onCreateMetric={actions.handleCreateMetric}
@@ -163,6 +164,8 @@ export default function MapPage() {
           error={actions.error}
           onClearError={() => actions.setError('')}
         />
+      ) : mainView === 'chores' ? (
+        <ChoreListsView />
       ) : processMode ? (
         <ProcessMapView actions={actions} />
       ) : (

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MapState, HexTile, Terrain, Landmark, ConnectionType, Process } from '../types/map';
+import type { MapState, HexTile, Terrain, Landmark, ConnectionType, Process, ChoreList } from '../types/map';
 
 
 interface AuthState {
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSessionLoading: (loading) => set({ sessionLoading: loading }),
 }));
 
-export type MainView = 'idle' | 'tile' | 'landmark' | 'editor' | 'groups' | 'metrics' | 'matrix' | 'process';
+export type MainView = 'idle' | 'tile' | 'landmark' | 'editor' | 'groups' | 'metrics' | 'matrix' | 'process' | 'chores';
 
 interface MapStore {
   maps: MapState[];
@@ -104,6 +104,17 @@ interface MapStore {
   setProcessesFetched: (fetched: boolean) => void;
   setProcessesLoading: (loading: boolean) => void;
   setProcessesError: (error: string | null) => void;
+  // ── Chore Lists ───────────────────────────────────────────────────────────
+  choreLists: ChoreList[];
+  choreListsFetched: boolean;
+  choreListsLoading: boolean;
+  choreListsError: string | null;
+  activeChoreListId: string | null;
+  setChoreLists: (lists: ChoreList[]) => void;
+  setChoreListsFetched: (v: boolean) => void;
+  setChoreListsLoading: (v: boolean) => void;
+  setChoreListsError: (e: string | null) => void;
+  setActiveChoreListId: (id: string | null) => void;
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -129,6 +140,11 @@ export const useMapStore = create<MapStore>((set) => ({
   processesFetched: false,
   processesLoading: false,
   processesError: null,
+  choreLists: [],
+  choreListsFetched: false,
+  choreListsLoading: false,
+  choreListsError: null,
+  activeChoreListId: null,
   setMaps: (maps) => set({ maps }),
   setCurrentMap: (map) => set((state) => ({
     currentMap: map,
@@ -144,6 +160,9 @@ export const useMapStore = create<MapStore>((set) => ({
     activeProcessId: null,
     activeStageId: null,
     pickingConnection: false,
+    choreListsFetched: false,
+    choreLists: [],
+    activeChoreListId: null,
   })),
   updateMap: (map) =>
     set((state) => {
@@ -245,6 +264,11 @@ export const useMapStore = create<MapStore>((set) => ({
   setProcessesFetched: (fetched) => set({ processesFetched: fetched }),
   setProcessesLoading: (loading) => set({ processesLoading: loading }),
   setProcessesError: (error) => set({ processesError: error }),
+  setChoreLists: (lists) => set({ choreLists: lists }),
+  setChoreListsFetched: (v) => set({ choreListsFetched: v }),
+  setChoreListsLoading: (v) => set({ choreListsLoading: v }),
+  setChoreListsError: (e) => set({ choreListsError: e }),
+  setActiveChoreListId: (id) => set({ activeChoreListId: id }),
 }));
 
 
