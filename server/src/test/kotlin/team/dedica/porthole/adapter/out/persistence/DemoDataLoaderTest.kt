@@ -14,6 +14,8 @@ import team.dedica.porthole.application.session.metrics.*
 import team.dedica.porthole.application.session.processes.AddProcessStageUseCase
 import team.dedica.porthole.application.session.processes.AddStageConnectionUseCase
 import team.dedica.porthole.application.session.processes.CreateProcessUseCase
+import team.dedica.porthole.application.session.chorelists.CreateChoreListUseCase
+import team.dedica.porthole.application.session.chorelists.UpdateChoreEntryUseCase
 import team.dedica.porthole.adapter.out.persistence.DemoDataLoader.Companion.DEMO_MAP_ID
 
 /**
@@ -43,6 +45,8 @@ class DemoDataLoaderTest {
         createProcessUseCase    = CreateProcessUseCase(mapPort, userPort),
         addProcessStageUseCase  = AddProcessStageUseCase(mapPort, userPort),
         addStageConnectionUseCase = AddStageConnectionUseCase(mapPort, userPort),
+        createChoreListUseCase  = CreateChoreListUseCase(mapPort, userPort, broadcast),
+        updateChoreEntryUseCase = UpdateChoreEntryUseCase(mapPort, userPort, broadcast),
     )
 
     @Test
@@ -186,6 +190,33 @@ class DemoDataLoaderTest {
         val missing = landmarkIds - matrixIds
         assertTrue(missing.isEmpty(),
             "Matrix is missing entries for landmarks: ${missing.map { map.landmarks[it]?.name }}")
+    }
+
+    @Test
+    fun `map has 3 chore lists`() {
+        loader.run(DefaultApplicationArguments())
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+        assertEquals(3, map.choreLists.size, "Expected 3 chore lists")
+    }
+
+    @Test
+    fun `monthly audit chore list covers all 15 landmarks`() {
+        loader.run(DefaultApplicationArguments())
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+        val audit = map.choreLists.values.first { it.title == "Monthly Infection-Control Audit" }
+        assertEquals(15, audit.entries.size, "Audit list must have an entry for each of the 15 landmarks")
+    }
+
+    @Test
+    fun `chore list entries reference valid landmark ids`() {
+        loader.run(DefaultApplicationArguments())
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+        map.choreLists.values.forEach { list ->
+            list.entries.keys.forEach { landmarkId ->
+                assertNotNull(map.landmarks[landmarkId],
+                    "Chore list '${list.title}' has entry for unknown landmark '$landmarkId'")
+            }
+        }
     }
 
     @Test

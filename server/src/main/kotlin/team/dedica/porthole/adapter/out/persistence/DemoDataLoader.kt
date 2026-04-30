@@ -16,6 +16,8 @@ import team.dedica.porthole.application.session.metrics.CreateGroupUseCase
 import team.dedica.porthole.application.session.metrics.CreateMetricUseCase
 import team.dedica.porthole.application.session.metrics.SetLandmarkMetricUseCase
 import team.dedica.porthole.application.session.metrics.SetMatrixEntryUseCase
+import team.dedica.porthole.application.session.chorelists.CreateChoreListUseCase
+import team.dedica.porthole.application.session.chorelists.UpdateChoreEntryUseCase
 import team.dedica.porthole.application.session.processes.AddProcessStageUseCase
 import team.dedica.porthole.application.session.processes.AddStageConnectionUseCase
 import team.dedica.porthole.application.session.processes.CreateProcessUseCase
@@ -62,6 +64,8 @@ class DemoDataLoader(
     private val createProcessUseCase: CreateProcessUseCase,
     private val addProcessStageUseCase: AddProcessStageUseCase,
     private val addStageConnectionUseCase: AddStageConnectionUseCase,
+    private val createChoreListUseCase: CreateChoreListUseCase,
+    private val updateChoreEntryUseCase: UpdateChoreEntryUseCase,
 ) : ApplicationRunner {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -119,6 +123,7 @@ class DemoDataLoader(
         createConnections()
         createProcesses()
         populateMatrix()
+        createChoreLists()
         log.info("Pet clinic demo landscape loaded successfully")
     }
 
@@ -383,6 +388,81 @@ class DemoDataLoader(
                     setMatrixEntryUseCase.execute(DEMO_MAP_ID, UN_PETRA, row.id, uid, lvl)
                 }
         }
+    }
+
+    // ── Chore Lists ───────────────────────────────────────────────────────────
+
+    private fun createChoreLists() {
+        val allLandmarks = listOf(
+            "parking-area", "main-entrance", "reception", "waiting-room",
+            "examination-room-1", "examination-room-2", "surgery-suite",
+            "intensive-care-unit", "diagnostic-laboratory", "x-ray-room",
+            "pharmacy", "medical-supply-storage", "kennel", "grooming-station",
+            "administration-office",
+        )
+        val clinicalLandmarks = listOf(
+            "examination-room-1", "examination-room-2", "surgery-suite", "intensive-care-unit",
+        )
+        val facilityLandmarks = listOf(
+            "reception", "waiting-room", "kennel", "grooming-station",
+            "parking-area", "main-entrance", "administration-office",
+        )
+
+        // 1. Monthly infection-control audit – covers all rooms
+        val auditListId = createChoreListUseCase.execute(
+            DEMO_MAP_ID, "Monthly Infection-Control Audit", allLandmarks, null, UN_PETRA,
+        ).first { it.title == "Monthly Infection-Control Audit" }.id
+
+        fun updateEntry(listId: String, landmarkId: String,
+                        state: ChoreEntryState,
+                        assigneeId: String? = null, note: String? = null) =
+            updateChoreEntryUseCase.execute(
+                mapId = DEMO_MAP_ID, listId = listId, landmarkId = landmarkId,
+                state = state, assigneeId = assigneeId,
+                clearAssignee = false, link = null, clearLink = false,
+                note = note, clearNote = false, username = UN_PETRA,
+            )
+
+        val DONE    = ChoreEntryState.DONE
+        val ONGOING = ChoreEntryState.ONGOING
+        val BLOCKED = ChoreEntryState.BLOCKED
+
+        updateEntry(auditListId, "surgery-suite",          DONE,    USER_DR_SARAH,    "Sterility protocols verified – all clear.")
+        updateEntry(auditListId, "intensive-care-unit",    DONE,    USER_DR_JAMES,    "Equipment sterilisation log reviewed.")
+        updateEntry(auditListId, "examination-room-1",     DONE,    USER_DR_SARAH)
+        updateEntry(auditListId, "examination-room-2",     ONGOING, USER_DR_JAMES,    "Awaiting replacement of UV lamp.")
+        updateEntry(auditListId, "diagnostic-laboratory",  DONE,    USER_TECH_MARC)
+        updateEntry(auditListId, "x-ray-room",             DONE,    USER_TECH_MARC)
+        updateEntry(auditListId, "pharmacy",               DONE,    USER_NURSE_ANNA)
+        updateEntry(auditListId, "medical-supply-storage", ONGOING, USER_NURSE_ANNA,  "Cold-chain thermometer calibration pending.")
+        updateEntry(auditListId, "reception",              DONE,    USER_ADMIN_PETRA)
+        updateEntry(auditListId, "waiting-room",           DONE,    USER_ADMIN_PETRA)
+        updateEntry(auditListId, "kennel",                 BLOCKED, USER_NURSE_ANNA,  "Blocked: deep-clean vendor rescheduled to next week.")
+        updateEntry(auditListId, "grooming-station",       DONE,    USER_NURSE_ANNA)
+        updateEntry(auditListId, "main-entrance",          DONE,    USER_ADMIN_PETRA)
+        updateEntry(auditListId, "parking-area",           DONE)
+        updateEntry(auditListId, "administration-office",  DONE,    USER_ADMIN_PETRA)
+
+        // 2. Q2 Equipment inspection – clinical + support rooms
+        val equipListId = createChoreListUseCase.execute(
+            DEMO_MAP_ID, "Q2 Equipment Inspection",
+            clinicalLandmarks + listOf("diagnostic-laboratory", "x-ray-room", "pharmacy", "medical-supply-storage"),
+            "https://wiki.petclinic.demo/equipment-inspection", UN_MARC,
+        ).first { it.title == "Q2 Equipment Inspection" }.id
+
+        updateEntry(equipListId, "examination-room-1",    DONE,    USER_DR_SARAH,   "Otoscope and scale calibrated.")
+        updateEntry(equipListId, "examination-room-2",    BLOCKED, USER_DR_JAMES,   "ECG monitor out of service – ticket #4821 raised.")
+        updateEntry(equipListId, "surgery-suite",         DONE,    USER_DR_SARAH,   "Anaesthesia machine serviced by vendor.")
+        updateEntry(equipListId, "intensive-care-unit",   ONGOING, USER_DR_JAMES,   "Ventilator firmware update scheduled.")
+        updateEntry(equipListId, "diagnostic-laboratory", DONE,    USER_TECH_MARC,  "Centrifuge and analyser both passed.")
+        updateEntry(equipListId, "x-ray-room",            DONE,    USER_TECH_MARC,  "Detector panel alignment verified.")
+        updateEntry(equipListId, "pharmacy",              DONE,    USER_NURSE_ANNA)
+        updateEntry(equipListId, "medical-supply-storage",ONGOING, USER_NURSE_ANNA, "Freezer unit showing temperature drift – monitoring.")
+
+        // 3. Client-area readiness – facility rooms only
+        createChoreListUseCase.execute(
+            DEMO_MAP_ID, "Client Area Readiness Check", facilityLandmarks, null, UN_PETRA,
+        )
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────────
