@@ -45,7 +45,7 @@ export interface AuthFeatures {
 }
 
 export async function getAuthFeatures(): Promise<AuthFeatures> {
-  const res = await fetch(`${BASE_URL}/auth/features`);
+  const res = await fetch(`${BASE_URL}/auth/config`);
   return handleResponse<AuthFeatures>(res);
 }
 

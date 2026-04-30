@@ -42,9 +42,6 @@ class OAuthController(
     @GetMapping("/config")
     fun config(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled, props.tagline)
 
-    @GetMapping("/features")
-    fun features(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled, props.tagline)
-
     @PostMapping("/github/start")
     fun githubStart(): ResponseEntity<OAuthStartResponse> {
         val state = gitHubOAuthStateService.issueState()
