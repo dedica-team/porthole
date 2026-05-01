@@ -7,17 +7,18 @@ import team.dedica.porthole.domain.ChoreList
 import team.dedica.porthole.domain.CollaboratorMatrix
 import team.dedica.porthole.domain.MapState
 import team.dedica.porthole.domain.QualityMetric
+import java.util.UUID
 
 @Component
 class MapStateBroadcaster(private val messaging: SimpMessagingTemplate) : BroadcastPort {
 
     @Async
-    override fun send(mapId: String, state: MapState) {
+    override fun send(mapId: UUID, state: MapState) {
         messaging.convertAndSend("/topic/map/$mapId", MapStateBroadcastDto.from(state))
     }
 
     @Async
-    override fun sendMatrix(mapId: String, matrix: CollaboratorMatrix) {
+    override fun sendMatrix(mapId: UUID, matrix: CollaboratorMatrix) {
         val snapshot = CollaboratorMatrix(
             name = matrix.name,
             entries = matrix.entries.entries.associate { (k, v) -> k to v.toMap().toMutableMap() }.toMutableMap(),
@@ -26,12 +27,12 @@ class MapStateBroadcaster(private val messaging: SimpMessagingTemplate) : Broadc
     }
 
     @Async
-    override fun sendMetrics(mapId: String, metrics: Map<String, QualityMetric>) {
+    override fun sendMetrics(mapId: UUID, metrics: Map<UUID, QualityMetric>) {
         messaging.convertAndSend("/topic/map/$mapId/metrics", metrics.toMap())
     }
 
     @Async
-    override fun sendChoreLists(mapId: String, choreLists: Map<String, ChoreList>) {
+    override fun sendChoreLists(mapId: UUID, choreLists: Map<UUID, ChoreList>) {
         messaging.convertAndSend("/topic/map/$mapId/chore-lists", choreLists.toMap())
     }
 }

@@ -1,4 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -9,13 +10,13 @@ import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
 import java.time.Instant
 
 class WebAuthnControllerTest {
 
-    private val userRepository = mock<UserWritePort>()
+    private val userRepository = mock<UserPort>()
     private val jwtTokenProvider = mock<JwtTokenProvider>()
     private val props = PortholeAuthPropertiesTestFactory.withWebAuthn()
     private val authCookieService = AuthCookieService(props)
@@ -45,7 +46,7 @@ class WebAuthnControllerTest {
     @Test
     fun `register start returns 400 when username already taken`() {
         whenever(userRepository.findByUsername("alice"))
-            .thenReturn(UserRecord(id = "u1", username = "alice"))
+            .thenReturn(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
         val response = controller.registerStart(RegisterStartRequest("alice"))
         assertEquals(400, response.statusCode.value())
     }
@@ -124,7 +125,7 @@ class WebAuthnControllerTest {
     fun `auth start returns empty allowCredentials for known user with passkey to avoid enumeration`() {
         val cred = PasskeyCredential("cred-id-abc", "pk-cose", 0L, Instant.now().toString())
         whenever(userRepository.findByUsername("alice"))
-            .thenReturn(UserRecord(id = "u1", username = "alice", passkeyCredential = cred))
+            .thenReturn(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", passkeyCredential = cred))
         val response = controller.authStart(AuthStartRequest(username = "alice"))
         assertEquals(200, response.statusCode.value())
         assertTrue(response.body!!.allowCredentials.isEmpty())
@@ -133,7 +134,7 @@ class WebAuthnControllerTest {
     @Test
     fun `auth start returns empty allowCredentials for user without passkey`() {
         whenever(userRepository.findByUsername("nokey"))
-            .thenReturn(UserRecord(id = "u2", username = "nokey"))
+            .thenReturn(UserRecord(id = UUID.nameUUIDFromBytes("u2".toByteArray()), username = "nokey"))
         val response = controller.authStart(AuthStartRequest(username = "nokey"))
         assertEquals(200, response.statusCode.value())
         assertTrue(response.body!!.allowCredentials.isEmpty())
@@ -166,13 +167,13 @@ class WebAuthnControllerTest {
 
     @Test
     fun `UserRecord has null githubId by default`() {
-        val user = UserRecord(id = "u1", username = "passkey-only")
+        val user = UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "passkey-only")
         assertNull(user.githubId)
     }
 
     @Test
     fun `UserRecord has null passkeyCredential by default`() {
-        val user = UserRecord(id = "u1", username = "alice", githubId = "gh-1")
+        val user = UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", githubId = "gh-1")
         assertNull(user.passkeyCredential)
     }
 

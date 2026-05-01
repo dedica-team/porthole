@@ -41,30 +41,9 @@ class HexMapTest {
     }
 
     @Test
-    fun `setOwner assigns ownership to tile`() {
-        map.setOwner(HexCoordinate(0, 0), "p1")
-        assertEquals("p1", map.getTile(HexCoordinate(0, 0))?.ownerId)
-    }
-
-    @Test
-    fun `setOwner with null clears ownership`() {
-        map.setOwner(HexCoordinate(0, 0), "p1")
-        map.setOwner(HexCoordinate(0, 0), null)
-        assertNull(map.getTile(HexCoordinate(0, 0))?.ownerId)
-    }
-
-    @Test
-    fun `setOwner on non-existing coordinate does nothing`() {
-        assertDoesNotThrow { map.setOwner(HexCoordinate(99, 99), "p1") }
-    }
-
-    @Test
-    fun `getTilesOwnedBy returns only tiles owned by that collaborator`() {
-        map.setOwner(HexCoordinate(0, 0), "p1")
-        map.setOwner(HexCoordinate(1, 0), "p1")
-        map.setOwner(HexCoordinate(0, 1), "p2")
-        assertEquals(2, map.getTilesOwnedBy("p1").size)
-        assertEquals(1, map.getTilesOwnedBy("p2").size)
+    fun `tiles have no owner by default`() {
+        // HexTile no longer has ownerId – tiles are not directly owned.
+        assertNotNull(map.getTile(HexCoordinate(0, 0)))
     }
 
 

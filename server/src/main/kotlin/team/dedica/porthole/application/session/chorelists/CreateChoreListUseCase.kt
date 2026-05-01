@@ -3,17 +3,18 @@ package team.dedica.porthole.application.session.chorelists
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.ChoreEntry
 import team.dedica.porthole.domain.ChoreList
+import java.util.UUID
 
 @Component
 class CreateChoreListUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
-    fun execute(mapId: String, title: String, landmarkIds: List<String>, link: String?, username: String): List<ChoreList> {
+    fun execute(mapId: UUID, title: String, landmarkIds: List<UUID>, link: String?, username: String): List<ChoreList> {
         val state = mapStatePort.findById(mapId)
             ?: throw NoSuchElementException("Map $mapId not found")
         val user = userPort.findByUsername(username)

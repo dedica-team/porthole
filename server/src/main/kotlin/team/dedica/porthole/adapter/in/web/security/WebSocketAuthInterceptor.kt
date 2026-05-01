@@ -10,7 +10,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
+import java.util.UUID
 
 /**
  * Validates WebSocket auth for STOMP CONNECT frames.
@@ -20,7 +21,7 @@ import team.dedica.porthole.application.port.UserWritePort
 @Component
 class WebSocketAuthInterceptor(
     private val jwtTokenProvider: JwtTokenProvider,
-    private val userRepository: UserWritePort,
+    private val userRepository: UserPort,
 ) : ChannelInterceptor {
 
     override fun preSend(message: Message<*>, channel: MessageChannel): Message<*> {
@@ -28,10 +29,14 @@ class WebSocketAuthInterceptor(
             ?: return message
 
         if (accessor.command == StompCommand.CONNECT) {
-            val sessionUserId = accessor.sessionAttributes?.get(WebSocketHandshakeAuthInterceptor.USER_ID_ATTR) as? String
-            val sessionUsername = accessor.sessionAttributes?.get(WebSocketHandshakeAuthInterceptor.USERNAME_ATTR) as? String
+            val sessionUserId =
+                accessor.sessionAttributes?.get(WebSocketHandshakeAuthInterceptor.USER_ID_ATTR) as? String
+            val sessionUsername =
+                accessor.sessionAttributes?.get(WebSocketHandshakeAuthInterceptor.USERNAME_ATTR) as? String
             if (!sessionUserId.isNullOrBlank() && !sessionUsername.isNullOrBlank()) {
-                val userRecord = userRepository.findById(sessionUserId)
+                val uuid =
+                    runCatching { UUID.fromString(sessionUserId) }.getOrElse { throw SecurityException("Unauthorized WebSocket connection: invalid userId") }
+                val userRecord = userRepository.findById(uuid)
                     ?: throw SecurityException("Unauthorized WebSocket connection: unknown user")
                 val authorities = listOf(SimpleGrantedAuthority("ROLE_USER"))
                 val principal = User(userRecord.username, "", authorities)
@@ -60,4 +65,3 @@ class WebSocketAuthInterceptor(
         return message
     }
 }
-

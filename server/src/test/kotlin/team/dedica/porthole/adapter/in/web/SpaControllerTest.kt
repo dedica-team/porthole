@@ -17,7 +17,7 @@ import team.dedica.porthole.adapter.`in`.web.security.JwtAuthenticationFilter
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.adapter.`in`.web.security.KeycloakClientRegistrationConfig
 import team.dedica.porthole.adapter.`in`.web.security.SecurityConfig
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthProperties
 
 @WebMvcTest(SpaController::class)
@@ -35,7 +35,7 @@ class SpaControllerTest {
     lateinit var mockMvc: MockMvc
 
     @MockitoBean
-    lateinit var userWritePort: UserWritePort
+    lateinit var userPort: UserPort
 
     @Test
     fun `root path forwards to index html`() {

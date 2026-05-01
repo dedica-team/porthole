@@ -1,5 +1,7 @@
 package team.dedica.porthole.domain
 
+import java.util.UUID
+
 /**
  * A map-wide quality metric definition.
  *
@@ -8,8 +10,7 @@ package team.dedica.porthole.domain
  * @param description what this metric measures
  */
 data class QualityMetric(
-    val id: String,
+    val id: UUID,
     val name: String,
     val description: String,
 )
-

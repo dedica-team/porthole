@@ -26,9 +26,10 @@ class ChoreListPersistenceTest {
     private fun baseState(): MapState {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
         val state = MapState(map = map)
+        val landmarkId = UUID.randomUUID()
         val landmark = Landmark(
-            id = UUID.randomUUID().toString(),
-            name = "Reception", ownerId = "p1",
+            id = landmarkId,
+            name = "Reception", ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
             coordinate = HexCoordinate(0, 0), type = LandmarkType.KEEP,
         )
         state.landmarks[landmark.id] = landmark
@@ -45,12 +46,12 @@ class ChoreListPersistenceTest {
     @Test
     fun `saves and reloads chore list with all entry fields`() {
         val state = baseState()
-        val landmarkId = state.landmarks.keys.first()
+        val landmarkUuid = state.landmarks.values.first().id
         val list = ChoreList(title = "Audit")
-        list.entries[landmarkId] = ChoreEntry(
-            landmarkId = landmarkId,
+        list.entries[landmarkUuid] = ChoreEntry(
+            landmarkId = landmarkUuid,
             state = ChoreEntryState.ONGOING,
-            assigneeId = "u1",
+            assigneeId = UUID.nameUUIDFromBytes("u1".toByteArray()),
             link = "https://wiki.example",
             note = "Check fridges",
         )
@@ -59,9 +60,9 @@ class ChoreListPersistenceTest {
         val reloadedList = reloaded.choreLists[list.id]!!
         assertEquals("Audit", reloadedList.title)
         assertFalse(reloadedList.completed)
-        val entry = reloadedList.entries[landmarkId]!!
+        val entry = reloadedList.entries[landmarkUuid]!!
         assertEquals(ChoreEntryState.ONGOING, entry.state)
-        assertEquals("u1", entry.assigneeId)
+        assertEquals(UUID.nameUUIDFromBytes("u1".toByteArray()), entry.assigneeId)
         assertEquals("https://wiki.example", entry.link)
         assertEquals("Check fridges", entry.note)
     }

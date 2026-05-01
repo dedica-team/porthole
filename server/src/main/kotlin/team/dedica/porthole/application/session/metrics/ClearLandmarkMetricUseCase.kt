@@ -3,16 +3,17 @@ package team.dedica.porthole.application.session.metrics
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.MapState
+import java.util.UUID
 
 @Component
 class ClearLandmarkMetricUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
-    fun execute(mapId: String, landmarkId: String, metricId: String, username: String? = null): MapState {
+    fun execute(mapId: UUID, landmarkId: UUID, metricId: UUID, username: String? = null): MapState {
         val state = mapStatePort.findById(mapId)
             ?: throw NoSuchElementException("Map $mapId not found")
         if (username != null) {

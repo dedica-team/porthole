@@ -3,10 +3,11 @@ package team.dedica.porthole.application.session.landscaping
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.ConnectionRecalculator
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.MapState
+import java.util.UUID
 
 /**
  * Assigns (or reassigns) a map position to an existing landmark.
@@ -20,14 +21,14 @@ import team.dedica.porthole.domain.MapState
 @Component
 class PositionLandmarkUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
 
     fun execute(
-        mapId: String,
+        mapId: UUID,
         username: String,
-        landmarkId: String,
+        landmarkId: UUID,
         coordinate: HexCoordinate,
     ): MapState {
         val state = mapStatePort.findById(mapId)
@@ -44,14 +45,6 @@ class PositionLandmarkUseCase(
         val occupant = state.getLandmarkAt(coordinate)
         require(occupant == null || occupant.id == landmarkId) { "A landmark already exists at $coordinate" }
 
-        // If the landmark was already positioned, free the old tile's ownership.
-        landmark.coordinate?.let { oldCoord ->
-            if (oldCoord != coordinate) {
-                state.map.setOwner(oldCoord, null)
-            }
-        }
-
-        state.map.setOwner(coordinate, user.id)
         state.landmarks[landmarkId] = landmark.copy(coordinate = coordinate)
 
         // 1. Recalculate connections whose endpoint is this landmark (its position changed).
@@ -65,4 +58,3 @@ class PositionLandmarkUseCase(
         return state
     }
 }
-

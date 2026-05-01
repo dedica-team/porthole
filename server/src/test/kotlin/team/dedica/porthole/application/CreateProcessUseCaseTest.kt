@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -18,9 +19,9 @@ class CreateProcessUseCaseTest {
     fun setup() {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 1 })
         state = MapState(map = map)
-        state.collaborators.add(Collaborator(id = "p1", username = "Alice"))
+        state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice"))
         mapStatePort = InMemoryMapStatePort().also { it.save(state) }
-        userPort = InMemoryTestUserRepository().also { it.save(UserRecord("p1", "Alice", "gh-1")) }
+        userPort = InMemoryTestUserRepository().also { it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1")) }
         useCase = CreateProcessUseCase(mapStatePort, userPort)
     }
 
@@ -53,7 +54,7 @@ class CreateProcessUseCaseTest {
 
     @Test
     fun `non-collaborator throws IllegalArgumentException`() {
-        userPort.save(UserRecord("p2", "Bob", "gh-2"))
+        userPort.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
         // Bob is not a collaborator on state
         assertThrows(IllegalArgumentException::class.java) {
             useCase.execute(state.id, "Spy Flow", null, "Bob")
@@ -63,7 +64,7 @@ class CreateProcessUseCaseTest {
     @Test
     fun `unknown map throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute("no-map", "Flow", null, "Alice")
+            useCase.execute(UUID.randomUUID(), "Flow", null, "Alice")
         }
     }
 

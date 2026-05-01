@@ -1,5 +1,6 @@
 package team.dedica.porthole.application
 
+import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -14,17 +15,17 @@ class EditMetricUseCaseTest {
     private lateinit var mapStatePort: InMemoryMapStatePort
     private lateinit var userPort: InMemoryTestUserRepository
     private lateinit var useCase: EditMetricUseCase
-    private lateinit var metricId: String
+    private lateinit var metricId: UUID
 
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 })
         state = MapState(map = map)
-        state.collaborators.add(Collaborator(id = "p1", username = "Alice"))
+        state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice"))
         mapStatePort = InMemoryMapStatePort()
         mapStatePort.save(state)
         userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p1", "Alice", "gh-1"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
         }
         val createUC = CreateMetricUseCase(mapStatePort, userPort, NoOpBroadcastPort())
         val result = createUC.execute(state.id, "Alice", "Availability", "Uptime percentage")
@@ -71,14 +72,14 @@ class EditMetricUseCaseTest {
     @Test
     fun `unknown metric id fails`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, "Alice", "no-such-metric", "name", "desc")
+            useCase.execute(state.id, "Alice", UUID.randomUUID(), "name", "desc")
         }
     }
 
     @Test
     fun `unknown map id fails`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute("no-such-map", "Alice", metricId, "name", null)
+            useCase.execute(UUID.randomUUID(), "Alice", metricId, "name", null)
         }
     }
 }

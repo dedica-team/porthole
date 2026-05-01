@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.application.session.chorelists.*
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/maps/{id}/chore-lists")
@@ -24,7 +25,7 @@ class ChoreListController(
         @PathVariable id: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(listChoreListsUseCase.execute(id, user.username))
+        ResponseEntity.ok(listChoreListsUseCase.execute(UUID.fromString(id), user.username))
 
     @PostMapping
     fun createChoreList(
@@ -32,7 +33,15 @@ class ChoreListController(
         @Valid @RequestBody request: CreateChoreListRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(createChoreListUseCase.execute(id, request.title, request.landmarkIds, request.link, user.username))
+        ResponseEntity.ok(
+            createChoreListUseCase.execute(
+                UUID.fromString(id),
+                request.title,
+                request.landmarkIds.map { UUID.fromString(it) },
+                request.link,
+                user.username
+            )
+        )
 
     @PatchMapping("/{listId}")
     fun editChoreList(
@@ -41,7 +50,17 @@ class ChoreListController(
         @Valid @RequestBody request: EditChoreListRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(editChoreListUseCase.execute(id, listId, request.title, request.landmarkIds, request.link, request.clearLink, user.username))
+        ResponseEntity.ok(
+            editChoreListUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(listId),
+                request.title,
+                request.landmarkIds?.map { UUID.fromString(it) },
+                request.link,
+                request.clearLink,
+                user.username
+            )
+        )
 
     @PatchMapping("/{listId}/complete")
     fun toggleComplete(
@@ -49,7 +68,13 @@ class ChoreListController(
         @PathVariable listId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(toggleChoreListCompletedUseCase.execute(id, listId, user.username))
+        ResponseEntity.ok(
+            toggleChoreListCompletedUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(listId),
+                user.username
+            )
+        )
 
     @DeleteMapping("/{listId}")
     fun deleteChoreList(
@@ -57,7 +82,7 @@ class ChoreListController(
         @PathVariable listId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Void> {
-        removeChoreListUseCase.execute(id, listId, user.username)
+        removeChoreListUseCase.execute(UUID.fromString(id), UUID.fromString(listId), user.username)
         return ResponseEntity.noContent().build()
     }
 
@@ -71,9 +96,9 @@ class ChoreListController(
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             updateChoreEntryUseCase.execute(
-                mapId = id,
-                listId = listId,
-                landmarkId = landmarkId,
+                mapId = UUID.fromString(id),
+                listId = UUID.fromString(listId),
+                landmarkId = UUID.fromString(landmarkId),
                 state = request.state,
                 assigneeId = request.assigneeId,
                 clearAssignee = request.clearAssignee,
@@ -85,4 +110,3 @@ class ChoreListController(
             )
         )
 }
-

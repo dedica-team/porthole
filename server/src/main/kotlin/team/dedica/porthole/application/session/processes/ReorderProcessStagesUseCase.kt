@@ -2,19 +2,20 @@ package team.dedica.porthole.application.session.processes
 
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Process
+import java.util.UUID
 
 @Component
 class ReorderProcessStagesUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
 ) {
     /**
      * Accepts an ordered list of stage IDs and reassigns their `order` field
      * to match the position in the list (0-based).
      */
-    fun execute(mapId: String, processId: String, stageIds: List<String>, username: String): List<Process> {
+    fun execute(mapId: UUID, processId: UUID, stageIds: List<UUID>, username: String): List<Process> {
         val state = mapStatePort.findById(mapId)
             ?: throw NoSuchElementException("Map $mapId not found")
         val user = userPort.findByUsername(username)

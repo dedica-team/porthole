@@ -80,7 +80,7 @@ Add endpoint:
 Add function:
 ```typescript
 export async function createUnpositionedLandmark(
-  mapId: string,
+  mapId: UUID,
   name: string,
   type: LandmarkType,
   description?: string,

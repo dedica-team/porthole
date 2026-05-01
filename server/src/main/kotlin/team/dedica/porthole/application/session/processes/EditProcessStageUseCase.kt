@@ -2,18 +2,19 @@ package team.dedica.porthole.application.session.processes
 
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Process
+import java.util.UUID
 
 @Component
 class EditProcessStageUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
 ) {
     fun execute(
-        mapId: String,
-        processId: String,
-        stageId: String,
+        mapId: UUID,
+        processId: UUID,
+        stageId: UUID,
         name: String?,
         clearName: Boolean,
         order: Int?,

@@ -8,12 +8,13 @@ import org.springframework.http.server.ServletServerHttpRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.server.HandshakeInterceptor
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
+import java.util.UUID
 
 @Component
 class WebSocketHandshakeAuthInterceptor(
     private val jwtTokenProvider: JwtTokenProvider,
-    private val userRepository: UserWritePort,
+    private val userRepository: UserPort,
     private val authCookieService: AuthCookieService,
 ) : HandshakeInterceptor {
 
@@ -28,7 +29,7 @@ class WebSocketHandshakeAuthInterceptor(
         val claims = runCatching { jwtTokenProvider.getTokenClaims(token) }.getOrNull() ?: return unauthorized(response)
         val userRecord = userRepository.findById(claims.userId) ?: return unauthorized(response)
 
-        attributes[USER_ID_ATTR] = userRecord.id
+        attributes[USER_ID_ATTR] = userRecord.id.toString()
         attributes[USERNAME_ATTR] = userRecord.username
         return true
     }
@@ -58,4 +59,3 @@ class WebSocketHandshakeAuthInterceptor(
         const val USERNAME_ATTR = "porthole.auth.username"
     }
 }
-

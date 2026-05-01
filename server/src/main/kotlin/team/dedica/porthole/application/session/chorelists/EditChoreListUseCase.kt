@@ -3,17 +3,26 @@ package team.dedica.porthole.application.session.chorelists
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.ChoreEntry
 import team.dedica.porthole.domain.ChoreList
+import java.util.UUID
 
 @Component
 class EditChoreListUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
-    fun execute(mapId: String, listId: String, title: String?, landmarkIds: List<String>?, link: String?, clearLink: Boolean, username: String): List<ChoreList> {
+    fun execute(
+        mapId: UUID,
+        listId: UUID,
+        title: String?,
+        landmarkIds: List<UUID>?,
+        link: String?,
+        clearLink: Boolean,
+        username: String
+    ): List<ChoreList> {
         val state = mapStatePort.findById(mapId)
             ?: throw NoSuchElementException("Map $mapId not found")
         val user = userPort.findByUsername(username)
@@ -31,8 +40,9 @@ class EditChoreListUseCase(
             landmarkIds.forEach { id ->
                 require(state.landmarks.containsKey(id)) { "Landmark $id not found on map $mapId" }
             }
+            val landmarkKeys = landmarkIds.map { it }
             // Remove entries for de-selected landmarks
-            list.entries.keys.toList().filter { it !in landmarkIds }.forEach { list.entries.remove(it) }
+            list.entries.keys.toList().filter { it !in landmarkKeys }.forEach { list.entries.remove(it) }
             // Add entries for newly added landmarks (preserve existing state/assignee/link/note)
             landmarkIds.filter { it !in list.entries }.forEach { id ->
                 list.entries[id] = ChoreEntry(landmarkId = id)

@@ -2,15 +2,16 @@ package team.dedica.porthole.application.session.processes
 
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Process
+import java.util.UUID
 
 @Component
 class ListProcessesUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
 ) {
-    fun execute(mapId: String, username: String): List<Process> {
+    fun execute(mapId: UUID, username: String): List<Process> {
         val state = mapStatePort.findById(mapId)
             ?: throw NoSuchElementException("Map $mapId not found")
         // Any authenticated participant (collaborator OR viewer) may list processes

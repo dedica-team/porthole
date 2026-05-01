@@ -4,24 +4,25 @@ import org.springframework.stereotype.Component
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.LandmarkType
 import team.dedica.porthole.domain.MapState
+import java.util.UUID
 
 @Component
 class EditLandmarkUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
     fun execute(
-        mapId: String,
+        mapId: UUID,
         username: String,
-        landmarkId: String,
+        landmarkId: UUID,
         name: String?,
         type: LandmarkType?,
         description: String? = null,
-        groupId: String? = null,
+        groupId: UUID? = null,
         clearGroup: Boolean = false,
         link: String? = null,
         clearLink: Boolean = false,
@@ -39,7 +40,7 @@ class EditLandmarkUseCase(
         } else {
             landmark.name
         }
-        val newType = type?: landmark.type
+        val newType = type ?: landmark.type
         val newDescription = if (description != null) description.trim().ifBlank { null } else landmark.description
         val newGroupId = when {
             clearGroup -> null
@@ -47,7 +48,6 @@ class EditLandmarkUseCase(
                 require(state.groups.containsKey(groupId)) { "Group $groupId not found" }
                 groupId
             }
-
             else -> landmark.groupId
         }
         val newLink = when {

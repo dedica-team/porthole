@@ -4,22 +4,23 @@ import org.springframework.stereotype.Component
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.LandmarkMetricEntry
 import team.dedica.porthole.domain.MapState
 import team.dedica.porthole.domain.QualityLevel
 import java.net.URI
+import java.util.UUID
 
 @Component
 class SetLandmarkMetricUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
     fun execute(
-        mapId: String,
-        landmarkId: String,
-        metricId: String,
+        mapId: UUID,
+        landmarkId: UUID,
+        metricId: UUID,
         value: String?,
         level: QualityLevel,
         link: String? = null,

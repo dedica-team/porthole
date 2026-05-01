@@ -1,5 +1,9 @@
 package team.dedica.porthole.adapter.out.repository
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.ser.std.UUIDSerializer
+import java.util.UUID
+
 data class PasskeyCredential(
     val credentialId: String,   // Base64url-encoded
     val publicKeyCose: String,  // Base64url-encoded COSE public key
@@ -8,7 +12,8 @@ data class PasskeyCredential(
 )
 
 data class UserRecord(
-    val id: String,
+    @get:JsonSerialize(using = UUIDSerializer::class)
+    val id: UUID,
     val username: String,
     val githubId: String? = null,
     val keycloakId: String? = null,

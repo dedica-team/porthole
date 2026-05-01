@@ -1,4 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web.security
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -43,9 +44,9 @@ class KeycloakLoginSuccessHandlerTest {
             email = "alice@example.com",
             picture = "https://example.com/avatar.png",
         )
-        val userRecord = UserRecord(id = "u-1", username = "alice-example", keycloakId = "kc-123")
+        val userRecord = UserRecord(id = UUID.nameUUIDFromBytes("u-1".toByteArray()), username = "alice-example", keycloakId = "kc-123")
         whenever(keycloakOAuthService.upsertUser(any())).thenReturn(userRecord)
-        whenever(jwtTokenProvider.generateToken("u-1", "alice-example")).thenReturn("jwt-token")
+        whenever(jwtTokenProvider.generateToken(UUID.nameUUIDFromBytes("u-1".toByteArray()), "alice-example")).thenReturn("jwt-token")
         whenever(authCookieService.createAuthCookie("jwt-token")).thenReturn(
             ResponseCookie.from("porthole_auth", "jwt-token").httpOnly(true).path("/").build()
         )
@@ -55,7 +56,7 @@ class KeycloakLoginSuccessHandlerTest {
         handler.onAuthenticationSuccess(request, response, TestingAuthenticationToken(oidcUser, null))
 
         verify(keycloakOAuthService).upsertUser(any())
-        verify(jwtTokenProvider).generateToken("u-1", "alice-example")
+        verify(jwtTokenProvider).generateToken(UUID.nameUUIDFromBytes("u-1".toByteArray()), "alice-example")
         verify(authCookieService).createAuthCookie("jwt-token")
 
         assertEquals(302, response.status)

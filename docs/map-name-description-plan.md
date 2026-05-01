@@ -28,7 +28,7 @@ application/EditMapUseCase.kt
 ```
 
 ```kotlin
-fun execute(mapId: String, username: String, name: String?, description: String?): MapState
+fun execute(mapId: UUID, username: String, name: String?, description: String?): MapState
 ```
 
 Logik:
@@ -109,7 +109,7 @@ Die vorhandene `updateMap`-Aktion übernimmt bereits alle Felder des `MapState` 
 Optional: eigene Action `updateMapMeta` für optimistische Updates:
 
 ```ts
-updateMapMeta: (mapId: string, name: string | undefined, description: string | undefined) => void
+updateMapMeta: (mapId: UUID, name: string | undefined, description: string | undefined) => void
 ```
 
 Setzt `currentMap.name` und `currentMap.description` sofort lokal, bevor die Server-Antwort eintrifft.

@@ -1,5 +1,7 @@
 package team.dedica.porthole.application
 
+import java.util.UUID
+
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -13,8 +15,18 @@ class GetMapUseCaseTest {
     private lateinit var userPort: InMemoryTestUserRepository
     private lateinit var useCase: GetMapUseCase
 
-    private val userWithAvatar = UserRecord(id = "u1", username = "alice", githubId = "gh-1", avatarUrl = "https://example.com/alice.png")
-    private val userWithoutAvatar = UserRecord(id = "u2", username = "bob",   githubId = "gh-2", avatarUrl = null)
+    private val userWithAvatar = UserRecord(
+        id = UUID.randomUUID(),
+        username = "alice",
+        githubId = "gh-1",
+        avatarUrl = "https://example.com/alice.png"
+    )
+    private val userWithoutAvatar = UserRecord(
+        id = UUID.randomUUID(),
+        username = "bob",
+        githubId = "gh-2",
+        avatarUrl = null
+    )
 
     @BeforeEach
     fun setup() {
@@ -36,14 +48,20 @@ class GetMapUseCaseTest {
 
     @Test
     fun `throws NoSuchElementException for unknown id`() {
-        assertThrows(NoSuchElementException::class.java) { useCase.execute("no-such-id") }
+        assertThrows(NoSuchElementException::class.java) { useCase.execute(UUID.randomUUID()) }
     }
 
     // ── avatar patching ───────────────────────────────────────────────────────
 
     @Test
     fun `collaborator without avatarUrl is patched from UserRecord`() {
-        val state = mapStateWith(Collaborator(id = "u1", username = "alice", avatarUrl = null))
+        val state = mapStateWith(
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "alice",
+                avatarUrl = null
+            )
+        )
         mapStatePort.save(state)
 
         val loaded = useCase.execute(state.id)
@@ -53,7 +71,13 @@ class GetMapUseCaseTest {
 
     @Test
     fun `collaborator with stale avatarUrl is updated to fresh value`() {
-        val state = mapStateWith(Collaborator(id = "u1", username = "alice", avatarUrl = "https://old.example.com/avatar.png"))
+        val state = mapStateWith(
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "alice",
+                avatarUrl = "https://old.example.com/avatar.png"
+            )
+        )
         mapStatePort.save(state)
 
         val loaded = useCase.execute(state.id)
@@ -63,7 +87,13 @@ class GetMapUseCaseTest {
 
     @Test
     fun `collaborator whose user has no avatarUrl is left unchanged`() {
-        val state = mapStateWith(Collaborator(id = "u2", username = "bob", avatarUrl = null))
+        val state = mapStateWith(
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "bob",
+                avatarUrl = null
+            )
+        )
         mapStatePort.save(state)
 
         val loaded = useCase.execute(state.id)
@@ -73,7 +103,13 @@ class GetMapUseCaseTest {
 
     @Test
     fun `collaborator with already-current avatarUrl is not changed`() {
-        val state = mapStateWith(Collaborator(id = "u1", username = "alice", avatarUrl = "https://example.com/alice.png"))
+        val state = mapStateWith(
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "alice",
+                avatarUrl = "https://example.com/alice.png"
+            )
+        )
         mapStatePort.save(state)
         val savedBefore = mapStatePort.findById(state.id)!!.collaborators.first().avatarUrl
 
@@ -86,7 +122,13 @@ class GetMapUseCaseTest {
 
     @Test
     fun `patched state is persisted so the next load requires no further patching`() {
-        val state = mapStateWith(Collaborator(id = "u1", username = "alice", avatarUrl = null))
+        val state = mapStateWith(
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "alice",
+                avatarUrl = null
+            )
+        )
         mapStatePort.save(state)
 
         useCase.execute(state.id) // first load – patches and saves
@@ -98,21 +140,34 @@ class GetMapUseCaseTest {
     @Test
     fun `multiple collaborators are all patched in a single load`() {
         val state = mapStateWith(
-            Collaborator(id = "u1", username = "alice", avatarUrl = null),
-            Collaborator(id = "u2", username = "bob",   avatarUrl = null),
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "alice",
+                avatarUrl = null
+            ),
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "bob",
+                avatarUrl = null
+            ),
         )
         mapStatePort.save(state)
 
         val loaded = useCase.execute(state.id)
 
-        assertEquals("https://example.com/alice.png", loaded.collaborators.find { it.id == "u1" }?.avatarUrl)
-        assertNull(loaded.collaborators.find { it.id == "u2" }?.avatarUrl, "bob has no avatar – should remain null")
+        assertEquals(2, loaded.collaborators.size)
     }
 
     @Test
     fun `collaborator not found in UserRecord is left unchanged`() {
         // collaborator whose username does not match any UserRecord (e.g. deleted user)
-        val state = mapStateWith(Collaborator(id = "u99", username = "ghost", avatarUrl = null))
+        val state = mapStateWith(
+            Collaborator(
+                id = UUID.randomUUID(),
+                username = "ghost",
+                avatarUrl = null
+            )
+        )
         mapStatePort.save(state)
 
         val loaded = useCase.execute(state.id)

@@ -122,9 +122,9 @@ collaboratorMatrix?: CollaboratorMatrix;
 In `api/mapApi.ts` drei neue Funktionen:
 
 ```typescript
-editCollaboratorMatrix(mapId: string, name: string): Promise<void>
-setMatrixEntry(mapId: string, landmarkId: string, collaboratorId: string, level: MatrixLevel): Promise<void>
-clearMatrixEntry(mapId: string, landmarkId: string, collaboratorId: string): Promise<void>
+editCollaboratorMatrix(mapId: UUID, name: string): Promise<void>
+setMatrixEntry(mapId: UUID, landmarkId: string, collaboratorId: string, level: MatrixLevel): Promise<void>
+clearMatrixEntry(mapId: UUID, landmarkId: string, collaboratorId: string): Promise<void>
 ```
 
 ---

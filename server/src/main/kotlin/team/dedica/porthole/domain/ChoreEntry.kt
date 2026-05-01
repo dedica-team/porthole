@@ -1,10 +1,14 @@
 package team.dedica.porthole.domain
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.ser.std.UUIDSerializer
+import java.util.UUID
+
 data class ChoreEntry(
-    val landmarkId: String,
+    @get:JsonSerialize(using = UUIDSerializer::class)
+    val landmarkId: UUID,
     var state: ChoreEntryState = ChoreEntryState.NONE,
-    var assigneeId: String? = null,
+    var assigneeId: UUID? = null,
     var link: String? = null,
     var note: String? = null,
 )
-

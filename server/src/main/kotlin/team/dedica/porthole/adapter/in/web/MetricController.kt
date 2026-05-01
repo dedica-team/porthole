@@ -15,6 +15,7 @@ import team.dedica.porthole.application.session.metrics.ListMetricsUseCase
 import team.dedica.porthole.application.session.metrics.RemoveMetricUseCase
 import team.dedica.porthole.application.session.metrics.SetLandmarkMetricUseCase
 import team.dedica.porthole.domain.QualityLevel
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/maps/{id}/metrics")
@@ -29,7 +30,7 @@ class MetricController(
         @PathVariable id: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> =
-        ResponseEntity.ok(listMetricsUseCase.execute(id, user.username))
+        ResponseEntity.ok(listMetricsUseCase.execute(UUID.fromString(id), user.username))
 
     @PostMapping
     fun createMetric(
@@ -37,7 +38,14 @@ class MetricController(
         @Valid @RequestBody request: CreateMetricRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> =
-        ResponseEntity.ok(createMetricUseCase.execute(id, user.username, request.name, request.description))
+        ResponseEntity.ok(
+            createMetricUseCase.execute(
+                UUID.fromString(id),
+                user.username,
+                request.name,
+                request.description
+            )
+        )
 
     @PatchMapping("/{metricId}")
     fun editMetric(
@@ -46,7 +54,15 @@ class MetricController(
         @Valid @RequestBody request: EditMetricRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> =
-        ResponseEntity.ok(editMetricUseCase.execute(id, user.username, metricId, request.name, request.description))
+        ResponseEntity.ok(
+            editMetricUseCase.execute(
+                UUID.fromString(id),
+                user.username,
+                UUID.fromString(metricId),
+                request.name,
+                request.description
+            )
+        )
 
     @DeleteMapping("/{metricId}")
     fun removeMetric(
@@ -54,7 +70,7 @@ class MetricController(
         @PathVariable metricId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> =
-        ResponseEntity.ok(removeMetricUseCase.execute(id, user.username, metricId))
+        ResponseEntity.ok(removeMetricUseCase.execute(UUID.fromString(id), user.username, UUID.fromString(metricId)))
 }
 
 @RestController
@@ -74,7 +90,16 @@ class LandmarkMetricController(
         val level = runCatching { QualityLevel.valueOf(request.level.uppercase()) }
             .getOrElse { return ResponseEntity.badRequest().body("Unknown quality level: ${request.level}") }
         return ResponseEntity.ok(
-            setLandmarkMetricUseCase.execute(id, landmarkId, metricId, request.value, level, request.link, request.badges, user.username)
+            setLandmarkMetricUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(landmarkId),
+                UUID.fromString(metricId),
+                request.value,
+                level,
+                request.link,
+                request.badges,
+                user.username
+            )
         )
     }
 
@@ -85,5 +110,12 @@ class LandmarkMetricController(
         @PathVariable metricId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> =
-        ResponseEntity.ok(clearLandmarkMetricUseCase.execute(id, landmarkId, metricId, user.username))
+        ResponseEntity.ok(
+            clearLandmarkMetricUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(landmarkId),
+                UUID.fromString(metricId),
+                user.username
+            )
+        )
 }

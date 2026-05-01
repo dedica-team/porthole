@@ -3,33 +3,29 @@ package team.dedica.porthole.application.session.metrics
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Landmark
 import team.dedica.porthole.domain.LandmarkType
 import team.dedica.porthole.domain.MapState
+import java.util.UUID
 
 /**
- * Creates a new landmark without a map position.
- *
- * Rules:
- * - Name must not be blank.
- * - Type must not be decorative (WALL requires a UUID-based id and must be placed on a tile).
- * - Slug derived from name must be unique within the map.
+ * Creates a new landmark without a map position (UUID id).
  */
 @Component
 class CreateUnpositionedLandmarkUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
 
     fun execute(
-        mapId: String,
+        mapId: UUID,
         username: String,
         name: String,
         type: LandmarkType = LandmarkType.KEEP,
         description: String? = null,
-        groupId: String? = null,
+        groupId: UUID? = null,
         link: String? = null,
     ): MapState {
         val state = mapStatePort.findById(mapId)
@@ -41,10 +37,9 @@ class CreateUnpositionedLandmarkUseCase(
 
         require(name.isNotBlank()) { "Landmark name must not be empty" }
         require(type != LandmarkType.WALL) { "Decorative landmarks (WALL) must be placed on a tile" }
+        require(state.landmarks.values.none { it.name == name.trim() }) { "A landmark named '$name' already exists" }
 
-        val id = toSlug(name)
-        require(id.isNotEmpty()) { "Landmark name '$name' does not produce a valid ID" }
-        require(state.landmarks[id] == null) { "Landmark ID '$id' is already taken" }
+        val id = UUID.randomUUID()
 
         val landmark = Landmark(
             id = id,
@@ -56,17 +51,10 @@ class CreateUnpositionedLandmarkUseCase(
             groupId = groupId,
             link = link,
         )
-        state.landmarks[landmark.id] = landmark
+        state.landmarks[id] = landmark
 
         mapStatePort.save(state)
         broadcastPort.send(mapId, state)
         return state
     }
-
-    private fun toSlug(name: String): String =
-        name.trim().lowercase()
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trimStart('-').trimEnd('-')
 }

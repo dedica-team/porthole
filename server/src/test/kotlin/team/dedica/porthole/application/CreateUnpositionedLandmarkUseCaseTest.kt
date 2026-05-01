@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -17,10 +18,10 @@ class CreateUnpositionedLandmarkUseCaseTest {
     fun setup() {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
         state = MapState(map = map)
-        state.collaborators.add(Collaborator(id = "p1", username = "Alice"))
+        state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice"))
         mapStatePort = InMemoryMapStatePort().also { it.save(state) }
         val userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p1", "Alice", "gh-1"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
         }
         useCase = CreateUnpositionedLandmarkUseCase(mapStatePort, userPort, NoOpBroadcastPort())
     }
@@ -28,33 +29,41 @@ class CreateUnpositionedLandmarkUseCaseTest {
     @Test
     fun `creates landmark with no coordinate`() {
         val result = useCase.execute(state.id, "Alice", "Iron Keep")
-        val lm = result.landmarks["iron-keep"]
+        val lm = result.landmarks.values.firstOrNull { it.name == "Iron Keep" }
         assertNotNull(lm)
         assertNull(lm!!.coordinate)
     }
 
     @Test
-    fun `slug is used as id`() {
+    fun `landmark is stored with its uuid as key`() {
         val result = useCase.execute(state.id, "Alice", "Iron Keep")
-        assertNotNull(result.landmarks["iron-keep"])
+        val lm = result.landmarks.values.firstOrNull { it.name == "Iron Keep" }
+        assertNotNull(lm)
+        assertTrue(result.landmarks.containsKey(lm!!.id))
     }
 
     @Test
     fun `name is stored correctly`() {
         val result = useCase.execute(state.id, "Alice", "Iron Keep")
-        assertEquals("Iron Keep", result.landmarks["iron-keep"]!!.name)
+        val lm = result.landmarks.values.firstOrNull { it.name == "Iron Keep" }
+        assertNotNull(lm)
+        assertEquals("Iron Keep", lm!!.name)
     }
 
     @Test
     fun `custom type is stored`() {
         val result = useCase.execute(state.id, "Alice", "Old Ruins", LandmarkType.RUINS)
-        assertEquals(LandmarkType.RUINS, result.landmarks["old-ruins"]!!.type)
+        val lm = result.landmarks.values.firstOrNull { it.name == "Old Ruins" }
+        assertNotNull(lm)
+        assertEquals(LandmarkType.RUINS, lm!!.type)
     }
 
     @Test
     fun `description is stored`() {
         val result = useCase.execute(state.id, "Alice", "Iron Keep", description = "A sturdy keep")
-        assertEquals("A sturdy keep", result.landmarks["iron-keep"]!!.description)
+        val lm = result.landmarks.values.firstOrNull { it.name == "Iron Keep" }
+        assertNotNull(lm)
+        assertEquals("A sturdy keep", lm!!.description)
     }
 
     @Test
@@ -79,7 +88,7 @@ class CreateUnpositionedLandmarkUseCaseTest {
     }
 
     @Test
-    fun `duplicate slug fails`() {
+    fun `duplicate name fails`() {
         useCase.execute(state.id, "Alice", "Iron Keep")
         val saved = mapStatePort.findById(state.id)!!
         assertThrows(IllegalArgumentException::class.java) {
@@ -90,7 +99,7 @@ class CreateUnpositionedLandmarkUseCaseTest {
     @Test
     fun `non-collaborator is rejected`() {
         val otherUserPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p2", "Bob", "gh-2"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
         }
         val otherUseCase = CreateUnpositionedLandmarkUseCase(mapStatePort, otherUserPort, NoOpBroadcastPort())
         assertThrows(IllegalArgumentException::class.java) {

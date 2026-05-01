@@ -13,6 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -33,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap
 class JsonStore(
     @Qualifier("persistenceObjectMapper") private val mapper: ObjectMapper,
     @Value("\${porthole.storage.path:data/json}") storagePath: String,
-    @Value("\${porthole.storage.debounce-ms:5000}") private val debounceMs: Long,
+    @param:Value("\${porthole.storage.debounce-ms:5000}") private val debounceMs: Long,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -42,18 +43,18 @@ class JsonStore(
     private val usersFile:  Path = storageDir.resolve("users.json")
 
     /** Last-mutation timestamp (ms) per map ID. Presence means the map is dirty. */
-    private val dirtyAt = ConcurrentHashMap<String, Long>()
+    private val dirtyAt = ConcurrentHashMap<UUID, Long>()
 
     @Volatile private var usersDirty = false
 
-    lateinit var mapStates: ConcurrentHashMap<String, MapState>
-    lateinit var users:     ConcurrentHashMap<String, UserRecord>
+    lateinit var mapStates: ConcurrentHashMap<UUID, MapState>
+    lateinit var users:     ConcurrentHashMap<UUID, UserRecord>
 
     init {
         Files.createDirectories(storageDir)
         Files.createDirectories(mapsDir)
         mapStates = loadAllMaps()
-        users     = loadOrEmpty(usersFile, object : com.fasterxml.jackson.core.type.TypeReference<Map<String, UserRecord>>() {})
+        users     = loadOrEmpty(usersFile, object : com.fasterxml.jackson.core.type.TypeReference<Map<UUID, UserRecord>>() {})
         log.info(
             "JsonStore initialised – {} map(s), {} user(s) loaded from {}",
             mapStates.size, users.size, storageDir,
@@ -62,7 +63,7 @@ class JsonStore(
 
     // ── Dirty-flag setters ────────────────────────────────────────────────────
 
-    fun markMapDirty(id: String) {
+    fun markMapDirty(id: UUID) {
         dirtyAt[id] = System.currentTimeMillis()
     }
 
@@ -72,7 +73,7 @@ class JsonStore(
 
     // ── Delete map file immediately ───────────────────────────────────────────
 
-    fun deleteMapFile(id: String) {
+    fun deleteMapFile(id: UUID) {
         dirtyAt.remove(id)
         val file = mapsDir.resolve("$id.json")
         Files.deleteIfExists(file)
@@ -97,7 +98,7 @@ class JsonStore(
     }
 
     @Synchronized
-    private fun saveMap(id: String) {
+    private fun saveMap(id: UUID) {
         // Re-check under lock: another thread may have already flushed
         if (!dirtyAt.containsKey(id)) return
         val state = mapStates[id] ?: run {
@@ -132,8 +133,8 @@ class JsonStore(
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
-    private fun loadAllMaps(): ConcurrentHashMap<String, MapState> {
-        val result = ConcurrentHashMap<String, MapState>()
+    private fun loadAllMaps(): ConcurrentHashMap<UUID, MapState> {
+        val result = ConcurrentHashMap<UUID, MapState>()
         Files.list(mapsDir)
             .filter { it.toString().endsWith(".json") }
             .forEach { file ->
@@ -158,11 +159,11 @@ class JsonStore(
 
     private fun <V> loadOrEmpty(
         file: Path,
-        typeRef: com.fasterxml.jackson.core.type.TypeReference<Map<String, V>>,
-    ): ConcurrentHashMap<String, V> {
+        typeRef: com.fasterxml.jackson.core.type.TypeReference<Map<UUID, V>>,
+    ): ConcurrentHashMap<UUID, V> {
         if (!Files.exists(file)) return ConcurrentHashMap()
         return try {
-            val loaded: Map<String, V> = mapper.readValue(file.toFile(), typeRef)
+            val loaded: Map<UUID, V> = mapper.readValue(file.toFile(), typeRef)
             ConcurrentHashMap(loaded)
         } catch (e: Exception) {
             log.error("DATA CORRUPTION: Failed to load '{}'", file.toAbsolutePath())

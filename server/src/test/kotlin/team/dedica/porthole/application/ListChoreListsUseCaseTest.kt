@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -19,11 +20,11 @@ class ListChoreListsUseCaseTest {
     fun setup() {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 1 })
         state = MapState(map = map)
-        state.collaborators.add(Collaborator(id = "u1", username = "Alice"))
+        state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "Alice"))
         mapStatePort = InMemoryMapStatePort().also { it.save(state) }
         userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("u1", "Alice", "gh-1"))
-            it.save(UserRecord("u2", "Bob", "gh-2"))   // viewer – not a collaborator
+            it.save(UserRecord(UUID.nameUUIDFromBytes("u1".toByteArray()), "Alice", "gh-1"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("u2".toByteArray()), "Bob", "gh-2"))   // viewer – not a collaborator
         }
         val broadcast = NoOpBroadcastPort()
         val create = CreateChoreListUseCase(mapStatePort, userPort, broadcast)
@@ -50,7 +51,7 @@ class ListChoreListsUseCaseTest {
     @Test
     fun `unknown map throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute("no-map", "Alice")
+            useCase.execute(UUID.randomUUID(), "Alice")
         }
     }
 

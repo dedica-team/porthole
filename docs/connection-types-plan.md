@@ -90,7 +90,7 @@ Body: EditConnectionRequest
 
 ```kotlin
 fun execute(
-    mapId: String,
+    mapId: UUID,
     fromLandmarkId: String,
     toLandmarkId: String,
     type: ConnectionType = ConnectionType.PIPE,
@@ -115,7 +115,7 @@ class EditConnectionUseCase(
     private val broadcastPort: BroadcastPort,
 ) {
     fun execute(
-        mapId: String,
+        mapId: UUID,
         connectionId: String,
         type: ConnectionType? = null,
         name: String? = null,
@@ -207,7 +207,7 @@ export interface Connection {
 
 ```typescript
 export async function createConnection(
-  mapId: string,
+  mapId: UUID,
   fromTowerId: string,
   toTowerId: string,
   type: ConnectionType = 'PIPE',
@@ -220,7 +220,7 @@ Neue Funktion `editConnection`:
 
 ```typescript
 export async function editConnection(
-  mapId: string,
+  mapId: UUID,
   connectionId: string,
   type?: ConnectionType,
   name?: string,

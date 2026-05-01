@@ -1,4 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web
+import java.util.UUID
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -18,7 +19,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import team.dedica.porthole.adapter.`in`.web.security.*
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.GetMetricTemplatesUseCase
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthProperties
 import team.dedica.porthole.domain.MetricTemplate
 
@@ -41,7 +42,7 @@ class MetricTemplateControllerTest {
     lateinit var getMetricTemplatesUseCase: GetMetricTemplatesUseCase
 
     @MockitoBean
-    lateinit var userWritePort: UserWritePort
+    lateinit var userPort: UserPort
 
     private val allTemplates = listOf(
         // 12-factor
@@ -76,8 +77,9 @@ class MetricTemplateControllerTest {
     )
 
     private fun token(): String {
-        given(userWritePort.findById("test-user-id")).willReturn(UserRecord(id = "test-user-id", username = "testuser"))
-        return jwtTokenProvider.generateToken("test-user-id", "testuser")
+        val testUserId = UUID.nameUUIDFromBytes("test-user-id".toByteArray())
+        given(userPort.findById(testUserId)).willReturn(UserRecord(id = testUserId, username = "testuser"))
+        return jwtTokenProvider.generateToken(testUserId, "testuser")
     }
 
     @Test

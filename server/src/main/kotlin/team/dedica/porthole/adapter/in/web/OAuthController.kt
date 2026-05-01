@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.GitHubOAuthStateService
@@ -18,9 +18,25 @@ import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.config.PortholeAuthProperties
 import jakarta.servlet.http.HttpServletRequest
 import java.time.Duration
+import java.util.UUID
 
-data class AuthResponse(val userId: String, val username: String, val avatarUrl: String?, val token: String? = null, val isAdmin: Boolean = false, val githubEnabled: Boolean = false, val keycloakEnabled: Boolean = false)
-data class AuthFeatures(val githubEnabled: Boolean, val keycloakEnabled: Boolean = false, val webAuthnEnabled: Boolean = true, val tagline: String = "for teams")
+data class AuthResponse(
+    val userId: UUID,
+    val username: String,
+    val avatarUrl: String?,
+    val token: String? = null,
+    val isAdmin: Boolean = false,
+    val githubEnabled: Boolean = false,
+    val keycloakEnabled: Boolean = false
+)
+
+data class AuthFeatures(
+    val githubEnabled: Boolean,
+    val keycloakEnabled: Boolean = false,
+    val webAuthnEnabled: Boolean = true,
+    val tagline: String = "for teams"
+)
+
 data class OAuthStartResponse(val authorizationUrl: String)
 
 @RestController
@@ -30,7 +46,7 @@ class OAuthController(
     private val gitHubOAuthStateService: GitHubOAuthStateService,
     private val jwtTokenProvider: JwtTokenProvider,
     private val authCookieService: AuthCookieService,
-    private val userRepository: UserWritePort,
+    private val userRepository: UserPort,
     private val adminService: AdminService,
     private val props: PortholeAuthProperties,
 ) {
@@ -77,7 +93,16 @@ class OAuthController(
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, clearStateCookie)
             .header(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString())
-            .body(AuthResponse(user.id, user.username, user.avatarUrl, isAdmin = adminService.isAdmin(user.id), githubEnabled = githubEnabled, keycloakEnabled = keycloakEnabled))
+            .body(
+                AuthResponse(
+                    user.id,
+                    user.username,
+                    user.avatarUrl,
+                    isAdmin = adminService.isAdmin(user.id),
+                    githubEnabled = githubEnabled,
+                    keycloakEnabled = keycloakEnabled
+                )
+            )
     }
 
     @GetMapping("/session")
@@ -85,7 +110,16 @@ class OAuthController(
         val authenticatedUser = user ?: return ResponseEntity.status(401).build()
         val userRecord = userRepository.findByUsername(authenticatedUser.username)
             ?: return ResponseEntity.status(401).build()
-        return ResponseEntity.ok(AuthResponse(userRecord.id, userRecord.username, userRecord.avatarUrl, isAdmin = adminService.isAdmin(userRecord.id), githubEnabled = githubEnabled, keycloakEnabled = keycloakEnabled))
+        return ResponseEntity.ok(
+            AuthResponse(
+                userRecord.id,
+                userRecord.username,
+                userRecord.avatarUrl,
+                isAdmin = adminService.isAdmin(userRecord.id),
+                githubEnabled = githubEnabled,
+                keycloakEnabled = keycloakEnabled
+            )
+        )
     }
 
     @PostMapping("/logout")

@@ -1,5 +1,7 @@
 package team.dedica.porthole.application
 
+import java.util.UUID
+
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -13,7 +15,7 @@ class EditMapUseCaseTest {
     private lateinit var mapStatePort: InMemoryMapStatePort
     private lateinit var useCase: EditMapUseCase
 
-    private val collaborator = Collaborator(id = "p1", username = "Alice")
+    private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
 
     @BeforeEach
     fun setup() {
@@ -25,8 +27,8 @@ class EditMapUseCaseTest {
         mapStatePort.save(state)
 
         val userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p1", "Alice", "gh-1"))
-            it.save(UserRecord("p2", "Bob",   "gh-2"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
         }
         useCase = EditMapUseCase(mapStatePort, userPort, NoOpBroadcastPort())
     }
@@ -119,7 +121,7 @@ class EditMapUseCaseTest {
     @Test
     fun `unknown map throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute("no-such-map", "Alice", "Name", null)
+            useCase.execute(UUID.randomUUID(), "Alice", "Name", null)
         }
     }
 }

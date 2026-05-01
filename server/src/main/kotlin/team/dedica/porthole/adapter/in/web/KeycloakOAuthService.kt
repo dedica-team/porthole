@@ -2,7 +2,7 @@ package team.dedica.porthole.adapter.`in`.web
 
 import org.springframework.stereotype.Service
 import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import java.util.UUID
 
 data class KeycloakUserInfo(
@@ -19,7 +19,7 @@ data class KeycloakUserInfo(
  */
 @Service
 class KeycloakOAuthService(
-    private val userRepository: UserWritePort,
+    private val userRepository: UserPort,
 ) {
     /**
      * Looks up or creates a [UserRecord] based on the given [KeycloakUserInfo].
@@ -42,7 +42,7 @@ class KeycloakOAuthService(
                 suffix++
             }
             val newUser = UserRecord(
-                id = UUID.randomUUID().toString(),
+                id = UUID.randomUUID(),
                 username = candidate,
                 keycloakId = info.keycloakId,
                 email = info.email,

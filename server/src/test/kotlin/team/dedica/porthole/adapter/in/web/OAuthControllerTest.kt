@@ -1,4 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -12,14 +13,14 @@ import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.GitHubOAuthStateService
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
 
 class OAuthControllerTest {
 
     private val gitHubOAuthService = mock<GitHubOAuthService>()
     private val jwtTokenProvider = mock<JwtTokenProvider>()
-    private val userRepository = mock<UserWritePort>()
+    private val userRepository = mock<UserPort>()
     private val gitHubOAuthStateService = GitHubOAuthStateService()
     private val props = PortholeAuthPropertiesTestFactory.withGitHub()
     private val authCookieService = AuthCookieService(props)
@@ -41,11 +42,12 @@ class OAuthControllerTest {
 
     @Test
     fun `existing user by githubId gets a JWT`() {
-        whenever(jwtTokenProvider.generateToken("u1", "alice")).thenReturn("token-alice")
+        val id = UUID.nameUUIDFromBytes("u1".toByteArray())
+        whenever(jwtTokenProvider.generateToken(id, "alice")).thenReturn("token-alice")
 
-        val token = jwtTokenProvider.generateToken("u1", "alice")
+        val token = jwtTokenProvider.generateToken(id, "alice")
         assertEquals("token-alice", token)
-        verify(jwtTokenProvider).generateToken("u1", "alice")
+        verify(jwtTokenProvider).generateToken(id, "alice")
     }
 
     @Test
@@ -85,18 +87,19 @@ class OAuthControllerTest {
 
     @Test
     fun `githubCallback returns auth response for valid code`() {
+        val id = UUID.nameUUIDFromBytes("u1".toByteArray())
         val userInfo = GitHubUserInfo("gh-1", "alice", "https://avatar.url", "alice@x.com")
-        val userRecord = UserRecord(id = "u1", username = "alice", githubId = "gh-1", avatarUrl = "https://avatar.url")
+        val userRecord = UserRecord(id = id, username = "alice", githubId = "gh-1", avatarUrl = "https://avatar.url")
         whenever(gitHubOAuthService.exchangeCodeForToken("valid-code", "http://localhost:5173/auth/github/callback")).thenReturn("gh-access")
         whenever(gitHubOAuthService.fetchUserInfo("gh-access")).thenReturn(userInfo)
         whenever(gitHubOAuthService.upsertUser(userInfo)).thenReturn(userRecord)
-        whenever(jwtTokenProvider.generateToken("u1", "alice")).thenReturn("jwt-alice")
+        whenever(jwtTokenProvider.generateToken(id, "alice")).thenReturn("jwt-alice")
 
         val response = controller.githubCallback("valid-code", "expected-state", requestWithStateCookie("expected-state"))
         assertEquals(200, response.statusCode.value())
         val body = response.body!!
         assertNull(body.token)
-        assertEquals("u1", body.userId)
+        assertEquals(id, body.userId)
         assertEquals("alice", body.username)
         assertTrue(response.headers.getFirst("Set-Cookie")?.contains("Max-Age=0") == true)
         assertTrue(response.headers["Set-Cookie"]?.any { it.contains("porthole_auth=") } == true)
@@ -104,13 +107,14 @@ class OAuthControllerTest {
 
     @Test
     fun `session returns authenticated user profile`() {
+        val id = UUID.nameUUIDFromBytes("u1".toByteArray())
         whenever(userRepository.findByUsername("alice"))
-            .thenReturn(UserRecord(id = "u1", username = "alice", avatarUrl = "https://avatar.url"))
+            .thenReturn(UserRecord(id = id, username = "alice", avatarUrl = "https://avatar.url"))
 
         val response = controller.session(User("alice", "", emptyList()))
 
         assertEquals(200, response.statusCode.value())
-        assertEquals("u1", response.body?.userId)
+        assertEquals(id, response.body?.userId)
         assertEquals("alice", response.body?.username)
         assertNull(response.body?.token)
     }
@@ -126,7 +130,7 @@ class OAuthControllerTest {
 
     @Test
     fun `new user with no avatar has null avatarUrl`() {
-        val user = UserRecord(id = "u2", username = "carol", githubId = "gh-789")
+        val user = UserRecord(id = UUID.nameUUIDFromBytes("u2".toByteArray()), username = "carol", githubId = "gh-789")
         assertNull(user.avatarUrl)
     }
 

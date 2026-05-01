@@ -2,16 +2,17 @@ package team.dedica.porthole.application.lobby
 
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.CollaborationMode
 import team.dedica.porthole.domain.MapState
+import java.util.UUID
 
 @Component
 class GetMapUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
 ) {
-    fun execute(id: String, callerUsername: String? = null): MapState {
+    fun execute(id: UUID, callerUsername: String? = null): MapState {
         val state = mapStatePort.findById(id)
             ?: throw NoSuchElementException("Map $id not found")
 

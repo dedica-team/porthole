@@ -3,10 +3,11 @@ package team.dedica.porthole.adapter.`in`.web.security
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.util.UUID
 
 @Component
 class AdminService(
-    @param:Value("\${porthole.admin.user-ids:}") adminUserIdsRaw: String,
+    @Value("\${porthole.admin.user-ids:}") adminUserIdsRaw: String,
 ) {
     private val log = LoggerFactory.getLogger(AdminService::class.java)
     private val adminIds: Set<String> = adminUserIdsRaw
@@ -23,6 +24,6 @@ class AdminService(
         }
     }
 
-    fun isAdmin(userId: String): Boolean = adminIds.contains(userId)
+    fun isAdmin(userId: UUID): Boolean = adminIds.contains(userId.toString())
 }
 

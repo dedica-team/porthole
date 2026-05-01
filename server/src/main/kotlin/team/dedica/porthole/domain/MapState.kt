@@ -12,37 +12,43 @@ import java.util.*
  * @param landmarks  all placed landmarks (by landmark ID)
  */
 data class MapState(
-    val id: String = UUID.randomUUID().toString(),
+    val id: UUID = UUID.randomUUID(),
     val map: HexMap,
     val collaborators: MutableList<Collaborator> = mutableListOf(),
-    val landmarks: MutableMap<String, Landmark> = mutableMapOf(),
-    val connections: MutableMap<String, Connection> = mutableMapOf(),
-    val groups: MutableMap<String, LandmarkGroup> = mutableMapOf(),
-    val metrics: MutableMap<String, QualityMetric> = mutableMapOf(),
+    val landmarks: MutableMap<UUID, Landmark> = mutableMapOf(),
+    val connections: MutableMap<UUID, Connection> = mutableMapOf(),
+    val groups: MutableMap<UUID, LandmarkGroup> = mutableMapOf(),
+    val metrics: MutableMap<UUID, QualityMetric> = mutableMapOf(),
     val createdAt: Instant = Instant.now(),
     val name: String? = null,
     val description: String? = null,
     val collaborationMode: CollaborationMode = CollaborationMode.OPEN,
     val joinRequests: MutableList<JoinRequest> = mutableListOf(),
     var collaboratorMatrix: CollaboratorMatrix = CollaboratorMatrix(),
-    val processes: MutableMap<String, Process> = mutableMapOf(),
-    val choreLists: MutableMap<String, ChoreList> = mutableMapOf(),
+    val processes: MutableMap<UUID, Process> = mutableMapOf(),
+    val choreLists: MutableMap<UUID, ChoreList> = mutableMapOf(),
 ) {
 
-    fun getCollaborator(collaboratorId: String): Collaborator? = collaborators.find { it.id == collaboratorId }
+    fun getCollaborator(collaboratorId: UUID): Collaborator? = collaborators.find { it.id == collaboratorId }
 
-    fun getLandmarksOf(collaboratorId: String): List<Landmark> =
+    fun getLandmarksOf(collaboratorId: UUID): List<Landmark> =
         landmarks.values.filter { it.ownerId == collaboratorId }
 
     fun getLandmarkAt(coordinate: HexCoordinate): Landmark? =
         landmarks.values.find { it.coordinate != null && it.coordinate == coordinate }
 
-    fun isCollaborator(userId: String): Boolean = collaborators.any { it.id == userId }
+    fun isCollaborator(userId: UUID): Boolean = collaborators.any { it.id == userId }
 
-    fun hasPendingRequest(userId: String): Boolean = joinRequests.any { it.userId == userId }
+    fun hasPendingRequest(userId: UUID): Boolean = joinRequests.any { it.userId == userId }
 
-    fun requireCollaborator(userId: String) {
+    fun requireCollaborator(userId: UUID) {
         require(isCollaborator(userId)) { "User $userId is not a collaborator on map $id" }
+    }
+
+    fun requireReadAccess(userId: UUID) {
+        if (collaborationMode == CollaborationMode.PRIVATE) {
+            require(isCollaborator(userId)) { "Map is private" }
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -15,10 +16,11 @@ class RemoveMetricUseCaseTest {
     private lateinit var mapStatePort: InMemoryMapStatePort
     private lateinit var userPort: InMemoryTestUserRepository
     private lateinit var useCase: RemoveMetricUseCase
-    private lateinit var metricId: String
-    private lateinit var landmarkId: String
+    private lateinit var metricId: UUID
+    private val keepId = UUID.nameUUIDFromBytes("keep-1".toByteArray())
+    private val landmarkKey = keepId
 
-    private val collaborator = Collaborator(id = "p1", username = "Alice")
+    private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
 
     @BeforeEach
     fun setup() {
@@ -28,24 +30,20 @@ class RemoveMetricUseCaseTest {
         mapStatePort = InMemoryMapStatePort()
         mapStatePort.save(state)
         userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p1", "Alice", "gh-1"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
         }
 
-        // Create metric
         val createMetric = CreateMetricUseCase(mapStatePort, userPort, NoOpBroadcastPort())
         state = createMetric.execute(state.id, "Alice", "Availability", "Uptime")
         metricId = state.metrics.values.first().id
 
-        // Place a landmark and assign the metric
         val tile = HexCoordinate(0, 0)
-        val landmark = Landmark(id = "keep-1", ownerId = "p1", coordinate = tile)
-        state.landmarks["keep-1"] = landmark
+        val landmark = Landmark(id = keepId, ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()), coordinate = tile)
+        state.landmarks[keepId] = landmark
         mapStatePort.save(state)
-        landmarkId = "keep-1"
 
-        // Assign metric to landmark
         val setMetric = SetLandmarkMetricUseCase(mapStatePort, userPort, NoOpBroadcastPort())
-        state = setMetric.execute(state.id, landmarkId, metricId, "99 %", QualityLevel.OK)
+        state = setMetric.execute(state.id, keepId, metricId, "99 %", QualityLevel.OK)
 
         useCase = RemoveMetricUseCase(mapStatePort, userPort, NoOpBroadcastPort())
     }
@@ -59,7 +57,7 @@ class RemoveMetricUseCaseTest {
     @Test
     fun `cascades removal to all landmark entries`() {
         val result = useCase.execute(state.id, "Alice", metricId)
-        assertFalse(result.landmarks[landmarkId]!!.metrics.containsKey(metricId))
+        assertFalse(result.landmarks[landmarkKey]!!.metrics.containsKey(metricId))
     }
 
     @Test
@@ -68,24 +66,23 @@ class RemoveMetricUseCaseTest {
         state = createMetric.execute(state.id, "Alice", "Latency", "Response time")
         val otherMetricId = state.metrics.values.first { it.name == "Latency" }.id
         val setMetric = SetLandmarkMetricUseCase(mapStatePort, userPort, NoOpBroadcastPort())
-        state = setMetric.execute(state.id, landmarkId, otherMetricId, "120 ms", QualityLevel.WARNING)
+        state = setMetric.execute(state.id, keepId, otherMetricId, "120 ms", QualityLevel.WARNING)
 
         val result = useCase.execute(state.id, "Alice", metricId)
-        // otherMetricId still present on landmark
-        assertTrue(result.landmarks[landmarkId]!!.metrics.containsKey(otherMetricId))
+        assertTrue(result.landmarks[landmarkKey]!!.metrics.containsKey(otherMetricId))
     }
 
     @Test
     fun `unknown metric id fails`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, "Alice", "no-such-metric")
+            useCase.execute(state.id, "Alice", UUID.randomUUID())
         }
     }
 
     @Test
     fun `unknown map id fails`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute("no-such-map", "Alice", metricId)
+            useCase.execute(UUID.randomUUID(), "Alice", metricId)
         }
     }
 }

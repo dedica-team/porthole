@@ -9,7 +9,7 @@ import org.springframework.web.client.RestTemplate
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.util.UriComponentsBuilder
 import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthProperties
 import java.util.UUID
 
@@ -26,7 +26,7 @@ data class GitHubUserInfo(
  */
 @Service
 class GitHubOAuthService(
-    private val userRepository: UserWritePort,
+    private val userRepository: UserPort,
     props: PortholeAuthProperties,
 ) {
     private val clientId = props.github.clientId
@@ -138,7 +138,7 @@ class GitHubOAuthService(
                 suffix++
             }
             val newUser = UserRecord(
-                id = UUID.randomUUID().toString(),
+                id = UUID.randomUUID(),
                 username = candidate,
                 githubId = info.githubId,
                 email = info.email,

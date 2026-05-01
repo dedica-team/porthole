@@ -11,6 +11,7 @@ import team.dedica.porthole.application.session.landscaping.CreateConnectionUseC
 import team.dedica.porthole.application.session.landscaping.EditConnectionUseCase
 import team.dedica.porthole.application.session.landscaping.RemoveConnectionUseCase
 import team.dedica.porthole.domain.ConnectionType
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/maps/{id}/connections")
@@ -27,7 +28,17 @@ class ConnectionController(
     ): ResponseEntity<Any> {
         val type = runCatching { ConnectionType.valueOf(request.type.uppercase()) }
             .getOrElse { return ResponseEntity.badRequest().body("Unknown connection type: ${request.type}") }
-        return ResponseEntity.ok(createConnectionUseCase.execute(id, request.fromTowerId, request.toTowerId, type, request.name, request.description, user.username))
+        return ResponseEntity.ok(
+            createConnectionUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(request.fromTowerId),
+                UUID.fromString(request.toTowerId),
+                type,
+                request.name,
+                request.description,
+                user.username
+            )
+        )
     }
 
     @PatchMapping("/{connectionId}")
@@ -41,9 +52,18 @@ class ConnectionController(
             runCatching { ConnectionType.valueOf(it.uppercase()) }
                 .getOrElse { return ResponseEntity.badRequest().body("Unknown connection type: $it") }
         }
-        return ResponseEntity.ok(editConnectionUseCase.execute(
-            id, connectionId, type, request.name, request.description, request.clearName, request.clearDescription, user.username,
-        ))
+        return ResponseEntity.ok(
+            editConnectionUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(connectionId),
+                type,
+                request.name,
+                request.description,
+                request.clearName,
+                request.clearDescription,
+                user.username,
+            )
+        )
     }
 
     @DeleteMapping("/{connectionId}")
@@ -52,6 +72,12 @@ class ConnectionController(
         @PathVariable connectionId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> {
-        return ResponseEntity.ok(removeConnectionUseCase.execute(id, connectionId, user.username))
+        return ResponseEntity.ok(
+            removeConnectionUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(connectionId),
+                user.username
+            )
+        )
     }
 }

@@ -5,9 +5,8 @@ import java.util.UUID
 enum class StageConnectionDirection { FORWARD, REVERSE, BIDIRECTIONAL }
 
 data class StageConnection(
-    val id: String = UUID.randomUUID().toString(),
-    val connectionId: String,
+    val id: UUID = UUID.randomUUID(),
+    val connectionId: UUID,
     var title: String? = null,
     var direction: StageConnectionDirection = StageConnectionDirection.FORWARD,
 )
-

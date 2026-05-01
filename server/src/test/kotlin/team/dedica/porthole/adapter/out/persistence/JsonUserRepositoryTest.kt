@@ -1,4 +1,5 @@
 package team.dedica.porthole.adapter.out.persistence
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -17,7 +18,7 @@ class JsonUserRepositoryTest {
     @Test
     fun `saved user can be found by username`(@TempDir dir: Path) {
         val repo = repoAt(dir)
-        repo.save(UserRecord(id = "u1", username = "alice", githubId = "gh-alice"))
+        repo.save(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", githubId = "gh-alice"))
         assertNotNull(repo.findByUsername("alice"))
         assertNull(repo.findByUsername("bob"))
     }
@@ -25,7 +26,7 @@ class JsonUserRepositoryTest {
     @Test
     fun `saved user can be found by githubId`(@TempDir dir: Path) {
         val repo = repoAt(dir)
-        repo.save(UserRecord(id = "u1", username = "alice", githubId = "gh-42"))
+        repo.save(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", githubId = "gh-42"))
         assertNotNull(repo.findByGithubId("gh-42"))
         assertNull(repo.findByGithubId("gh-99"))
     }
@@ -34,7 +35,7 @@ class JsonUserRepositoryTest {
     fun `user survives a restart`(@TempDir dir: Path) {
         val store = storeAt(dir)
         val repo = JsonUserRepository(store)
-        repo.save(UserRecord(id = "u1", username = "alice", githubId = "gh-alice", email = "alice@example.com"))
+        repo.save(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", githubId = "gh-alice", email = "alice@example.com"))
         store.saveUsersIfDirty()
 
         val loaded = repoAt(dir).findByUsername("alice")
@@ -47,8 +48,8 @@ class JsonUserRepositoryTest {
     fun `update overwrites existing user`(@TempDir dir: Path) {
         val store = storeAt(dir)
         val repo = JsonUserRepository(store)
-        repo.save(UserRecord(id = "u1", username = "alice", githubId = "gh-alice"))
-        repo.save(UserRecord(id = "u1", username = "alice", githubId = "gh-alice", avatarUrl = "https://example.com/avatar.png"))
+        repo.save(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", githubId = "gh-alice"))
+        repo.save(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", githubId = "gh-alice", avatarUrl = "https://example.com/avatar.png"))
         store.saveUsersIfDirty()
 
         val loaded = repoAt(dir).findByUsername("alice")!!

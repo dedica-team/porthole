@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -17,7 +18,7 @@ class CreateMapUseCaseTest {
     fun setup() {
         mapPort  = InMemoryMapStatePort()
         userPort = InMemoryTestUserRepository()
-        userPort.save(UserRecord(id = "u1", username = "alice", githubId = "gh-alice"))
+        userPort.save(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", githubId = "gh-alice"))
         useCase = CreateMapUseCase(mapPort, userPort)
     }
 

@@ -10,6 +10,7 @@ import team.dedica.porthole.adapter.`in`.web.dto.EditGroupRequest
 import team.dedica.porthole.application.session.metrics.CreateGroupUseCase
 import team.dedica.porthole.application.session.metrics.EditGroupUseCase
 import team.dedica.porthole.application.session.metrics.RemoveGroupUseCase
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/maps/{id}/groups")
@@ -24,7 +25,9 @@ class GroupController(
         @Valid @RequestBody request: CreateGroupRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> = ResponseEntity.ok(
-        createGroupUseCase.execute(id, user.username, request.name, request.color, request.description, request.link)
+        createGroupUseCase.execute(
+            UUID.fromString(id), user.username, request.name, request.color, request.description, request.link
+        )
     )
 
     @PatchMapping("/{groupId}")
@@ -35,10 +38,15 @@ class GroupController(
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> = ResponseEntity.ok(
         editGroupUseCase.execute(
-            id, user.username, groupId,
-            request.name, request.color,
-            request.description, request.clearDescription,
-            request.link, request.clearLink,
+            UUID.fromString(id),
+            user.username,
+            UUID.fromString(groupId),
+            request.name,
+            request.color,
+            request.description,
+            request.clearDescription,
+            request.link,
+            request.clearLink,
         )
     )
 
@@ -47,6 +55,7 @@ class GroupController(
         @PathVariable id: String,
         @PathVariable groupId: String,
         @AuthenticationPrincipal user: UserDetails,
-    ): ResponseEntity<*> = ResponseEntity.ok(removeGroupUseCase.execute(id, user.username, groupId))
+    ): ResponseEntity<*> =
+        ResponseEntity.ok(removeGroupUseCase.execute(UUID.fromString(id), user.username, UUID.fromString(groupId)))
 }
 

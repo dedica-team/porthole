@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -13,7 +14,7 @@ class CreateGroupUseCaseTest {
     private lateinit var userPort: InMemoryTestUserRepository
     private lateinit var useCase: CreateGroupUseCase
 
-    private val collaborator = Collaborator(id = "p1", username = "Alice")
+    private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
 
     @BeforeEach
     fun setup() {
@@ -23,7 +24,7 @@ class CreateGroupUseCaseTest {
         mapStatePort = InMemoryMapStatePort()
         mapStatePort.save(state)
         userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p1", "Alice", "gh-1"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
         }
         useCase = CreateGroupUseCase(mapStatePort, userPort, NoOpBroadcastPort())
     }
@@ -42,7 +43,7 @@ class CreateGroupUseCaseTest {
     fun `group id is a UUID`() {
         val result = useCase.execute(state.id, "Alice", "Beta", "#0000ff")
         val id = result.groups.values.first().id
-        assertDoesNotThrow { java.util.UUID.fromString(id) }
+        assertNotNull(id) // id is already a UUID
     }
 
     @Test
@@ -69,14 +70,14 @@ class CreateGroupUseCaseTest {
     @Test
     fun `unknown map id fails`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute("no-such-map", "Alice", "Epsilon", "#ffffff")
+            useCase.execute(UUID.randomUUID(), "Alice", "Epsilon", "#ffffff")
         }
     }
 
     @Test
     fun `non-collaborator cannot create group`() {
         val otherPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p2", "Bob", "gh-2"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
         }
         val uc = CreateGroupUseCase(mapStatePort, otherPort, NoOpBroadcastPort())
         assertThrows(IllegalArgumentException::class.java) {

@@ -2,6 +2,11 @@ package team.dedica.porthole.domain
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import java.util.UUID
+
+private fun uuid() = UUID.randomUUID()
+private val uA = uuid()
+private val uB = uuid()
 
 class ConnectionTypeTest {
 
@@ -16,9 +21,8 @@ class ConnectionTypeTest {
     @Test
     fun `default connection type is PIPE`() {
         val conn = Connection(
-            id = "id",
-            originId = "a",
-            targetId = "b",
+            originId = uA,
+            targetId = uB,
             path = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0)),
         )
         assertEquals(ConnectionType.PIPE, conn.type)
@@ -27,9 +31,8 @@ class ConnectionTypeTest {
     @Test
     fun `connection with explicit TELEGRAPH type keeps the value`() {
         val conn = Connection(
-            id = "id",
-            originId = "a",
-            targetId = "b",
+            originId = uA,
+            targetId = uB,
             path = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0)),
             type = ConnectionType.TELEGRAPH,
         )
@@ -39,9 +42,8 @@ class ConnectionTypeTest {
     @Test
     fun `connection name and description default to null`() {
         val conn = Connection(
-            id = "id",
-            originId = "a",
-            targetId = "b",
+            originId = uA,
+            targetId = uB,
             path = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0)),
         )
         assertNull(conn.name)
@@ -51,9 +53,8 @@ class ConnectionTypeTest {
     @Test
     fun `connection stores optional name and description`() {
         val conn = Connection(
-            id = "id",
-            originId = "a",
-            targetId = "b",
+            originId = uA,
+            targetId = uB,
             path = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0)),
             type = ConnectionType.STREET,
             name = "Main Road",
@@ -64,4 +65,3 @@ class ConnectionTypeTest {
         assertEquals(ConnectionType.STREET, conn.type)
     }
 }
-

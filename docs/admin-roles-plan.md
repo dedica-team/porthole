@@ -69,7 +69,7 @@ No JWT claim changes needed — admin status is resolved fresh on every session 
 
 **New file:** `server/src/main/kotlin/team/dedica/porthole/application/lobby/DeleteMapUseCase.kt`
 
-- Signature: `fun execute(mapId: String, callerUserId: String)`
+- Signature: `fun execute(mapId: UUID, callerUserId: String)`
 - Asserts `adminService.isAdmin(callerUserId)` — throws `AccessDeniedException` if not.
 - Calls `mapStatePort.delete(mapId)` (method already exists on `MapStatePort`).
 - Optionally sends a deletion broadcast via `BroadcastPort` so connected WebSocket clients can react.
@@ -78,7 +78,7 @@ No JWT claim changes needed — admin status is resolved fresh on every session 
 
 **New file:** `server/src/main/kotlin/team/dedica/porthole/application/lobby/AdminJoinMapUseCase.kt`
 
-- Signature: `fun execute(mapId: String, callerUsername: String): MapState`
+- Signature: `fun execute(mapId: UUID, callerUsername: String): MapState`
 - Resolves the user via `userPort.findByUsername(username)`.
 - Asserts `adminService.isAdmin(user.id)` — throws `AccessDeniedException` if not.
 - Bypasses the `CollaborationMode` check entirely (unlike `JoinMapUseCase`).
@@ -89,7 +89,7 @@ No JWT claim changes needed — admin status is resolved fresh on every session 
 
 **New file:** `server/src/main/kotlin/team/dedica/porthole/application/session/landscaping/ChangeLandmarkOwnerUseCase.kt`
 
-- Signature: `fun execute(mapId: String, callerUsername: String, landmarkId: String, newOwnerId: String): MapState`
+- Signature: `fun execute(mapId: UUID, callerUsername: String, landmarkId: String, newOwnerId: String): MapState`
 - Resolves caller; asserts `adminService.isAdmin(caller.id)`.
 - Validates that `newOwnerId` is an existing collaborator on the map (`state.isCollaborator(newOwnerId)`).
 - Updates: `state.landmarks[landmarkId] = landmark.copy(ownerId = newOwnerId)`.
@@ -167,7 +167,7 @@ export async function adminJoinMap(mapId: string): Promise<MapState>
 export async function exportMapJson(mapId: string): Promise<MapState>
 
 // PATCH /api/maps/{id}/landmarks/{landmarkId}/owner
-export async function changeLandmarkOwner(mapId: string, landmarkId: string, ownerId: string): Promise<MapState>
+export async function changeLandmarkOwner(mapId: UUID, landmarkId: string, ownerId: string): Promise<MapState>
 ```
 
 ---

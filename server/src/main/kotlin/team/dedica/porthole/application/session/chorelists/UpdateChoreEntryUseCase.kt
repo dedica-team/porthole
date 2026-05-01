@@ -3,22 +3,23 @@ package team.dedica.porthole.application.session.chorelists
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.ChoreEntryState
 import team.dedica.porthole.domain.ChoreList
+import java.util.UUID
 
 @Component
 class UpdateChoreEntryUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
     fun execute(
-        mapId: String,
-        listId: String,
-        landmarkId: String,
+        mapId: UUID,
+        listId: UUID,
+        landmarkId: UUID,
         state: ChoreEntryState?,
-        assigneeId: String?,
+        assigneeId: UUID?,
         clearAssignee: Boolean,
         link: String?,
         clearLink: Boolean,

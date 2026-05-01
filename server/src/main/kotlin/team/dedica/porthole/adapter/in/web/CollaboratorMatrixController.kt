@@ -12,6 +12,7 @@ import team.dedica.porthole.application.session.metrics.EditCollaboratorMatrixUs
 import team.dedica.porthole.application.session.metrics.GetCollaboratorMatrixUseCase
 import team.dedica.porthole.application.session.metrics.SetMatrixEntryUseCase
 import team.dedica.porthole.domain.MatrixLevel
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/maps/{id}/collaborator-matrix")
@@ -26,7 +27,7 @@ class CollaboratorMatrixController(
         @PathVariable id: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(getCollaboratorMatrixUseCase.execute(id, user.username))
+        ResponseEntity.ok(getCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.username))
 
     @PatchMapping
     fun editMatrix(
@@ -36,7 +37,7 @@ class CollaboratorMatrixController(
     ): ResponseEntity<Any> {
         val name = request.name?.trim()
         if (name.isNullOrBlank()) return ResponseEntity.badRequest().body("Matrix name must not be blank")
-        return ResponseEntity.ok(editCollaboratorMatrixUseCase.execute(id, user.username, name))
+        return ResponseEntity.ok(editCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.username, name))
     }
 
     @PutMapping("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
@@ -49,7 +50,15 @@ class CollaboratorMatrixController(
     ): ResponseEntity<Any> {
         val level = runCatching { MatrixLevel.valueOf(request.level.uppercase()) }
             .getOrElse { return ResponseEntity.badRequest().body("Unknown matrix level: ${request.level}") }
-        return ResponseEntity.ok(setMatrixEntryUseCase.execute(id, user.username, landmarkId, collaboratorId, level))
+        return ResponseEntity.ok(
+            setMatrixEntryUseCase.execute(
+                UUID.fromString(id),
+                user.username,
+                UUID.fromString(landmarkId),
+                UUID.fromString(collaboratorId),
+                level
+            )
+        )
     }
 
     @DeleteMapping("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
@@ -59,6 +68,13 @@ class CollaboratorMatrixController(
         @PathVariable collaboratorId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<*> =
-        ResponseEntity.ok(clearMatrixEntryUseCase.execute(id, user.username, landmarkId, collaboratorId))
+        ResponseEntity.ok(
+            clearMatrixEntryUseCase.execute(
+                UUID.fromString(id),
+                user.username,
+                UUID.fromString(landmarkId),
+                UUID.fromString(collaboratorId)
+            )
+        )
 }
 

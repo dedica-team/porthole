@@ -4,13 +4,14 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Component
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.application.port.MapStatePort
+import java.util.UUID
 
 @Component
 class DeleteMapUseCase(
     private val mapStatePort: MapStatePort,
     private val adminService: AdminService,
 ) {
-    fun execute(mapId: String, callerUserId: String) {
+    fun execute(mapId: UUID, callerUserId: UUID) {
         if (!adminService.isAdmin(callerUserId)) {
             throw AccessDeniedException("Only admins can delete sessions")
         }

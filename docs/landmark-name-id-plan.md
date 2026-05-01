@@ -46,7 +46,7 @@ id = name.trim().lowercase()
 - Tower-ID ist jetzt der Slug statt einer UUID.
 
 ```kotlin
-fun execute(mapId: String, username: String, coordinate: HexCoordinate, name: String): MapState {
+fun execute(mapId: UUID, username: String, coordinate: HexCoordinate, name: String): MapState {
     ...
     val id = toSlug(name)
     require(id.isNotEmpty()) { "Landmark-Name ergibt keine gültige ID" }
@@ -86,7 +86,7 @@ class RemoveTowerUseCase(
     private val mapStatePort: MapStatePort,
     private val broadcastPort: BroadcastPort,
 ) {
-    fun execute(mapId: String, username: String, towerId: String): MapState {
+    fun execute(mapId: UUID, username: String, towerId: String): MapState {
         val state = mapStatePort.findById(mapId)
             ?: throw NoSuchElementException("Map $mapId not found")
         val user = userPort.findByUsername(username)
@@ -141,14 +141,14 @@ export interface Tower {
 - `placeTower` um `name: string` erweitern:
 
 ```typescript
-export async function placeTower(mapId: string, q: number, r: number, name: string): Promise<MapState>
+export async function placeTower(mapId: UUID, q: number, r: number, name: string): Promise<MapState>
 // body: JSON.stringify({ q, r, name })
 ```
 
 - Neue Funktion `removeTower`:
 
 ```typescript
-export async function removeTower(mapId: string, towerId: string): Promise<MapState> {
+export async function removeTower(mapId: UUID, towerId: string): Promise<MapState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/towers/${towerId}`, {
     method: 'DELETE',
     headers: authHeaders(),

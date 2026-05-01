@@ -5,18 +5,19 @@ import org.springframework.stereotype.Component
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Collaborator
 import team.dedica.porthole.domain.MapState
+import java.util.UUID
 
 @Component
 class AdminJoinMapUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
     private val adminService: AdminService,
 ) {
-    fun execute(mapId: String, callerUsername: String): MapState {
+    fun execute(mapId: UUID, callerUsername: String): MapState {
         val user = userPort.findByUsername(callerUsername)
             ?: throw NoSuchElementException("User $callerUsername not found")
         if (!adminService.isAdmin(user.id)) {

@@ -1,5 +1,7 @@
 package team.dedica.porthole.adapter.out.messaging
 
+import java.util.UUID
+
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.domain.*
@@ -11,13 +13,15 @@ import java.util.concurrent.atomic.AtomicReference
 
 class MapStateBroadcastDtoTest {
 
+    private val lmId = UUID.nameUUIDFromBytes("lm-1".toByteArray())
+
     private fun buildState(): MapState {
         val map = HexMap.createHexagonal(radius = 2, elevationFn = { 3 })
         val state = MapState(map = map)
-        state.collaborators.add(Collaborator(id = "u1", username = "alice"))
-        state.landmarks["lm-1"] = Landmark(id = "lm-1", name = "Entrance")
-        state.collaboratorMatrix.entries["lm-1"] = mutableMapOf(
-            "u1" to CollaboratorMatrixEntry(MatrixLevel.HIGH)
+        state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
+        state.landmarks[lmId] = Landmark(id = lmId, name = "Entrance")
+        state.collaboratorMatrix.entries[lmId] = mutableMapOf(
+            UUID.nameUUIDFromBytes("u1".toByteArray()) to CollaboratorMatrixEntry(MatrixLevel.HIGH)
         )
         return state
     }
@@ -27,13 +31,11 @@ class MapStateBroadcastDtoTest {
         val state = buildState()
         val dto = MapStateBroadcastDto.from(state)
 
-        // Mutate originals after snapshot
-        state.landmarks["lm-2"] = Landmark(id = "lm-2", name = "Exit")
-        state.collaborators.add(Collaborator(id = "u2", username = "bob"))
-        state.collaboratorMatrix.entries["lm-1"]!!["u1"] = CollaboratorMatrixEntry(MatrixLevel.LOW)
-        state.collaboratorMatrix.entries["lm-2"] = mutableMapOf("u1" to CollaboratorMatrixEntry(MatrixLevel.MEDIUM))
+        state.landmarks[UUID.randomUUID()] = Landmark(id = UUID.randomUUID(), name = "Exit")
+        state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u2".toByteArray()), username = "bob"))
+        state.collaboratorMatrix.entries[lmId]!![UUID.nameUUIDFromBytes("u1".toByteArray())] = CollaboratorMatrixEntry(MatrixLevel.LOW)
+        state.collaboratorMatrix.entries[UUID.randomUUID()] = mutableMapOf(UUID.nameUUIDFromBytes("u1".toByteArray()) to CollaboratorMatrixEntry(MatrixLevel.MEDIUM))
 
-        // DTO must still reflect the original snapshot (matrix is no longer part of the main DTO)
         assertEquals(1, dto.landmarks.size, "landmarks snapshot should not grow")
         assertEquals(1, dto.collaborators.size, "collaborators snapshot should not grow")
     }
@@ -41,29 +43,28 @@ class MapStateBroadcastDtoTest {
     @Test
     fun `matrix snapshot via MapStateBroadcaster is independent of the original state`() {
         val state = buildState()
-        // Capture a snapshot the same way MapStateBroadcaster.sendMatrix does
+        val u1 = UUID.nameUUIDFromBytes("u1".toByteArray())
         val snapshot = CollaboratorMatrix(
             name = state.collaboratorMatrix.name,
             entries = state.collaboratorMatrix.entries.entries
                 .associate { (k, v) -> k to v.toMap().toMutableMap() }.toMutableMap(),
         )
 
-        // Mutate original after snapshot
-        state.collaboratorMatrix.entries["lm-1"]!!["u1"] = CollaboratorMatrixEntry(MatrixLevel.LOW)
-        state.collaboratorMatrix.entries["lm-2"] = mutableMapOf("u1" to CollaboratorMatrixEntry(MatrixLevel.MEDIUM))
+        state.collaboratorMatrix.entries[lmId]!![u1] = CollaboratorMatrixEntry(MatrixLevel.LOW)
+        state.collaboratorMatrix.entries[UUID.randomUUID()] = mutableMapOf(u1 to CollaboratorMatrixEntry(MatrixLevel.MEDIUM))
 
-        assertEquals(MatrixLevel.HIGH, snapshot.entries["lm-1"]!!["u1"]!!.level,
+        assertEquals(MatrixLevel.HIGH, snapshot.entries[lmId]!![u1]!!.level,
             "matrix snapshot should retain original value")
-        assertNull(snapshot.entries["lm-2"], "new matrix rows must not appear in snapshot")
+        assertEquals(1, snapshot.entries.size, "new matrix rows must not appear in snapshot")
     }
 
     @Test
     fun `from does not throw ConcurrentModificationException when state is mutated concurrently`() {
         val state = buildState()
-        // Pre-populate matrix with enough entries to make iteration non-trivial
+        val u1 = UUID.nameUUIDFromBytes("u1".toByteArray())
         repeat(20) { i ->
-            state.collaboratorMatrix.entries["lm-$i"] = mutableMapOf(
-                "u1" to CollaboratorMatrixEntry(MatrixLevel.MEDIUM)
+            state.collaboratorMatrix.entries[UUID.nameUUIDFromBytes("lm-$i".toByteArray())] = mutableMapOf(
+                u1 to CollaboratorMatrixEntry(MatrixLevel.MEDIUM)
             )
         }
 
@@ -71,13 +72,12 @@ class MapStateBroadcastDtoTest {
         val latch = CountDownLatch(1)
         val executor = Executors.newSingleThreadExecutor()
 
-        // Writer thread: continuously mutates the matrix while the main thread snapshots
         val writer = executor.submit {
             latch.await()
             repeat(1000) { i ->
-                state.collaboratorMatrix.entries["lm-writer-$i"] =
-                    ConcurrentHashMap<String, CollaboratorMatrixEntry>().also {
-                        it["u1"] = CollaboratorMatrixEntry(MatrixLevel.LOW)
+                state.collaboratorMatrix.entries[UUID.nameUUIDFromBytes("lm-writer-$i".toByteArray())] =
+                    ConcurrentHashMap<UUID, CollaboratorMatrixEntry>().also {
+                        it[u1] = CollaboratorMatrixEntry(MatrixLevel.LOW)
                     }
             }
         }
@@ -97,6 +97,3 @@ class MapStateBroadcastDtoTest {
         assertNull(error.get()) { "Expected no exception during concurrent from(), got: ${error.get()}" }
     }
 }
-
-
-

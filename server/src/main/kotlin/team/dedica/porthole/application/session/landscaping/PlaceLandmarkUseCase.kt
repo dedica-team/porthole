@@ -3,7 +3,7 @@ package team.dedica.porthole.application.session.landscaping
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.ConnectionRecalculator
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.Landmark
@@ -21,12 +21,12 @@ import java.util.UUID
 @Component
 class PlaceLandmarkUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
 
     fun execute(
-        mapId: String,
+        mapId: UUID,
         username: String,
         coordinate: HexCoordinate,
         name: String,
@@ -40,15 +40,12 @@ class PlaceLandmarkUseCase(
         state.requireCollaborator(collaboratorId)
 
         require(name.isNotBlank()) { "Landmark name must not be empty" }
-        val id = if (type == LandmarkType.WALL) UUID.randomUUID().toString() else toSlug(name)
-        require(id.isNotEmpty()) { "Landmark name '$name' does not produce a valid ID" }
-        require(state.landmarks[id] == null) { "Landmark ID '$id' is already taken" }
 
         state.map.getTile(coordinate)
             ?: error("Tile at $coordinate does not exist")
         require(state.getLandmarkAt(coordinate) == null) { "A landmark already exists at $coordinate" }
 
-        state.map.setOwner(coordinate, collaboratorId)
+        val id = UUID.randomUUID()
         val landmark = Landmark(id = id, name = name, ownerId = null, coordinate = coordinate, type = type)
         state.landmarks[landmark.id] = landmark
 
@@ -59,12 +56,4 @@ class PlaceLandmarkUseCase(
         broadcastPort.send(mapId, state)
         return state
     }
-
-    private fun toSlug(name: String): String =
-        name.trim().lowercase()
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trimStart('-').trimEnd('-')
 }
-

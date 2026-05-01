@@ -1,6 +1,7 @@
 package team.dedica.porthole.adapter.out.messaging
 import team.dedica.porthole.domain.*
 import java.time.Instant
+import java.util.UUID
 /**
  * The payload sent to WebSocket subscribers on /topic/map/{id}.
  * Metrics, chore lists, and the collaborator matrix are broadcast on
@@ -11,9 +12,9 @@ data class MapStateBroadcastDto(
     val id: String,
     val map: HexMap,
     val collaborators: List<Collaborator>,
-    val landmarks: Map<String, Landmark>,
-    val connections: Map<String, Connection>,
-    val groups: Map<String, LandmarkGroup>,
+    val landmarks: Map<UUID, Landmark>,
+    val connections: Map<UUID, Connection>,
+    val groups: Map<UUID, LandmarkGroup>,
     val createdAt: Instant,
     val name: String?,
     val description: String?,
@@ -22,7 +23,7 @@ data class MapStateBroadcastDto(
 ) {
     companion object {
         fun from(state: MapState) = MapStateBroadcastDto(
-            id = state.id,
+            id = state.id.toString(),
             map = state.map,
             collaborators = state.collaborators.toList(),
             landmarks = state.landmarks.toMap(),

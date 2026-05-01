@@ -1,17 +1,11 @@
 package team.dedica.porthole.domain
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.application.NoOpBroadcastPort
 import team.dedica.porthole.application.session.metrics.CreateMetricUseCase
 
-/**
- * Tests for metrics behaviour on [MapState] and [Landmark].
- *
- * The former EclipseStore null-field workarounds (`safeMetrics()`, `safeGroups()`)
- * have been removed. Jackson always initialises fields to their default values,
- * so the metrics map is never null.
- */
 class MetricsTest {
 
     // ── MapState.metrics ──────────────────────────────────────────────────────
@@ -26,17 +20,20 @@ class MetricsTest {
     @Test
     fun `metrics can be mutated on a MapState`() {
         val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
-        val metric = QualityMetric(id = "m1", name = "Availability", description = "Uptime")
-        state.metrics["m1"] = metric
-        assertEquals(metric, state.metrics["m1"])
+        val id = UUID.randomUUID()
+        val metric = QualityMetric(id = id, name = "Availability", description = "Uptime")
+        state.metrics[id] = metric
+        assertEquals(metric, state.metrics[id])
         assertEquals(1, state.metrics.size)
     }
 
     @Test
     fun `metrics on already-populated state returns all entries`() {
         val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
-        state.metrics["m1"] = QualityMetric(id = "m1", name = "Latency", description = "ms")
-        state.metrics["m2"] = QualityMetric(id = "m2", name = "Errors", description = "err/s")
+        val id1 = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+        state.metrics[id1] = QualityMetric(id = id1, name = "Latency", description = "ms")
+        state.metrics[id2] = QualityMetric(id = id2, name = "Errors", description = "err/s")
         assertEquals(2, state.metrics.size)
     }
 
@@ -44,27 +41,29 @@ class MetricsTest {
 
     @Test
     fun `landmark metrics defaults to empty map`() {
-        val lm = Landmark(id = "x", ownerId = "p1", coordinate = HexCoordinate(0, 0))
+        val lm = Landmark(id = UUID.nameUUIDFromBytes("x".toByteArray()), ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()), coordinate = HexCoordinate(0, 0))
         assertNotNull(lm.metrics)
         assertTrue(lm.metrics.isEmpty())
     }
 
     @Test
     fun `landmark metrics returns existing entries`() {
-        val entry = LandmarkMetricEntry(metricId = "m1", value = "99 %", level = QualityLevel.OK)
+        val mId = UUID.randomUUID()
+        val entry = LandmarkMetricEntry(metricId = mId, value = "99 %", level = QualityLevel.OK)
         val lm = Landmark(
-            id = "x", ownerId = "p1", coordinate = HexCoordinate(0, 0),
-            metrics = mapOf("m1" to entry),
+            id = UUID.nameUUIDFromBytes("x".toByteArray()), ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()), coordinate = HexCoordinate(0, 0),
+            metrics = mapOf(mId to entry),
         )
-        assertEquals(entry, lm.metrics["m1"])
+        assertEquals(entry, lm.metrics[mId])
     }
 
     @Test
     fun `landmark metrics can be updated via copy`() {
-        val lm = Landmark(id = "x", ownerId = "p1", coordinate = HexCoordinate(0, 0))
-        val entry = LandmarkMetricEntry(metricId = "m1", value = "42 ms", level = QualityLevel.WARNING)
-        val updated = lm.copy(metrics = lm.metrics + ("m1" to entry))
-        assertEquals(entry, updated.metrics["m1"])
+        val lm = Landmark(id = UUID.nameUUIDFromBytes("x".toByteArray()), ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()), coordinate = HexCoordinate(0, 0))
+        val mId = UUID.randomUUID()
+        val entry = LandmarkMetricEntry(metricId = mId, value = "42 ms", level = QualityLevel.WARNING)
+        val updated = lm.copy(metrics = lm.metrics + (mId to entry))
+        assertEquals(entry, updated.metrics[mId])
         assertTrue(lm.metrics.isEmpty(), "original landmark must be unchanged (immutable copy)")
     }
 
@@ -73,12 +72,12 @@ class MetricsTest {
     @Test
     fun `CreateMetricUseCase adds a metric to the state`() {
         val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
-        val collaborator = Collaborator(id = "p1", username = "Alice")
+        val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
         state.collaborators.add(collaborator)
         val port  = team.dedica.porthole.application.InMemoryMapStatePort()
         port.save(state)
         val userPort = team.dedica.porthole.application.InMemoryTestUserRepository().also {
-            it.save(team.dedica.porthole.adapter.out.repository.UserRecord("p1", "Alice", "gh-1"))
+            it.save(team.dedica.porthole.adapter.out.repository.UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
         }
         val uc = CreateMetricUseCase(
             port, userPort, NoOpBroadcastPort()

@@ -1,8 +1,11 @@
 package team.dedica.porthole.adapter.`in`.web.dto
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.ser.std.UUIDSerializer
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import team.dedica.porthole.domain.ChoreEntryState
+import java.util.UUID
 
 data class ChangeLandmarkOwnerRequest(
     val ownerId: String?,  // null or blank → unset owner
@@ -169,7 +172,8 @@ data class EditChoreListRequest(
 
 data class UpdateChoreEntryRequest(
     val state: ChoreEntryState? = null,
-    val assigneeId: String? = null,
+    @param:JsonSerialize(using = UUIDSerializer::class)
+    val assigneeId: UUID? = null,
     val clearAssignee: Boolean = false,
     val link: String? = null,
     val clearLink: Boolean = false,

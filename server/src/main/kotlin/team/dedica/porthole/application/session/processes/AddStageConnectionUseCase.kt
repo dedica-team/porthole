@@ -2,21 +2,22 @@ package team.dedica.porthole.application.session.processes
 
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Process
 import team.dedica.porthole.domain.StageConnection
 import team.dedica.porthole.domain.StageConnectionDirection
+import java.util.UUID
 
 @Component
 class AddStageConnectionUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
 ) {
     fun execute(
-        mapId: String,
-        processId: String,
-        stageId: String,
-        connectionId: String,
+        mapId: UUID,
+        processId: UUID?,
+        stageId: UUID?,
+        connectionId: UUID,
         title: String?,
         direction: String,
         username: String,

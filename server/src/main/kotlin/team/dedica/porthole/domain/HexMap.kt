@@ -15,24 +15,21 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
     // internal so that the persistence layer can store the tileMap directly
     internal val tileMap: MutableMap<HexCoordinate, HexTile> =
         tiles.associateBy { it.coordinate }.toMutableMap()
+
     @get:JsonProperty("tiles")
     val allTiles: Collection<HexTile> get() = tileMap.values
     val size: Int get() = tileMap.size
     fun getTile(coordinate: HexCoordinate): HexTile? = tileMap[coordinate]
     fun getNeighbours(coordinate: HexCoordinate): List<HexTile> =
         coordinate.neighbours().mapNotNull { tileMap[it] }
-    fun getTilesOwnedBy(collaboratorId: String): List<HexTile> =
-        tileMap.values.filter { it.ownerId == collaboratorId }
-    fun setOwner(coordinate: HexCoordinate, collaboratorId: String?) {
-        tileMap[coordinate]?.let { tile ->
-            tileMap[coordinate] = tile.copy(ownerId = collaboratorId)
-        }
-    }
+
     fun setTile(coordinate: HexCoordinate, tile: HexTile) {
         tileMap[coordinate] = tile
     }
-     fun isAdjacent(a: HexCoordinate, b: HexCoordinate): Boolean =
+
+    fun isAdjacent(a: HexCoordinate, b: HexCoordinate): Boolean =
         a.distanceTo(b) == 1
+
     companion object {
         /** Classic hexagonal map (used by tests). */
         fun createHexagonal(
@@ -55,6 +52,7 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
             }
             return HexMap(tiles)
         }
+
         /**
          * Rectangular offset grid of [cols] x [rows] hex tiles with
          * Perlin-noise elevation. Elevation == 0 means water (not walkable).
@@ -76,12 +74,12 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
                     // Map [-1,1] to [0,5]. Values below 0.3 (normalised) become water (0).
                     val normalised = (raw + 1.0) / 2.0   // 0..1
                     val elev = if (normalised < 0.35) 0
-                               else ((normalised - 0.35) / 0.65 * 5.0).toInt().coerceIn(1, 5)
+                    else ((normalised - 0.35) / 0.65 * 5.0).toInt().coerceIn(1, 5)
                     val terrain = when {
                         normalised < 0.35 -> Terrain.WATER
                         normalised < 0.50 -> Terrain.GRASS
                         normalised < 0.70 -> Terrain.FOREST
-                        else              -> Terrain.ROCKS
+                        else -> Terrain.ROCKS
                     }
                     tiles += HexTile(coordinate = coord, elevation = elev, terrain = terrain)
                 }
@@ -106,23 +104,24 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
 
             // Island centres in grid space (col, row)
             data class IslandSeed(val col: Double, val row: Double, val radius: Double)
+
             val margin = 4
             val islands = List(islandCount) {
                 IslandSeed(
-                    col    = margin + rng.nextDouble() * (cols - 2 * margin),
-                    row    = margin + rng.nextDouble() * (rows - 2 * margin),
+                    col = margin + rng.nextDouble() * (cols - 2 * margin),
+                    row = margin + rng.nextDouble() * (rows - 2 * margin),
                     radius = 2.0 + rng.nextDouble() * 4.0,   // 2..6 tiles radius
                 )
             }
 
             val qOffset = cols / 2
             val rOffset = rows / 2
-            val tiles   = mutableListOf<HexTile>()
+            val tiles = mutableListOf<HexTile>()
 
             for (col in 0 until cols) {
                 for (row in 0 until rows) {
-                    val q     = col - qOffset
-                    val r     = row - rOffset - (q - (q and 1)) / 2
+                    val q = col - qOffset
+                    val r = row - rOffset - (q - (q and 1)) / 2
                     val coord = HexCoordinate(q, r)
 
                     // Island influence: max over all island seeds of a Gaussian blob
@@ -134,8 +133,8 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
                     ) * 1.5   // [-1.5, 1.5]
 
                     val influence = islands.maxOf { isl ->
-                        val dx   = col - isl.col
-                        val dy   = row - isl.row
+                        val dx = col - isl.col
+                        val dy = row - isl.row
                         val dist = Math.sqrt(dx * dx + dy * dy)
                         // Gaussian falloff + wobble to break symmetry
                         val adjusted = dist - wobble
@@ -155,8 +154,8 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
                         influence < 0.45 -> Terrain.BEACH to 1
                         else -> when {
                             interiorN < 0.30 -> Terrain.SWAMP to 1
-                            interiorN < 0.65 -> Terrain.GRASS  to (2 + (interiorN * 3).toInt()).coerceIn(2, 4)
-                            else             -> Terrain.ROCKS  to (3 + (interiorN * 2).toInt()).coerceIn(3, 5)
+                            interiorN < 0.65 -> Terrain.GRASS to (2 + (interiorN * 3).toInt()).coerceIn(2, 4)
+                            else -> Terrain.ROCKS to (3 + (interiorN * 2).toInt()).coerceIn(3, 5)
                         }
                     }
 
@@ -165,6 +164,7 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
             }
             return HexMap(tiles)
         }
+
         fun createBlankGrid(cols: Int, rows: Int): HexMap {
             val qOffset = cols / 2
             val rOffset = rows / 2

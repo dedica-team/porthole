@@ -1,5 +1,7 @@
 package team.dedica.porthole.adapter.out.persistence
 
+import java.util.UUID
+
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
@@ -34,15 +36,15 @@ class JsonMapStateRepositoryTest {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
         val state = MapState(map = map)
         val coord = HexCoordinate(0, 0)
+        val landmarkId = UUID.randomUUID()
         val landmark = Landmark(
-            id = UUID.randomUUID().toString(),
+            id = landmarkId,
             name = "Test Landmark",
-            ownerId = "p1",
+            ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
             coordinate = coord,
             type = LandmarkType.KEEP,
         )
         state.landmarks[landmark.id] = landmark
-        state.map.setOwner(coord, "p1")
         return state
     }
 
@@ -51,7 +53,8 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class Crud {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         @Test
         fun `save and findById returns the same state`() {
@@ -89,7 +92,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `findById returns null for unknown id`() {
             val repo = repoAt(dir)
-            assertNull(repo.findById("does-not-exist"))
+            assertNull(repo.findById(UUID.randomUUID()))
         }
     }
 
@@ -98,7 +101,8 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class Persistence {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         private fun flush(repo: JsonMapStateRepository) {
             repo.javaClass.getDeclaredField("store")
@@ -136,20 +140,6 @@ class JsonMapStateRepositoryTest {
         }
 
         @Test
-        fun `tile ownership survives a restart`() {
-            val repo = repoAt(dir)
-            val state = createStateWithLandmark()
-            val coord = state.landmarks.values.first().coordinate!!
-            repo.save(state)
-            flush(repo)
-
-            val loaded = repoAt(dir).findById(state.id)!!
-            val tile = loaded.map.getTile(coord)
-            assertNotNull(tile)
-            assertEquals("p1", tile!!.ownerId)
-        }
-
-        @Test
         fun `landmark type change survives a restart`() {
             val repo = repoAt(dir)
             val state = createStateWithLandmark()
@@ -170,13 +160,12 @@ class JsonMapStateRepositoryTest {
             val coords = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0), HexCoordinate(-1, 1))
             coords.forEach { coord ->
                 val lm = Landmark(
-                    id = UUID.randomUUID().toString(),
+                    id = UUID.randomUUID(),
                     name = "Landmark $coord",
-                    ownerId = "p1",
+                    ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
                     coordinate = coord,
                 )
                 state.landmarks[lm.id] = lm
-                state.map.setOwner(coord, "p1")
             }
             repo.save(state)
             flush(repo)
@@ -224,7 +213,7 @@ class JsonMapStateRepositoryTest {
             // list; Jackson must not try to set it during deserialization.
             val repo = repoAt(dir)
             val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
-            state.collaborators.add(Collaborator(id = "u1", username = "alice"))
+            state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
             repo.save(state)
             flush(repo)
 
@@ -244,10 +233,14 @@ class JsonMapStateRepositoryTest {
             val mapsDir = dir.resolve("maps").also { Files.createDirectories(it) }
             mapsDir.resolve("bad-id.json").toFile().writeText("{ this is not valid json }")
             val ex = assertThrows<IllegalStateException> { storeAt(dir) }
-            assertTrue(ex.message!!.contains("Data corruption"),
-                "Exception message should mention data corruption")
-            assertTrue(ex.message!!.contains("bad-id.json"),
-                "Exception message should name the corrupt file")
+            assertTrue(
+                ex.message!!.contains("Data corruption"),
+                "Exception message should mention data corruption"
+            )
+            assertTrue(
+                ex.message!!.contains("bad-id.json"),
+                "Exception message should name the corrupt file"
+            )
         }
 
         @Test
@@ -264,7 +257,8 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class EnumSerialization {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         @Test
         fun `terrain enum is written as string name in JSON`() {
@@ -275,11 +269,15 @@ class JsonMapStateRepositoryTest {
             store.flushAllDirtyMaps()
 
             val json = dir.resolve("maps/${state.id}.json").toFile().readText()
-            assertTrue(json.contains("\"GRASS\"") || json.contains("\"WATER\"") ||
-                       json.contains("\"FOREST\"") || json.contains("\"ROCKS\""),
-                "Terrain enum should be serialised as a string name, not an ordinal")
-            assertFalse(json.matches(Regex(".*\"terrain\"\\s*:\\s*\\d.*")),
-                "Terrain must not be a number in JSON")
+            assertTrue(
+                json.contains("\"GRASS\"") || json.contains("\"WATER\"") ||
+                        json.contains("\"FOREST\"") || json.contains("\"ROCKS\""),
+                "Terrain enum should be serialised as a string name, not an ordinal"
+            )
+            assertFalse(
+                json.matches(Regex(".*\"terrain\"\\s*:\\s*\\d.*")),
+                "Terrain must not be a number in JSON"
+            )
         }
 
         @Test
@@ -328,34 +326,44 @@ class JsonMapStateRepositoryTest {
             // Simulate a JSON file written with a now-removed type (e.g. "WATERMILL")
             val json = "\"WATERMILL\""
             val result = mapper.readValue<LandmarkType>(json)
-            assertEquals(LandmarkType.KEEP, result,
-                "Unknown LandmarkType 'WATERMILL' should fall back to KEEP")
+            assertEquals(
+                LandmarkType.KEEP, result,
+                "Unknown LandmarkType 'WATERMILL' should fall back to KEEP"
+            )
         }
 
         @Test
         fun `DEPRECATED_ prefixed LandmarkType in JSON is mapped to KEEP`() {
             val json = "\"DEPRECATED_WELL\""
             val result = mapper.readValue<LandmarkType>(json)
-            assertEquals(LandmarkType.KEEP, result,
-                "Deprecated LandmarkType 'DEPRECATED_WELL' should fall back to KEEP")
+            assertEquals(
+                LandmarkType.KEEP, result,
+                "Deprecated LandmarkType 'DEPRECATED_WELL' should fall back to KEEP"
+            )
         }
 
         @Test
         fun `landmark with unknown type in full MapState JSON is loaded with KEEP`(@TempDir dir: Path) {
             val mapsDir = dir.resolve("maps").also { Files.createDirectories(it) }
+            val lmUuid = "00000000-0000-0000-0000-000000000001"
+            val ownerUuid = UUID.nameUUIDFromBytes("p1".toByteArray())
+            val mapId = UUID.randomUUID()
             val rawJson = buildString {
-                append("""{"id":"map-id-1","map":{"tiles":[""")
-                append("""{"coordinate":{"q":0,"r":0},"elevation":2,"terrain":"GRASS","ownerId":"p1"}""")
-                append("""]},"collaborators":[],"landmarks":{"lm1":{"id":"lm1","name":"lm1",""")
-                append(""""ownerId":"p1","coordinate":{"q":0,"r":0},"type":"WATERMILL",""")
+                append("""{"id":"$mapId","map":{"tiles":[""")
+                append("""{"coordinate":{"q":0,"r":0},"elevation":2,"terrain":"GRASS"}""")
+                append("""]},""")
+                append(""""collaborators":[],"landmarks":{"$lmUuid":{"id":"$lmUuid","name":"lm1",""")
+                append(""""ownerId":"$ownerUuid","coordinate":{"q":0,"r":0},"type":"WATERMILL",""")
                 append(""""metrics":{}}},"connections":{},"groups":{},"metrics":{},""")
                 append(""""createdAt":"2024-01-01T00:00:00Z"}}""")
             }
             mapsDir.resolve("map-id-1.json").toFile().writeText(rawJson)
 
-            val loaded = repoAt(dir).findById("map-id-1")!!
-            assertEquals(LandmarkType.KEEP, loaded.landmarks["lm1"]!!.type,
-                "Landmark with removed type 'WATERMILL' should be loaded as KEEP")
+            val loaded = repoAt(dir).findById(mapId)!!
+            assertEquals(
+                LandmarkType.KEEP, loaded.landmarks[UUID.fromString(lmUuid)]!!.type,
+                "Landmark with removed type 'WATERMILL' should be loaded as KEEP"
+            )
         }
     }
 
@@ -364,7 +372,8 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class HexCoordinateKeys {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         @Test
         fun `HexCoordinate map key is written as q colon r string`() {
@@ -386,15 +395,17 @@ class JsonMapStateRepositoryTest {
             val map = HexMap.createHexagonal(radius = 2, elevationFn = { 2 })
             val state = MapState(map = map)
             val negCoord = HexCoordinate(-2, 1)
-            val lm = Landmark(id = "neg-lm", ownerId = "p1", coordinate = negCoord)
+            val lm = Landmark(
+                id = UUID.nameUUIDFromBytes("neg-lm".toByteArray()),
+                ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
+                coordinate = negCoord
+            )
             state.landmarks[lm.id] = lm
-            state.map.setOwner(negCoord, "p1")
             repo.save(state)
             store.flushAllDirtyMaps()
 
             val loaded = repoAt(dir).findById(state.id)!!
             assertNotNull(loaded.getLandmarkAt(negCoord))
-            assertEquals("p1", loaded.map.getTile(negCoord)?.ownerId)
         }
     }
 
@@ -403,14 +414,17 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class DirtyFlag {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         @Test
         fun `no file is written when nothing changed`() {
             val store = storeAt(dir)
             store.flushAllDirtyMaps()  // nothing dirty yet
-            assertFalse(dir.resolve("maps").toFile().listFiles()?.isNotEmpty() ?: false,
-                "No map file must be written when nothing is dirty")
+            assertFalse(
+                dir.resolve("maps").toFile().listFiles()?.isNotEmpty() ?: false,
+                "No map file must be written when nothing is dirty"
+            )
         }
 
         @Test
@@ -435,8 +449,10 @@ class JsonMapStateRepositoryTest {
             val lastMod = file.lastModified()
             Thread.sleep(50)
             store.flushAllDirtyMaps() // flag is false – must not write
-            assertEquals(lastMod, file.lastModified(),
-                "File must not be touched when dirty flag is false")
+            assertEquals(
+                lastMod, file.lastModified(),
+                "File must not be touched when dirty flag is false"
+            )
         }
     }
 
@@ -445,7 +461,8 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class FullGraph {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         private fun flush(store: JsonStore) = store.flushAllDirtyMaps()
 
@@ -455,12 +472,20 @@ class JsonMapStateRepositoryTest {
             val repo = JsonMapStateRepository(store)
             val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
             val state = MapState(map = map)
-            val lm1 = Landmark(id = "lm1", ownerId = "p1", coordinate = HexCoordinate(0, 0))
-            val lm2 = Landmark(id = "lm2", ownerId = "p1", coordinate = HexCoordinate(1, 0))
+            val lm1 = Landmark(
+                id = UUID.nameUUIDFromBytes("lm1".toByteArray()),
+                ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
+                coordinate = HexCoordinate(0, 0)
+            )
+            val lm2 = Landmark(
+                id = UUID.nameUUIDFromBytes("lm2".toByteArray()),
+                ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
+                coordinate = HexCoordinate(1, 0)
+            )
             state.landmarks[lm1.id] = lm1
             state.landmarks[lm2.id] = lm2
             val conn = Connection(
-                id = "conn1", originId = lm1.id, targetId = lm2.id,
+                originId = lm1.id, targetId = lm2.id,
                 path = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0)),
                 type = ConnectionType.STREET,
             )
@@ -470,7 +495,7 @@ class JsonMapStateRepositoryTest {
 
             val loaded = repoAt(dir).findById(state.id)!!
             assertEquals(1, loaded.connections.size)
-            val restoredConn = loaded.connections["conn1"]!!
+            val restoredConn = loaded.connections[conn.id]!!
             assertEquals(ConnectionType.STREET, restoredConn.type)
             assertEquals(lm1.id, restoredConn.originId)
         }
@@ -480,14 +505,15 @@ class JsonMapStateRepositoryTest {
             val store = storeAt(dir)
             val repo = JsonMapStateRepository(store)
             val state = MapState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
-            val group = LandmarkGroup(id = "g1", name = "Alpha Team", color = "#ff0000")
+            val id = UUID.randomUUID()
+            val group = LandmarkGroup(id = id, name = "Alpha Team", color = "#ff0000")
             state.groups[group.id] = group
             repo.save(state)
             flush(store)
 
             val loaded = repoAt(dir).findById(state.id)!!
             assertEquals(1, loaded.groups.size)
-            assertEquals("Alpha Team", loaded.groups["g1"]!!.name)
+            assertEquals("Alpha Team", loaded.groups[id]!!.name)
         }
 
         @Test
@@ -495,14 +521,15 @@ class JsonMapStateRepositoryTest {
             val store = storeAt(dir)
             val repo = JsonMapStateRepository(store)
             val state = MapState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
-            val metric = QualityMetric(id = "m1", name = "Availability", description = "Uptime %")
+            val metricId = UUID.nameUUIDFromBytes("m1".toByteArray())
+            val metric = QualityMetric(id = metricId, name = "Availability", description = "Uptime %")
             state.metrics[metric.id] = metric
             repo.save(state)
             flush(store)
 
             val loaded = repoAt(dir).findById(state.id)!!
             assertEquals(1, loaded.metrics.size)
-            assertEquals("Availability", loaded.metrics["m1"]!!.name)
+            assertEquals("Availability", loaded.metrics[metricId]!!.name)
         }
 
         @Test
@@ -511,18 +538,20 @@ class JsonMapStateRepositoryTest {
             val repo = JsonMapStateRepository(store)
             val map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 })
             val state = MapState(map = map)
-            val entry = LandmarkMetricEntry(metricId = "m1", value = "99.9%", level = QualityLevel.OK)
+            val metricId = UUID.nameUUIDFromBytes("m1".toByteArray())
+            val entry = LandmarkMetricEntry(metricId = metricId, value = "99.9%", level = QualityLevel.OK)
+            val lmId = UUID.nameUUIDFromBytes("lm1".toByteArray())
             val lm = Landmark(
-                id = "lm1", ownerId = "p1",
+                id = lmId, ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
                 coordinate = HexCoordinate(0, 0),
-                metrics = mapOf("m1" to entry),
+                metrics = mapOf(metricId to entry),
             )
             state.landmarks[lm.id] = lm
             repo.save(state)
             flush(store)
 
             val loaded = repoAt(dir).findById(state.id)!!
-            val restoredEntry = loaded.landmarks["lm1"]!!.metrics["m1"]!!
+            val restoredEntry = loaded.landmarks[lmId]!!.metrics[metricId]!!
             assertEquals("99.9%", restoredEntry.value)
             assertEquals(QualityLevel.OK, restoredEntry.level)
         }
@@ -533,7 +562,8 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class FilePerMap {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         @Test
         fun `each map is stored in its own file under maps dir`() {
@@ -592,8 +622,10 @@ class JsonMapStateRepositoryTest {
             repo.delete(state.id)
             // Flushing must not recreate the file
             store.flushAllDirtyMaps()
-            assertFalse(dir.resolve("maps/${state.id}.json").toFile().exists(),
-                "Deleted map must not be recreated by flush")
+            assertFalse(
+                dir.resolve("maps/${state.id}.json").toFile().exists(),
+                "Deleted map must not be recreated by flush"
+            )
         }
 
         @Test
@@ -607,10 +639,10 @@ class JsonMapStateRepositoryTest {
             store.flushAllDirtyMaps()
 
             val json1 = dir.resolve("maps/${s1.id}.json").toFile().readText()
-            assertFalse(json1.contains(s2.id), "s1 file must not contain s2 id")
+            assertFalse(json1.contains(s2.id.toString()), "s1 file must not contain s2 id")
 
             val json2 = dir.resolve("maps/${s2.id}.json").toFile().readText()
-            assertFalse(json2.contains(s1.id), "s2 file must not contain s1 id")
+            assertFalse(json2.contains(s1.id.toString()), "s2 file must not contain s1 id")
         }
     }
 
@@ -619,7 +651,8 @@ class JsonMapStateRepositoryTest {
     @Nested
     inner class Debounce {
 
-        @TempDir lateinit var dir: Path
+        @TempDir
+        lateinit var dir: Path
 
         @Test
         fun `map is not flushed before debounce window elapses`() {
@@ -629,8 +662,10 @@ class JsonMapStateRepositoryTest {
             repo.save(state)
 
             store.flushDueMaps() // window has not elapsed
-            assertFalse(dir.resolve("maps/${state.id}.json").toFile().exists(),
-                "File must not be written before debounce window")
+            assertFalse(
+                dir.resolve("maps/${state.id}.json").toFile().exists(),
+                "File must not be written before debounce window"
+            )
         }
 
         @Test
@@ -641,8 +676,10 @@ class JsonMapStateRepositoryTest {
             repo.save(state)
 
             store.flushDueMaps()
-            assertTrue(dir.resolve("maps/${state.id}.json").toFile().exists(),
-                "File must be written once debounce window has elapsed")
+            assertTrue(
+                dir.resolve("maps/${state.id}.json").toFile().exists(),
+                "File must be written once debounce window has elapsed"
+            )
         }
 
         @Test
@@ -656,8 +693,10 @@ class JsonMapStateRepositoryTest {
             // Second mutation resets the timestamp
             repo.save(state.copy())
             store.flushDueMaps() // still within the new window
-            assertFalse(dir.resolve("maps/${state.id}.json").toFile().exists(),
-                "File must not be written because timer was reset")
+            assertFalse(
+                dir.resolve("maps/${state.id}.json").toFile().exists(),
+                "File must not be written because timer was reset"
+            )
         }
 
         @Test
@@ -668,8 +707,10 @@ class JsonMapStateRepositoryTest {
             repo.save(state)
 
             store.flushAllDirtyMaps() // force-flush ignores window
-            assertTrue(dir.resolve("maps/${state.id}.json").toFile().exists(),
-                "flushAllDirtyMaps must write immediately regardless of debounce")
+            assertTrue(
+                dir.resolve("maps/${state.id}.json").toFile().exists(),
+                "flushAllDirtyMaps must write immediately regardless of debounce"
+            )
         }
     }
 

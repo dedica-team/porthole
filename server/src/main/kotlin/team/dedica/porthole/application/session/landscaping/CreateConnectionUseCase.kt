@@ -3,7 +3,7 @@ package team.dedica.porthole.application.session.landscaping
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.AStarPathfinder
 import team.dedica.porthole.domain.Connection
 import team.dedica.porthole.domain.ConnectionType
@@ -13,13 +13,13 @@ import java.util.UUID
 @Component
 class CreateConnectionUseCase(
     private val mapStatePort: MapStatePort,
-    private val userPort: UserWritePort,
+    private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
     fun execute(
-        mapId: String,
-        fromLandmarkId: String,
-        toLandmarkId: String,
+        mapId: UUID,
+        fromLandmarkId: UUID,
+        toLandmarkId: UUID,
         type: ConnectionType = ConnectionType.PIPE,
         name: String? = null,
         description: String? = null,
@@ -57,7 +57,6 @@ class CreateConnectionUseCase(
             ?: throw IllegalStateException("No path exists between the two landmarks (path may be blocked by other landmarks)")
 
         val connection = Connection(
-            id = UUID.randomUUID().toString(),
             originId = fromLandmarkId,
             targetId = toLandmarkId,
             path = path,

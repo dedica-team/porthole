@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -14,7 +15,7 @@ class EditTileUseCaseTest {
     private lateinit var userPort: InMemoryTestUserRepository
     private lateinit var useCase: EditTileUseCase
 
-    private val collaborator = Collaborator(id = "p1", username = "Alice")
+    private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
 
     @BeforeEach
     fun setup() {
@@ -31,7 +32,7 @@ class EditTileUseCaseTest {
         mapStatePort = InMemoryMapStatePort()
         mapStatePort.save(state)
         userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p1", "Alice", "gh-1"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
         }
         useCase = EditTileUseCase(mapStatePort, userPort, NoOpBroadcastPort())
     }
@@ -92,14 +93,14 @@ class EditTileUseCaseTest {
     @Test
     fun `unknown map throws`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute("no-such-map", "Alice", HexCoordinate(0, 0), elevation = 1, terrain = null)
+            useCase.execute(UUID.randomUUID(), "Alice", HexCoordinate(0, 0), elevation = 1, terrain = null)
         }
     }
 
     @Test
     fun `non-collaborator cannot edit tile`() {
         val otherPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord("p2", "Bob", "gh-2"))
+            it.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
         }
         val uc = EditTileUseCase(mapStatePort, otherPort, NoOpBroadcastPort())
         assertThrows(IllegalArgumentException::class.java) {

@@ -1,4 +1,5 @@
 package team.dedica.porthole.domain
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -7,8 +8,8 @@ import org.junit.jupiter.api.Test
 class MapStateTest {
 
     private lateinit var state: MapState
-    private val collaborator1 = Collaborator(id = "p1", username = "Alice")
-    private val collaborator2 = Collaborator(id = "p2", username = "Bob")
+    private val collaborator1 = Collaborator(id = UUID.randomUUID(), username = "Alice")
+    private val collaborator2 = Collaborator(id = UUID.randomUUID(), username = "Bob")
 
     @BeforeEach
     fun setup() {
@@ -24,27 +25,33 @@ class MapStateTest {
 
     @Test
     fun `getCollaborator returns correct collaborator by id`() {
-        assertEquals("Alice", state.getCollaborator("p1")?.username)
+        assertEquals("Alice", state.getCollaborator(collaborator1.id)?.username)
     }
 
     @Test
     fun `getCollaborator returns null for unknown id`() {
-        assertNull(state.getCollaborator("unknown"))
+        assertNull(state.getCollaborator(UUID.randomUUID()))
     }
 
     @Test
     fun `getLandmarksOf returns only landmarks owned by collaborator`() {
-        state.landmarks["l1"] = Landmark("l1", "Landmark One", "p1", HexCoordinate(0, 0))
-        state.landmarks["l2"] = Landmark("l2", "Landmark Two", "p2", HexCoordinate(1, 0))
-        assertEquals(1, state.getLandmarksOf("p1").size)
-        assertEquals("l1", state.getLandmarksOf("p1").first().id)
+        val p1Id = UUID.nameUUIDFromBytes("p1".toByteArray())
+        val p2Id = UUID.nameUUIDFromBytes("p2".toByteArray())
+        val l1Id = UUID.nameUUIDFromBytes("l1".toByteArray())
+        val l2Id = UUID.nameUUIDFromBytes("l2".toByteArray())
+        state.landmarks[l1Id] = Landmark(l1Id, "Landmark One", p1Id, HexCoordinate(0, 0))
+        state.landmarks[l2Id] = Landmark(l2Id, "Landmark Two", p2Id, HexCoordinate(1, 0))
+        assertEquals(1, state.getLandmarksOf(p1Id).size)
+        assertEquals(l1Id, state.getLandmarksOf(p1Id).first().id)
     }
 
     @Test
     fun `getLandmarkAt returns landmark at coordinate`() {
         val coord = HexCoordinate(0, 0)
-        state.landmarks["l1"] = Landmark("l1", "Landmark One", "p1", coord)
-        assertEquals("l1", state.getLandmarkAt(coord)?.id)
+        val l1Id = UUID.nameUUIDFromBytes("l1".toByteArray())
+        val p1Id = UUID.nameUUIDFromBytes("p1".toByteArray())
+        state.landmarks[l1Id] = Landmark(l1Id, "Landmark One", p1Id, coord)
+        assertEquals(l1Id, state.getLandmarkAt(coord)?.id)
     }
 
     @Test

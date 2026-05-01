@@ -195,12 +195,12 @@ Add five functions using the existing `authHeaders()` / `handleResponse<T>()` he
 
 ```ts
 export async function fetchChoreLists(mapId: string): Promise<ChoreList[]>
-export async function createChoreList(mapId: string, title: string, landmarkIds: string[]): Promise<ChoreList[]>
-export async function editChoreList(mapId: string, listId: string, title?: string, landmarkIds?: string[]): Promise<ChoreList[]>
-export async function toggleChoreListCompleted(mapId: string, listId: string): Promise<ChoreList>
-export async function deleteChoreList(mapId: string, listId: string): Promise<void>
+export async function createChoreList(mapId: UUID, title: string, landmarkIds: string[]): Promise<ChoreList[]>
+export async function editChoreList(mapId: UUID, listId: string, title?: string, landmarkIds?: string[]): Promise<ChoreList[]>
+export async function toggleChoreListCompleted(mapId: UUID, listId: string): Promise<ChoreList>
+export async function deleteChoreList(mapId: UUID, listId: string): Promise<void>
 export async function updateChoreEntry(
-  mapId: string,
+  mapId: UUID,
   listId: string,
   landmarkId: string,
   patch: { state?: ChoreEntryState; assigneeId?: string | null; link?: string | null; note?: string | null }

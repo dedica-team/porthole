@@ -32,7 +32,7 @@ import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.adapter.out.repository.YubicoCredentialRepository
-import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.application.port.UserPort
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -103,7 +103,7 @@ data class AssertionResponse(
 
 private data class PendingRegistration(
     val options: com.yubico.webauthn.data.PublicKeyCredentialCreationOptions,
-    val pendingUserId: String,
+    val pendingUserId: UUID,
     val pendingUsername: String,
     val createdAt: Long = System.currentTimeMillis(),
 )
@@ -121,7 +121,7 @@ private const val SESSION_TTL_MS = 5 * 60 * 1_000L
 @RestController
 @RequestMapping("/api/auth/webauthn")
 class WebAuthnController(
-    private val userRepository: UserWritePort,
+    private val userRepository: UserPort,
     private val jwtTokenProvider: JwtTokenProvider,
     private val authCookieService: AuthCookieService,
     private val adminService: AdminService,
@@ -156,11 +156,11 @@ class WebAuthnController(
 
         evictExpired()
 
-        val userId = UUID.randomUUID().toString()
+        val userId = UUID.randomUUID()
         val userIdentity = UserIdentity.builder()
             .name(username)
             .displayName(username)
-            .id(ByteArray(userId.toByteArray(Charsets.UTF_8)))
+            .id(ByteArray(userId.toString().toByteArray(Charsets.UTF_8)))
             .build()
 
         val options = relyingParty.startRegistration(
@@ -188,7 +188,7 @@ class WebAuthnController(
                 sessionId = sessionId,
                 challenge = options.challenge.base64Url,
                 rp = RpInfo(id = options.rp.id, name = options.rp.name),
-                user = UserInfo(id = userId, name = username, displayName = username),
+                user = UserInfo(id = userId.toString(), name = username, displayName = username),
                 pubKeyCredParams = options.pubKeyCredParams.map { p ->
                     PubKeyCredParam(type = "public-key", alg = p.alg.id.toInt())
                 },

@@ -27,11 +27,6 @@ class HexTileTest {
     }
 
     @Test
-    fun `tile is neutral by default`() {
-        assertNull(HexTile(HexCoordinate(0, 0)).ownerId)
-    }
-
-    @Test
     fun `default terrain is GRASS regardless of elevation`() {
         assertEquals(Terrain.GRASS, HexTile(HexCoordinate(0, 0), elevation = 0).terrain)
         assertEquals(Terrain.GRASS, HexTile(HexCoordinate(0, 0), elevation = 3).terrain)

@@ -8,6 +8,7 @@ import team.dedica.porthole.adapter.`in`.web.dto.EditTileRequest
 import team.dedica.porthole.application.session.landscaping.EditTileUseCase
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.Terrain
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/maps/{id}/tiles")
@@ -26,7 +27,15 @@ class TileController(
             runCatching { Terrain.valueOf(it.uppercase()) }
                 .getOrElse { return ResponseEntity.badRequest().body("Unknown terrain: $it") }
         }
-        return ResponseEntity.ok(editTileUseCase.execute(id, user.username, HexCoordinate(q, r), request.elevation, terrain))
+        return ResponseEntity.ok(
+            editTileUseCase.execute(
+                UUID.fromString(id),
+                user.username,
+                HexCoordinate(q, r),
+                request.elevation,
+                terrain
+            )
+        )
     }
 }
 

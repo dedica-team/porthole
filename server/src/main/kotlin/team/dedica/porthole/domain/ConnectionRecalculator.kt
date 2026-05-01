@@ -1,5 +1,7 @@
 package team.dedica.porthole.domain
 
+import java.util.UUID
+
 /**
  * Domain service that keeps connection paths consistent after landmarks are added or moved.
  *
@@ -49,7 +51,7 @@ object ConnectionRecalculator {
      * matches [landmarkId].  Call this after the landmark has already been updated in [state]
      * (so [state.landmarks[landmarkId].coordinate] reflects the new position).
      */
-    fun recalculateConnectionsInvolvingLandmark(state: MapState, landmarkId: String) {
+    fun recalculateConnectionsInvolvingLandmark(state: MapState, landmarkId: UUID) {
         val movedLandmark = state.landmarks[landmarkId] ?: return
         val movedCoord    = movedLandmark.coordinate    ?: return
 
@@ -58,7 +60,7 @@ object ConnectionRecalculator {
         state.connections.entries
             .filter { (_, c) -> c.originId == landmarkId || c.targetId == landmarkId }
             .forEach { (connId, c) ->
-                val otherId    = if (c.originId == landmarkId) c.targetId else c.originId
+                val otherId    = if (c.originId == landmarkId) c.targetId else c.originId.toString()
                 val otherCoord = state.landmarks[otherId]?.coordinate ?: return@forEach
 
                 val blocked = allLandmarkCoords - movedCoord - otherCoord

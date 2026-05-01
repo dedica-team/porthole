@@ -1,4 +1,5 @@
 package team.dedica.porthole.application
+import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -16,15 +17,15 @@ class AddProcessStageUseCaseTest {
     private lateinit var mapStatePort: InMemoryMapStatePort
     private lateinit var userPort: InMemoryTestUserRepository
     private lateinit var addStageUseCase: AddProcessStageUseCase
-    private lateinit var processId: String
+    private lateinit var processId: UUID
 
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 1 })
         state = MapState(map = map)
-        state.collaborators.add(Collaborator(id = "p1", username = "Alice"))
+        state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice"))
         mapStatePort = InMemoryMapStatePort().also { it.save(state) }
-        userPort = InMemoryTestUserRepository().also { it.save(UserRecord("p1", "Alice", "gh-1")) }
+        userPort = InMemoryTestUserRepository().also { it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1")) }
 
         // Create a process first
         val process = Process(name = "My Flow")
@@ -70,16 +71,15 @@ class AddProcessStageUseCaseTest {
     @Test
     fun `unknown process throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            addStageUseCase.execute(state.id, "no-such-process", "X", 0, "Alice")
+            addStageUseCase.execute(state.id, UUID.randomUUID(), "X", 0, "Alice")
         }
     }
 
     @Test
     fun `non-collaborator throws IllegalArgumentException`() {
-        userPort.save(UserRecord("p2", "Bob", "gh-2"))
+        userPort.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
         assertThrows(IllegalArgumentException::class.java) {
             addStageUseCase.execute(state.id, processId, "Stage", 0, "Bob")
         }
     }
 }
-

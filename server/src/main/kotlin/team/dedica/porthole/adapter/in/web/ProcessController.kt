@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.application.session.processes.*
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/maps/{id}/processes")
@@ -29,7 +30,7 @@ class ProcessController(
         @PathVariable id: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(listProcessesUseCase.execute(id, user.username))
+        ResponseEntity.ok(listProcessesUseCase.execute(UUID.fromString(id), user.username))
 
     @PostMapping
     fun createProcess(
@@ -37,7 +38,14 @@ class ProcessController(
         @Valid @RequestBody request: CreateProcessRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(createProcessUseCase.execute(id, request.name, request.description, user.username))
+        ResponseEntity.ok(
+            createProcessUseCase.execute(
+                UUID.fromString(id),
+                request.name,
+                request.description,
+                user.username
+            )
+        )
 
     @PatchMapping("/{processId}")
     fun editProcess(
@@ -46,7 +54,15 @@ class ProcessController(
         @Valid @RequestBody request: EditProcessRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(editProcessUseCase.execute(id, processId, request.name, request.description, user.username))
+        ResponseEntity.ok(
+            editProcessUseCase.execute(
+                UUID.fromString(id),
+                processId,
+                request.name,
+                request.description,
+                user.username
+            )
+        )
 
     @DeleteMapping("/{processId}")
     fun removeProcess(
@@ -54,7 +70,7 @@ class ProcessController(
         @PathVariable processId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(removeProcessUseCase.execute(id, processId, user.username))
+        ResponseEntity.ok(removeProcessUseCase.execute(UUID.fromString(id), processId, user.username))
 
     @PostMapping("/{processId}/stages")
     fun addStage(
@@ -63,7 +79,15 @@ class ProcessController(
         @Valid @RequestBody request: CreateProcessStageRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(addProcessStageUseCase.execute(id, processId, request.name, request.order, user.username))
+        ResponseEntity.ok(
+            addProcessStageUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                request.name,
+                request.order,
+                user.username
+            )
+        )
 
     @PostMapping("/{processId}/stages/reorder")
     fun reorderStages(
@@ -72,7 +96,14 @@ class ProcessController(
         @RequestBody request: ReorderProcessStagesRequest,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(reorderProcessStagesUseCase.execute(id, processId, request.stageIds, user.username))
+        ResponseEntity.ok(
+            reorderProcessStagesUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                request.stageIds.map { UUID.fromString(it) },
+                user.username
+            )
+        )
 
     @DeleteMapping("/{processId}/stages/{stageId}")
     fun removeStage(
@@ -81,7 +112,14 @@ class ProcessController(
         @PathVariable stageId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(removeProcessStageUseCase.execute(id, processId, stageId, user.username))
+        ResponseEntity.ok(
+            removeProcessStageUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                UUID.fromString(stageId),
+                user.username
+            )
+        )
 
     @PatchMapping("/{processId}/stages/{stageId}")
     fun editStage(
@@ -93,8 +131,12 @@ class ProcessController(
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             editProcessStageUseCase.execute(
-                id, processId, stageId,
-                request.name, request.clearName, request.order,
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                UUID.fromString(stageId),
+                request.name,
+                request.clearName,
+                request.order,
                 user.username,
             )
         )
@@ -109,8 +151,12 @@ class ProcessController(
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             addStageConnectionUseCase.execute(
-                id, processId, stageId,
-                request.connectionId, request.title, request.direction,
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                UUID.fromString(stageId),
+                UUID.fromString(request.connectionId),
+                request.title,
+                request.direction,
                 user.username,
             )
         )
@@ -126,8 +172,13 @@ class ProcessController(
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             editStageConnectionUseCase.execute(
-                id, processId, stageId, stageConnId,
-                request.title, request.clearTitle, request.direction,
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                UUID.fromString(stageId),
+                UUID.fromString(stageConnId),
+                request.title,
+                request.clearTitle,
+                request.direction,
                 user.username,
             )
         )
@@ -140,5 +191,13 @@ class ProcessController(
         @PathVariable stageConnId: String,
         @AuthenticationPrincipal user: UserDetails,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(removeStageConnectionUseCase.execute(id, processId, stageId, stageConnId, user.username))
+        ResponseEntity.ok(
+            removeStageConnectionUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                UUID.fromString(stageId),
+                UUID.fromString(stageConnId),
+                user.username
+            )
+        )
 }

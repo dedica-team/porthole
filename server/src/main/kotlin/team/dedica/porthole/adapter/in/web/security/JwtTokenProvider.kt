@@ -10,7 +10,7 @@ import java.util.Date
 import java.util.UUID
 import javax.crypto.SecretKey
 
-data class AuthTokenClaims(val userId: String, val username: String)
+data class AuthTokenClaims(val userId: UUID, val username: String)
 
 @Component
 class JwtTokenProvider(props: PortholeAuthProperties) {
@@ -22,13 +22,12 @@ class JwtTokenProvider(props: PortholeAuthProperties) {
     private val audience: String = props.jwt.audience
     private val key: SecretKey = createSigningKey(secret)
 
-    fun generateToken(userId: String, username: String): String {
-        require(userId.isNotBlank()) { "JWT userId must not be blank" }
+    fun generateToken(userId: UUID, username: String): String {
         require(username.isNotBlank()) { "JWT username must not be blank" }
 
         val now = Date()
         return Jwts.builder()
-            .subject(userId)
+            .subject(userId.toString())
             .issuer(issuer)
             .audience().add(audience).and()
             .claim("username", username)
@@ -47,14 +46,17 @@ class JwtTokenProvider(props: PortholeAuthProperties) {
             .parseSignedClaims(normalizedToken).payload
         validateRegisteredClaims(claims)
 
-        val userId = claims.subject?.takeIf { it.isNotBlank() }
+        val userIdStr = claims.subject?.takeIf { it.isNotBlank() }
             ?: throw IllegalArgumentException("JWT subject is missing")
+        val userId = runCatching { UUID.fromString(userIdStr) }.getOrElse {
+            throw IllegalArgumentException("JWT subject is not a valid UUID")
+        }
         val username = (claims["username"] as? String)?.trim()?.takeIf { it.isNotBlank() }
             ?: throw IllegalArgumentException("JWT username claim is missing")
         return AuthTokenClaims(userId = userId, username = username)
     }
 
-    fun getUserIdFromToken(token: String): String = getTokenClaims(token).userId
+    fun getUserIdFromToken(token: String): UUID = getTokenClaims(token).userId
 
     fun getUsernameFromToken(token: String): String = getTokenClaims(token).username
 

@@ -1,9 +1,11 @@
 package team.dedica.porthole.domain
 
+import java.util.*
+
 /**
  * A landmark placed on a hex tile.
  *
- * @param id          unique landmark ID (slug derived from name, e.g. "iron-keep")
+ * @param id          unique landmark UUID
  * @param name        human-readable display name (e.g. "Iron Keep")
  * @param ownerId     user ID who placed this landmark, or null if unowned
  * @param coordinate  position on the hex grid, or null for unpositioned landmarks
@@ -13,14 +15,13 @@ package team.dedica.porthole.domain
  * @param link        optional URL associated with this landmark (must be a valid http/https URL)
  */
 data class Landmark(
-    val id: String,
-    val name: String = id,
-    val ownerId: String? = null,
+    val id: UUID,
+    val name: String = id.toString(),
+    val ownerId: UUID? = null,
     val coordinate: HexCoordinate? = null,
     val type: LandmarkType = LandmarkType.KEEP,
     val description: String? = null,
-    val groupId: String? = null,
+    val groupId: UUID? = null,
     val link: String? = null,
-    /** Quality metric entries keyed by [LandmarkMetricEntry.metricId]. */
-    val metrics: Map<String, LandmarkMetricEntry> = emptyMap(),
+    val metrics: Map<UUID, LandmarkMetricEntry> = emptyMap(),
 )
