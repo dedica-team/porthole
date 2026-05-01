@@ -4,35 +4,38 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.security.access.AccessDeniedException
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.chorelists.CreateChoreListUseCase
 import team.dedica.porthole.application.session.chorelists.RemoveChoreListUseCase
 import team.dedica.porthole.domain.*
 
 class RemoveChoreListUseCaseTest {
+    private val collaborator2 = Collaborator(id = UUID.nameUUIDFromBytes("p2".toByteArray()), username = "Bob")
+    private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "Alice")
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
-    private lateinit var userPort: InMemoryTestUserRepository
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var listId: UUID
     private lateinit var useCase: RemoveChoreListUseCase
 
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 1 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "Alice"))
-        mapStatePort = InMemoryMapStatePort().also { it.save(state) }
-        userPort = InMemoryTestUserRepository().also { it.save(UserRecord(UUID.nameUUIDFromBytes("u1".toByteArray()), "Alice", "gh-1")) }
+        mapStatePort = InMemorySessionStatePort().also { it.save(state) }
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         val broadcast = NoOpBroadcastPort()
-        listId = CreateChoreListUseCase(mapStatePort, userPort, broadcast)
-            .execute(state.id, "My List", emptyList(), null, "Alice")[0].id
-        useCase = RemoveChoreListUseCase(mapStatePort, userPort, broadcast)
+        listId = CreateChoreListUseCase(mapStatePort, broadcast, authorizationPort)
+            .execute(state.id, "My List", emptyList(), null, collaborator.id)[0].id
+        useCase = RemoveChoreListUseCase(mapStatePort, broadcast, authorizationPort)
     }
 
     @Test
     fun `removes the chore list`() {
-        useCase.execute(state.id, listId, "Alice")
+        useCase.execute(state.id, listId, collaborator.id)
         val saved = mapStatePort.findById(state.id)!!
         assertFalse(saved.choreLists.containsKey(listId))
     }
@@ -40,22 +43,21 @@ class RemoveChoreListUseCaseTest {
     @Test
     fun `unknown list throws IllegalArgumentException`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, UUID.randomUUID(), "Alice")
+            useCase.execute(state.id, UUID.randomUUID(), collaborator.id)
         }
     }
 
     @Test
-    fun `non-collaborator throws IllegalArgumentException`() {
-        userPort.save(UserRecord(UUID.nameUUIDFromBytes("u2".toByteArray()), "Bob", "gh-2"))
-        assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, listId, "Bob")
+    fun `non-collaborator throws AccessDeniedException`() {
+        assertThrows(AccessDeniedException::class.java) {
+            useCase.execute(state.id, listId, collaborator2.id)
         }
     }
 
     @Test
     fun `unknown map throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(UUID.randomUUID(), listId, "Alice")
+            useCase.execute(UUID.randomUUID(), listId, collaborator.id)
         }
     }
 }

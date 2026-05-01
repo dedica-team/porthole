@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
-import team.dedica.porthole.application.port.MapStatePort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.domain.*
@@ -36,7 +36,7 @@ class MapControllerTest {
     @Autowired
     lateinit var jwtTokenProvider: JwtTokenProvider
     @Autowired
-    lateinit var mapStatePort: MapStatePort
+    lateinit var sessionStatePort: SessionStatePort
     @Autowired
     lateinit var userPort: UserPort
 
@@ -60,10 +60,10 @@ class MapControllerTest {
 
         // Create a fresh map for each test
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
-        val state = MapState(map = map).also {
+        val state = SessionState(map = map).also {
             it.collaborators.add(Collaborator(id = user.id, username = user.username))
         }
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         mapId = state.id
     }
 
@@ -96,7 +96,7 @@ class MapControllerTest {
                 .content(objectMapper.writeValueAsString(body))
         ).andExpect(status().isOk)
             .andReturn()
-        val state = mapStatePort.findById(mapId)!!
+        val state = sessionStatePort.findById(mapId)!!
         val lm = state.landmarks.values.first { it.name == "Iron Keep" }
         val key = lm.id.toString()
         val tree = objectMapper.readTree(result.response.contentAsString)
@@ -180,9 +180,9 @@ class MapControllerTest {
     fun `DELETE landmark removes it`() {
         // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("my-tower".toByteArray())
-        val state = mapStatePort.findById(mapId)!!
+        val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "My Tower", coordinate = HexCoordinate(1, 0))
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
 
         mockMvc.perform(
             delete("/api/maps/$mapId/landmarks/$lmId")
@@ -207,8 +207,8 @@ class MapControllerTest {
     @Test
     fun `PATCH map with null description clears it`() {
         // Set initial values
-        mapStatePort.save(
-            mapStatePort.findById(mapId)!!.copy(name = "Old Name", description = "Old Desc")
+        sessionStatePort.save(
+            sessionStatePort.findById(mapId)!!.copy(name = "Old Name", description = "Old Desc")
         )
         val body = mapOf("name" to "New Name", "description" to null)
         mockMvc.perform(
@@ -306,9 +306,9 @@ class MapControllerTest {
     fun `PUT landmark metric sets entry and returns 200`() {
         // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("guard-tower".toByteArray())
-        val state = mapStatePort.findById(mapId)!!
+        val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Guard Tower", coordinate = HexCoordinate(0, 0))
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
 
         // create metric
         val metricBody = mapOf("name" to "Availability", "description" to "Uptime")
@@ -334,9 +334,9 @@ class MapControllerTest {
     fun `PUT landmark metric with unknown level returns 400`() {
         // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("beacon".toByteArray())
-        val state = mapStatePort.findById(mapId)!!
+        val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Beacon", coordinate = HexCoordinate(1, 1))
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
 
         val metricBody = mapOf("name" to "SLA", "description" to "Service level")
         val metricResult = mockMvc.perform(
@@ -360,9 +360,9 @@ class MapControllerTest {
     fun `DELETE landmark metric clears entry`() {
         // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("scout-post".toByteArray())
-        val state = mapStatePort.findById(mapId)!!
+        val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Scout Post", coordinate = HexCoordinate(0, 1))
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
 
         // create + assign metric
         val metricBody = mapOf("name" to "Health", "description" to "Health check")

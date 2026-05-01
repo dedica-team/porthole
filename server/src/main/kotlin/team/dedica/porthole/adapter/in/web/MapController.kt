@@ -2,18 +2,11 @@ package team.dedica.porthole.adapter.`in`.web
 
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import jakarta.validation.Valid
-import team.dedica.porthole.adapter.`in`.web.dto.ChangeLandmarkOwnerRequest
-import team.dedica.porthole.adapter.`in`.web.dto.CreateUnpositionedLandmarkRequest
-import team.dedica.porthole.adapter.`in`.web.dto.CreateMapRequest
-import team.dedica.porthole.adapter.`in`.web.dto.EditLandmarkRequest
-import team.dedica.porthole.adapter.`in`.web.dto.EditMapRequest
-import team.dedica.porthole.adapter.`in`.web.dto.PlaceLandmarkRequest
-import team.dedica.porthole.adapter.`in`.web.dto.PositionLandmarkRequest
-import team.dedica.porthole.adapter.`in`.web.dto.SetCollaborationModeRequest
+import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
+import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.collaboration.AcceptJoinRequestUseCase
 import team.dedica.porthole.application.session.collaboration.RemoveCollaboratorUseCase
 import team.dedica.porthole.application.lobby.AdminJoinMapUseCase
@@ -31,7 +24,6 @@ import team.dedica.porthole.application.session.landscaping.PlaceLandmarkUseCase
 import team.dedica.porthole.application.session.landscaping.PositionLandmarkUseCase
 import team.dedica.porthole.application.session.landscaping.RemoveLandmarkUseCase
 import team.dedica.porthole.application.lobby.RequestJoinUseCase
-import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.application.session.collaboration.SetCollaborationModeUseCase
 import team.dedica.porthole.domain.CollaborationMode
 import team.dedica.porthole.domain.HexCoordinate
@@ -62,50 +54,43 @@ class MapController(
     private val declineJoinRequestUseCase: DeclineJoinRequestUseCase,
     private val removeCollaboratorUseCase: RemoveCollaboratorUseCase,
     private val adminService: AdminService,
-    private val userPort: UserPort, //TODO remove
 ) {
-    /** Resolves the UUID for the authenticated user (username → id). */
-    private fun resolveUserId(user: UserDetails): UUID =
-        userPort.findByUsername(user.username)?.id
-            ?: throw NoSuchElementException("User ${user.username} not found")
-
     @PostMapping
     fun createMap(
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
         @Valid @RequestBody(required = false) request: CreateMapRequest?,
     ) = ResponseEntity.ok(
         createMapUseCase.execute(
-            user.username,
+            user.userId,
             request?.mapType ?: "LAND",
             request?.mapSize ?: "MEDIUM"
         )
     )
 
     @GetMapping
-    fun listMaps(@AuthenticationPrincipal user: UserDetails?) =
-        ResponseEntity.ok(listMapsUseCase.execute(user?.username))
+    fun listMaps(@AuthenticationPrincipal user: PortholePrincipal?) =
+        ResponseEntity.ok(listMapsUseCase.execute(user?.userId))
 
     @GetMapping("/{id}")
-    fun getMap(@PathVariable id: String, @AuthenticationPrincipal user: UserDetails?) =
-        ResponseEntity.ok(getMapUseCase.execute(UUID.fromString(id), user?.username))
+    fun getMap(@PathVariable id: String, @AuthenticationPrincipal user: PortholePrincipal) =
+        ResponseEntity.ok(getMapUseCase.execute(UUID.fromString(id), user.userId))
 
     @DeleteMapping("/{id}")
     fun deleteMap(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Void> {
-        deleteMapUseCase.execute(UUID.fromString(id), resolveUserId(user))
+        deleteMapUseCase.execute(UUID.fromString(id), user.userId)
         return ResponseEntity.noContent().build()
     }
 
     @GetMapping("/{id}/export")
     fun exportMap(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> {
-        val userId = resolveUserId(user)
-        if (!adminService.isAdmin(userId)) throw AccessDeniedException("Only admins can export sessions")
-        val state = getMapUseCase.execute(UUID.fromString(id), user.username)
+        if (!adminService.isAdmin(user.userId)) throw AccessDeniedException("Only admins can export sessions")
+        val state = getMapUseCase.execute(UUID.fromString(id), user.userId)
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"session-$id.json\"")
             .body(state)
@@ -114,20 +99,16 @@ class MapController(
     @PostMapping("/{id}/admin-join")
     fun adminJoinMap(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
-    ) = ResponseEntity.ok(adminJoinMapUseCase.execute(UUID.fromString(id), user.username))
+        @AuthenticationPrincipal user: PortholePrincipal,
+    ) = ResponseEntity.ok(adminJoinMapUseCase.execute(UUID.fromString(id), user.userId))
 
     @DeleteMapping("/{id}/collaborators/{collaboratorId}")
     fun removeCollaborator(
         @PathVariable id: String,
         @PathVariable collaboratorId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ) = ResponseEntity.ok(
-        removeCollaboratorUseCase.execute(
-            UUID.fromString(id),
-            user.username,
-            UUID.fromString(collaboratorId)
-        )
+        removeCollaboratorUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(collaboratorId))
     )
 
     @PatchMapping("/{id}/landmarks/{landmarkId}/owner")
@@ -135,11 +116,11 @@ class MapController(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @Valid @RequestBody request: ChangeLandmarkOwnerRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ) = ResponseEntity.ok(
         changeLandmarkOwnerUseCase.execute(
             UUID.fromString(id),
-            user.username,
+            user.userId,
             UUID.fromString(landmarkId),
             request.ownerId?.let { UUID.fromString(it) })
     )
@@ -148,41 +129,41 @@ class MapController(
     fun editMap(
         @PathVariable id: String,
         @Valid @RequestBody request: EditMapRequest,
-        @AuthenticationPrincipal user: UserDetails,
-    ) = ResponseEntity.ok(editMapUseCase.execute(UUID.fromString(id), user.username, request.name, request.description))
+        @AuthenticationPrincipal user: PortholePrincipal,
+    ) = ResponseEntity.ok(editMapUseCase.execute(UUID.fromString(id), user.userId, request.name, request.description))
 
     @PostMapping("/{id}/join")
     fun joinMap(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
-    ) = ResponseEntity.ok(joinMapUseCase.execute(UUID.fromString(id), user.username))
+        @AuthenticationPrincipal user: PortholePrincipal,
+    ) = ResponseEntity.ok(joinMapUseCase.execute(UUID.fromString(id), user.userId))
 
     @PatchMapping("/{id}/collaboration-mode")
     fun setCollaborationMode(
         @PathVariable id: String,
         @Valid @RequestBody request: SetCollaborationModeRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> {
         val mode = runCatching { CollaborationMode.valueOf(request.mode.uppercase()) }
             .getOrElse { return ResponseEntity.badRequest().body("Unknown collaboration mode: ${request.mode}") }
-        return ResponseEntity.ok(setCollaborationModeUseCase.execute(UUID.fromString(id), user.username, mode))
+        return ResponseEntity.ok(setCollaborationModeUseCase.execute(UUID.fromString(id), user.userId, mode))
     }
 
     @PostMapping("/{id}/join-requests")
     fun requestJoin(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
-    ) = ResponseEntity.ok(requestJoinUseCase.execute(UUID.fromString(id), user.username))
+        @AuthenticationPrincipal user: PortholePrincipal,
+    ) = ResponseEntity.ok(requestJoinUseCase.execute(UUID.fromString(id), user.userId))
 
     @PostMapping("/{id}/join-requests/{requestId}/accept")
     fun acceptJoinRequest(
         @PathVariable id: String,
         @PathVariable requestId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ) = ResponseEntity.ok(
         acceptJoinRequestUseCase.execute(
             UUID.fromString(id),
-            user.username,
+            user.userId,
             UUID.fromString(requestId)
         )
     )
@@ -191,11 +172,11 @@ class MapController(
     fun declineJoinRequest(
         @PathVariable id: String,
         @PathVariable requestId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ) = ResponseEntity.ok(
         declineJoinRequestUseCase.execute(
             UUID.fromString(id),
-            user.username,
+            user.userId,
             UUID.fromString(requestId)
         )
     )
@@ -204,14 +185,14 @@ class MapController(
     fun placeLandmark(
         @PathVariable id: String,
         @Valid @RequestBody request: PlaceLandmarkRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> {
         val type = runCatching { LandmarkType.valueOf(request.type.uppercase()) }
             .getOrElse { return ResponseEntity.badRequest().body("Unknown landmark type: ${request.type}") }
         return ResponseEntity.ok(
             placeLandmarkUseCase.execute(
                 UUID.fromString(id),
-                user.username,
+                user.userId,
                 HexCoordinate(request.q, request.r),
                 request.name,
                 type
@@ -223,19 +204,19 @@ class MapController(
     fun createUnpositionedLandmark(
         @PathVariable id: String,
         @Valid @RequestBody request: CreateUnpositionedLandmarkRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> {
         val type = runCatching { LandmarkType.valueOf(request.type.uppercase()) }
             .getOrElse { return ResponseEntity.badRequest().body("Unknown landmark type: ${request.type}") }
         return ResponseEntity.ok(
             createUnpositionedLandmarkUseCase.execute(
                 UUID.fromString(id),
-                user.username,
+                user.userId,
                 request.name,
                 type,
                 request.description,
                 UUID.fromString(request.groupId),
-                request.link,
+                request.link
             )
         )
     }
@@ -245,11 +226,11 @@ class MapController(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @Valid @RequestBody request: PositionLandmarkRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ) = ResponseEntity.ok(
         positionLandmarkUseCase.execute(
             UUID.fromString(id),
-            user.username,
+            user.userId,
             UUID.fromString(landmarkId),
             HexCoordinate(request.q, request.r)
         )
@@ -259,21 +240,15 @@ class MapController(
     fun removeLandmark(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
-        @AuthenticationPrincipal user: UserDetails,
-    ) = ResponseEntity.ok(
-        removeLandmarkUseCase.execute(
-            UUID.fromString(id),
-            user.username,
-            UUID.fromString(landmarkId)
-        )
-    )
+        @AuthenticationPrincipal user: PortholePrincipal,
+    ) = ResponseEntity.ok(removeLandmarkUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(landmarkId)))
 
     @PatchMapping("/{id}/landmarks/{landmarkId}")
     fun editLandmark(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @Valid @RequestBody request: EditLandmarkRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> {
         val type = request.type?.let {
             runCatching { LandmarkType.valueOf(it.uppercase()) }
@@ -282,7 +257,7 @@ class MapController(
         return ResponseEntity.ok(
             editLandmarkUseCase.execute(
                 UUID.fromString(id),
-                user.username,
+                user.userId,
                 UUID.fromString(landmarkId),
                 request.name,
                 type,
@@ -290,7 +265,7 @@ class MapController(
                 UUID.fromString(request.groupId),
                 request.clearGroup,
                 request.link,
-                request.clearLink,
+                request.clearLink
             )
         )
     }

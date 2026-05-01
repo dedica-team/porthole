@@ -1,17 +1,18 @@
 package team.dedica.porthole.application.session.processes
 
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.AuthorizationPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.Process
+import team.dedica.porthole.domain.SessionRole
 import team.dedica.porthole.domain.StageConnection
 import team.dedica.porthole.domain.StageConnectionDirection
 import java.util.UUID
 
 @Component
 class AddStageConnectionUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
         mapId: UUID,
@@ -20,13 +21,9 @@ class AddStageConnectionUseCase(
         connectionId: UUID,
         title: String?,
         direction: String,
-        username: String,
+        callerId: UUID
     ): List<Process> {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
+        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
         require(state.connections.containsKey(connectionId)) { "Connection $connectionId not found" }
         val process = state.processes[processId]
             ?: throw NoSuchElementException("Process $processId not found")
@@ -38,8 +35,7 @@ class AddStageConnectionUseCase(
                 .getOrDefault(StageConnectionDirection.FORWARD)
             stage.connections.add(StageConnection(connectionId = connectionId, title = title, direction = dir))
         }
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         return state.processes.values.sortedBy { it.name }
     }
 }
-

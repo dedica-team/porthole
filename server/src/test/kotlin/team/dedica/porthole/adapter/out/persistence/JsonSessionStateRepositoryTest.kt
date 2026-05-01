@@ -11,15 +11,14 @@ import org.junit.jupiter.api.io.TempDir
 import team.dedica.porthole.domain.*
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.*
 
 /**
- * Unit / integration tests for [JsonMapStateRepository] and [JsonStore].
+ * Unit / integration tests for [JsonSessionStateRepository] and [JsonStore].
  *
  * Each test class uses its own [TempDir] so tests are fully isolated.
  * "Restart" is simulated by creating a new [JsonStore] on the same directory.
  */
-class JsonMapStateRepositoryTest {
+class JsonSessionStateRepositoryTest {
 
     private val config = JsonPersistenceConfig()
     private val mapper = config.persistenceObjectMapper()
@@ -30,11 +29,11 @@ class JsonMapStateRepositoryTest {
         JsonStore(mapper, dir.toAbsolutePath().toString(), debounceMs)
 
     private fun repoAt(dir: Path) =
-        JsonMapStateRepository(storeAt(dir))
+        JsonSessionStateRepository(storeAt(dir))
 
-    private fun createStateWithLandmark(): MapState {
+    private fun createStateWithLandmark(): SessionState {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
-        val state = MapState(map = map)
+        val state = SessionState(map = map)
         val coord = HexCoordinate(0, 0)
         val landmarkId = UUID.randomUUID()
         val landmark = Landmark(
@@ -104,7 +103,7 @@ class JsonMapStateRepositoryTest {
         @TempDir
         lateinit var dir: Path
 
-        private fun flush(repo: JsonMapStateRepository) {
+        private fun flush(repo: JsonSessionStateRepository) {
             repo.javaClass.getDeclaredField("store")
                 .also { it.isAccessible = true }
                 .let { (it.get(repo) as JsonStore).flushAllDirtyMaps() }
@@ -156,7 +155,7 @@ class JsonMapStateRepositoryTest {
         fun `multiple landmarks all survive a restart`() {
             val repo = repoAt(dir)
             val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
-            val state = MapState(map = map)
+            val state = SessionState(map = map)
             val coords = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0), HexCoordinate(-1, 1))
             coords.forEach { coord ->
                 val lm = Landmark(
@@ -212,7 +211,7 @@ class JsonMapStateRepositoryTest {
             // Regression: activeCollaborators is a computed getter returning an unmodifiable
             // list; Jackson must not try to set it during deserialization.
             val repo = repoAt(dir)
-            val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
+            val state = SessionState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
             state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
             repo.save(state)
             flush(repo)
@@ -263,7 +262,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `terrain enum is written as string name in JSON`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             store.flushAllDirtyMaps()
@@ -283,7 +282,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `landmark type enum is written as string name in JSON`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             store.flushAllDirtyMaps()
@@ -378,7 +377,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `HexCoordinate map key is written as q colon r string`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             store.flushAllDirtyMaps()
@@ -391,9 +390,9 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `negative coordinates are serialised and deserialised correctly`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val map = HexMap.createHexagonal(radius = 2, elevationFn = { 2 })
-            val state = MapState(map = map)
+            val state = SessionState(map = map)
             val negCoord = HexCoordinate(-2, 1)
             val lm = Landmark(
                 id = UUID.nameUUIDFromBytes("neg-lm".toByteArray()),
@@ -430,7 +429,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `file is written after first save`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             store.flushAllDirtyMaps()
@@ -440,7 +439,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `second flush without change does not update last-modified time`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             store.flushAllDirtyMaps()
@@ -469,9 +468,9 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `connection survives restart`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
-            val state = MapState(map = map)
+            val state = SessionState(map = map)
             val lm1 = Landmark(
                 id = UUID.nameUUIDFromBytes("lm1".toByteArray()),
                 ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
@@ -503,8 +502,8 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `group survives restart`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
-            val state = MapState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
+            val repo = JsonSessionStateRepository(store)
+            val state = SessionState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
             val id = UUID.randomUUID()
             val group = LandmarkGroup(id = id, name = "Alpha Team", color = "#ff0000")
             state.groups[group.id] = group
@@ -519,8 +518,8 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `quality metrics survive restart`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
-            val state = MapState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
+            val repo = JsonSessionStateRepository(store)
+            val state = SessionState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
             val metricId = UUID.nameUUIDFromBytes("m1".toByteArray())
             val metric = QualityMetric(id = metricId, name = "Availability", description = "Uptime %")
             state.metrics[metric.id] = metric
@@ -535,9 +534,9 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `landmark metric entries survive restart`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 })
-            val state = MapState(map = map)
+            val state = SessionState(map = map)
             val metricId = UUID.nameUUIDFromBytes("m1".toByteArray())
             val entry = LandmarkMetricEntry(metricId = metricId, value = "99.9%", level = QualityLevel.OK)
             val lmId = UUID.nameUUIDFromBytes("lm1".toByteArray())
@@ -568,7 +567,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `each map is stored in its own file under maps dir`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val s1 = createStateWithLandmark()
             val s2 = createStateWithLandmark()
             repo.save(s1)
@@ -582,7 +581,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `saving one map does not touch another map file`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val s1 = createStateWithLandmark()
             val s2 = createStateWithLandmark()
             repo.save(s1)
@@ -603,7 +602,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `delete removes the map file`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             store.flushAllDirtyMaps()
@@ -616,7 +615,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `delete does not leave map in dirtyAt`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             repo.delete(state.id)
@@ -631,7 +630,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `each map file contains only that map`() {
             val store = storeAt(dir)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val s1 = createStateWithLandmark()
             val s2 = createStateWithLandmark()
             repo.save(s1)
@@ -657,7 +656,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `map is not flushed before debounce window elapses`() {
             val store = storeAt(dir, debounceMs = 60_000L) // 60 s window
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
 
@@ -671,7 +670,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `map is flushed when debounce window has elapsed`() {
             val store = storeAt(dir, debounceMs = 0L) // instant window
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
 
@@ -685,7 +684,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `mutation resets the debounce timer`() {
             val store = storeAt(dir, debounceMs = 60_000L)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
             Thread.sleep(10)
@@ -702,7 +701,7 @@ class JsonMapStateRepositoryTest {
         @Test
         fun `flushAllDirtyMaps bypasses the debounce window`() {
             val store = storeAt(dir, debounceMs = 60_000L)
-            val repo = JsonMapStateRepository(store)
+            val repo = JsonSessionStateRepository(store)
             val state = createStateWithLandmark()
             repo.save(state)
 

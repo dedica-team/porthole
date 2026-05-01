@@ -4,15 +4,16 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.processes.AddStageConnectionUseCase
 import team.dedica.porthole.domain.*
 
 class AddStageConnectionUseCaseTest {
+    private val collaborator2 = Collaborator(id = UUID.nameUUIDFromBytes("p2".toByteArray()), username = "Bob")
+    private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
-    private lateinit var userPort: InMemoryTestUserRepository
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var useCase: AddStageConnectionUseCase
     private lateinit var processId: UUID
     private lateinit var stageId: UUID
@@ -21,7 +22,7 @@ class AddStageConnectionUseCaseTest {
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 5, elevationFn = { 1 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice"))
 
         val lm1Id = UUID.nameUUIDFromBytes("lm1".toByteArray())
@@ -40,22 +41,22 @@ class AddStageConnectionUseCaseTest {
         processId = process.id
         stageId = stage.id
 
-        mapStatePort = InMemoryMapStatePort().also { it.save(state) }
-        userPort = InMemoryTestUserRepository().also { it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1")) }
-        useCase = AddStageConnectionUseCase(mapStatePort, userPort)
+        mapStatePort = InMemorySessionStatePort().also { it.save(state) }
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
+        useCase = AddStageConnectionUseCase(mapStatePort, authorizationPort)
     }
 
     @Test
     fun `adds connection id to stage`() {
-        val result = useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", "Alice")
+        val result = useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", collaborator.id)
         val stage = result.find { it.id == processId }!!.stages.find { it.id == stageId }!!
         assertTrue(stage.connections.any { it.connectionId == connectionId })
     }
 
     @Test
     fun `adding the same connection twice is idempotent`() {
-        useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", "Alice")
-        val result = useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", "Alice")
+        useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", collaborator.id)
+        val result = useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", collaborator.id)
         val stage = result.find { it.id == processId }!!.stages.find { it.id == stageId }!!
         assertEquals(1, stage.connections.size)
     }
@@ -63,35 +64,34 @@ class AddStageConnectionUseCaseTest {
     @Test
     fun `non-existent connection throws IllegalArgumentException`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, processId, stageId, UUID.randomUUID(), null, "FORWARD", "Alice")
+            useCase.execute(state.id, processId, stageId, UUID.randomUUID(), null, "FORWARD", collaborator.id)
         }
     }
 
     @Test
     fun `non-existent stage throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, processId, UUID.randomUUID(), connectionId, null, "FORWARD", "Alice")
+            useCase.execute(state.id, processId, UUID.randomUUID(), connectionId, null, "FORWARD", collaborator.id)
         }
     }
 
     @Test
     fun `non-existent process throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, UUID.randomUUID(), stageId, connectionId, null, "FORWARD", "Alice")
+            useCase.execute(state.id, UUID.randomUUID(), stageId, connectionId, null, "FORWARD", collaborator.id)
         }
     }
 
     @Test
-    fun `non-collaborator throws IllegalArgumentException`() {
-        userPort.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
-        assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", "Bob")
+    fun `non-collaborator throws AccessDeniedException`() {
+        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+            useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", collaborator2.id)
         }
     }
 
     @Test
     fun `persists the connection reference`() {
-        useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", "Alice")
+        useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", collaborator.id)
         val saved = mapStatePort.findById(state.id)!!
         val stage = saved.processes[processId]!!.stages.find { it.id == stageId }!!
         assertTrue(stage.connections.any { it.connectionId == connectionId })

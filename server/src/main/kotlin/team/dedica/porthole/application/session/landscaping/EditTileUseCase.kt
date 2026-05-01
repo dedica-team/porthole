@@ -1,33 +1,29 @@
 package team.dedica.porthole.application.session.landscaping
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.Terrain
 import java.util.UUID
 
 @Component
 class EditTileUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
-        username: String,
+        sessionId: UUID,
+        callerId: UUID,
         coordinate: HexCoordinate,
         elevation: Int?,
         terrain: Terrain?,
-    ): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
-
+    ): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val existing = state.map.getTile(coordinate)
             ?: throw NoSuchElementException("Tile at $coordinate not found")
 
@@ -35,14 +31,11 @@ class EditTileUseCase(
             require(elevation in 0..5) { "Elevation must be between 0 and 5" }
         }
 
-        val newElevation = elevation ?: existing.elevation
-        val newTerrain = terrain ?: existing.terrain
-
-        val updated = existing.copy(elevation = newElevation, terrain = newTerrain)
+        val updated = existing.copy(elevation = elevation ?: existing.elevation, terrain = terrain ?: existing.terrain)
         state.map.setTile(coordinate, updated)
 
-        mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        sessionStatePort.save(state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

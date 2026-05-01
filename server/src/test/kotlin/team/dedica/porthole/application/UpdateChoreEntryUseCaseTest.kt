@@ -4,16 +4,18 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.security.access.AccessDeniedException
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.chorelists.CreateChoreListUseCase
 import team.dedica.porthole.application.session.chorelists.UpdateChoreEntryUseCase
 import team.dedica.porthole.domain.*
 
 class UpdateChoreEntryUseCaseTest {
+    private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "Alice")
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
-    private lateinit var userPort: InMemoryTestUserRepository
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var listId: UUID
     private lateinit var useCase: UpdateChoreEntryUseCase
     private val landmarkUuid = UUID.nameUUIDFromBytes("lm-1".toByteArray())
@@ -21,20 +23,17 @@ class UpdateChoreEntryUseCaseTest {
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 1 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "Alice"))
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u2".toByteArray()), username = "Bob"))
         val landmark = Landmark(id = landmarkUuid, name = "Pharmacy", ownerId = UUID.nameUUIDFromBytes("u1".toByteArray()), type = LandmarkType.KEEP)
         state.landmarks[landmark.id] = landmark
-        mapStatePort = InMemoryMapStatePort().also { it.save(state) }
-        userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord(UUID.nameUUIDFromBytes("u1".toByteArray()), "Alice", "gh-1"))
-            it.save(UserRecord(UUID.nameUUIDFromBytes("u2".toByteArray()), "Bob", "gh-2"))
-        }
+        mapStatePort = InMemorySessionStatePort().also { it.save(state) }
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         val broadcast = NoOpBroadcastPort()
-        listId = CreateChoreListUseCase(mapStatePort, userPort, broadcast)
-            .execute(state.id, "Sprint", listOf(landmarkUuid), null, "Alice")[0].id
-        useCase = UpdateChoreEntryUseCase(mapStatePort, userPort, broadcast)
+        listId = CreateChoreListUseCase(mapStatePort, broadcast, authorizationPort)
+            .execute(state.id, "Sprint", listOf(landmarkUuid), null, collaborator.id)[0].id
+        useCase = UpdateChoreEntryUseCase(mapStatePort, broadcast, authorizationPort)
     }
 
     private fun patch(
@@ -49,7 +48,7 @@ class UpdateChoreEntryUseCaseTest {
         mapId = this.state.id, listId = listId, landmarkId = landmarkUuid,
         state = state, assigneeId = assigneeId, clearAssignee = clearAssignee,
         link = link, clearLink = clearLink, note = note, clearNote = clearNote,
-        username = "Alice",
+        callerId = collaborator.id,
     )
 
     private val lmKey get() = landmarkUuid
@@ -124,15 +123,14 @@ class UpdateChoreEntryUseCaseTest {
     @Test
     fun `unknown entry throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, listId, UUID.randomUUID(), null, null, false, null, false, null, false, "Alice")
+            useCase.execute(state.id, listId, UUID.randomUUID(), null, null, false, null, false, null, false, collaborator.id)
         }
     }
 
     @Test
-    fun `non-collaborator caller throws IllegalArgumentException`() {
-        userPort.save(UserRecord(UUID.nameUUIDFromBytes("u3".toByteArray()), "Eve", "gh-3"))
-        assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, listId, landmarkUuid, null, null, false, null, false, null, false, "Eve")
+    fun `non-collaborator caller throws AccessDeniedException`() {
+        assertThrows(AccessDeniedException::class.java) {
+            useCase.execute(state.id, listId, landmarkUuid, null, null, false, null, false, null, false, UUID.randomUUID())
         }
     }
 }

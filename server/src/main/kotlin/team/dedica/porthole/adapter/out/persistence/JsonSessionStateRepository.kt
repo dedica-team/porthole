@@ -2,15 +2,15 @@ package team.dedica.porthole.adapter.out.persistence
 
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Repository
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 /**
- * [MapStatePort] implementation backed by [JsonStore].
+ * [SessionStatePort] implementation backed by [JsonStore].
  *
  * All mutations are applied to the in-memory map immediately and then mark
  * the map dirty so it is persisted after the debounce window.
@@ -19,22 +19,22 @@ import kotlin.concurrent.withLock
  */
 @Primary
 @Repository
-class JsonMapStateRepository(private val store: JsonStore) : MapStatePort {
+class JsonSessionStateRepository(private val store: JsonStore) : SessionStatePort {
 
     private val mapLocks = ConcurrentHashMap<UUID, ReentrantLock>()
     private fun lockFor(mapId: UUID) = mapLocks.computeIfAbsent(mapId) { ReentrantLock() }
 
-    override fun findById(id: UUID): MapState? = store.mapStates[id]
+    override fun findById(id: UUID): SessionState? = store.sessionStates[id]
 
-    override fun save(state: MapState): Unit = lockFor(state.id).withLock {
-        store.mapStates[state.id] = state
+    override fun save(state: SessionState): Unit = lockFor(state.id).withLock {
+        store.sessionStates[state.id] = state
         store.markMapDirty(state.id)
     }
 
-    override fun findAll(): List<MapState> = store.mapStates.values.toList()
+    override fun findAll(): List<SessionState> = store.sessionStates.values.toList()
 
     override fun delete(id: UUID): Unit = lockFor(id).withLock {
-        store.mapStates.remove(id)
+        store.sessionStates.remove(id)
         store.deleteMapFile(id)
     }
 }

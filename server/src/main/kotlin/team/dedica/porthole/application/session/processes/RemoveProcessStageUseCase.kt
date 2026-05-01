@@ -1,28 +1,23 @@
 package team.dedica.porthole.application.session.processes
 
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.AuthorizationPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.Process
+import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
 @Component
 class RemoveProcessStageUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, processId: UUID?, stageId: UUID?, username: String): List<Process> {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
-        val process = state.processes[processId]
-            ?: throw NoSuchElementException("Process $processId not found")
+    fun execute(mapId: UUID, processId: UUID?, stageId: UUID?, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val process = state.processes[processId] ?: throw NoSuchElementException("Process $processId not found")
         val removed = process.stages.removeIf { it.id == stageId }
         require(removed) { "Stage $stageId not found in process $processId" }
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         return state.processes.values.sortedBy { it.name }
     }
 }
-

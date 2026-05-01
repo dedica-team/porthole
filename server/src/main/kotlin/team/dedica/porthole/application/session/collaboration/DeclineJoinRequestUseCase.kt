@@ -1,31 +1,29 @@
 package team.dedica.porthole.application.session.collaboration
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.domain.MapState
-import java.util.UUID
+import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
+import java.util.*
 
 @Component
 class DeclineJoinRequestUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, declinerUsername: String, requestId: UUID): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val decliner = userPort.findByUsername(declinerUsername)
-            ?: throw NoSuchElementException("User $declinerUsername not found")
-        state.requireCollaborator(decliner.id)
+    fun execute(sessionId: UUID, declinerId: UUID, requestId: UUID): SessionState {
+
+        val state = authorizationPort.accessSession(declinerId, sessionId, SessionRole.COLLABORATOR)
 
         val joinRequest = state.joinRequests.find { it.id == requestId }
             ?: throw NoSuchElementException("Join request $requestId not found")
 
         state.joinRequests.remove(joinRequest)
-        mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        sessionStatePort.save(state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class ConnectionRecalculatorTest {
 
     private lateinit var map: HexMap
-    private lateinit var state: MapState
+    private lateinit var state: SessionState
 
     private val coordA = HexCoordinate(0, 0)
     private val coordB = HexCoordinate(4, 0)
@@ -18,7 +18,7 @@ class ConnectionRecalculatorTest {
     @BeforeEach
     fun setup() {
         map = HexMap.createHexagonal(radius = 5, elevationFn = { 3 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
     }
 
@@ -86,7 +86,7 @@ class ConnectionRecalculatorTest {
     @Test
     fun `recalculateConnectionsCrossingTile leaves connection intact when no alternative path exists`() {
         val tinyMap = HexMap.createHexagonal(radius = 1, elevationFn = { 3 })
-        val tinyState = MapState(map = tinyMap)
+        val tinyState = SessionState(map = tinyMap)
         tinyState.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
 
         val from = HexCoordinate(0, -1)

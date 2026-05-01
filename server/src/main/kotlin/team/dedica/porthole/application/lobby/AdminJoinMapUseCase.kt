@@ -1,36 +1,32 @@
 package team.dedica.porthole.application.lobby
 
-import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Component
-import team.dedica.porthole.adapter.`in`.web.security.AdminService
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Collaborator
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 @Component
 class AdminJoinMapUseCase(
-    private val mapStatePort: MapStatePort,
+    private val sessionStatePort: SessionStatePort,
     private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
-    private val adminService: AdminService,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerUsername: String): MapState {
-        val user = userPort.findByUsername(callerUsername)
-            ?: throw NoSuchElementException("User $callerUsername not found")
-        if (!adminService.isAdmin(user.id)) {
-            throw AccessDeniedException("Only admins can use admin-join")
-        }
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
+    fun execute(sessionId: UUID, callerId: UUID): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId,SessionRole.ADMIN)
+        val user = userPort.findById(callerId)
+            ?: throw NoSuchElementException("User $callerId not found")
+
         if (state.getCollaborator(user.id) == null) {
             state.collaborators.add(Collaborator(id = user.id, username = user.username, avatarUrl = user.avatarUrl))
-            mapStatePort.save(state)
-            broadcastPort.send(mapId, state)
+            sessionStatePort.save(state)
+            broadcastPort.send(sessionId, state)
         }
         return state
     }
 }
-

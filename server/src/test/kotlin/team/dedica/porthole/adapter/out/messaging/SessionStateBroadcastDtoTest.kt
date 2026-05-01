@@ -11,13 +11,13 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
-class MapStateBroadcastDtoTest {
+class SessionStateBroadcastDtoTest {
 
     private val lmId = UUID.nameUUIDFromBytes("lm-1".toByteArray())
 
-    private fun buildState(): MapState {
+    private fun buildState(): SessionState {
         val map = HexMap.createHexagonal(radius = 2, elevationFn = { 3 })
-        val state = MapState(map = map)
+        val state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
         state.landmarks[lmId] = Landmark(id = lmId, name = "Entrance")
         state.collaboratorMatrix.entries[lmId] = mutableMapOf(

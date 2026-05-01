@@ -2,18 +2,11 @@ package team.dedica.porthole.adapter.`in`.web
 
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import jakarta.validation.Valid
-import team.dedica.porthole.adapter.`in`.web.dto.CreateMetricRequest
-import team.dedica.porthole.adapter.`in`.web.dto.EditMetricRequest
-import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
-import team.dedica.porthole.application.session.metrics.ClearLandmarkMetricUseCase
-import team.dedica.porthole.application.session.metrics.CreateMetricUseCase
-import team.dedica.porthole.application.session.metrics.EditMetricUseCase
-import team.dedica.porthole.application.session.metrics.ListMetricsUseCase
-import team.dedica.porthole.application.session.metrics.RemoveMetricUseCase
-import team.dedica.porthole.application.session.metrics.SetLandmarkMetricUseCase
+import team.dedica.porthole.adapter.`in`.web.dto.*
+import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
+import team.dedica.porthole.application.session.metrics.*
 import team.dedica.porthole.domain.QualityLevel
 import java.util.UUID
 
@@ -26,22 +19,19 @@ class MetricController(
     private val removeMetricUseCase: RemoveMetricUseCase,
 ) {
     @GetMapping
-    fun listMetrics(
-        @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
-    ): ResponseEntity<*> =
-        ResponseEntity.ok(listMetricsUseCase.execute(UUID.fromString(id), user.username))
+    fun listMetrics(@PathVariable id: String, @AuthenticationPrincipal user: PortholePrincipal): ResponseEntity<*> =
+        ResponseEntity.ok(listMetricsUseCase.execute(UUID.fromString(id), user.userId))
 
     @PostMapping
     fun createMetric(
         @PathVariable id: String,
         @Valid @RequestBody request: CreateMetricRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<*> =
         ResponseEntity.ok(
             createMetricUseCase.execute(
                 UUID.fromString(id),
-                user.username,
+                user.userId,
                 request.name,
                 request.description
             )
@@ -52,12 +42,12 @@ class MetricController(
         @PathVariable id: String,
         @PathVariable metricId: String,
         @Valid @RequestBody request: EditMetricRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<*> =
         ResponseEntity.ok(
             editMetricUseCase.execute(
                 UUID.fromString(id),
-                user.username,
+                user.userId,
                 UUID.fromString(metricId),
                 request.name,
                 request.description
@@ -68,9 +58,9 @@ class MetricController(
     fun removeMetric(
         @PathVariable id: String,
         @PathVariable metricId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<*> =
-        ResponseEntity.ok(removeMetricUseCase.execute(UUID.fromString(id), user.username, UUID.fromString(metricId)))
+        ResponseEntity.ok(removeMetricUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(metricId)))
 }
 
 @RestController
@@ -85,10 +75,11 @@ class LandmarkMetricController(
         @PathVariable landmarkId: String,
         @PathVariable metricId: String,
         @Valid @RequestBody request: SetLandmarkMetricRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<Any> {
-        val level = runCatching { QualityLevel.valueOf(request.level.uppercase()) }
-            .getOrElse { return ResponseEntity.badRequest().body("Unknown quality level: ${request.level}") }
+        val level = runCatching { QualityLevel.valueOf(request.level.uppercase()) }.getOrElse {
+            return ResponseEntity.badRequest().body("Unknown quality level: ${request.level}")
+        }
         return ResponseEntity.ok(
             setLandmarkMetricUseCase.execute(
                 UUID.fromString(id),
@@ -98,7 +89,7 @@ class LandmarkMetricController(
                 level,
                 request.link,
                 request.badges,
-                user.username
+                user.userId
             )
         )
     }
@@ -108,14 +99,14 @@ class LandmarkMetricController(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @PathVariable metricId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<*> =
         ResponseEntity.ok(
             clearLandmarkMetricUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(landmarkId),
                 UUID.fromString(metricId),
-                user.username
+                user.userId
             )
         )
 }

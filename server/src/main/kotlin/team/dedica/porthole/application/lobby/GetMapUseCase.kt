@@ -1,33 +1,31 @@
 package team.dedica.porthole.application.lobby
 
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.MapStatePort
+import team.dedica.porthole.application.port.AuthorizationPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.CollaborationMode
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 @Component
 class GetMapUseCase(
-    private val mapStatePort: MapStatePort,
+    private val sessionStatePort: SessionStatePort,
     private val userPort: UserPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(id: UUID, callerUsername: String? = null): MapState {
-        val state = mapStatePort.findById(id)
-            ?: throw NoSuchElementException("Map $id not found")
+    fun execute(sessionId: UUID, callerId: UUID?): SessionState {
+        val state = sessionStatePort.findById(sessionId)
+            ?: throw NoSuchElementException("Session $sessionId not found")
 
         // Private map visibility check
         if (state.collaborationMode == CollaborationMode.PRIVATE) {
-            val callerId = callerUsername?.let { userPort.findByUsername(it)?.id }
-            if (callerId == null || !state.isCollaborator(callerId)) {
-                throw IllegalAccessException("Map is private")
-            }
+            if (callerId == null) throw org.springframework.security.access.AccessDeniedException("Authentication required")
+            authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         }
 
-        // Refresh each collaborator's avatarUrl from the current UserRecord so that
-        // stale entries (persisted before avatarUrl was added) are always up-to-date.
-        // Build a new list instead of replaceAll() to avoid ConcurrentModificationException
-        // when the underlying list is shared / wrapped (e.g. Collections.unmodifiableList).
+        // Refresh each collaborator's avatarUrl from the current UserRecord
         val refreshed = state.collaborators.map { collaborator ->
             val freshAvatar = userPort.findByUsername(collaborator.username)?.avatarUrl
             if (freshAvatar != null && freshAvatar != collaborator.avatarUrl)
@@ -38,7 +36,7 @@ class GetMapUseCase(
         if (patched) {
             state.collaborators.clear()
             state.collaborators.addAll(refreshed)
-            mapStatePort.save(state)
+            sessionStatePort.save(state)
         }
 
         return state

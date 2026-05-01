@@ -1,37 +1,33 @@
 package team.dedica.porthole.application.session.landscaping
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.AStarPathfinder
 import team.dedica.porthole.domain.Connection
 import team.dedica.porthole.domain.ConnectionType
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 @Component
 class CreateConnectionUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         fromLandmarkId: UUID,
         toLandmarkId: UUID,
         type: ConnectionType = ConnectionType.PIPE,
         name: String? = null,
         description: String? = null,
-        username: String? = null,
-    ): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        if (username != null) {
-            val user = userPort.findByUsername(username)
-                ?: throw NoSuchElementException("User $username not found")
-            state.requireCollaborator(user.id)
-        }
+        callerId: UUID,
+    ): SessionState {
+
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
 
         require(fromLandmarkId != toLandmarkId) { "Cannot connect a landmark to itself" }
 
@@ -66,8 +62,8 @@ class CreateConnectionUseCase(
         )
         state.connections[connection.id] = connection
 
-        mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        sessionStatePort.save(state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

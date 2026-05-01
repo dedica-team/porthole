@@ -4,15 +4,16 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.out.repository.UserRecord
+import org.springframework.security.access.AccessDeniedException
 import team.dedica.porthole.application.session.landscaping.EditTileUseCase
 import team.dedica.porthole.domain.*
 
 class EditTileUseCaseTest {
+    private val collaborator2 = Collaborator(id = UUID.nameUUIDFromBytes("p2".toByteArray()), username = "Bob")
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
-    private lateinit var userPort: InMemoryTestUserRepository
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var useCase: EditTileUseCase
 
     private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
@@ -27,19 +28,17 @@ class EditTileUseCaseTest {
                 else -> 1
             }
         })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(collaborator)
-        mapStatePort = InMemoryMapStatePort()
+        mapStatePort = InMemorySessionStatePort()
         mapStatePort.save(state)
-        userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
-        }
-        useCase = EditTileUseCase(mapStatePort, userPort, NoOpBroadcastPort())
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
+        useCase = EditTileUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
     }
 
     @Test
     fun `raising elevation keeps existing terrain`() {
-        val result = useCase.execute(state.id, "Alice", HexCoordinate(0, 0), elevation = 2, terrain = null)
+        val result = useCase.execute(state.id, collaborator.id, HexCoordinate(0, 0), elevation = 2, terrain = null)
         val tile = result.map.getTile(HexCoordinate(0, 0))!!
         assertEquals(2, tile.elevation)
         assertEquals(Terrain.GRASS, tile.terrain) // terrain unchanged
@@ -47,7 +46,7 @@ class EditTileUseCaseTest {
 
     @Test
     fun `lowering elevation to 0 keeps existing terrain`() {
-        val result = useCase.execute(state.id, "Alice", HexCoordinate(1, 0), elevation = 0, terrain = null)
+        val result = useCase.execute(state.id, collaborator.id, HexCoordinate(1, 0), elevation = 0, terrain = null)
         val tile = result.map.getTile(HexCoordinate(1, 0))!!
         assertEquals(0, tile.elevation)
         assertEquals(Terrain.GRASS, tile.terrain) // terrain unchanged
@@ -55,7 +54,7 @@ class EditTileUseCaseTest {
 
     @Test
     fun `setting terrain without elevation change keeps elevation`() {
-        val result = useCase.execute(state.id, "Alice", HexCoordinate(0, 0), elevation = null, terrain = Terrain.FOREST)
+        val result = useCase.execute(state.id, collaborator.id, HexCoordinate(0, 0), elevation = null, terrain = Terrain.FOREST)
         val tile = result.map.getTile(HexCoordinate(0, 0))!!
         assertEquals(1, tile.elevation)
         assertEquals(Terrain.FOREST, tile.terrain)
@@ -63,7 +62,7 @@ class EditTileUseCaseTest {
 
     @Test
     fun `setting elevation and terrain together uses explicit terrain`() {
-        val result = useCase.execute(state.id, "Alice", HexCoordinate(0, 0), elevation = 3, terrain = Terrain.GRASS)
+        val result = useCase.execute(state.id, collaborator.id, HexCoordinate(0, 0), elevation = 3, terrain = Terrain.GRASS)
         val tile = result.map.getTile(HexCoordinate(0, 0))!!
         assertEquals(3, tile.elevation)
         assertEquals(Terrain.GRASS, tile.terrain)
@@ -72,39 +71,36 @@ class EditTileUseCaseTest {
     @Test
     fun `invalid elevation below 0 throws`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, "Alice", HexCoordinate(0, 0), elevation = -1, terrain = null)
+            useCase.execute(state.id, collaborator.id, HexCoordinate(0, 0), elevation = -1, terrain = null)
         }
     }
 
     @Test
     fun `invalid elevation above 5 throws`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, "Alice", HexCoordinate(0, 0), elevation = 6, terrain = null)
+            useCase.execute(state.id, collaborator.id, HexCoordinate(0, 0), elevation = 6, terrain = null)
         }
     }
 
     @Test
     fun `unknown coordinate throws`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, "Alice", HexCoordinate(99, 99), elevation = 1, terrain = null)
+            useCase.execute(state.id, collaborator.id, HexCoordinate(99, 99), elevation = 1, terrain = null)
         }
     }
 
     @Test
     fun `unknown map throws`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(UUID.randomUUID(), "Alice", HexCoordinate(0, 0), elevation = 1, terrain = null)
+            useCase.execute(UUID.randomUUID(), collaborator.id, HexCoordinate(0, 0), elevation = 1, terrain = null)
         }
     }
 
     @Test
     fun `non-collaborator cannot edit tile`() {
-        val otherPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
-        }
-        val uc = EditTileUseCase(mapStatePort, otherPort, NoOpBroadcastPort())
-        assertThrows(IllegalArgumentException::class.java) {
-            uc.execute(state.id, "Bob", HexCoordinate(0, 0), elevation = 2, terrain = null)
+        val uc = EditTileUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        assertThrows(AccessDeniedException::class.java) {
+            uc.execute(state.id, collaborator2.id, HexCoordinate(0, 0), elevation = 2, terrain = null)
         }
     }
 }

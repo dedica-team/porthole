@@ -4,7 +4,6 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.landscaping.RemoveConnectionUseCase
 import team.dedica.porthole.application.session.landscaping.RemoveLandmarkUseCase
 import team.dedica.porthole.domain.*
@@ -15,9 +14,9 @@ import team.dedica.porthole.domain.*
  */
 class ProcessCascadeTest {
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
-    private lateinit var userPort: InMemoryTestUserRepository
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var removeConnectionUseCase: RemoveConnectionUseCase
     private lateinit var removeLandmarkUseCase: RemoveLandmarkUseCase
     private lateinit var processId: UUID
@@ -33,7 +32,7 @@ class ProcessCascadeTest {
     fun setup() {
 
         val map = HexMap.createHexagonal(radius = 5, elevationFn = { 1 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = ownerIdP1, username = "Alice"))
 
         state.landmarks[lm1Id] = Landmark(id = lm1Id, name = "A", ownerId = ownerIdP1, coordinate = HexCoordinate(0, 0))
@@ -58,17 +57,15 @@ class ProcessCascadeTest {
         processId = process.id
         stageId = stage.id
 
-        mapStatePort = InMemoryMapStatePort().also { it.save(state) }
-        userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord(ownerIdP1, "Alice", "gh-1"))
-        }
-        removeConnectionUseCase = RemoveConnectionUseCase(mapStatePort, userPort, NoOpBroadcastPort())
-        removeLandmarkUseCase = RemoveLandmarkUseCase(mapStatePort, userPort, NoOpBroadcastPort())
+        mapStatePort = InMemorySessionStatePort().also { it.save(state) }
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
+        removeConnectionUseCase = RemoveConnectionUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        removeLandmarkUseCase = RemoveLandmarkUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
     }
 
     @Test
     fun `removing a connection removes its id from all process stages`() {
-        removeConnectionUseCase.execute(state.id, c1Id, "Alice")
+        removeConnectionUseCase.execute(state.id, c1Id, ownerIdP1)
         val saved = mapStatePort.findById(state.id)!!
         val stage = saved.processes[processId]!!.stages.find { it.id == stageId }!!
         assertFalse(stage.connections.any { it.connectionId == c1Id })
@@ -78,7 +75,7 @@ class ProcessCascadeTest {
     @Test
     fun `removing a landmark removes its connections from process stages too`() {
         // lm1 participates in c1 and c2 – both should be removed from the stage
-        removeLandmarkUseCase.execute(state.id, "Alice", lm1Id)
+        removeLandmarkUseCase.execute(state.id, ownerIdP1, lm1Id)
         val saved = mapStatePort.findById(state.id)!!
         val stage = saved.processes[processId]!!.stages.find { it.id == stageId }!!
         assertTrue(stage.connections.isEmpty())
@@ -91,7 +88,7 @@ class ProcessCascadeTest {
         state.landmarks[lm3Id] = Landmark(id = lm3Id, name = "C", ownerId = ownerIdP1, coordinate = HexCoordinate(-2, 0))
         mapStatePort.save(state)
 
-        removeLandmarkUseCase.execute(state.id, "Alice", lm3Id)
+        removeLandmarkUseCase.execute(state.id, ownerIdP1, lm3Id)
         val saved = mapStatePort.findById(state.id)!!
         val stage = saved.processes[processId]!!.stages.find { it.id == stageId }!!
         assertEquals(2, stage.connections.size)
@@ -106,7 +103,7 @@ class ProcessCascadeTest {
         process.stages.add(stage2)
         mapStatePort.save(mapStatePort.findById(state.id)!!)
 
-        removeConnectionUseCase.execute(state.id, c1Id, "Alice")
+        removeConnectionUseCase.execute(state.id, c1Id, ownerIdP1)
         val saved = mapStatePort.findById(state.id)!!
         val stages = saved.processes[processId]!!.stages
         stages.forEach { s ->

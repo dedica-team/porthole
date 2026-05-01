@@ -2,9 +2,9 @@ package team.dedica.porthole.adapter.`in`.web
 
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import team.dedica.porthole.adapter.`in`.web.dto.EditTileRequest
+import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.landscaping.EditTileUseCase
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.Terrain
@@ -21,7 +21,7 @@ class TileController(
         @PathVariable q: Int,
         @PathVariable r: Int,
         @RequestBody request: EditTileRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> {
         val terrain = request.terrain?.let {
             runCatching { Terrain.valueOf(it.uppercase()) }
@@ -30,7 +30,7 @@ class TileController(
         return ResponseEntity.ok(
             editTileUseCase.execute(
                 UUID.fromString(id),
-                user.username,
+                user.userId,
                 HexCoordinate(q, r),
                 request.elevation,
                 terrain
@@ -38,4 +38,3 @@ class TileController(
         )
     }
 }
-

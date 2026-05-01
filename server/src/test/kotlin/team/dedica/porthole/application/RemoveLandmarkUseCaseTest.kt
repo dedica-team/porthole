@@ -5,14 +5,14 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.landscaping.RemoveLandmarkUseCase
 import team.dedica.porthole.domain.*
 
 class RemoveLandmarkUseCaseTest {
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var useCase: RemoveLandmarkUseCase
 
     private val collaborator1 = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
@@ -27,7 +27,7 @@ class RemoveLandmarkUseCaseTest {
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 5, elevationFn = { 3 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.addAll(listOf(collaborator1, collaborator2))
 
         state.landmarks[ironKeepId] = Landmark(
@@ -62,26 +62,23 @@ class RemoveLandmarkUseCaseTest {
             path = listOf(HexCoordinate(3, 0), HexCoordinate(1, 0), HexCoordinate(-2, 0))
         )
 
-        mapStatePort = InMemoryMapStatePort()
+        mapStatePort = InMemorySessionStatePort()
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         mapStatePort.save(state)
 
-        val userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
-            it.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
-        }
-        useCase = RemoveLandmarkUseCase(mapStatePort, userPort, NoOpBroadcastPort())
+        useCase = RemoveLandmarkUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
     }
 
     @Test
     fun `owner can remove own landmark`() {
-        val result = useCase.execute(state.id, "Alice", ironKeepId)
+        val result = useCase.execute(state.id, collaborator1.id, ironKeepId)
         assertNull(result.getLandmarkAt(HexCoordinate(0, 0)))
         assertFalse(result.landmarks.containsKey(ironKeepId))
     }
 
     @Test
     fun `removing landmark removes all its connections`() {
-        val result = useCase.execute(state.id, "Alice", ironKeepId)
+        val result = useCase.execute(state.id, collaborator1.id, ironKeepId)
         assertFalse(result.connections.containsKey(c1id))
         assertFalse(result.connections.containsKey(c2id))
         assertTrue(result.connections.containsKey(c3id))
@@ -89,21 +86,21 @@ class RemoveLandmarkUseCaseTest {
 
     @Test
     fun `non-owner collaborator can remove landmark`() {
-        val result = useCase.execute(state.id, "Bob", ironKeepId)
+        val result = useCase.execute(state.id, collaborator2.id, ironKeepId)
         assertNull(result.landmarks[ironKeepId])
     }
 
     @Test
     fun `removing non-existent landmark fails`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, "Alice", UUID.randomUUID())
+            useCase.execute(state.id, collaborator1.id, UUID.randomUUID())
         }
     }
 
     @Test
     fun `removing landmark from unknown map fails`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(UUID.randomUUID(), "Alice", ironKeepId)
+            useCase.execute(UUID.randomUUID(), collaborator1.id, ironKeepId)
         }
     }
 
@@ -112,7 +109,7 @@ class RemoveLandmarkUseCaseTest {
         state.connections.remove(c1id)
         state.connections.remove(c2id)
         mapStatePort.save(state)
-        val result = useCase.execute(state.id, "Alice", ironKeepId)
+        val result = useCase.execute(state.id, collaborator1.id, ironKeepId)
         assertFalse(result.landmarks.containsKey(ironKeepId))
         assertEquals(1, result.connections.size)
     }

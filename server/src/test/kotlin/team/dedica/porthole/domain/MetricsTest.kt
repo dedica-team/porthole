@@ -12,14 +12,14 @@ class MetricsTest {
 
     @Test
     fun `metrics map is initialised to empty by default`() {
-        val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
+        val state = SessionState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
         assertNotNull(state.metrics)
         assertTrue(state.metrics.isEmpty())
     }
 
     @Test
     fun `metrics can be mutated on a MapState`() {
-        val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
+        val state = SessionState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
         val id = UUID.randomUUID()
         val metric = QualityMetric(id = id, name = "Availability", description = "Uptime")
         state.metrics[id] = metric
@@ -29,7 +29,7 @@ class MetricsTest {
 
     @Test
     fun `metrics on already-populated state returns all entries`() {
-        val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
+        val state = SessionState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
         val id1 = UUID.randomUUID()
         val id2 = UUID.randomUUID()
         state.metrics[id1] = QualityMetric(id = id1, name = "Latency", description = "ms")
@@ -71,18 +71,16 @@ class MetricsTest {
 
     @Test
     fun `CreateMetricUseCase adds a metric to the state`() {
-        val state = MapState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
+        val state = SessionState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }))
         val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
         state.collaborators.add(collaborator)
-        val port  = team.dedica.porthole.application.InMemoryMapStatePort()
+        val port = team.dedica.porthole.application.InMemorySessionStatePort()
         port.save(state)
-        val userPort = team.dedica.porthole.application.InMemoryTestUserRepository().also {
-            it.save(team.dedica.porthole.adapter.out.repository.UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
-        }
+        val authorizationPort = team.dedica.porthole.application.InMemoryAuthorizationPort(port)
         val uc = CreateMetricUseCase(
-            port, userPort, NoOpBroadcastPort()
+            port, team.dedica.porthole.application.NoOpBroadcastPort(), authorizationPort
         )
-        val result = uc.execute(state.id, "Alice", "Availability", "Uptime %")
+        val result = uc.execute(state.id, collaborator.id, "Availability", "Uptime %")
         assertEquals(1, result.metrics.size)
         assertEquals("Availability", result.metrics.values.first().name)
     }

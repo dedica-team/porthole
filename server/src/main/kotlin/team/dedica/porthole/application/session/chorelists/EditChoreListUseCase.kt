@@ -1,18 +1,19 @@
 package team.dedica.porthole.application.session.chorelists
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.ChoreEntry
 import team.dedica.porthole.domain.ChoreList
+import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
 @Component
 class EditChoreListUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
         mapId: UUID,
@@ -21,13 +22,9 @@ class EditChoreListUseCase(
         landmarkIds: List<UUID>?,
         link: String?,
         clearLink: Boolean,
-        username: String
+        callerId: UUID
     ): List<ChoreList> {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
+        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
         val list = state.choreLists[listId]
             ?: throw NoSuchElementException("Chore list $listId not found")
         title?.trim()?.takeIf { it.isNotBlank() }?.let { list.title = it }
@@ -48,9 +45,8 @@ class EditChoreListUseCase(
                 list.entries[id] = ChoreEntry(landmarkId = id)
             }
         }
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         broadcastPort.sendChoreLists(mapId, state.choreLists)
         return state.choreLists.values.sortedBy { it.title }
     }
 }
-

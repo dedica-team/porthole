@@ -1,22 +1,19 @@
 package team.dedica.porthole.application.lobby
 
-import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Component
-import team.dedica.porthole.adapter.`in`.web.security.AdminService
-import team.dedica.porthole.application.port.MapStatePort
+import team.dedica.porthole.application.port.AuthorizationPort
+import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
 @Component
 class DeleteMapUseCase(
-    private val mapStatePort: MapStatePort,
-    private val adminService: AdminService,
+    private val sessionStatePort: SessionStatePort,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerUserId: UUID) {
-        if (!adminService.isAdmin(callerUserId)) {
-            throw AccessDeniedException("Only admins can delete sessions")
-        }
-        mapStatePort.findById(mapId) ?: throw NoSuchElementException("Map $mapId not found")
-        mapStatePort.delete(mapId)
+    fun execute(sessionId: UUID, callerUserId: UUID) {
+        authorizationPort.accessSession(callerUserId, sessionId,SessionRole.ADMIN)
+        sessionStatePort.findById(sessionId) ?: throw NoSuchElementException("Session $sessionId not found")
+        sessionStatePort.delete(sessionId)
     }
 }
-

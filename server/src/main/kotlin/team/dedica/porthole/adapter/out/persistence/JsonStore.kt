@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionState
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -47,17 +47,17 @@ class JsonStore(
 
     @Volatile private var usersDirty = false
 
-    lateinit var mapStates: ConcurrentHashMap<UUID, MapState>
+    lateinit var sessionStates: ConcurrentHashMap<UUID, SessionState>
     lateinit var users:     ConcurrentHashMap<UUID, UserRecord>
 
     init {
         Files.createDirectories(storageDir)
         Files.createDirectories(mapsDir)
-        mapStates = loadAllMaps()
+        sessionStates = loadAllMaps()
         users     = loadOrEmpty(usersFile, object : com.fasterxml.jackson.core.type.TypeReference<Map<UUID, UserRecord>>() {})
         log.info(
             "JsonStore initialised – {} map(s), {} user(s) loaded from {}",
-            mapStates.size, users.size, storageDir,
+            sessionStates.size, users.size, storageDir,
         )
     }
 
@@ -101,7 +101,7 @@ class JsonStore(
     private fun saveMap(id: UUID) {
         // Re-check under lock: another thread may have already flushed
         if (!dirtyAt.containsKey(id)) return
-        val state = mapStates[id] ?: run {
+        val state = sessionStates[id] ?: run {
             dirtyAt.remove(id)
             return
         }
@@ -133,13 +133,13 @@ class JsonStore(
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
-    private fun loadAllMaps(): ConcurrentHashMap<UUID, MapState> {
-        val result = ConcurrentHashMap<UUID, MapState>()
+    private fun loadAllMaps(): ConcurrentHashMap<UUID, SessionState> {
+        val result = ConcurrentHashMap<UUID, SessionState>()
         Files.list(mapsDir)
             .filter { it.toString().endsWith(".json") }
             .forEach { file ->
                 try {
-                    val state = mapper.readValue(file.toFile(), MapState::class.java)
+                    val state = mapper.readValue(file.toFile(), SessionState::class.java)
                     requireNotNull(state.id) { "MapState.id is null in '${file.fileName}'" }
                     requireNotNull(state.map) { "MapState.map is null in '${file.fileName}'" }
                     result[state.id] = state

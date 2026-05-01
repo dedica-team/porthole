@@ -2,38 +2,33 @@ package team.dedica.porthole.application.session.metrics
 
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.LandmarkMetricEntry
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import team.dedica.porthole.domain.QualityLevel
 import java.net.URI
 import java.util.UUID
 
 @Component
 class SetLandmarkMetricUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         landmarkId: UUID,
         metricId: UUID,
         value: String?,
         level: QualityLevel,
         link: String? = null,
         badges: Map<String, String> = emptyMap(),
-        username: String? = null,
-    ): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        if (username != null) {
-            val user = userPort.findByUsername(username)
-                ?: throw NoSuchElementException("User $username not found")
-            state.requireCollaborator(user.id)
-        }
+        callerId: UUID,
+    ): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val landmark = state.landmarks[landmarkId]
             ?: throw NoSuchElementException("Landmark $landmarkId not found")
         require(state.metrics.containsKey(metricId)) { "Metric $metricId not found" }
@@ -60,8 +55,8 @@ class SetLandmarkMetricUseCase(
             badges   = validatedBadges,
         )
         state.landmarks[landmarkId] = landmark.copy(metrics = landmark.metrics + (metricId to entry))
-        mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        sessionStatePort.save(state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

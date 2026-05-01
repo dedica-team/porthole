@@ -3,9 +3,9 @@ package team.dedica.porthole.adapter.`in`.web
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import team.dedica.porthole.adapter.`in`.web.dto.*
+import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.chorelists.*
 import java.util.UUID
 
@@ -19,19 +19,18 @@ class ChoreListController(
     private val toggleChoreListCompletedUseCase: ToggleChoreListCompletedUseCase,
     private val updateChoreEntryUseCase: UpdateChoreEntryUseCase,
 ) {
-
     @GetMapping
     fun listChoreLists(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(listChoreListsUseCase.execute(UUID.fromString(id), user.username))
+        ResponseEntity.ok(listChoreListsUseCase.execute(UUID.fromString(id), user.userId))
 
     @PostMapping
     fun createChoreList(
         @PathVariable id: String,
         @Valid @RequestBody request: CreateChoreListRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             createChoreListUseCase.execute(
@@ -39,7 +38,7 @@ class ChoreListController(
                 request.title,
                 request.landmarkIds.map { UUID.fromString(it) },
                 request.link,
-                user.username
+                user.userId
             )
         )
 
@@ -48,7 +47,7 @@ class ChoreListController(
         @PathVariable id: String,
         @PathVariable listId: String,
         @Valid @RequestBody request: EditChoreListRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             editChoreListUseCase.execute(
@@ -58,7 +57,7 @@ class ChoreListController(
                 request.landmarkIds?.map { UUID.fromString(it) },
                 request.link,
                 request.clearLink,
-                user.username
+                user.userId
             )
         )
 
@@ -66,13 +65,13 @@ class ChoreListController(
     fun toggleComplete(
         @PathVariable id: String,
         @PathVariable listId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             toggleChoreListCompletedUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(listId),
-                user.username
+                user.userId
             )
         )
 
@@ -80,9 +79,9 @@ class ChoreListController(
     fun deleteChoreList(
         @PathVariable id: String,
         @PathVariable listId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<Void> {
-        removeChoreListUseCase.execute(UUID.fromString(id), UUID.fromString(listId), user.username)
+        removeChoreListUseCase.execute(UUID.fromString(id), UUID.fromString(listId), user.userId)
         return ResponseEntity.noContent().build()
     }
 
@@ -92,7 +91,7 @@ class ChoreListController(
         @PathVariable listId: String,
         @PathVariable landmarkId: String,
         @RequestBody request: UpdateChoreEntryRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             updateChoreEntryUseCase.execute(
@@ -106,7 +105,7 @@ class ChoreListController(
                 clearLink = request.clearLink,
                 note = request.note,
                 clearNote = request.clearNote,
-                username = user.username,
+                callerId = user.userId
             )
         )
 }

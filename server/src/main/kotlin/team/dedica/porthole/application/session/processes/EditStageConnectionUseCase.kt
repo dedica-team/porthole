@@ -1,16 +1,17 @@
 package team.dedica.porthole.application.session.processes
 
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.AuthorizationPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.Process
+import team.dedica.porthole.domain.SessionRole
 import team.dedica.porthole.domain.StageConnectionDirection
 import java.util.UUID
 
 @Component
 class EditStageConnectionUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
         mapId: UUID,
@@ -20,13 +21,9 @@ class EditStageConnectionUseCase(
         title: String?,
         clearTitle: Boolean,
         direction: String?,
-        username: String,
+        callerId: UUID,
     ): List<Process> {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
+        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
         val process = state.processes[processId]
             ?: throw NoSuchElementException("Process $processId not found")
         val stage = process.stages.find { it.id == stageId }
@@ -43,8 +40,7 @@ class EditStageConnectionUseCase(
             runCatching { StageConnectionDirection.valueOf(it) }.getOrNull()
         } ?: sc.direction
         stage.connections[idx] = sc.copy(title = newTitle, direction = newDirection)
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         return state.processes.values.sortedBy { it.name }
     }
 }
-

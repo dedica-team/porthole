@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.domain.ChoreList
 import team.dedica.porthole.domain.CollaboratorMatrix
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionState
 import team.dedica.porthole.domain.QualityMetric
 import java.util.UUID
 
@@ -13,7 +13,7 @@ import java.util.UUID
 class MapStateBroadcaster(private val messaging: SimpMessagingTemplate) : BroadcastPort {
 
     @Async
-    override fun send(mapId: UUID, state: MapState) {
+    override fun send(mapId: UUID, state: SessionState) {
         messaging.convertAndSend("/topic/map/$mapId", MapStateBroadcastDto.from(state))
     }
 

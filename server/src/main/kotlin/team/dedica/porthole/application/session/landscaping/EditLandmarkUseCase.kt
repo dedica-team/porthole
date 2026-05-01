@@ -2,22 +2,23 @@ package team.dedica.porthole.application.session.landscaping
 
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.LandmarkType
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 @Component
 class EditLandmarkUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
-        username: String,
+        sessionId: UUID,
+        callerId: UUID,
         landmarkId: UUID,
         name: String?,
         type: LandmarkType?,
@@ -26,12 +27,8 @@ class EditLandmarkUseCase(
         clearGroup: Boolean = false,
         link: String? = null,
         clearLink: Boolean = false,
-    ): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
+    ): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val landmark = state.landmarks[landmarkId]
             ?: throw NoSuchElementException("Landmark $landmarkId not found")
         val newName = if (name != null) {
@@ -60,8 +57,8 @@ class EditLandmarkUseCase(
             groupId = newGroupId, link = newLink,
             metrics = landmark.metrics,
         )
-        mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        sessionStatePort.save(state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

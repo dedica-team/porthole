@@ -1,29 +1,23 @@
 package team.dedica.porthole.application.session.landscaping
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 @Component
 class RemoveConnectionUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, connectionId: UUID, username: String? = null): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        if (username != null) {
-            val user = userPort.findByUsername(username)
-                ?: throw NoSuchElementException("User $username not found")
-            state.requireCollaborator(user.id)
-        }
-        require(state.connections.containsKey(connectionId)) {
-            "Connection $connectionId not found"
-        }
+    fun execute(sessionId: UUID, connectionId: UUID, callerId: UUID): SessionState {
+
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
+        require(state.connections.containsKey(connectionId)) { "Connection $connectionId not found" }
         state.connections.remove(connectionId)
         // Cascade: remove StageConnection entries referencing this connection
         state.processes.values.forEach { process ->
@@ -31,8 +25,8 @@ class RemoveConnectionUseCase(
                 stage.connections.removeIf { it.connectionId == connectionId }
             }
         }
-        mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        sessionStatePort.save(state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

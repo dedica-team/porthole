@@ -5,16 +5,16 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class MapStateTest {
+class SessionStateTest {
 
-    private lateinit var state: MapState
+    private lateinit var state: SessionState
     private val collaborator1 = Collaborator(id = UUID.randomUUID(), username = "Alice")
     private val collaborator2 = Collaborator(id = UUID.randomUUID(), username = "Bob")
 
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 3 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.addAll(listOf(collaborator1, collaborator2))
     }
 

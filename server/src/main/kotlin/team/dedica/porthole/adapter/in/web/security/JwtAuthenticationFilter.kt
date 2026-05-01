@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import team.dedica.porthole.application.port.UserPort
@@ -29,8 +28,8 @@ class JwtAuthenticationFilter(
             val userRecord = userRepository.findById(claims.userId)
             val authorities = listOf(SimpleGrantedAuthority("ROLE_USER"))
             if (userRecord != null) {
-                val principal = User(userRecord.username, "", authorities)
-                val auth = UsernamePasswordAuthenticationToken(principal, null, authorities)
+                val principal = PortholePrincipal(userId = userRecord.id, username = userRecord.username)
+                val auth = UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
                 SecurityContextHolder.getContext().authentication = auth
             } else {
                 SecurityContextHolder.clearContext()

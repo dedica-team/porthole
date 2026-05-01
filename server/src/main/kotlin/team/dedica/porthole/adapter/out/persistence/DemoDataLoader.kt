@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.lobby.JoinMapUseCase
-import team.dedica.porthole.application.port.MapStatePort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.application.session.landscaping.CreateConnectionUseCase
 import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
@@ -43,7 +43,7 @@ import kotlin.math.abs
  * ## Architecture
  * All domain mutations go through the application use cases (same as the REST API).
  * The only direct infrastructure access is:
- *   - creating the initial [MapState] with the fixed demo ID and hexagonal map (no use
+ *   - creating the initial [SessionState] with the fixed demo ID and hexagonal map (no use
  *     case covers custom IDs or the hexagonal map type), and
  *   - saving [UserRecord]s (users come from auth providers; there is no "create user" use case).
  */
@@ -51,7 +51,7 @@ import kotlin.math.abs
 @ConditionalOnProperty(name = ["porthole.demo.enabled"], havingValue = "true")
 class DemoDataLoader(
     // Infrastructure ports (direct access only where no use case exists)
-    private val mapStatePort: MapStatePort,
+    private val sessionStatePort: SessionStatePort,
     private val userPort: UserPort,
     // Use cases
     private val joinMapUseCase: JoinMapUseCase,
@@ -75,16 +75,16 @@ class DemoDataLoader(
         val DEMO_MAP_ID = UUID.nameUUIDFromBytes("demo-pet-clinic".toByteArray())
 
         // Fixed user IDs so that matrix entries reference stable collaborator IDs across restarts.
-        val USER_DR_SARAH = UUID.fromString("00000001-0000-0000-0000-000000000001")
-        val USER_DR_JAMES = UUID.fromString("00000001-0000-0000-0000-000000000002")
-        val USER_NURSE_ANNA = UUID.fromString("00000001-0000-0000-0000-000000000003")
-        val USER_ADMIN_PETRA = UUID.fromString("00000001-0000-0000-0000-000000000004")
-        val USER_TECH_MARC = UUID.fromString("00000001-0000-0000-0000-000000000005")
+        val USER_DR_SARAH: UUID = UUID.fromString("00000001-0000-0000-0000-000000000001")
+        val USER_DR_JAMES: UUID = UUID.fromString("00000001-0000-0000-0000-000000000002")
+        val USER_NURSE_ANNA: UUID = UUID.fromString("00000001-0000-0000-0000-000000000003")
+        val USER_ADMIN_PETRA: UUID = UUID.fromString("00000001-0000-0000-0000-000000000004")
+        val USER_TECH_MARC: UUID = UUID.fromString("00000001-0000-0000-0000-000000000005")
 
-        // Usernames used in use-case calls
-        const val UN_SARAH = "dr-sarah";
+        // Usernames used for UserRecord creation
+        const val UN_SARAH = "dr-sarah"
         const val UN_JAMES = "dr-james"
-        const val UN_ANNA = "nurse-anna";
+        const val UN_ANNA = "nurse-anna"
         const val UN_PETRA = "admin-petra"
         const val UN_MARC = "tech-marc"
     }
@@ -115,7 +115,7 @@ class DemoDataLoader(
     // ── Entry point ───────────────────────────────────────────────────────────
 
     override fun run(args: ApplicationArguments) {
-        if (mapStatePort.findById(DEMO_MAP_ID) != null) {
+        if (sessionStatePort.findById(DEMO_MAP_ID) != null) {
             log.info("Demo map already loaded – skipping DemoDataLoader")
             return
         }
@@ -161,7 +161,7 @@ class DemoDataLoader(
             },
             elevationFn = { 1 },
         )
-        val mapState = MapState(
+        val sessionState = SessionState(
             id = DEMO_MAP_ID,
             map = hexMap,
             name = "Happy Paws Pet Clinic",
@@ -170,25 +170,25 @@ class DemoDataLoader(
             createdAt = Instant.parse("2026-01-15T09:00:00Z"),
         )
         // Add admin as first collaborator directly (others join via JoinMapUseCase).
-        mapState.collaborators.add(Collaborator(id = USER_ADMIN_PETRA, username = UN_PETRA))
-        mapStatePort.save(mapState)
+        sessionState.collaborators.add(Collaborator(id = USER_ADMIN_PETRA, username = UN_PETRA))
+        sessionStatePort.save(sessionState)
     }
 
     // ── Collaborators ─────────────────────────────────────────────────────────
 
     private fun addCollaborators() =
-        listOf(UN_SARAH, UN_JAMES, UN_ANNA, UN_MARC).forEach { joinMapUseCase.execute(DEMO_MAP_ID, it) }
+        listOf(USER_DR_SARAH, USER_DR_JAMES, USER_NURSE_ANNA, USER_TECH_MARC).forEach { joinMapUseCase.execute(DEMO_MAP_ID, it) }
 
     // ── Groups ────────────────────────────────────────────────────────────────
 
     private fun createGroups() {
-        groupClinical = createGroup(UN_PETRA, "Clinical", "#3b82f6", "Patient examination, surgery and intensive care")
+        groupClinical = createGroup(USER_ADMIN_PETRA, "Clinical", "#3b82f6", "Patient examination, surgery and intensive care")
         groupSupport =
-            createGroup(UN_PETRA, "Support Services", "#813d9c", "Diagnostics, pharmacy and medical supplies")
-        groupFacilities = createGroup(UN_PETRA, "Facilities", "#2ec27e", "Reception, waiting area, kennel and admin")
+            createGroup(USER_ADMIN_PETRA, "Support Services", "#813d9c", "Diagnostics, pharmacy and medical supplies")
+        groupFacilities = createGroup(USER_ADMIN_PETRA, "Facilities", "#2ec27e", "Reception, waiting area, kennel and admin")
     }
 
-    private fun createGroup(owner: String, name: String, color: String, desc: String): UUID =
+    private fun createGroup(owner: UUID, name: String, color: String, desc: String): UUID =
         createGroupUseCase.execute(DEMO_MAP_ID, owner, name, color, desc)
             .groups.values.first { it.name == name }.id
 
@@ -196,28 +196,28 @@ class DemoDataLoader(
 
     private fun createMetrics() {
         metricSatisfaction = createMetric(
-            UN_PETRA, "Patient Satisfaction",
+            USER_ADMIN_PETRA, "Patient Satisfaction",
             "Average satisfaction score (1–5) collected from client feedback forms after each visit."
         )
         metricInfection = createMetric(
-            UN_PETRA, "Infection Control",
+            USER_ADMIN_PETRA, "Infection Control",
             "Compliance rate with sterilisation and disinfection protocols as measured by monthly audits."
         )
         metricEquipUptime = createMetric(
-            UN_PETRA, "Equipment Uptime",
+            USER_ADMIN_PETRA, "Equipment Uptime",
             "Percentage of scheduled operating hours during which critical equipment is fully functional."
         )
         metricWaitTime = createMetric(
-            UN_PETRA, "Average Wait Time",
+            USER_ADMIN_PETRA, "Average Wait Time",
             "Average number of minutes a patient waits in the waiting room before being called."
         )
         metricStaffResp = createMetric(
-            UN_PETRA, "Staff Response Time",
+            USER_ADMIN_PETRA, "Staff Response Time",
             "Average time in minutes for staff to respond to a call or alert from a patient room."
         )
     }
 
-    private fun createMetric(owner: String, name: String, desc: String): UUID =
+    private fun createMetric(owner: UUID, name: String, desc: String): UUID =
         createMetricUseCase.execute(DEMO_MAP_ID, owner, name, desc)
             .metrics.values.first { it.name == name }.id
 
@@ -233,13 +233,13 @@ class DemoDataLoader(
         val N = QualityLevel.NONE
 
         place(
-            UN_PETRA, coord(0, -8), "Parking Area", LandmarkType.LIGHTHOUSE, groupFacilities,
+            USER_ADMIN_PETRA, coord(0, -8), "Parking Area", LandmarkType.LIGHTHOUSE, groupFacilities,
             "Free parking for 30 vehicles, including 4 accessible spaces.",
             listOf(m(metricSatisfaction, "4.1 / 5", OK), m(metricStaffResp, "n/a", N))
         )
 
         place(
-            UN_PETRA, coord(0, -6), "Main Entrance", LandmarkType.PORTAL, groupFacilities,
+            USER_ADMIN_PETRA, coord(0, -6), "Main Entrance", LandmarkType.PORTAL, groupFacilities,
             "Automatic sliding doors with a welcome desk and hand-sanitiser station.",
             listOf(
                 m(metricSatisfaction, "4.6 / 5", OK),
@@ -249,7 +249,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_PETRA, coord(0, -4), "Reception", LandmarkType.HOUSE, groupFacilities,
+            USER_ADMIN_PETRA, coord(0, -4), "Reception", LandmarkType.HOUSE, groupFacilities,
             "Check-in and check-out, appointment scheduling and client records.",
             listOf(
                 m(metricSatisfaction, "4.5 / 5", OK), m(metricWaitTime, "8 min", OK),
@@ -258,7 +258,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_PETRA, coord(0, -2), "Waiting Room", LandmarkType.KEEP, groupFacilities,
+            USER_ADMIN_PETRA, coord(0, -2), "Waiting Room", LandmarkType.KEEP, groupFacilities,
             "Comfortable seating for 20 clients, separate dog/cat zones, children's corner.",
             listOf(
                 m(metricWaitTime, "22 min", E), m(metricSatisfaction, "3.8 / 5", W),
@@ -267,7 +267,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_SARAH, coord(-3, 0), "Examination Room 1", LandmarkType.KEEP, groupClinical,
+            USER_DR_SARAH, coord(-3, 0), "Examination Room 1", LandmarkType.KEEP, groupClinical,
             "General examination room for small animals. Dr. Sarah Müller's primary room.",
             listOf(
                 m(metricInfection, "100 %", OK), m(metricEquipUptime, "98 %", OK),
@@ -276,7 +276,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_JAMES, coord(3, 0), "Examination Room 2", LandmarkType.KEEP, groupClinical,
+            USER_DR_JAMES, coord(3, 0), "Examination Room 2", LandmarkType.KEEP, groupClinical,
             "General examination room for dogs and medium-sized animals. Dr. James Chen's primary room.",
             listOf(
                 m(metricInfection, "97 %", OK), m(metricEquipUptime, "72 %", E),
@@ -285,7 +285,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_SARAH, coord(0, 2), "Surgery Suite", LandmarkType.ATOMIC_REACTOR, groupClinical,
+            USER_DR_SARAH, coord(0, 2), "Surgery Suite", LandmarkType.ATOMIC_REACTOR, groupClinical,
             "Fully sterile operating theatre with anaesthesia equipment, surgical lights and monitors.",
             listOf(
                 m(metricInfection, "100 %", OK), m(metricStaffResp, "2 min", OK),
@@ -294,7 +294,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_JAMES, coord(-3, 3), "Intensive Care Unit", LandmarkType.WATCHTOWER, groupClinical,
+            USER_DR_JAMES, coord(-3, 3), "Intensive Care Unit", LandmarkType.WATCHTOWER, groupClinical,
             "Post-operative and critical care ward with 24/7 monitoring for up to 8 patients.",
             listOf(
                 m(metricEquipUptime, "99.9 %", OK), m(metricStaffResp, "1 min", OK),
@@ -303,7 +303,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_MARC, coord(3, 2), "Diagnostic Laboratory", LandmarkType.ANTENNA, groupSupport,
+            USER_TECH_MARC, coord(3, 2), "Diagnostic Laboratory", LandmarkType.ANTENNA, groupSupport,
             "In-house blood analysis, urinalysis and microbiology with same-day results.",
             listOf(
                 m(metricEquipUptime, "91 %", W), m(metricInfection, "99 %", OK),
@@ -312,7 +312,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_MARC, coord(5, -2), "X-Ray Room", LandmarkType.SATELLITE_DISH, groupSupport,
+            USER_TECH_MARC, coord(5, -2), "X-Ray Room", LandmarkType.SATELLITE_DISH, groupSupport,
             "Digital radiography suite with lead-lined walls. Rapid image acquisition and PACS integration.",
             listOf(
                 m(metricEquipUptime, "96 %", OK), m(metricInfection, "100 %", OK),
@@ -321,7 +321,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_ANNA, coord(-5, 2), "Pharmacy", LandmarkType.SILO, groupSupport,
+            USER_NURSE_ANNA, coord(-5, 2), "Pharmacy", LandmarkType.SILO, groupSupport,
             "Licensed in-house pharmacy dispensing medications, vaccines and prescription diets.",
             listOf(
                 m(metricSatisfaction, "4.7 / 5", OK), m(metricInfection, "100 %", OK),
@@ -330,13 +330,13 @@ class DemoDataLoader(
         )
 
         place(
-            UN_ANNA, coord(-5, 4), "Medical Supply Storage", LandmarkType.PUMP_STATION, groupSupport,
+            USER_NURSE_ANNA, coord(-5, 4), "Medical Supply Storage", LandmarkType.PUMP_STATION, groupSupport,
             "Temperature-controlled storage for consumables, surgical kits and cold-chain medications.",
             listOf(m(metricEquipUptime, "88 %", W), m(metricInfection, "97 %", OK), m(metricStaffResp, "8 min", W))
         )
 
         place(
-            UN_ANNA, coord(2, 5), "Kennel", LandmarkType.KEEP, groupFacilities,
+            USER_NURSE_ANNA, coord(2, 5), "Kennel", LandmarkType.KEEP, groupFacilities,
             "Comfortable boarding facility for dogs and cats. Individual climate-controlled suites.",
             listOf(
                 m(metricSatisfaction, "4.4 / 5", OK), m(metricInfection, "95 %", OK),
@@ -345,7 +345,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_ANNA, coord(-2, 5), "Grooming Station", LandmarkType.WINDMILL, groupFacilities,
+            USER_NURSE_ANNA, coord(-2, 5), "Grooming Station", LandmarkType.WINDMILL, groupFacilities,
             "Professional grooming services: bathing, trimming, nail clipping and ear cleaning.",
             listOf(
                 m(metricSatisfaction, "4.8 / 5", OK), m(metricInfection, "93 %", OK),
@@ -354,7 +354,7 @@ class DemoDataLoader(
         )
 
         place(
-            UN_PETRA, coord(4, -4), "Administration Office", LandmarkType.HOUSE, groupFacilities,
+            USER_ADMIN_PETRA, coord(4, -4), "Administration Office", LandmarkType.HOUSE, groupFacilities,
             "Management, billing, HR and compliance documentation. Petra Bauer's domain.",
             listOf(
                 m(metricSatisfaction, "4.0 / 5", OK),
@@ -365,7 +365,7 @@ class DemoDataLoader(
     }
 
     private fun place(
-        owner: String,
+        owner: UUID,
         coordinate: HexCoordinate,
         name: String,
         type: LandmarkType,
@@ -382,7 +382,7 @@ class DemoDataLoader(
             description = description, groupId = groupId
         )
         metrics.forEach { (metricId, vl) ->
-            setLandmarkMetricUseCase.execute(DEMO_MAP_ID, id, metricId, value = vl.first, level = vl.second)
+            setLandmarkMetricUseCase.execute(DEMO_MAP_ID, id, metricId, value = vl.first, level = vl.second, callerId = owner)
         }
     }
 
@@ -408,7 +408,7 @@ class DemoDataLoader(
     private fun conn(fromName: String, toName: String, type: ConnectionType, name: String): UUID {
         val fromId = landmarkUuids[fromName] ?: error("Landmark not found: $fromName")
         val toId = landmarkUuids[toName] ?: error("Landmark not found: $toName")
-        val state = createConnectionUseCase.execute(DEMO_MAP_ID, fromId, toId, type, name)
+        val state = createConnectionUseCase.execute(DEMO_MAP_ID, fromId, toId, type, name, callerId = USER_ADMIN_PETRA)
         return state.connections.values.first { it.originId == fromId && it.targetId == toId }.id
     }
 
@@ -418,11 +418,11 @@ class DemoDataLoader(
         // Patient Intake
         val intakeId = createProcessUseCase.execute(
             DEMO_MAP_ID, "Patient Intake",
-            "Standard workflow for receiving a new patient from arrival to examination.", UN_PETRA
+            "Standard workflow for receiving a new patient from arrival to examination.", USER_ADMIN_PETRA
         )
             .first { it.name == "Patient Intake" }.id
 
-        val checkinId = addProcessStageUseCase.execute(DEMO_MAP_ID, intakeId, "Check-in", 0, UN_PETRA)
+        val checkinId = addProcessStageUseCase.execute(DEMO_MAP_ID, intakeId, "Check-in", 0, USER_ADMIN_PETRA)
             .first { it.id == intakeId }.stages.first { it.name == "Check-in" }.id
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -431,7 +431,7 @@ class DemoDataLoader(
             connEntranceReception,
             "Walk-in",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -440,10 +440,10 @@ class DemoDataLoader(
             connReceptionWaiting,
             "Register",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
 
-        val consultId = addProcessStageUseCase.execute(DEMO_MAP_ID, intakeId, "Consultation", 1, UN_PETRA)
+        val consultId = addProcessStageUseCase.execute(DEMO_MAP_ID, intakeId, "Consultation", 1, USER_ADMIN_PETRA)
             .first { it.id == intakeId }.stages.first { it.name == "Consultation" }.id
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -452,7 +452,7 @@ class DemoDataLoader(
             connWaitingExam1,
             "Call patient",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -461,17 +461,17 @@ class DemoDataLoader(
             connWaitingExam2,
             "Call patient",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
 
         // Diagnostic Workflow
         val diagId = createProcessUseCase.execute(
             DEMO_MAP_ID, "Diagnostic Workflow",
-            "Process for ordering diagnostics, receiving results and dispensing treatment.", UN_PETRA
+            "Process for ordering diagnostics, receiving results and dispensing treatment.", USER_ADMIN_PETRA
         )
             .first { it.name == "Diagnostic Workflow" }.id
 
-        val orderId = addProcessStageUseCase.execute(DEMO_MAP_ID, diagId, "Order Diagnostics", 0, UN_PETRA)
+        val orderId = addProcessStageUseCase.execute(DEMO_MAP_ID, diagId, "Order Diagnostics", 0, USER_ADMIN_PETRA)
             .first { it.id == diagId }.stages.first { it.name == "Order Diagnostics" }.id
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -480,7 +480,7 @@ class DemoDataLoader(
             connExam1Lab,
             "Blood / urine sample",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -489,11 +489,11 @@ class DemoDataLoader(
             connExam2Xray,
             "Imaging request",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
 
         val treatId =
-            addProcessStageUseCase.execute(DEMO_MAP_ID, diagId, "Treatment Dispensing", 1, UN_PETRA)
+            addProcessStageUseCase.execute(DEMO_MAP_ID, diagId, "Treatment Dispensing", 1, USER_ADMIN_PETRA)
                 .first { it.id == diagId }.stages.first { it.name == "Treatment Dispensing" }.id
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -502,7 +502,7 @@ class DemoDataLoader(
             connLabPharmacy,
             "Prescription",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
         addStageConnectionUseCase.execute(
             DEMO_MAP_ID,
@@ -511,7 +511,7 @@ class DemoDataLoader(
             connPharmacyStorage,
             "Restock medication",
             "FORWARD",
-            UN_PETRA
+            USER_ADMIN_PETRA
         )
     }
 
@@ -552,7 +552,7 @@ class DemoDataLoader(
             )
                 .filter { (_, lvl) -> lvl != N }
                 .forEach { (uid, lvl) ->
-                    setMatrixEntryUseCase.execute(DEMO_MAP_ID, UN_PETRA, lmId, uid, lvl)
+                    setMatrixEntryUseCase.execute(DEMO_MAP_ID, USER_ADMIN_PETRA, lmId, uid, lvl)
                 }
         }
     }
@@ -579,7 +579,7 @@ class DemoDataLoader(
 
         // 1. Monthly infection-control audit – covers all rooms
         val auditListId = createChoreListUseCase.execute(
-            DEMO_MAP_ID, "Monthly Infection-Control Audit", allLandmarks, null, UN_PETRA,
+            DEMO_MAP_ID, "Monthly Infection-Control Audit", allLandmarks, null, USER_ADMIN_PETRA,
         ).first { it.title == "Monthly Infection-Control Audit" }.id
 
         fun updateEntry(
@@ -598,7 +598,7 @@ class DemoDataLoader(
                 clearLink = false,
                 note = note,
                 clearNote = false,
-                username = UN_PETRA,
+                callerId = USER_ADMIN_PETRA,
             )
 
         val DONE = ChoreEntryState.DONE
@@ -648,7 +648,7 @@ class DemoDataLoader(
                 lm("Pharmacy"),
                 lm("Medical Supply Storage")
             ),
-            "https://wiki.petclinic.demo/equipment-inspection", UN_MARC,
+            "https://wiki.petclinic.demo/equipment-inspection", USER_TECH_MARC,
         ).first { it.title == "Q2 Equipment Inspection" }.id
 
         updateEntry(equipListId, lm("Examination Room 1"), DONE, USER_DR_SARAH, "Otoscope and scale calibrated.")
@@ -686,7 +686,7 @@ class DemoDataLoader(
 
         // 3. Client-area readiness – facility rooms only
         createChoreListUseCase.execute(
-            DEMO_MAP_ID, "Client Area Readiness Check", facilityLandmarks, null, UN_PETRA,
+            DEMO_MAP_ID, "Client Area Readiness Check", facilityLandmarks, null, USER_ADMIN_PETRA,
         )
     }
 

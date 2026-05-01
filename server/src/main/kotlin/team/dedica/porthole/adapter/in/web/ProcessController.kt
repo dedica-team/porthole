@@ -3,9 +3,9 @@ package team.dedica.porthole.adapter.`in`.web
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import team.dedica.porthole.adapter.`in`.web.dto.*
+import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.processes.*
 import java.util.UUID
 
@@ -28,22 +28,22 @@ class ProcessController(
     @GetMapping
     fun listProcesses(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(listProcessesUseCase.execute(UUID.fromString(id), user.username))
+        ResponseEntity.ok(listProcessesUseCase.execute(UUID.fromString(id), user.userId))
 
     @PostMapping
     fun createProcess(
         @PathVariable id: String,
         @Valid @RequestBody request: CreateProcessRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             createProcessUseCase.execute(
                 UUID.fromString(id),
                 request.name,
                 request.description,
-                user.username
+                user.userId
             )
         )
 
@@ -52,15 +52,15 @@ class ProcessController(
         @PathVariable id: String,
         @PathVariable processId: String,
         @Valid @RequestBody request: EditProcessRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             editProcessUseCase.execute(
                 UUID.fromString(id),
-                processId,
+                UUID.fromString(processId),
                 request.name,
                 request.description,
-                user.username
+                user.userId
             )
         )
 
@@ -68,16 +68,20 @@ class ProcessController(
     fun removeProcess(
         @PathVariable id: String,
         @PathVariable processId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
-        ResponseEntity.ok(removeProcessUseCase.execute(UUID.fromString(id), processId, user.username))
+        ResponseEntity.ok(removeProcessUseCase.execute(
+            UUID.fromString(id),
+            UUID.fromString(processId),
+            user.userId
+        ))
 
     @PostMapping("/{processId}/stages")
     fun addStage(
         @PathVariable id: String,
         @PathVariable processId: String,
         @Valid @RequestBody request: CreateProcessStageRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             addProcessStageUseCase.execute(
@@ -85,7 +89,7 @@ class ProcessController(
                 UUID.fromString(processId),
                 request.name,
                 request.order,
-                user.username
+                user.userId
             )
         )
 
@@ -94,14 +98,14 @@ class ProcessController(
         @PathVariable id: String,
         @PathVariable processId: String,
         @RequestBody request: ReorderProcessStagesRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             reorderProcessStagesUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
                 request.stageIds.map { UUID.fromString(it) },
-                user.username
+                user.userId
             )
         )
 
@@ -110,14 +114,14 @@ class ProcessController(
         @PathVariable id: String,
         @PathVariable processId: String,
         @PathVariable stageId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             removeProcessStageUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
                 UUID.fromString(stageId),
-                user.username
+                user.userId
             )
         )
 
@@ -127,7 +131,7 @@ class ProcessController(
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @Valid @RequestBody request: EditProcessStageRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             editProcessStageUseCase.execute(
@@ -137,7 +141,7 @@ class ProcessController(
                 request.name,
                 request.clearName,
                 request.order,
-                user.username,
+                user.userId,
             )
         )
 
@@ -147,7 +151,7 @@ class ProcessController(
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @RequestBody request: AddStageConnectionRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             addStageConnectionUseCase.execute(
@@ -157,7 +161,7 @@ class ProcessController(
                 UUID.fromString(request.connectionId),
                 request.title,
                 request.direction,
-                user.username,
+                user.userId,
             )
         )
 
@@ -168,7 +172,7 @@ class ProcessController(
         @PathVariable stageId: String,
         @PathVariable stageConnId: String,
         @RequestBody request: EditStageConnectionRequest,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             editStageConnectionUseCase.execute(
@@ -179,7 +183,7 @@ class ProcessController(
                 request.title,
                 request.clearTitle,
                 request.direction,
-                user.username,
+                user.userId,
             )
         )
 
@@ -189,7 +193,7 @@ class ProcessController(
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @PathVariable stageConnId: String,
-        @AuthenticationPrincipal user: UserDetails,
+        @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             removeStageConnectionUseCase.execute(
@@ -197,7 +201,7 @@ class ProcessController(
                 UUID.fromString(processId),
                 UUID.fromString(stageId),
                 UUID.fromString(stageConnId),
-                user.username
+                user.userId
             )
         )
 }

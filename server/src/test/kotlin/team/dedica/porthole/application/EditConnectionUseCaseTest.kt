@@ -4,15 +4,16 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.landscaping.EditConnectionUseCase
 import team.dedica.porthole.domain.*
 
 class EditConnectionUseCaseTest {
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
-    private lateinit var userPort: InMemoryTestUserRepository
+    private val collaboratorId = UUID.nameUUIDFromBytes("p1".toByteArray())
+
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var useCase: EditConnectionUseCase
 
     private val t1Id = UUID.nameUUIDFromBytes("t1".toByteArray())
@@ -22,7 +23,7 @@ class EditConnectionUseCaseTest {
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 5, elevationFn = { 3 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice"))
         state.landmarks[t1Id] =
             Landmark(id = t1Id, name = "Tower One", ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()), coordinate = HexCoordinate(0, 0))
@@ -35,77 +36,75 @@ class EditConnectionUseCaseTest {
             path = listOf(HexCoordinate(0, 0), HexCoordinate(1, 0), HexCoordinate(3, 0)),
             type = ConnectionType.PIPE,
         )
-        mapStatePort = InMemoryMapStatePort()
+        mapStatePort = InMemorySessionStatePort()
         mapStatePort.save(state)
-        userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
-        }
-        useCase = EditConnectionUseCase(mapStatePort, userPort, NoOpBroadcastPort())
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
+        useCase = EditConnectionUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
     }
 
     @Test
     fun `change type from PIPE to TELEGRAPH`() {
-        val result = useCase.execute(state.id, c1Id, type = ConnectionType.TELEGRAPH)
+        val result = useCase.execute(state.id, c1Id, type = ConnectionType.TELEGRAPH, callerId = collaboratorId)
         assertEquals(ConnectionType.TELEGRAPH, result.connections[c1Id]!!.type)
     }
 
     @Test
     fun `set name on connection`() {
-        val result = useCase.execute(state.id, c1Id, name = "Supply Line")
+        val result = useCase.execute(state.id, c1Id, name = "Supply Line", callerId = collaboratorId)
         assertEquals("Supply Line", result.connections[c1Id]!!.name)
     }
 
     @Test
     fun `clear name via clearName flag`() {
-        useCase.execute(state.id, c1Id, name = "Supply Line")
+        useCase.execute(state.id, c1Id, name = "Supply Line", callerId = collaboratorId)
         val saved = mapStatePort.findById(state.id)!!
-        val result = useCase.execute(saved.id, c1Id, clearName = true)
+        val result = useCase.execute(saved.id, c1Id, clearName = true, callerId = collaboratorId)
         assertNull(result.connections[c1Id]!!.name)
     }
 
     @Test
     fun `set and clear description`() {
-        val withDesc = useCase.execute(state.id, c1Id, description = "Important route")
+        val withDesc = useCase.execute(state.id, c1Id, description = "Important route", callerId = collaboratorId)
         assertEquals("Important route", withDesc.connections[c1Id]!!.description)
 
         val saved = mapStatePort.findById(state.id)!!
-        val cleared = useCase.execute(saved.id, c1Id, clearDescription = true)
+        val cleared = useCase.execute(saved.id, c1Id, clearDescription = true, callerId = collaboratorId)
         assertNull(cleared.connections[c1Id]!!.description)
     }
 
     @Test
     fun `blank name throws IllegalArgumentException`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, c1Id, name = "   ")
+            useCase.execute(state.id, c1Id, name = "   ", callerId = collaboratorId)
         }
     }
 
     @Test
     fun `blank description throws IllegalArgumentException`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, c1Id, description = "  ")
+            useCase.execute(state.id, c1Id, description = "  ", callerId = collaboratorId)
         }
     }
 
     @Test
     fun `unknown connection id throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, UUID.randomUUID(), type = ConnectionType.STREET)
+            useCase.execute(state.id, UUID.randomUUID(), type = ConnectionType.STREET, callerId = collaboratorId)
         }
     }
 
     @Test
     fun `unknown map id throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(UUID.randomUUID(), c1Id, type = ConnectionType.STREET)
+            useCase.execute(UUID.randomUUID(), c1Id, type = ConnectionType.STREET, callerId = collaboratorId)
         }
     }
 
     @Test
     fun `no changes preserves all existing values`() {
-        useCase.execute(state.id, c1Id, type = ConnectionType.STREET, name = "Road", description = "Main road")
+        useCase.execute(state.id, c1Id, type = ConnectionType.STREET, name = "Road", description = "Main road", callerId = collaboratorId)
         val saved = mapStatePort.findById(state.id)!!
-        val result = useCase.execute(saved.id, c1Id)
+        val result = useCase.execute(saved.id, c1Id, callerId = collaboratorId)
         val conn = result.connections[c1Id]!!
         assertEquals(ConnectionType.STREET, conn.type)
         assertEquals("Road", conn.name)

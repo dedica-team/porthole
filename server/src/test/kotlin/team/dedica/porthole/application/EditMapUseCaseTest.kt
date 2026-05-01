@@ -5,14 +5,16 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.out.repository.UserRecord
+import org.springframework.security.access.AccessDeniedException
 import team.dedica.porthole.application.session.landscaping.EditMapUseCase
 import team.dedica.porthole.domain.*
 
 class EditMapUseCaseTest {
+    private val collaborator2 = Collaborator(id = UUID.nameUUIDFromBytes("p2".toByteArray()), username = "Bob")
 
-    private lateinit var state: MapState
-    private lateinit var mapStatePort: InMemoryMapStatePort
+    private lateinit var state: SessionState
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var useCase: EditMapUseCase
 
     private val collaborator = Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice")
@@ -20,36 +22,33 @@ class EditMapUseCaseTest {
     @BeforeEach
     fun setup() {
         val map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 })
-        state = MapState(map = map)
+        state = SessionState(map = map)
         state.collaborators.add(collaborator)
 
-        mapStatePort = InMemoryMapStatePort()
+        mapStatePort = InMemorySessionStatePort()
+        authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         mapStatePort.save(state)
 
-        val userPort = InMemoryTestUserRepository().also {
-            it.save(UserRecord(UUID.nameUUIDFromBytes("p1".toByteArray()), "Alice", "gh-1"))
-            it.save(UserRecord(UUID.nameUUIDFromBytes("p2".toByteArray()), "Bob", "gh-2"))
-        }
-        useCase = EditMapUseCase(mapStatePort, userPort, NoOpBroadcastPort())
+        useCase = EditMapUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
     }
 
     // ── Name ─────────────────────────────────────────────────────────────────
 
     @Test
     fun `collaborator can set a name`() {
-        val result = useCase.execute(state.id, "Alice", "My Map", null)
+        val result = useCase.execute(state.id, collaborator.id, "My Map", null)
         assertEquals("My Map", result.name)
     }
 
     @Test
     fun `name is trimmed`() {
-        val result = useCase.execute(state.id, "Alice", "  Trimmed  ", null)
+        val result = useCase.execute(state.id, collaborator.id, "  Trimmed  ", null)
         assertEquals("Trimmed", result.name)
     }
 
     @Test
     fun `blank name is stored as null`() {
-        val result = useCase.execute(state.id, "Alice", "   ", null)
+        val result = useCase.execute(state.id, collaborator.id, "   ", null)
         assertNull(result.name)
     }
 
@@ -59,7 +58,7 @@ class EditMapUseCaseTest {
         mapStatePort.save(state.copy(name = "Existing"))
         val existing = mapStatePort.findById(state.id)!!
 
-        val result = useCase.execute(existing.id, "Alice", null, null)
+        val result = useCase.execute(existing.id, collaborator.id, null, null)
         // null means "keep as-is" — but our current implementation sets name to null.
         // Adjust expectation to match actual behaviour: null clears the name.
         assertNull(result.name)
@@ -69,25 +68,25 @@ class EditMapUseCaseTest {
 
     @Test
     fun `collaborator can set a description`() {
-        val result = useCase.execute(state.id, "Alice", null, "A beautiful landscape")
+        val result = useCase.execute(state.id, collaborator.id, null, "A beautiful landscape")
         assertEquals("A beautiful landscape", result.description)
     }
 
     @Test
     fun `description is trimmed`() {
-        val result = useCase.execute(state.id, "Alice", null, "  desc  ")
+        val result = useCase.execute(state.id, collaborator.id, null, "  desc  ")
         assertEquals("desc", result.description)
     }
 
     @Test
     fun `blank description is stored as null`() {
-        val result = useCase.execute(state.id, "Alice", null, "   ")
+        val result = useCase.execute(state.id, collaborator.id, null, "   ")
         assertNull(result.description)
     }
 
     @Test
     fun `name and description can be set together`() {
-        val result = useCase.execute(state.id, "Alice", "Full Map", "Full description")
+        val result = useCase.execute(state.id, collaborator.id, "Full Map", "Full description")
         assertEquals("Full Map", result.name)
         assertEquals("Full description", result.description)
     }
@@ -96,15 +95,15 @@ class EditMapUseCaseTest {
 
     @Test
     fun `non-collaborator cannot edit map`() {
-        assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, "Bob", "Hijacked", null)
+        assertThrows(AccessDeniedException::class.java) {
+            useCase.execute(state.id, collaborator2.id, "Hijacked", null)
         }
     }
 
     @Test
-    fun `unknown user throws NoSuchElementException`() {
-        assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, "Ghost", "Name", null)
+    fun `unknown user throws AccessDeniedException`() {
+        assertThrows(AccessDeniedException::class.java) {
+            useCase.execute(state.id, UUID.randomUUID(), "Name", null)
         }
     }
 
@@ -112,7 +111,7 @@ class EditMapUseCaseTest {
 
     @Test
     fun `changes are persisted`() {
-        useCase.execute(state.id, "Alice", "Persisted Name", "Persisted Desc")
+        useCase.execute(state.id, collaborator.id, "Persisted Name", "Persisted Desc")
         val saved = mapStatePort.findById(state.id)!!
         assertEquals("Persisted Name", saved.name)
         assertEquals("Persisted Desc", saved.description)
@@ -121,7 +120,7 @@ class EditMapUseCaseTest {
     @Test
     fun `unknown map throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(UUID.randomUUID(), "Alice", "Name", null)
+            useCase.execute(UUID.randomUUID(), collaborator.id, "Name", null)
         }
     }
 }

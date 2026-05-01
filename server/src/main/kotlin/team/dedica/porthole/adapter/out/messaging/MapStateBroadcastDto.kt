@@ -22,7 +22,7 @@ data class MapStateBroadcastDto(
     val joinRequests: List<JoinRequest>,
 ) {
     companion object {
-        fun from(state: MapState) = MapStateBroadcastDto(
+        fun from(state: SessionState) = MapStateBroadcastDto(
             id = state.id.toString(),
             map = state.map,
             collaborators = state.collaborators.toList(),

@@ -3,22 +3,23 @@ package team.dedica.porthole.application.session.metrics
 import org.springframework.stereotype.Component
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
 import team.dedica.porthole.application.DataSanitationUtils.HEX_COLOR_REGEX
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 
 @Component
 class EditGroupUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
         mapId: UUID,
-        username: String,
+        callerId: UUID,
         groupId: UUID,
         name: String?,
         color: String?,
@@ -26,12 +27,8 @@ class EditGroupUseCase(
         clearDescription: Boolean = false,
         link: String? = null,
         clearLink: Boolean = false,
-    ): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
+    ): SessionState {
+        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
         val group = state.groups[groupId]
             ?: throw NoSuchElementException("Group $groupId not found")
         if (name != null) require(name.isNotBlank()) { "Group name must not be empty" }
@@ -52,7 +49,7 @@ class EditGroupUseCase(
             description = newDescription,
             link = newLink,
         )
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         broadcastPort.send(mapId, state)
         return state
     }

@@ -7,7 +7,7 @@ import team.dedica.porthole.domain.*
 import java.nio.file.Path
 import java.util.UUID
 /**
- * Persistence round-trip tests for [ChoreList] inside [MapState].
+ * Persistence round-trip tests for [ChoreList] inside [SessionState].
  * Each test saves via one repo/store pair, then creates a *new* store
  * (simulating a restart) and reads back – proving true JSON round-trips.
  * flushAllDirtyMaps() is called explicitly because the @Scheduled flush
@@ -22,10 +22,10 @@ class ChoreListPersistenceTest {
         mapper = JsonPersistenceConfig().persistenceObjectMapper()
     }
     private fun newStore() = JsonStore(mapper, dir.toAbsolutePath().toString(), 0L)
-    private fun newRepo(store: JsonStore) = JsonMapStateRepository(store)
-    private fun baseState(): MapState {
+    private fun newRepo(store: JsonStore) = JsonSessionStateRepository(store)
+    private fun baseState(): SessionState {
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
-        val state = MapState(map = map)
+        val state = SessionState(map = map)
         val landmarkId = UUID.randomUUID()
         val landmark = Landmark(
             id = landmarkId,
@@ -36,7 +36,7 @@ class ChoreListPersistenceTest {
         return state
     }
     /** Save via one store and flush, then reload from a fresh store (simulates restart). */
-    private fun saveAndReload(state: MapState): MapState {
+    private fun saveAndReload(state: SessionState): SessionState {
         val writeStore = newStore()
         newRepo(writeStore).save(state)
         writeStore.flushAllDirtyMaps()

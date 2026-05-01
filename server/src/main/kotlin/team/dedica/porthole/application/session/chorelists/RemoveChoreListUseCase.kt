@@ -1,26 +1,23 @@
 package team.dedica.porthole.application.session.chorelists
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
 @Component
 class RemoveChoreListUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, listId: UUID, username: String) {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        state.requireCollaborator(user.id)
+    fun execute(mapId: UUID, listId: UUID, callerId: UUID) {
+        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
         require(state.choreLists.containsKey(listId)) { "Chore list $listId not found" }
         state.choreLists.remove(listId)
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         broadcastPort.sendChoreLists(mapId, state.choreLists)
     }
 }

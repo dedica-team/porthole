@@ -1,36 +1,31 @@
 package team.dedica.porthole.application.session.landscaping
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.ConnectionType
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionRole
+import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 @Component
 class EditConnectionUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         connectionId: UUID,
         type: ConnectionType? = null,
         name: String? = null,
         description: String? = null,
         clearName: Boolean = false,
         clearDescription: Boolean = false,
-        username: String? = null,
-    ): MapState {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        if (username != null) {
-            val user = userPort.findByUsername(username)
-                ?: throw NoSuchElementException("User $username not found")
-            state.requireCollaborator(user.id)
-        }
+        callerId: UUID,
+    ): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val existing = state.connections[connectionId]
             ?: throw NoSuchElementException("Connection $connectionId not found")
 
@@ -53,8 +48,8 @@ class EditConnectionUseCase(
             },
         )
         state.connections[connectionId] = updated
-        mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        sessionStatePort.save(state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

@@ -1,18 +1,19 @@
 package team.dedica.porthole.application.session.chorelists
 
 import org.springframework.stereotype.Component
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.ChoreEntryState
 import team.dedica.porthole.domain.ChoreList
+import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
 @Component
 class UpdateChoreEntryUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
         mapId: UUID,
@@ -25,13 +26,9 @@ class UpdateChoreEntryUseCase(
         clearLink: Boolean,
         note: String?,
         clearNote: Boolean,
-        username: String,
+        callerId: UUID,
     ): ChoreList {
-        val mapState = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        val user = userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
-        mapState.requireCollaborator(user.id)
+        val mapState = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
         val list = mapState.choreLists[listId]
             ?: throw NoSuchElementException("Chore list $listId not found")
         val entry = list.entries[landmarkId]
@@ -52,9 +49,8 @@ class UpdateChoreEntryUseCase(
             clearNote -> entry.note = null
             note != null -> entry.note = note.trim().takeIf { it.isNotBlank() }
         }
-        mapStatePort.save(mapState)
+        sessionStatePort.save(mapState)
         broadcastPort.sendChoreLists(mapId, mapState.choreLists)
         return list
     }
 }
-

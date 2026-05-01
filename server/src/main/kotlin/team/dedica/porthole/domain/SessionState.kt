@@ -11,7 +11,7 @@ import java.util.*
  * @param collaborators all collaborators participating in this session (by collaborator ID)
  * @param landmarks  all placed landmarks (by landmark ID)
  */
-data class MapState(
+data class SessionState(
     val id: UUID = UUID.randomUUID(),
     val map: HexMap,
     val collaborators: MutableList<Collaborator> = mutableListOf(),
@@ -41,15 +41,5 @@ data class MapState(
 
     fun hasPendingRequest(userId: UUID): Boolean = joinRequests.any { it.userId == userId }
 
-    fun requireCollaborator(userId: UUID) {
-        require(isCollaborator(userId)) { "User $userId is not a collaborator on map $id" }
-    }
-
-    fun requireReadAccess(userId: UUID) {
-        if (collaborationMode == CollaborationMode.PRIVATE) {
-            require(isCollaborator(userId)) { "Map is private" }
-        }
-    }
 }
-
 

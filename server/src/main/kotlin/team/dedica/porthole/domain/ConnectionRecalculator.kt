@@ -24,7 +24,7 @@ object ConnectionRecalculator {
      * endpoint that is NOT that connection's own origin/target), reroute the connection avoiding
      * [blockedTile].
      */
-    fun recalculateConnectionsCrossingTile(state: MapState, blockedTile: HexCoordinate) {
+    fun recalculateConnectionsCrossingTile(state: SessionState, blockedTile: HexCoordinate) {
         // Collect all occupied landmark tiles so they can be used as global blockers.
         val allLandmarkCoords = state.landmarks.values.mapNotNull { it.coordinate }.toSet()
 
@@ -51,7 +51,7 @@ object ConnectionRecalculator {
      * matches [landmarkId].  Call this after the landmark has already been updated in [state]
      * (so [state.landmarks[landmarkId].coordinate] reflects the new position).
      */
-    fun recalculateConnectionsInvolvingLandmark(state: MapState, landmarkId: UUID) {
+    fun recalculateConnectionsInvolvingLandmark(state: SessionState, landmarkId: UUID) {
         val movedLandmark = state.landmarks[landmarkId] ?: return
         val movedCoord    = movedLandmark.coordinate    ?: return
 

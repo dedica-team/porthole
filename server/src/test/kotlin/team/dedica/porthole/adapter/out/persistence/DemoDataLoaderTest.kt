@@ -3,7 +3,8 @@ package team.dedica.porthole.adapter.out.persistence
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.boot.DefaultApplicationArguments
-import team.dedica.porthole.application.InMemoryMapStatePort
+import team.dedica.porthole.application.InMemoryAuthorizationPort
+import team.dedica.porthole.application.InMemorySessionStatePort
 import team.dedica.porthole.application.InMemoryTestUserRepository
 import team.dedica.porthole.application.NoOpBroadcastPort
 import team.dedica.porthole.application.lobby.JoinMapUseCase
@@ -27,26 +28,27 @@ import team.dedica.porthole.adapter.out.persistence.DemoDataLoader.Companion.DEM
  */
 class DemoDataLoaderTest {
 
-    private val mapPort  = InMemoryMapStatePort()
+    private val mapPort  = InMemorySessionStatePort()
     private val userPort = InMemoryTestUserRepository()
     private val broadcast = NoOpBroadcastPort()
+    private val authPort = InMemoryAuthorizationPort(mapPort)
 
     private val loader = DemoDataLoader(
-        mapStatePort            = mapPort,
+        sessionStatePort            = mapPort,
         userPort                = userPort,
         joinMapUseCase          = JoinMapUseCase(mapPort, userPort, broadcast),
-        createGroupUseCase      = CreateGroupUseCase(mapPort, userPort, broadcast),
-        createMetricUseCase     = CreateMetricUseCase(mapPort, userPort, broadcast),
-        placeLandmarkUseCase    = PlaceLandmarkUseCase(mapPort, userPort, broadcast),
-        editLandmarkUseCase     = EditLandmarkUseCase(mapPort, userPort, broadcast),
-        setLandmarkMetricUseCase= SetLandmarkMetricUseCase(mapPort, userPort, broadcast),
-        createConnectionUseCase = CreateConnectionUseCase(mapPort, userPort, broadcast),
-        setMatrixEntryUseCase   = SetMatrixEntryUseCase(mapPort, userPort, broadcast),
-        createProcessUseCase    = CreateProcessUseCase(mapPort, userPort),
-        addProcessStageUseCase  = AddProcessStageUseCase(mapPort, userPort),
-        addStageConnectionUseCase = AddStageConnectionUseCase(mapPort, userPort),
-        createChoreListUseCase  = CreateChoreListUseCase(mapPort, userPort, broadcast),
-        updateChoreEntryUseCase = UpdateChoreEntryUseCase(mapPort, userPort, broadcast),
+        createGroupUseCase      = CreateGroupUseCase(mapPort, broadcast, authPort),
+        createMetricUseCase     = CreateMetricUseCase(mapPort, broadcast, authPort),
+        placeLandmarkUseCase    = PlaceLandmarkUseCase(mapPort, broadcast, authPort),
+        editLandmarkUseCase     = EditLandmarkUseCase(mapPort, broadcast, authPort),
+        setLandmarkMetricUseCase= SetLandmarkMetricUseCase(mapPort, broadcast, authPort),
+        createConnectionUseCase = CreateConnectionUseCase(mapPort, broadcast, authPort),
+        setMatrixEntryUseCase   = SetMatrixEntryUseCase(mapPort, broadcast, authPort),
+        createProcessUseCase    = CreateProcessUseCase(mapPort, authPort),
+        addProcessStageUseCase  = AddProcessStageUseCase(mapPort, authPort),
+        addStageConnectionUseCase = AddStageConnectionUseCase(mapPort, authPort),
+        createChoreListUseCase  = CreateChoreListUseCase(mapPort, broadcast, authPort),
+        updateChoreEntryUseCase = UpdateChoreEntryUseCase(mapPort, broadcast, authPort),
     )
 
     @Test

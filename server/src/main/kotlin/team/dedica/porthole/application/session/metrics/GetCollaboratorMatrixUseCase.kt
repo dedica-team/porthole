@@ -1,22 +1,17 @@
 package team.dedica.porthole.application.session.metrics
 
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.MapStatePort
-import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.domain.CollaboratorMatrix
+import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
 @Component
 class GetCollaboratorMatrixUseCase(
-    private val mapStatePort: MapStatePort,
-    private val userPort: UserPort,
+    private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, username: String): CollaboratorMatrix {
-        val state = mapStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
-        userPort.findByUsername(username)
-            ?: throw NoSuchElementException("User $username not found")
+    fun execute(mapId: UUID, callerId: UUID): CollaboratorMatrix {
+        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.VIEWER)
         return state.collaboratorMatrix
     }
 }
-

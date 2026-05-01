@@ -1,20 +1,21 @@
 package team.dedica.porthole.application.lobby
 
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.MapStatePort
+import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Collaborator
 import team.dedica.porthole.domain.HexMap
-import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.SessionState
+import java.util.UUID
 
 @Component
 class CreateMapUseCase(
-    private val mapStatePort: MapStatePort,
+    private val sessionStatePort: SessionStatePort,
     private val userPort: UserPort,
 ) {
-    fun execute(creatorUsername: String, mapType: String = "LAND", mapSize: String = "MEDIUM"): MapState {
-        val user = userPort.findByUsername(creatorUsername)
-            ?: throw NoSuchElementException("User $creatorUsername not found")
+    fun execute(creatorId: UUID, mapType: String = "LAND", mapSize: String = "MEDIUM"): SessionState {
+        val user = userPort.findById(creatorId)
+            ?: throw NoSuchElementException("User $creatorId not found")
         val (cols, rows) = when (mapSize.uppercase()) {
             "SMALL" -> 25 to 25
             "LARGE" -> 80 to 80
@@ -25,9 +26,9 @@ class CreateMapUseCase(
             "BLANK" -> HexMap.createBlankGrid(cols = cols, rows = rows)
             else    -> HexMap.createGrid(cols = cols, rows = rows)
         }
-        val state = MapState(map = map)
+        val state = SessionState(map = map)
         state.collaborators.add(Collaborator(id = user.id, username = user.username, avatarUrl = user.avatarUrl))
-        mapStatePort.save(state)
+        sessionStatePort.save(state)
         return state
     }
 }
