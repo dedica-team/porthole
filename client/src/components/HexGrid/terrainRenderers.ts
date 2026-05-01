@@ -7,7 +7,7 @@
  * Shared utilities and the TerrainRenderer interface are in ./terrainUtils.ts.
  * Tile surface colours are owned by each renderer via tileColors().
  */
-import type { Terrain } from '@/types/map.ts';
+import type { Terrain } from '@/types/hex';
 import type { TerrainRenderer } from './terrainUtils';
 export { tileHeight, type TerrainRenderer, type TileColors } from './terrainUtils';
 import { WaterRenderer }    from './renderers/WaterRenderer';

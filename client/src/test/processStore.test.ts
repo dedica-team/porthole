@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useMapStore } from '../store/mapStore';
-import type { MapState } from '../types/map';
-
-const makeMap = (): MapState => ({
+import type { SessionState } from '../types/session';
+const makeMap = (): SessionState => ({
   id: 'map-1',
   createdAt: new Date().toISOString(),
   collaborators: [],
@@ -10,7 +9,6 @@ const makeMap = (): MapState => ({
   landmarks: {},
   connections: {},
   groups: {},
-  metrics: {},
   map: { tiles: [] },
 });
 

@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMapStore } from '@/store/mapStore';
-import { isDecorative } from '@/types/map';
+import { isDecorative } from '@/types/landmark';
 import { createChoreList } from '@/api/mapApi';
+import type {ChoreList} from "@/types/chores.ts";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated: (lists: import('@/types/map').ChoreList[]) => void;
+  onCreated: (lists: ChoreList[]) => void;
 }
 
 export default function CreateChoreListDialog({ open, onOpenChange, onCreated }: Props) {

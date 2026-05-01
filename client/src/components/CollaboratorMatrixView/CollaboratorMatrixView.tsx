@@ -12,20 +12,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import {  type MatrixLevel,
-  type Collaborator,
-  type LandmarkType,
-  MATRIX_LEVEL_ORDER,
-  MATRIX_LEVEL_LABEL,
-  MATRIX_LEVEL_BADGE_STYLE,
-  isDecorative,
-} from '@/types/map';
-import {
-  useGroupFilter,
-  GroupFilterPopover,
-} from '@/components/ui/GroupFilterPopover';
-import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
-
+import { MATRIX_LEVEL_ORDER, MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
+import type { MatrixLevel } from '@/types/matrix';
+import { isDecorative } from '@/types/landmark';
+import type { LandmarkType } from '@/types/landmark';
+import type { Collaborator } from '@/types/session';
+import {GroupFilterPopover, useGroupFilter} from "@/components/ui/GroupFilterPopover.tsx";
+import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPopover.tsx";
 
 
 // ── Cell-edit dialog ──────────────────────────────────────────────────────────
@@ -106,9 +99,10 @@ export default function CollaboratorMatrixView({
   error,
   onClearError,
 }: Props) {
-  const { currentMap, landmarksMap } = useMapStore(useShallow((s) => ({
+  const { currentMap, landmarksMap, collaboratorMatrix } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     landmarksMap: s.currentMap?.landmarks ?? EMPTY_LANDMARKS,
+    collaboratorMatrix: s.collaboratorMatrix,
   })));
   const userId = useAuthStore((s) => s.userId);
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
@@ -119,7 +113,7 @@ export default function CollaboratorMatrixView({
 
   if (!currentMap) return null;
 
-  const matrix = currentMap.collaboratorMatrix;
+  const matrix = collaboratorMatrix;
   const collaborators: Collaborator[] = currentMap.collaborators;
   const groups = currentMap.groups ?? {};
 

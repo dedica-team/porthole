@@ -5,64 +5,51 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import type { QualityMetric } from '@/types/map';
+import type { QualityMetric } from '@/types/landmark';
 import MetricTemplateSelector from '@/components/MetricsView/MetricTemplateSelector';
-
 interface Props {
   onCreateMetric: (name: string, description: string) => void;
   onEditMetric: (metricId: string, name?: string, description?: string) => void;
   onRemoveMetric: (metricId: string) => void;
   loading: boolean;
 }
-
 interface EditState { name: string; description: string }
-
 export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMetric, loading }: Props) {
   const currentMap = useMapStore((s) => s.currentMap);
+  const storeMetrics = useMapStore((s) => s.metrics);
   const userId = useAuthStore((s) => s.userId);
-
   const [editingId, setEditingId]     = useState<string | null>(null);
   const [editState, setEditState]     = useState<EditState>({ name: '', description: '' });
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-
   if (!currentMap) return null;
-
   const isCollaborator = !!(userId && currentMap.collaborators.some((c) => c.id === userId));
-  const metrics = Object.values(currentMap.metrics ?? {});
-
+  const metrics: QualityMetric[] = Object.values(storeMetrics);
   const startEdit = (metric: QualityMetric) => {
     setEditingId(metric.id);
     setEditState({ name: metric.name, description: metric.description });
     setRemoveConfirmId(null);
   };
-
   const saveEdit = (metricId: string) => {
     if (!editState.name.trim()) return;
     onEditMetric(metricId, editState.name.trim(), editState.description.trim() || undefined);
     setEditingId(null);
   };
-
   const cancelEdit = () => setEditingId(null);
-
   const requestRemove = (metricId: string) => {
     setRemoveConfirmId(metricId);
     setEditingId(null);
   };
-
   const confirmRemove = (metricId: string) => {
     onRemoveMetric(metricId);
     setRemoveConfirmId(null);
   };
-
   return (
     <div className="flex flex-col gap-4 p-5">
       <div className="flex items-center gap-2 text-muted-foreground">
         <BarChart2 className="h-4 w-4" />
         <span className="text-xs font-medium uppercase tracking-wider">Quality Metrics</span>
       </div>
-
-      {/* Existing metrics */}
       {metrics.length === 0 ? (
         <p className="text-[11px] text-muted-foreground">No metrics yet. Create one below.</p>
       ) : (
@@ -103,7 +90,6 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
                 </div>
               );
             }
-
             if (removeConfirmId === metric.id) {
               return (
                 <div key={metric.id} className="flex flex-col gap-1 rounded-md border border-red-900/60 bg-black p-2">
@@ -125,7 +111,6 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
                 </div>
               );
             }
-
             return (
               <div key={metric.id} className="flex items-start justify-between gap-2 rounded-md border border-border p-2">
                 <div className="flex flex-col gap-0.5 min-w-0">
@@ -149,9 +134,7 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
           })}
         </div>
       )}
-
       <Separator className="bg-border" />
-
       {isCollaborator && (
         <Button
           size="sm"
@@ -163,7 +146,6 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
           Add Metric
         </Button>
       )}
-
       <MetricTemplateSelector
         open={showTemplateSelector}
         onSubmit={(name, description) => {
@@ -176,4 +158,3 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
     </div>
   );
 }
-

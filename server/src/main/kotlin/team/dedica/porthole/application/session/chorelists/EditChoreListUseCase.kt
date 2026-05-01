@@ -39,7 +39,7 @@ class EditChoreListUseCase(
             }
         }
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendChoreLists(mapId, state.choreLists)
         return state.choreLists.values.sortedBy { it.title }
     }
 }

@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import type {Landmark} from '@/types/map.ts';
+import type { Landmark } from '@/types/landmark';
 import {mesh, edges, namePlane, group, glowMat, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY} from './landmarkUtils';
-import type { QualityLevel } from '@/types/map.ts';
-
+import type { QualityLevel } from '@/types/landmark';
 export class LighthouseRenderer implements LandmarkRenderer {
     readonly requiresAdjacent = false;
     readonly color = 0xf0c040;

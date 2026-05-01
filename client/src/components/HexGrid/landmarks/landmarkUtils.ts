@@ -2,8 +2,9 @@
  * Shared utilities, materials and helpers for all landmark renderers.
  */
 import * as THREE from 'three';
-import type {HexTile, Landmark, LandmarkType, QualityLevel} from '@/types/map.ts';
-import { QUALITY_LEVEL_COLOR } from '@/types/map.ts';
+import type { HexTile } from '@/types/hex';
+import type { Landmark, LandmarkType, QualityLevel } from '@/types/landmark';
+import { QUALITY_LEVEL_COLOR } from '@/types/landmark';
 import { tileHeight, TRON_BLACK } from '../terrainUtils';
 
 export { tileHeight, TRON_BLACK };

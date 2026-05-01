@@ -28,7 +28,7 @@ class CreateChoreListUseCase(
         }
         state.choreLists[list.id] = list
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendChoreLists(mapId, state.choreLists)
         return state.choreLists.values.sortedBy { it.title }
     }
 }

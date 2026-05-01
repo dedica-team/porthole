@@ -26,7 +26,7 @@ class SetMatrixEntryUseCase(
         val byLandmark = state.collaboratorMatrix.entries.getOrPut(landmarkId) { ConcurrentHashMap() }
         byLandmark[collaboratorId] = CollaboratorMatrixEntry(level)
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendMatrix(mapId, state.collaboratorMatrix)
         return state
     }
 }

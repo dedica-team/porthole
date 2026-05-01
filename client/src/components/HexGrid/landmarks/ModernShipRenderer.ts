@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Landmark, QualityLevel } from '@/types/map.ts';
+import type { Landmark, QualityLevel } from '@/types/landmark';
 import { mesh, edges, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY, TRON_BLACK } from './landmarkUtils';
 
 /** Like `edges()` but uses a higher threshold angle (degrees) so only real

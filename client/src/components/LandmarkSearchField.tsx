@@ -1,9 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import type { Landmark } from '@/types/map';
-import { isDecorative } from '@/types/map';
-
+import type { Landmark } from '@/types/landmark';
+import { isDecorative } from '@/types/landmark';
 interface Props {
   landmarks: Landmark[];           // already filtered to positioned only
   onSelect: (landmark: Landmark) => void;

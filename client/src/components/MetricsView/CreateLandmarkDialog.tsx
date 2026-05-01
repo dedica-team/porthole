@@ -10,9 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { LandmarkGroup, LandmarkType } from '@/types/map';
-import { ALL_LANDMARK_TYPES, isDecorative, LANDMARK_TYPE_LABELS } from '@/types/map';
-
+import type { LandmarkGroup, LandmarkType } from '@/types/landmark';
+import { ALL_LANDMARK_TYPES, isDecorative, LANDMARK_TYPE_LABELS } from '@/types/landmark';
 interface Props {
   open: boolean;
   loading: boolean;

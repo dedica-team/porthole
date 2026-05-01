@@ -23,7 +23,7 @@ class ClearMatrixEntryUseCase(
             byLandmark.remove(collaboratorId)
             if (byLandmark.isEmpty()) state.collaboratorMatrix.entries.remove(landmarkId)
             mapStatePort.save(state)
-            broadcastPort.send(mapId, state)
+            broadcastPort.sendMatrix(mapId, state.collaboratorMatrix)
         }
         return state
     }

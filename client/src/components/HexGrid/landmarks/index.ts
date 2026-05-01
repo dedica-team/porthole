@@ -26,7 +26,7 @@ export { OilRigRenderer }        from './OilRigRenderer';
 export { SubmarineRenderer }     from './SubmarineRenderer';
 export { BuoyRenderer }          from './BuoyRenderer';
 
-import type { LandmarkType } from '@/types/map.ts';
+import type { LandmarkType } from '@/types/landmark';
 import type { LandmarkRenderer } from './landmarkUtils';
 import { KeepRenderer }          from './KeepRenderer';
 import { LighthouseRenderer }    from './LighthouseRenderer';

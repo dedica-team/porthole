@@ -7,8 +7,7 @@ import {
   deleteChoreList,
   updateChoreEntry,
 } from '../api/mapApi';
-import type { ChoreList } from '../types/map';
-
+import type { ChoreList } from '../types/chores';
 const MAP_ID  = 'map-1';
 const LIST_ID = 'list-1';
 const LM_ID   = 'lm-1';

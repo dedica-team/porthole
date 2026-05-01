@@ -10,8 +10,8 @@
  *  - glow on the dish interior
  */
 import * as THREE from 'three';
-import type { Landmark } from '@/types/map.ts';
-import type { QualityLevel } from '@/types/map.ts';
+import type { Landmark } from '@/types/landmark';
+import type { QualityLevel } from '@/types/landmark';
 import { mesh, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY } from './landmarkUtils';
 
 export class SatelliteDishRenderer implements LandmarkRenderer {

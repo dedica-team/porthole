@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import CreateConnectionDialog from '../components/CreateConnectionDialog';
 import * as mapApi from '../api/mapApi';
-import type { Landmark, Connection, MapState } from '../types/map';
-
+import type { Landmark } from '../types/landmark';
+import type { Connection } from '../types/connection';
+import type { SessionState } from '../types/session';
 vi.mock('../api/mapApi');
 
 const LANDMARKS: Landmark[] = [
@@ -14,7 +15,7 @@ const LANDMARKS: Landmark[] = [
 
 const EMPTY_CONNECTIONS: Connection[] = [];
 
-const STUB_MAP: MapState = {
+const STUB_MAP: SessionState = {
   id: 'map-1', createdAt: '', collaborators: [], landmarks: {}, connections: {},
   groups: {}, map: { tiles: [] },
 };

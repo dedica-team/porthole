@@ -4,8 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import LobbyPage from '../pages/LobbyPage/LobbyPage';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import type { MapState } from '../types/map';
-
+import type { SessionState } from '../types/session';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock('../api/mapApi');
@@ -19,14 +18,13 @@ vi.mock('../components/AppShell/AppShell', () => ({
 const USER_ID = 'user-abc';
 const MAP_ID  = 'map-123';
 
-const makeMap = (overrides: Partial<MapState> = {}): MapState => ({
+const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   id: MAP_ID,
   createdAt: new Date().toISOString(),
   collaborators: [],
   landmarks: {},
   connections: {},
   groups: {},
-  metrics: {},
   map: { tiles: [] },
   ...overrides,
 });

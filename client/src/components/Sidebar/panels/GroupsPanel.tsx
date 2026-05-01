@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import type { LandmarkGroup } from '@/types/map';
-
+import type { LandmarkGroup } from '@/types/landmark';
 interface Props {
   onCreateGroup: (name: string, color: string, description?: string, link?: string) => void;
   onEditGroup: (groupId: string, name?: string, color?: string, description?: string, clearDescription?: boolean, link?: string, clearLink?: boolean) => void;

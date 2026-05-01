@@ -1,8 +1,10 @@
 import {useEffect, useRef} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import type {HexCoordinate, HexTile, Landmark, MapState, Terrain} from '@/types/map.ts';
-import {worstLevel} from '@/types/map.ts';
+import type { HexCoordinate, HexTile, Terrain } from '@/types/hex';
+import type { Landmark } from '@/types/landmark';
+import type { SessionState } from '@/types/session';
+import { worstLevel } from '@/types/landmark';
 import {hexToWorld} from '@/utils/hexUtils.ts';
 import {useMapStore} from '@/store/mapStore.ts';
 import {TERRAIN_RENDERER_MAP, tileHeight,} from './terrainRenderers';
@@ -33,7 +35,7 @@ const STAGE_TOP_RGB:  [number, number, number] = [0.32, 0.32, 0.34];
 const STAGE_SIDE_RGB: [number, number, number] = [0.28, 0.28, 0.30];
 
 interface Props {
-    map: MapState;
+    map: SessionState;
     onTileClick: (q: number, r: number) => void;
     fpsRef?: React.RefObject<HTMLDivElement | null>;
     brushMode?: boolean;

@@ -3,7 +3,7 @@ import { ChevronLeft, Pencil, CheckSquare, Square, Trash2, ExternalLink } from '
 import { Button } from '@/components/ui/button';
 import { useMapStore } from '@/store/mapStore';
 import { useAuthStore } from '@/store/mapStore';
-import type { ChoreList, ChoreEntry } from '@/types/map';
+import type { ChoreList, ChoreEntry } from '@/types/chores';
 import { toggleChoreListCompleted, deleteChoreList } from '@/api/mapApi';
 import ChoreEntryRow from './ChoreEntryRow';
 import EditChoreListDialog from './EditChoreListDialog';

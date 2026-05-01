@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import type { Connection, HexTile } from '@/types/map.ts';
+import type { Connection } from '@/types/connection';
+import type { HexTile } from '@/types/hex';
 import { TRON_CYAN } from '../terrainUtils';
 import type { ConnectionRenderer } from './ConnectionRenderer.ts';
 import { resolvePoints } from './resolvePoints.ts';

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { HexTile } from '@/types/map.ts';
+import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 import { tileHeight, seed, lcgNext, LineBatcher, PointsBatcher, SNOWY_TILE_COLORS, SNOW_MOUND_MAT, ROCK_EDGE_MAT, type TileColors, type TerrainRenderer } from '../terrainUtils';
 

@@ -3,8 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MetricsView from '../components/MetricsView/MetricsView';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
-import type {LandmarkGroup, QualityMetric} from '../types/map';
-
+import type { LandmarkGroup, QualityMetric } from '../types/landmark';
 // ── shared fixtures ────────────────────────────────────────────────────────
 
 const METRIC_AVAIL = { id: 'm1', name: 'Availability', description: 'Uptime %' };
@@ -46,7 +45,7 @@ function setup(
   groups: Record<string, LandmarkGroup> = {},
 ) {
   useAuthStore.setState({ userId: 'p1', username: 'alice', token: 'tok', isAuthenticated: true });
-  useMapStore.setState({ currentMap: { ...MAP_BASE, metrics, landmarks, groups } });
+  useMapStore.setState({ currentMap: { ...MAP_BASE, landmarks, groups }, metrics });
 }
 
 // ── tests ──────────────────────────────────────────────────────────────────

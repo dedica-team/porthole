@@ -11,9 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useAuthStore, useMapStore } from '@/store/mapStore';
 import { editMap, setCollaborationMode, acceptJoinRequest, declineJoinRequest, logoutSession, exportMapJson, removeCollaborator } from '@/api/mapApi';
-import type { CollaborationMode } from '@/types/map';
-import { COLLABORATION_MODE_LABELS } from '@/types/map';
-
+import type { CollaborationMode } from '@/types/session';
+import { COLLABORATION_MODE_LABELS } from '@/types/session';
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();

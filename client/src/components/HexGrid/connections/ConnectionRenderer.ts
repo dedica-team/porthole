@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import type { Connection, HexTile } from '@/types/map.ts';
-
+import type { Connection } from '@/types/connection';
+import type { HexTile } from '@/types/hex';
 export interface ConnectionRenderer {
   build(conn: Connection, tiles: HexTile[]): THREE.Group | null;
   /**

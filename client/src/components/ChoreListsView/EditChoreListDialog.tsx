@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMapStore } from '@/store/mapStore';
-import { isDecorative } from '@/types/map';
-import type { ChoreList } from '@/types/map';
+import { isDecorative } from '@/types/landmark';
+import type { ChoreList } from '@/types/chores';
 import { editChoreList } from '@/api/mapApi';
 
 interface Props {

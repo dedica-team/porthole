@@ -14,7 +14,8 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { useShallow } from 'zustand/react/shallow';
 import { positionLandmark, createConnection } from '@/api/mapApi';
-import type { Terrain, Landmark } from '@/types/map';
+import type { Terrain } from '@/types/hex';
+import type { Landmark } from '@/types/landmark';
 import type { useMapPageActions } from './useMapPageActions';
 
 interface Props {

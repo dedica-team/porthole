@@ -20,8 +20,7 @@ import { ForestRenderer }  from '@/components/HexGrid/renderers/ForestRenderer';
 import { SnowyRenderer }   from '@/components/HexGrid/renderers/SnowyRenderer';
 import { IceRenderer }     from '@/components/HexGrid/renderers/IceRenderer';
 import { ScorchedRenderer } from '@/components/HexGrid/renderers/ScorchedRenderer';
-import type { HexTile } from '@/types/map';
-
+import type { HexTile } from '@/types/hex';
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function makeTile(q: number, r: number, terrain: HexTile['terrain'] = 'GRASS', elevation = 1): HexTile {

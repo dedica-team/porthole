@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import type { MapState } from '@/types/map.ts';
-
+import type { SessionState } from '@/types/session';
 // Module-level singletons – avoids per-call allocation on every pointermove.
 const _raycaster = new THREE.Raycaster();
 const _ndc       = new THREE.Vector2();
@@ -15,7 +14,7 @@ export function pickTileFromMesh(
   renderer: THREE.WebGLRenderer,
   camera: THREE.PerspectiveCamera,
   topsMesh: THREE.Mesh,
-  tiles: MapState['map']['tiles'],
+  tiles: SessionState['map']['tiles'],
 ): { q: number; r: number } | null {
   const rect = renderer.domElement.getBoundingClientRect();
   _ndc.set(

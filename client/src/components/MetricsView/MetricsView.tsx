@@ -16,18 +16,9 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import type { QualityLevel, QualityMetric, LandmarkType, Landmark } from '@/types/map';
-import {
-  QUALITY_LEVEL_BADGE_STYLE,
-  QUALITY_LEVEL_LABEL,
-  QUALITY_LEVEL_ORDER,
-  QUALITY_LEVEL_SIGN,
-  worstLevel,
-  isDecorative,
-  defaultValueForLevel,
-  ALL_LANDMARK_TYPES,
-  LANDMARK_TYPE_LABELS,
-} from '@/types/map';
+import type {LandmarkGroup} from "@/types/landmark";
+import type { QualityLevel, QualityMetric, LandmarkType, Landmark } from '@/types/landmark';
+import { QUALITY_LEVEL_BADGE_STYLE, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_ORDER, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel, ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS } from '@/types/landmark';
 import MetricTemplateSelector from './MetricTemplateSelector';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 import CreateLandmarkDialog from './CreateLandmarkDialog';
@@ -80,7 +71,6 @@ function isValidUrl(value: string): boolean {
 // Stable empty-object fallbacks – must live outside the component so their
 // reference never changes between renders, preventing useShallow from seeing
 // a "new" value on every call and causing an infinite snapshot loop.
-const EMPTY_METRICS:   Record<string, never> = {};
 const EMPTY_LANDMARKS: Record<string, never> = {};
 
 // ── Metric definition edit/delete dialog ─────────────────────────────────────
@@ -340,7 +330,7 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
 
 interface LandmarkEditDialogProps {
   landmark: Landmark | null;
-  groups: Record<string, import('@/types/map').LandmarkGroup>;
+  groups: Record<string, LandmarkGroup>;
   loading: boolean;
   onSave: (landmarkId: string, name: string, type: LandmarkType, description: string, link: string, groupId: string | null) => void;
   onClose: () => void;
@@ -452,7 +442,7 @@ export default function MetricsView({
 }: Props) {
   const { currentMap, metricsMap, landmarksMap } = useMapStore(useShallow((s) => ({
     currentMap:   s.currentMap,
-    metricsMap:   s.currentMap?.metrics   ?? EMPTY_METRICS,
+    metricsMap:   s.metrics,
     landmarksMap: s.currentMap?.landmarks ?? EMPTY_LANDMARKS,
   })));
   const userId = useAuthStore((s) => s.userId);

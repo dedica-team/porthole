@@ -2,7 +2,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useMapStore } from '@/store/mapStore';
-import type { Terrain } from '@/types/map';
+import type { Terrain } from '@/types/hex';
 import { cn } from '@/lib/utils';
 type EditorTool = 'RAISE' | 'LOWER' | 'TERRAIN';
 const TERRAIN_OPTIONS: { value: Terrain; label: string; color: string }[] = [

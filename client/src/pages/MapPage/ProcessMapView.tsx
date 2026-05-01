@@ -16,8 +16,9 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { useShallow } from 'zustand/react/shallow';
 import { addConnectionToStage, removeConnectionFromStage } from '@/api/mapApi';
-import type { Connection, StageConnection } from '@/types/map';
-import { QUALITY_LEVEL_COLOR, QUALITY_LEVEL_SIGN } from '@/types/map';
+import type { Connection } from '@/types/connection';
+import type { StageConnection } from '@/types/process';
+import { QUALITY_LEVEL_COLOR, QUALITY_LEVEL_SIGN } from '@/types/landmark';
 import type { useMapPageActions } from './useMapPageActions';
 
 interface Props {
@@ -30,7 +31,7 @@ export default function ProcessMapView({ actions }: Props) {
   const [selectedMetricId, setSelectedMetricId] = useState<string | null>(null);
 
   const {
-    currentMap, updateMap,
+    currentMap, updateMap, metrics,
     setSelectedLandmark,
     setSelectedTile,
     setSelectedConnectionId,
@@ -40,6 +41,7 @@ export default function ProcessMapView({ actions }: Props) {
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     updateMap: s.updateMap,
+    metrics: s.metrics,
     selectedLandmark: s.selectedLandmark, setSelectedLandmark: s.setSelectedLandmark,
     setSelectedTile: s.setSelectedTile,
     setSelectedConnectionId: s.setSelectedConnectionId,
@@ -269,9 +271,9 @@ export default function ProcessMapView({ actions }: Props) {
       <div ref={fpsRef} className="absolute bottom-2 left-2 text-[10px] text-white/40 pointer-events-none font-mono" />
 
       {/* Metric layer selector – top-right, always visible in process mode */}
-      {Object.keys(currentMap.metrics ?? {}).length > 0 && (() => {
-        const allMetrics = Object.values(currentMap.metrics ?? {});
-        const selectedMetric = selectedMetricId ? (currentMap.metrics ?? {})[selectedMetricId] : null;
+      {Object.keys(metrics).length > 0 && (() => {
+        const allMetrics = Object.values(metrics);
+        const selectedMetric = selectedMetricId ? (metrics)[selectedMetricId] : null;
         return (
           <div className="absolute top-2 right-2 z-10">
             <Popover>

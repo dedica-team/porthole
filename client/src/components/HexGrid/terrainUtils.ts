@@ -2,7 +2,7 @@
  * Shared utilities, materials and helpers used across all terrain renderers.
  */
 import * as THREE from 'three';
-import type { HexTile } from '@/types/map.ts';
+import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 
 // ── Tron palette ──────────────────────────────────────────────────────────────
@@ -21,17 +21,6 @@ export const WIRE_MAT = new THREE.MeshBasicMaterial({
   opacity: 0.3,
 });
 
-// ── Shared line materials (reused across renderers) ───────────────────────────
-export const LINE_BRIGHT = new THREE.LineBasicMaterial({
-  color: TRON_CYAN,
-  transparent: true,
-  opacity: 0.65,
-});
-export const LINE_DIM = new THREE.LineBasicMaterial({
-  color: TRON_CYAN_DIM,
-  transparent: true,
-  opacity: 0.75,
-});
 
 // ── TileColors ────────────────────────────────────────────────────────────────
 export interface TileColors {
@@ -109,21 +98,9 @@ export function tileHeight(elevation: number): number {
   return 0.2 + elevation * 0.25;
 }
 
-// ── remove helper ─────────────────────────────────────────────────────────────
-export function remove(scene: THREE.Scene, ...meshes: Array<THREE.InstancedMesh | null>) {
-  for (const m of meshes) if (m) scene.remove(m);
-}
-
 // ── Deterministic seed ────────────────────────────────────────────────────────
-export function seed(tile: import('../../types/map').HexTile, a: number, b: number, c: number): number {
+export function seed(tile: HexTile, a: number, b: number, c: number): number {
   return (tile.coordinate.q * a + tile.coordinate.r * b + c) & 0xffff;
-}
-
-// ── Shared line-segment geometry builder ──────────────────────────────────────
-export function lineGeo(verts: number[]): THREE.BufferGeometry {
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  return g;
 }
 
 // ── LCG pseudo-random noise ───────────────────────────────────────────────────

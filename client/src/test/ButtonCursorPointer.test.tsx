@@ -14,8 +14,7 @@ import LobbyPage from '../pages/LobbyPage/LobbyPage';
 import Navbar from '../components/Navbar/Navbar';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import type { MapState } from '../types/map';
-
+import type { SessionState } from '../types/session';
 vi.mock('../api/mapApi');
 vi.mock('../components/AppShell/AppShell', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -25,14 +24,13 @@ vi.mock('../components/AppShell/AppShell', () => ({
 
 const MAP_ID = 'map-cursor-test';
 
-const makeMap = (overrides: Partial<MapState> = {}): MapState => ({
+const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   id: MAP_ID,
   createdAt: new Date().toISOString(),
   collaborators: [{ id: 'u1', username: 'alice' }],
   landmarks: {},
   connections: {},
   groups: {},
-  metrics: {},
   map: { tiles: [] },
   ...overrides,
 });

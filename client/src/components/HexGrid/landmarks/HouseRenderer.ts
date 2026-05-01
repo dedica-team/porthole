@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import type { Landmark } from '@/types/map.ts';
-import type { QualityLevel } from '@/types/map.ts';
+import type { Landmark } from '@/types/landmark';
+import type { QualityLevel } from '@/types/landmark';
 import { mesh, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY } from './landmarkUtils';
 
 // Two rows of three: col spacing 0.28, row spacing 0.30

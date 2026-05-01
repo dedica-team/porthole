@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import type { MapState } from '../types/map';
-
-const makeMap = (): MapState => ({
+import type { SessionState } from '../types/session';
+const makeMap = (): SessionState => ({
   id: 'g1',
   createdAt: new Date().toISOString(),
   collaborators: [],
@@ -10,7 +9,6 @@ const makeMap = (): MapState => ({
   landmarks: {},
   connections: {},
   groups: {},
-  metrics: {},
   map: {
     tiles: [
       { coordinate: { q: 0, r: 0 }, elevation: 2, terrain: 'FOREST', ownerId: null },
@@ -53,7 +51,7 @@ describe('mapStore – updateTile (regression: updateTile was missing from imple
   });
 
   it('does not replace the other map properties (landmarks, collaborators, connections)', () => {
-    const map: MapState = {
+    const map: SessionState = {
       ...makeMap(),
       landmarks: { 'l1': { id: 'l1', name: 'Keep', ownerId: 'p1', coordinate: { q: 0, r: 0 }, type: 'KEEP' } },
       collaborators: [{ id: 'p1', username: 'alice' }],
@@ -74,25 +72,25 @@ describe('mapStore – updateMap', () => {
   });
 
   it('replaces currentMap when ids match', () => {
-    const updated: MapState = { ...makeMap(), collaborators: [{ id: 'p1', username: 'bob' }] };
+    const updated: SessionState = { ...makeMap(), collaborators: [{ id: 'p1', username: 'bob' }] };
     useMapStore.getState().updateMap(updated);
     expect(useMapStore.getState().currentMap!.collaborators[0].username).toBe('bob');
   });
 
   it('does not replace currentMap when ids differ', () => {
-    const other: MapState = { ...makeMap(), id: 'other' };
+    const other: SessionState = { ...makeMap(), id: 'other' };
     useMapStore.getState().updateMap(other);
     expect(useMapStore.getState().currentMap!.id).toBe('g1');
   });
 
   it('updates the maps list', () => {
-    const updated: MapState = { ...makeMap(), collaborators: [{ id: 'p1', username: 'carol' }] };
+    const updated: SessionState = { ...makeMap(), collaborators: [{ id: 'p1', username: 'carol' }] };
     useMapStore.getState().updateMap(updated);
     expect(useMapStore.getState().maps[0].collaborators[0].username).toBe('carol');
   });
 
   it('preserves name and description when updateMap is called', () => {
-    const updated: MapState = { ...makeMap(), name: 'Named Map', description: 'Some desc' };
+    const updated: SessionState = { ...makeMap(), name: 'Named Map', description: 'Some desc' };
     useMapStore.getState().updateMap(updated);
     expect(useMapStore.getState().currentMap!.name).toBe('Named Map');
     expect(useMapStore.getState().currentMap!.description).toBe('Some desc');
@@ -100,7 +98,7 @@ describe('mapStore – updateMap', () => {
 
   it('clears name when updateMap receives map without name', () => {
     useMapStore.setState({ currentMap: { ...makeMap(), name: 'Old Name' }, maps: [] });
-    const updated: MapState = { ...makeMap() };
+    const updated: SessionState = { ...makeMap() };
     useMapStore.getState().updateMap(updated);
     expect(useMapStore.getState().currentMap!.name).toBeUndefined();
   });
@@ -113,7 +111,7 @@ describe('mapStore – updateMap', () => {
       selectedLandmark: landmark,
     });
     const updatedLandmark = { ...landmark, link: 'https://example.com' };
-    const updated: MapState = { ...makeMap(), landmarks: { lm1: updatedLandmark } };
+    const updated: SessionState = { ...makeMap(), landmarks: { lm1: updatedLandmark } };
     useMapStore.getState().updateMap(updated);
     expect(useMapStore.getState().selectedLandmark?.link).toBe('https://example.com');
   });

@@ -9,7 +9,9 @@
  *   BIDIRECTIONAL– two half-opacity arrows on the same path
  */
 import * as THREE from 'three';
-import type {Connection, HexTile, StageConnection} from '@/types/map.ts';
+import type { Connection } from '@/types/connection';
+import type { HexTile } from '@/types/hex';
+import type { StageConnection } from '@/types/process';
 import {hexToWorld} from '@/utils/hexUtils.ts';
 import {tileHeight} from './terrainUtils';
 

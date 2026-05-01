@@ -9,9 +9,8 @@
  * This mirrors exactly what the useMemo in ProcessMapView computes.
  */
 import { describe, it, expect } from 'vitest';
-import { QUALITY_LEVEL_COLOR, QUALITY_LEVEL_SIGN } from '../types/map';
-import type { Landmark, QualityLevel } from '../types/map';
-
+import { QUALITY_LEVEL_COLOR, QUALITY_LEVEL_SIGN } from '../types/landmark';
+import type { Landmark, QualityLevel } from '../types/landmark';
 // ── Replicate the memo logic as a pure function ───────────────────────────────
 
 interface OverlayEntry { value: string; color: string }
@@ -68,7 +67,6 @@ const LM_NO_ENTRY: Landmark = {
   id: 'lm-no-entry', name: 'Epsilon', ownerId: 'u1',
   type: 'KEEP',
   coordinate: { q: 4, r: 0 },
-  metrics: {},
 };
 
 const LM_UNPOSITIONED: Landmark = {

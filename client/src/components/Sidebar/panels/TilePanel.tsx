@@ -6,9 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { toSlug } from '@/utils/slugUtils';
-import type { Landmark, LandmarkType } from '@/types/map';
-import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, isDecorative } from '@/types/map';
-
+import type { Landmark, LandmarkType } from '@/types/landmark';
+import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, isDecorative } from '@/types/landmark';
 const TERRAIN_ICONS: Record<string, string> = {
   WATER: '💧', GRASS: '🌿', FOREST: '🌲', ROCKS: '🪨',
 };

@@ -12,9 +12,9 @@ import {
   getLandmarkColor,
 } from '@/components/HexGrid/landmarks';
 import type { Adjacent } from '@/components/HexGrid/landmarks';
-import type { HexTile, Landmark } from '../types/map';
-import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS } from '../types/map';
-
+import type { HexTile } from '../types/hex';
+import type { Landmark } from '../types/landmark';
+import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS } from '../types/landmark';
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 const WALL_LANDMARK: Landmark = {

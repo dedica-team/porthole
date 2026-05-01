@@ -4,7 +4,10 @@ import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.MapStatePort
 import team.dedica.porthole.application.port.UserWritePort
+import team.dedica.porthole.domain.ChoreList
+import team.dedica.porthole.domain.CollaboratorMatrix
 import team.dedica.porthole.domain.MapState
+import team.dedica.porthole.domain.QualityMetric
 
 class InMemoryMapStatePort : MapStatePort {
     private val store = mutableMapOf<String, MapState>()
@@ -27,4 +30,7 @@ class InMemoryTestUserRepository : UserWritePort {
 
 class NoOpBroadcastPort : BroadcastPort {
     override fun send(mapId: String, state: MapState) {}
+    override fun sendMatrix(mapId: String, matrix: CollaboratorMatrix) {}
+    override fun sendMetrics(mapId: String, metrics: Map<String, QualityMetric>) {}
+    override fun sendChoreLists(mapId: String, choreLists: Map<String, ChoreList>) {}
 }

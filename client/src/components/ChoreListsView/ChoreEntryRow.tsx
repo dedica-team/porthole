@@ -6,8 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
-import type { ChoreEntry, ChoreEntryState, Collaborator } from '@/types/map';
-import { CHORE_ENTRY_STATE_BADGE_STYLE, CHORE_ENTRY_STATE_LABEL, CHORE_ENTRY_STATES } from '@/types/map';
+import type {ChoreEntry, ChoreEntryState, ChoreList} from '@/types/chores';
+import type { Collaborator } from '@/types/session';
+import { CHORE_ENTRY_STATE_BADGE_STYLE, CHORE_ENTRY_STATE_LABEL, CHORE_ENTRY_STATES } from '@/types/chores';
 import { updateChoreEntry } from '@/api/mapApi';
 
 interface Props {
@@ -17,7 +18,7 @@ interface Props {
   landmarkName: string;
   collaborators: Collaborator[];
   isCollaborator: boolean;
-  onUpdated: (updated: import('@/types/map').ChoreList) => void;
+  onUpdated: (updated: ChoreList) => void;
   groupStripe?: { color: string; label: string; rowSpan: number };
 }
 

@@ -4,22 +4,20 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import type { MapState } from '../types/map';
-
+import type { SessionState } from '../types/session';
 vi.mock('../api/mapApi');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const MAP_ID = 'test-map-abc123';
 
-const makeMap = (overrides: Partial<MapState> = {}): MapState => ({
+const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   id: MAP_ID,
   createdAt: new Date().toISOString(),
   collaborators: [{ id: 'p1', username: 'alice' }],
   landmarks: {},
   connections: {},
   groups: {},
-  metrics: {},
   map: { tiles: [] },
   ...overrides,
 });

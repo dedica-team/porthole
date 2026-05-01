@@ -10,8 +10,7 @@ import {
   editStageConnection,
   removeConnectionFromStage,
 } from '../api/mapApi';
-import type { Process } from '../types/map';
-
+import type { Process } from '../types/process';
 const MAP_ID    = 'map-1';
 const PROC_ID   = 'proc-1';
 const STAGE_ID  = 'stage-1';

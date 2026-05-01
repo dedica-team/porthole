@@ -9,9 +9,9 @@ import LandmarkPanel from './panels/LandmarkPanel';
 import EditorPanel from './panels/EditorPanel';
 import MetricsPanel from './panels/MetricsPanel';
 import ProcessPanel from './panels/ProcessPanel';
-import type { LandmarkType, ConnectionType, QualityLevel } from '@/types/map';
-import { CONNECTION_TYPE_LABELS } from '@/types/map';
-
+import type { LandmarkType, QualityLevel } from '@/types/landmark';
+import type { ConnectionType } from '@/types/connection';
+import { CONNECTION_TYPE_LABELS } from '@/types/connection';
 // ── ProcessConnectionView ────────────────────────────────────────────────────
 function ProcessConnectionView({ onClose }: { onClose: () => void }) {
   const selectedConnectionId = useMapStore((s) => s.selectedConnectionId);

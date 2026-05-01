@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { useMapStore } from '@/store/mapStore';
 import { cn } from '@/lib/utils';
-import type { Process, StageConnectionDirection } from '@/types/map';
+import type { Process, StageConnectionDirection } from '@/types/process';
 import {
   createProcess,
   editProcess,

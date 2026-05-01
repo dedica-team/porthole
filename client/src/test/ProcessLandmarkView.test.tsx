@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import Sidebar from '../components/Sidebar/Sidebar';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import type { Process, Landmark } from '../types/map';
-
+import type { Process } from '../types/process';
+import type { Landmark } from '../types/landmark';
 // ── Shared fixtures ───────────────────────────────────────────────────────────
 
 const LANDMARK_LM1 = { id: 'lm1', name: 'Iron Keep', ownerId: 'p1', coordinate: { q: 0, r: 0 }, type: 'KEEP' as const };
@@ -19,7 +19,6 @@ const MAP_BASE = {
     c2: { id: 'c2', originId: 'lm2', targetId: 'lm1', path: [], type: 'TELEGRAPH' as const },
   },
   groups: {},
-  metrics: {},
   map: { tiles: [] },
 };
 

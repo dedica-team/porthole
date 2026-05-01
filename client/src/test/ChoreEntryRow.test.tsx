@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ChoreEntryRow from '../components/ChoreListsView/ChoreEntryRow';
 import * as mapApi from '../api/mapApi';
-import type { ChoreEntry, ChoreList, Collaborator } from '../types/map';
-
+import type { ChoreEntry, ChoreList } from '../types/chores';
+import type { Collaborator } from '../types/session';
 vi.mock('../api/mapApi');
 
 const MAP_ID  = 'map-1';

@@ -13,8 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { fetchMetricTemplates } from '@/api/mapApi';
-import type { MetricTemplate } from '@/types/map';
-
+import type { MetricTemplate } from '@/types/landmark';
 interface Props {
   open: boolean;
   onSubmit: (name: string, description: string) => void;

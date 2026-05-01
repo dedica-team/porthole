@@ -3,8 +3,8 @@
  * Each renderer lives in its own file under ./connections/.
  */
 import * as THREE from 'three';
-import type { Connection, HexTile } from '@/types/map.ts';
-
+import type { Connection } from '@/types/connection';
+import type { HexTile } from '@/types/hex';
 import type { ConnectionRenderer }  from './connections/ConnectionRenderer.ts';
 import { PipeRenderer }             from './connections/PipeRenderer.ts';
 import { TelegraphRenderer }        from './connections/TelegraphRenderer.ts';

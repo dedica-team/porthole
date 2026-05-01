@@ -36,7 +36,6 @@ describe('Navbar (HUD replacement)', () => {
         landmarks: {},
         connections: {},
         groups: {},
-        metrics: {},
         map: { tiles: [] },
       },
     });
@@ -57,7 +56,6 @@ describe('Navbar (HUD replacement)', () => {
         landmarks: {},
         connections: {},
         groups: {},
-        metrics: {},
         map: { tiles: [] },
       },
     });

@@ -26,7 +26,7 @@ class EditMetricUseCase(
             description = description?.trim() ?: existing.description,
         )
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendMetrics(mapId, state.metrics)
         return state
     }
 }

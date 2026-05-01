@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LandmarkSearchField from '../components/LandmarkSearchField';
-import type { Landmark } from '../types/map';
-
+import type { Landmark } from '../types/landmark';
 const LANDMARKS: Landmark[] = [
   { id: 'lm-1', name: 'Iron Keep',   ownerId: 'u1', coordinate: { q: 0, r: 0 }, type: 'KEEP' },
   { id: 'lm-2', name: 'Iron Mill',   ownerId: 'u1', coordinate: { q: 1, r: 2 }, type: 'KEEP' },

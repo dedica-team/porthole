@@ -9,7 +9,6 @@ const MAP_BASE = {
   collaborators: [{ id: 'p1', username: 'alice' }],
   landmarks: {},
   connections: {},
-  metrics: {},
   map: { tiles: [] },
 };
 

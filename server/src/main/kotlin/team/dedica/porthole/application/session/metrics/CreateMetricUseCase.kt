@@ -24,7 +24,7 @@ class CreateMetricUseCase(
         val id = UUID.randomUUID().toString()
         state.metrics[id] = QualityMetric(id = id, name = name.trim(), description = description.trim())
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendMetrics(mapId, state.metrics)
         return state
     }
 }

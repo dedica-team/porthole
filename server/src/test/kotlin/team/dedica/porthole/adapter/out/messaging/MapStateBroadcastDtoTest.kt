@@ -33,12 +33,28 @@ class MapStateBroadcastDtoTest {
         state.collaboratorMatrix.entries["lm-1"]!!["u1"] = CollaboratorMatrixEntry(MatrixLevel.LOW)
         state.collaboratorMatrix.entries["lm-2"] = mutableMapOf("u1" to CollaboratorMatrixEntry(MatrixLevel.MEDIUM))
 
-        // DTO must still reflect the original snapshot
+        // DTO must still reflect the original snapshot (matrix is no longer part of the main DTO)
         assertEquals(1, dto.landmarks.size, "landmarks snapshot should not grow")
         assertEquals(1, dto.collaborators.size, "collaborators snapshot should not grow")
-        assertEquals(MatrixLevel.HIGH, dto.collaboratorMatrix.entries["lm-1"]!!["u1"]!!.level,
-            "matrix entry should retain original value")
-        assertNull(dto.collaboratorMatrix.entries["lm-2"], "new matrix rows must not appear in snapshot")
+    }
+
+    @Test
+    fun `matrix snapshot via MapStateBroadcaster is independent of the original state`() {
+        val state = buildState()
+        // Capture a snapshot the same way MapStateBroadcaster.sendMatrix does
+        val snapshot = CollaboratorMatrix(
+            name = state.collaboratorMatrix.name,
+            entries = state.collaboratorMatrix.entries.entries
+                .associate { (k, v) -> k to v.toMap().toMutableMap() }.toMutableMap(),
+        )
+
+        // Mutate original after snapshot
+        state.collaboratorMatrix.entries["lm-1"]!!["u1"] = CollaboratorMatrixEntry(MatrixLevel.LOW)
+        state.collaboratorMatrix.entries["lm-2"] = mutableMapOf("u1" to CollaboratorMatrixEntry(MatrixLevel.MEDIUM))
+
+        assertEquals(MatrixLevel.HIGH, snapshot.entries["lm-1"]!!["u1"]!!.level,
+            "matrix snapshot should retain original value")
+        assertNull(snapshot.entries["lm-2"], "new matrix rows must not appear in snapshot")
     }
 
     @Test

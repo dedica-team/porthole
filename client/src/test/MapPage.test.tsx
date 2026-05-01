@@ -4,8 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import MapPage from '../pages/MapPage/MapPage';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import type { MapState } from '../types/map';
-
+import type { SessionState } from '../types/session';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock('../api/mapApi');
@@ -62,7 +61,7 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
 const COLLABORATOR_ID = 'player-1';
 const MAP_ID = 'game-1';
 
-const makeMap = (overrides: Partial<MapState> = {}): MapState => ({
+const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   id: MAP_ID,
   createdAt: new Date().toISOString(),
   collaborators: [{ id: COLLABORATOR_ID, username: 'test' }],
@@ -72,7 +71,6 @@ const makeMap = (overrides: Partial<MapState> = {}): MapState => ({
   },
   connections: {},
   groups: {},
-  metrics: {},
   map: {
     tiles: [
       { coordinate: { q: 0, r: 0 }, elevation: 3, terrain: 'ROCKS' as const, ownerId: COLLABORATOR_ID },

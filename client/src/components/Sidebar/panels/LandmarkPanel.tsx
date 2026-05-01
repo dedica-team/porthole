@@ -13,14 +13,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import type { LandmarkType, ConnectionType, QualityLevel, MatrixLevel } from '@/types/map';
-import {
-  ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS,
-  ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS,
-  QUALITY_LEVEL_COLOR, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_ORDER, QUALITY_LEVEL_SIGN,
-  worstLevel, isDecorative, defaultValueForLevel,
-  MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE,
-} from '@/types/map';
+import type { LandmarkType, QualityLevel } from '@/types/landmark';
+import type { ConnectionType } from '@/types/connection';
+import type { MatrixLevel } from '@/types/matrix';
+import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_COLOR, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_ORDER, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel } from '@/types/landmark';
+import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
+import { MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
 import { changeLandmarkOwner } from '@/api/mapApi';
 interface Props {
   onStartConnection: (type: ConnectionType, name?: string, description?: string) => void;
@@ -51,6 +49,8 @@ interface Props {
 export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onEditLandmark, onEditConnection, onRemoveConnection, onSetLandmarkMetric, onClearLandmarkMetric, loading }: Props) {
   const selectedLandmark = useMapStore((s) => s.selectedLandmark);
   const currentMap = useMapStore((s) => s.currentMap);
+  const storeMetrics = useMapStore((s) => s.metrics);
+  const collaboratorMatrix = useMapStore((s) => s.collaboratorMatrix);
   const updateMap = useMapStore((s) => s.updateMap);
   const userId = useAuthStore((s) => s.userId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
@@ -89,10 +89,9 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const connections = Object.values(currentMap.connections ?? {}).filter(
     (c) => c.originId === selectedLandmark.id || c.targetId === selectedLandmark.id,
   );
-  const allMetrics = Object.values(currentMap.metrics ?? {});
+  const allMetrics = Object.values(storeMetrics);
   const landmarkMetricEntries = selectedLandmark.metrics ?? {};
   const lmWorstLevel = worstLevel(Object.values(landmarkMetricEntries));
-  const collaboratorMatrix = currentMap.collaboratorMatrix;
   const matrixEntriesForLandmark: { collaborator: (typeof currentMap.collaborators)[0]; level: MatrixLevel }[] =
     collaboratorMatrix
       ? currentMap.collaborators

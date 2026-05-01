@@ -3,8 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProcessPanel from '../components/Sidebar/panels/ProcessPanel';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
-import type { Process } from '../types/map';
-
+import type { Process } from '../types/process';
 const MAP_BASE = {
   id: 'map-1',
   createdAt: '',
@@ -17,7 +16,6 @@ const MAP_BASE = {
     c1: { id: 'c1', originId: 'lm1', targetId: 'lm2', path: [], type: 'PIPE' as const, name: 'Main pipe' },
   },
   groups: {},
-  metrics: {},
   map: { tiles: [] },
 };
 

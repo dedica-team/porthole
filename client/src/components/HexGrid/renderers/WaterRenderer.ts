@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type {HexTile} from '@/types/map.ts';
+import type { HexTile } from '@/types/hex';
 import {RockBatcher, seed, WATER_TILE_COLORS, type TileColors, type TerrainRenderer} from '../terrainUtils';
 
 export class WaterRenderer implements TerrainRenderer {

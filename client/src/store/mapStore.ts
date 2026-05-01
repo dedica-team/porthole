@@ -1,7 +1,12 @@
 import { create } from 'zustand';
-import type { MapState, HexTile, Terrain, Landmark, ConnectionType, Process, ChoreList } from '../types/map';
-
-
+import type { SessionState } from '../types/session';
+import type { HexTile, Terrain } from '../types/hex';
+import type { Landmark } from '../types/landmark';
+import type { ConnectionType } from '../types/connection';
+import type { Process } from '../types/process';
+import type { ChoreList } from '../types/chores';
+import type { CollaboratorMatrix } from '../types/matrix';
+import type { QualityMetric } from '../types/landmark';
 interface AuthState {
   token: string | null;
   userId: string | null;
@@ -52,8 +57,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 export type MainView = 'idle' | 'tile' | 'landmark' | 'editor' | 'groups' | 'metrics' | 'matrix' | 'process' | 'chores';
 
 interface MapStore {
-  maps: MapState[];
-  currentMap: MapState | null;
+  maps: SessionState[];
+  currentMap: SessionState | null;
   /** Optimistic tile overrides keyed by "q,r". Incoming WebSocket broadcasts
    *  are merged with these so that in-flight edits never flicker back. */
   pendingTiles: Map<string, HexTile>;
@@ -77,9 +82,9 @@ interface MapStore {
   processesFetched: boolean;
   processesLoading: boolean;
   processesError: string | null;
-  setMaps: (maps: MapState[]) => void;
-  setCurrentMap: (map: MapState | null) => void;
-  updateMap: (map: MapState) => void;
+  setMaps: (maps: SessionState[]) => void;
+  setCurrentMap: (map: SessionState | null) => void;
+  updateMap: (map: SessionState) => void;
   updateTile: (mapId: string, tile: HexTile) => void;
   /** Remove a tile from the pending set once the server has confirmed it. */
   commitTile: (mapId: string, q: number, r: number) => void;
@@ -104,6 +109,12 @@ interface MapStore {
   setProcessesFetched: (fetched: boolean) => void;
   setProcessesLoading: (loading: boolean) => void;
   setProcessesError: (error: string | null) => void;
+  // ── Quality Metrics ───────────────────────────────────────────────────────
+  metrics: Record<string, QualityMetric>;
+  setMetrics: (metrics: Record<string, QualityMetric>) => void;
+  // ── Collaborator Matrix ───────────────────────────────────────────────────
+  collaboratorMatrix: CollaboratorMatrix | null;
+  setCollaboratorMatrix: (matrix: CollaboratorMatrix) => void;
   // ── Chore Lists ───────────────────────────────────────────────────────────
   choreLists: ChoreList[];
   choreListsFetched: boolean;
@@ -145,6 +156,10 @@ export const useMapStore = create<MapStore>((set) => ({
   choreListsLoading: false,
   choreListsError: null,
   activeChoreListId: null,
+  metrics: {},
+  setMetrics: (metrics) => set({ metrics }),
+  collaboratorMatrix: null,
+  setCollaboratorMatrix: (matrix) => set({ collaboratorMatrix: matrix }),
   setMaps: (maps) => set({ maps }),
   setCurrentMap: (map) => set((state) => ({
     currentMap: map,
@@ -163,6 +178,8 @@ export const useMapStore = create<MapStore>((set) => ({
     choreListsFetched: false,
     choreLists: [],
     activeChoreListId: null,
+    metrics: {},
+    collaboratorMatrix: null,
   })),
   updateMap: (map) =>
     set((state) => {
@@ -179,7 +196,7 @@ export const useMapStore = create<MapStore>((set) => ({
           return pending.get(key) ?? t;
         });
       }
-      const mergedMap: MapState = {
+      const mergedMap: SessionState = {
         ...map,
         map: { ...map.map, tiles: mergedTiles },
       };

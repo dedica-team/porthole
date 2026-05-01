@@ -22,7 +22,7 @@ class ToggleChoreListCompletedUseCase(
             ?: throw NoSuchElementException("Chore list $listId not found")
         list.completed = !list.completed
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendChoreLists(mapId, state.choreLists)
         return list
     }
 }

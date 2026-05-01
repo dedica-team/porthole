@@ -28,7 +28,7 @@ class RemoveMetricUseCase(
                 landmark
         }
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendMetrics(mapId, state.metrics)
         return state
     }
 }

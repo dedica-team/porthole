@@ -16,8 +16,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import type { Landmark, Connection, ConnectionType, MapState } from '@/types/map';
-import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/map';
+import type { Landmark } from '@/types/landmark';
+import type { Connection, ConnectionType } from '@/types/connection';
+import type { SessionState } from '@/types/session';
+import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
 import { createConnection } from '@/api/mapApi';
 
 interface Props {
@@ -26,7 +28,7 @@ interface Props {
   mapId: string;
   landmarks: Landmark[]; // already filtered to positioned only
   existingConnections: Connection[];
-  onCreated: (map: MapState) => void;
+  onCreated: (map: SessionState) => void;
 }
 
 function LandmarkCombobox({

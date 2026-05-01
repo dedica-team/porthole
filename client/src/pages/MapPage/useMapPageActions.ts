@@ -30,8 +30,11 @@ import {
   setMatrixEntry,
   clearMatrixEntry,
 } from '@/api/mapApi';
-import type { MapState, Landmark, LandmarkType, ConnectionType, QualityLevel, MatrixLevel, Terrain } from '@/types/map';
-
+import type { SessionState } from '@/types/session';
+import type { Landmark, LandmarkType, QualityLevel } from '@/types/landmark';
+import type { ConnectionType } from '@/types/connection';
+import type { MatrixLevel } from '@/types/matrix';
+import type { Terrain } from '@/types/hex';
 export function useMapPageActions() {
   const currentMap  = useMapStore((s) => s.currentMap);
   const updateMap   = useMapStore((s) => s.updateMap);
@@ -48,7 +51,7 @@ export function useMapPageActions() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const withAction = useCallback(async (fn: () => Promise<MapState>) => {
+  const withAction = useCallback(async (fn: () => Promise<SessionState>) => {
     setActionLoading(true);
     setError('');
     try {

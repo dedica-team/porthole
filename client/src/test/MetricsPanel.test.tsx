@@ -3,8 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MetricsPanel from '../components/Sidebar/panels/MetricsPanel';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
-import type { MetricTemplate } from '../types/map';
-
+import type { MetricTemplate } from '../types/landmark';
 const TEMPLATES: MetricTemplate[] = [
   { id: 'codebase', name: 'Codebase', description: 'One codebase, many deploys.' },
   { id: 'config',   name: 'Config',   description: 'Store config in the environment.' },
@@ -22,12 +21,12 @@ const MAP_BASE_VIEWER = {
 
 function setup(metrics: Record<string, { id: string; name: string; description: string }> = {}) {
   useAuthStore.setState({ userId: 'p1', username: 'alice', token: 'tok', isAuthenticated: true });
-  useMapStore.setState({ currentMap: { ...MAP_BASE, metrics } });
+  useMapStore.setState({ currentMap: { ...MAP_BASE }, metrics });
 }
 
 function setupAsViewer(metrics: Record<string, { id: string; name: string; description: string }> = {}) {
   useAuthStore.setState({ userId: 'viewer', username: 'viewer', token: 'tok', isAuthenticated: true });
-  useMapStore.setState({ currentMap: { ...MAP_BASE_VIEWER, metrics } });
+  useMapStore.setState({ currentMap: { ...MAP_BASE_VIEWER }, metrics });
 }
 
 describe('MetricsPanel', () => {

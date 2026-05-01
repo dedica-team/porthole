@@ -21,12 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import type { Landmark, LandmarkType } from '@/types/map';
-import {
-  ALL_LANDMARK_TYPES,
-  LANDMARK_TYPE_LABELS,
-  isDecorative,
-} from '@/types/map';
+import type { Landmark, LandmarkType } from '@/types/landmark';
+import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, isDecorative } from '@/types/landmark';
 import { changeLandmarkOwner } from '@/api/mapApi';
 
 interface Props {

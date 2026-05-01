@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import type { Connection, HexTile } from '@/types/map.ts';
+import type { Connection } from '@/types/connection';
+import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 import { tileHeight } from '../terrainUtils';
 

@@ -20,7 +20,7 @@ class RemoveChoreListUseCase(
         require(state.choreLists.containsKey(listId)) { "Chore list $listId not found" }
         state.choreLists.remove(listId)
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendChoreLists(mapId, state.choreLists)
     }
 }
 

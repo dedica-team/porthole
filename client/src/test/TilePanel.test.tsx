@@ -12,12 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import TilePanel from '../components/Sidebar/panels/TilePanel';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import {
-  isDecorative,
-  DECORATIVE_LANDMARK_TYPES,
-  ALL_LANDMARK_TYPES,
-} from '../types/map';
-
+import { isDecorative, DECORATIVE_LANDMARK_TYPES, ALL_LANDMARK_TYPES } from '../types/landmark';
 // ── UUID format ───────────────────────────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -36,7 +31,6 @@ const BASE_MAP = {
   },
   connections: {},
   groups: {},
-  metrics: {},
   map: {
     tiles: [
       { coordinate: { q: 1, r: 0 }, elevation: 2, terrain: 'GRASS' as const, ownerId: null },

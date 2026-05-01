@@ -52,7 +52,7 @@ class UpdateChoreEntryUseCase(
             note != null -> entry.note = note.trim().takeIf { it.isNotBlank() }
         }
         mapStatePort.save(mapState)
-        broadcastPort.send(mapId, mapState)
+        broadcastPort.sendChoreLists(mapId, mapState.choreLists)
         return list
     }
 }

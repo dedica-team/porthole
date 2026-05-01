@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import LandmarkPanel from '../components/Sidebar/panels/LandmarkPanel';
 import { useMapStore, useAuthStore } from '../store/mapStore';
-import type { Landmark, CollaboratorMatrix } from '../types/map';
-
+import type { Landmark } from '../types/landmark';
+import type { CollaboratorMatrix } from '../types/matrix';
 const landmark: Landmark = {
   id: 'tower-abc123',
   name: 'Iron Keep',
@@ -30,7 +30,6 @@ function setup(userId = 'player-1', extraLandmark: Partial<Landmark> = {}) {
       groups: {
         [GROUP_ID]: { id: GROUP_ID, name: 'Alpha Squad', color: '#e74c3c' },
       },
-      metrics: {},
       map: { tiles: [] },
     },
     mainView: 'landmark',
@@ -194,9 +193,9 @@ function setupWithMetric(userId: string, isCollaborator: boolean) {
       landmarks: { 'tower-abc123': { ...landmark } },
       connections: {},
       groups: {},
-      metrics: { 'met-1': METRIC },
       map: { tiles: [] },
     },
+    metrics: { 'met-1': METRIC },
     mainView: 'landmark',
   });
 }
@@ -323,10 +322,9 @@ function setupWithMatrix(matrix?: CollaboratorMatrix) {
       landmarks: { [MATRIX_LANDMARK_ID]: { ...landmark } },
       connections: {},
       groups: {},
-      metrics: {},
       map: { tiles: [] },
-      collaboratorMatrix: matrix,
     },
+    collaboratorMatrix: matrix ?? null,
     mainView: 'landmark',
   });
 }
@@ -420,9 +418,7 @@ describe('LandmarkPanel – collaborator matrix section', () => {
         landmarks: { [MATRIX_LANDMARK_ID]: { ...landmark, type: 'WALL' } },
         connections: {},
         groups: {},
-        metrics: {},
         map: { tiles: [] },
-        collaboratorMatrix: MATRIX,
       },
       mainView: 'landmark',
     });
@@ -451,12 +447,11 @@ describe('LandmarkPanel – collaborator matrix section', () => {
         landmarks: { [MATRIX_LANDMARK_ID]: { ...landmark } },
         connections: {},
         groups: {},
-        metrics: {},
         map: { tiles: [] },
-        collaboratorMatrix: {
-          name: 'Bus Matrix',
-          entries: { [MATRIX_LANDMARK_ID]: { 'player-1': { level: 'MEDIUM' } } },
-        },
+      },
+      collaboratorMatrix: {
+        name: 'Bus Matrix',
+        entries: { [MATRIX_LANDMARK_ID]: { 'player-1': { level: 'MEDIUM' } } },
       },
       mainView: 'landmark',
     });

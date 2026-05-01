@@ -21,7 +21,7 @@ class EditCollaboratorMatrixUseCase(
         require(name.isNotBlank()) { "Matrix name must not be blank" }
         state.collaboratorMatrix = state.collaboratorMatrix.copy(name = name.trim())
         mapStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.sendMatrix(mapId, state.collaboratorMatrix)
         return state
     }
 }

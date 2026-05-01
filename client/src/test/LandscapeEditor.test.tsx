@@ -2,8 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { create } from 'zustand';
 import EditorPanel from '../components/Sidebar/panels/EditorPanel';
-import type { Terrain } from '../types/map';
-
+import type { Terrain } from '../types/hex';
 // Minimal store-mock für EditorPanel
 const useMapStoreMock = create(() => ({
   editorTool: 'RAISE' as const,

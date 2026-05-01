@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MetricTemplateSelector from '../components/MetricsView/MetricTemplateSelector';
 import * as mapApi from '../api/mapApi';
-import type { MetricTemplate } from '../types/map';
-
+import type { MetricTemplate } from '../types/landmark';
 const TEMPLATES: MetricTemplate[] = [
   { id: 'codebase',     name: 'Codebase',     description: 'One codebase, many deploys.' },
   { id: 'config',       name: 'Config',       description: 'Store config in the environment.' },

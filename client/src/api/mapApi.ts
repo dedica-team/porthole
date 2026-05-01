@@ -1,5 +1,10 @@
-import type { AuthResponse, AuthSession, MapState, Terrain, LandmarkType, ConnectionType, QualityLevel, MetricTemplate, CollaborationMode, MatrixLevel, Process, StageConnectionDirection, ChoreList, ChoreEntryState } from '../types/map';
-
+import type { AuthResponse, AuthSession, SessionState, CollaborationMode } from '../types/session';
+import type { Terrain } from '../types/hex';
+import type { LandmarkType, QualityLevel, MetricTemplate } from '../types/landmark';
+import type { ConnectionType } from '../types/connection';
+import type { MatrixLevel } from '../types/matrix';
+import type { Process, StageConnectionDirection } from '../types/process';
+import type { ChoreList, ChoreEntryState } from '../types/chores';
 const BASE_URL = '/api';
 
 function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -196,84 +201,84 @@ export async function webauthnAuthFinish(
 export type MapType = 'LAND' | 'SEA' | 'BLANK';
 export type MapSize = 'SMALL' | 'MEDIUM' | 'LARGE';
 
-export async function createMap(mapType: MapType = 'LAND', mapSize: MapSize = 'MEDIUM', collaborationMode?: CollaborationMode): Promise<MapState> {
+export async function createMap(mapType: MapType = 'LAND', mapSize: MapSize = 'MEDIUM', collaborationMode?: CollaborationMode): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ mapType, mapSize }),
   });
-  let state = await handleResponse<MapState>(res);
+  let state = await handleResponse<SessionState>(res);
   if (collaborationMode && collaborationMode !== 'OPEN') {
     state = await setCollaborationMode(state.id, collaborationMode);
   }
   return state;
 }
 
-export async function listMaps(): Promise<MapState[]> {
+export async function listMaps(): Promise<SessionState[]> {
   const res = await fetch(`${BASE_URL}/maps`, {
     headers: authHeaders(),
   });
-  return handleResponse<MapState[]>(res);
+  return handleResponse<SessionState[]>(res);
 }
 
-export async function getMap(id: string): Promise<MapState> {
+export async function getMap(id: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${id}`, {
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function joinMap(id: string): Promise<MapState> {
+export async function joinMap(id: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${id}/join`, {
     method: 'POST',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function requestJoin(id: string): Promise<MapState> {
+export async function requestJoin(id: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${id}/join-requests`, {
     method: 'POST',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function acceptJoinRequest(mapId: string, requestId: string): Promise<MapState> {
+export async function acceptJoinRequest(mapId: string, requestId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/join-requests/${encodeURIComponent(requestId)}/accept`, {
     method: 'POST',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function declineJoinRequest(mapId: string, requestId: string): Promise<MapState> {
+export async function declineJoinRequest(mapId: string, requestId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/join-requests/${encodeURIComponent(requestId)}/decline`, {
     method: 'POST',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function editMap(
   id: string,
   name?: string,
   description?: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${id}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ name: name ?? null, description: description ?? null }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function setCollaborationMode(id: string, mode: CollaborationMode): Promise<MapState> {  const res = await fetch(`${BASE_URL}/maps/${id}/collaboration-mode`, {
+export async function setCollaborationMode(id: string, mode: CollaborationMode): Promise<SessionState> {  const res = await fetch(`${BASE_URL}/maps/${id}/collaboration-mode`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ mode }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function placeLandmark(
@@ -282,24 +287,24 @@ export async function placeLandmark(
   r: number,
   name: string,
   type: LandmarkType = 'KEEP',
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ q, r, name, type }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function removeLandmark(
   mapId: string,
   landmarkId: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function editLandmark(
@@ -312,7 +317,7 @@ export async function editLandmark(
   clearGroup?: boolean,
   link?: string,
   clearLink?: boolean,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -326,16 +331,16 @@ export async function editLandmark(
       clearLink: clearLink ?? false,
     }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function createGroup(mapId: string, name: string, color: string, description?: string, link?: string): Promise<MapState> {
+export async function createGroup(mapId: string, name: string, color: string, description?: string, link?: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/groups`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ name, color, description: description ?? null, link: link ?? null }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function editGroup(
@@ -347,7 +352,7 @@ export async function editGroup(
   clearDescription?: boolean,
   link?: string,
   clearLink?: boolean,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/groups/${encodeURIComponent(groupId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -360,15 +365,15 @@ export async function editGroup(
       clearLink: clearLink ?? false,
     }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function removeGroup(mapId: string, groupId: string): Promise<MapState> {
+export async function removeGroup(mapId: string, groupId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/groups/${encodeURIComponent(groupId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function createConnection(
@@ -378,13 +383,13 @@ export async function createConnection(
   type: ConnectionType = 'PIPE',
   name?: string,
   description?: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/connections`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ fromTowerId, toTowerId, type, name: name ?? null, description: description ?? null }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function editConnection(
@@ -395,7 +400,7 @@ export async function editConnection(
   description?: string,
   clearName?: boolean,
   clearDescription?: boolean,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/connections/${encodeURIComponent(connectionId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -407,18 +412,18 @@ export async function editConnection(
       clearDescription: clearDescription ?? false,
     }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function removeConnection(
   mapId: string,
   connectionId: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/connections/${encodeURIComponent(connectionId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function editTile(
@@ -427,24 +432,24 @@ export async function editTile(
   r: number,
   elevation?: number,
   terrain?: Terrain,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/tiles/${q}/${r}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ elevation: elevation ?? null, terrain: terrain ?? null }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 // ── Quality Metrics ──────────────────────────────────────────────────────────
 
-export async function createMetric(mapId: string, name: string, description: string): Promise<MapState> {
+export async function createMetric(mapId: string, name: string, description: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/metrics`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ name, description }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function editMetric(
@@ -452,21 +457,21 @@ export async function editMetric(
   metricId: string,
   name?: string,
   description?: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ name: name ?? null, description: description ?? null }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function removeMetric(mapId: string, metricId: string): Promise<MapState> {
+export async function removeMetric(mapId: string, metricId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function setLandmarkMetric(
@@ -477,7 +482,7 @@ export async function setLandmarkMetric(
   level: QualityLevel,
   link?: string,
   badges?: Record<string, string>,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
     {
@@ -486,14 +491,14 @@ export async function setLandmarkMetric(
       body: JSON.stringify({ value: value ?? null, level, link: link ?? null, badges: badges ?? {} }),
     },
   );
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function clearLandmarkMetric(
   mapId: string,
   landmarkId: string,
   metricId: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
     {
@@ -501,7 +506,7 @@ export async function clearLandmarkMetric(
       headers: authHeaders(),
     },
   );
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 // ── Metric Templates ────────────────────────────────────────────────────────
@@ -520,7 +525,7 @@ export async function createUnpositionedLandmark(
   description?: string,
   groupId?: string,
   link?: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/unpositioned`, {
     method: 'POST',
     headers: authHeaders(),
@@ -532,7 +537,7 @@ export async function createUnpositionedLandmark(
       link: link ?? null,
     }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function positionLandmark(
@@ -540,24 +545,24 @@ export async function positionLandmark(
   landmarkId: string,
   q: number,
   r: number,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/position`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ q, r }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 // ── Collaborator Matrix ──────────────────────────────────────────────────────
 
-export async function editCollaboratorMatrix(mapId: string, name: string): Promise<MapState> {
+export async function editCollaboratorMatrix(mapId: string, name: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/collaborator-matrix`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ name }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function setMatrixEntry(
@@ -565,7 +570,7 @@ export async function setMatrixEntry(
   landmarkId: string,
   collaboratorId: string,
   level: MatrixLevel,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/maps/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     {
@@ -574,14 +579,14 @@ export async function setMatrixEntry(
       body: JSON.stringify({ level }),
     },
   );
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 export async function clearMatrixEntry(
   mapId: string,
   landmarkId: string,
   collaboratorId: string,
-): Promise<MapState> {
+): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/maps/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     {
@@ -589,7 +594,7 @@ export async function clearMatrixEntry(
       headers: authHeaders(),
     },
   );
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────
@@ -610,28 +615,28 @@ export async function deleteMap(mapId: string): Promise<void> {
   }
 }
 
-export async function adminJoinMap(mapId: string): Promise<MapState> {
+export async function adminJoinMap(mapId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/admin-join`, {
     method: 'POST',
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function exportMapJson(mapId: string): Promise<MapState> {
+export async function exportMapJson(mapId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/export`, {
     headers: authHeaders(),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
-export async function changeLandmarkOwner(mapId: string, landmarkId: string, ownerId: string | null): Promise<MapState> {
+export async function changeLandmarkOwner(mapId: string, landmarkId: string, ownerId: string | null): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/owner`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ ownerId }),
   });
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 
@@ -765,12 +770,12 @@ export async function removeConnectionFromStage(
   return handleResponse<Process[]>(res);
 }
 
-export async function removeCollaborator(mapId: string, collaboratorId: string): Promise<MapState> {
+export async function removeCollaborator(mapId: string, collaboratorId: string): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/maps/${encodeURIComponent(mapId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     { method: 'DELETE', headers: authHeaders() },
   );
-  return handleResponse<MapState>(res);
+  return handleResponse<SessionState>(res);
 }
 
 // ── Chore Lists ──────────────────────────────────────────────────────────────
