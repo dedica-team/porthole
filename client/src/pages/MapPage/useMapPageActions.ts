@@ -31,13 +31,17 @@ import {
   clearMatrixEntry,
 } from '@/api/mapApi';
 import type { SessionState } from '@/types/session';
-import type { Landmark, LandmarkType, QualityLevel } from '@/types/landmark';
+import type { Landmark, LandmarkType, QualityLevel, QualityMetric } from '@/types/landmark';
 import type { ConnectionType } from '@/types/connection';
-import type { MatrixLevel } from '@/types/matrix';
+import type { MatrixLevel, CollaboratorMatrix } from '@/types/matrix';
+import type { ChoreList } from '@/types/chores';
 import type { Terrain } from '@/types/hex';
 export function useMapPageActions() {
   const currentMap  = useMapStore((s) => s.currentMap);
   const updateMap   = useMapStore((s) => s.updateMap);
+  const setMetrics  = useMapStore((s) => s.setMetrics);
+  const setCollaboratorMatrix = useMapStore((s) => s.setCollaboratorMatrix);
+  const setChoreLists = useMapStore((s) => s.setChoreLists);
   const selectedLandmark   = useMapStore((s) => s.selectedLandmark);
   const setSelectedLandmark = useMapStore((s) => s.setSelectedLandmark);
   const setSelectedTile    = useMapStore((s) => s.setSelectedTile);
@@ -56,13 +60,24 @@ export function useMapPageActions() {
     setError('');
     try {
       const updated = await fn();
+      // The server returns the full MapState which still contains metrics,
+      // collaboratorMatrix and choreLists. Hydrate the dedicated store slices
+      // whenever the response carries them so views stay in sync.
+      const raw = updated as typeof updated & {
+        metrics?: Record<string, QualityMetric>;
+        collaboratorMatrix?: CollaboratorMatrix;
+        choreLists?: Record<string, ChoreList>;
+      };
+      if (raw.metrics)            setMetrics(raw.metrics);
+      if (raw.collaboratorMatrix) setCollaboratorMatrix(raw.collaboratorMatrix);
+      if (raw.choreLists)         setChoreLists(Object.values(raw.choreLists));
       updateMap(updated);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Action failed');
     } finally {
       setActionLoading(false);
     }
-  }, [updateMap]);
+  }, [updateMap, setMetrics, setCollaboratorMatrix, setChoreLists]);
 
   const cancelConnecting = useCallback(() => {
     setConnectingFromLandmark(null);

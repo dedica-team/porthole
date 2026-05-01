@@ -1,13 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
-import {
-  getMap,
-  fetchProcesses,
-} from '@/api/mapApi';
+import { fetchProcesses } from '@/api/mapApi';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import { useMapWebSocket } from '@/hooks/useMapWebSocket';
+import { useSessionWebSocket } from '../../hooks/useSessionWebSocket';
 import AppShell from '@/components/AppShell/AppShell';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import MetricsView from '@/components/MetricsView/MetricsView';
@@ -19,15 +16,14 @@ import { useMapPageActions } from './useMapPageActions';
 
 export default function MapPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   const {
-    currentMap, setCurrentMap,
+    currentMap,
     mainView,
     processMode,
     processes, setProcesses, setProcessesFetched, setProcessesLoading,
   } = useMapStore(useShallow((s) => ({
-    currentMap: s.currentMap, setCurrentMap: s.setCurrentMap,
+    currentMap: s.currentMap,
     mainView: s.mainView,
     processMode: s.processMode,
     processes: s.processes,
@@ -38,23 +34,12 @@ export default function MapPage() {
   const userId = useAuthStore((s) => s.userId);
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
 
-  const [initialLoading, setInitialLoading] = useState(true);
-
   // All shared CRUD handlers + actionLoading/error state
   const actions = useMapPageActions();
   const { cancelConnecting } = actions;
 
-  useMapWebSocket(id);
-
-  // ── Initial map load ───────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!id) return;
-    setInitialLoading(true);
-    getMap(id)
-      .then((map) => setCurrentMap(map))
-      .catch(() => navigate('/lobby'))
-      .finally(() => setInitialLoading(false));
-  }, [id, setCurrentMap, navigate]);
+  // WS hook: connects, subscribes to all topics and seeds all store slices on connect
+  useSessionWebSocket(id);
 
   // ── Viewer: eagerly fetch processes so arrows are visible ─────────────────
   useEffect(() => {
@@ -106,7 +91,7 @@ export default function MapPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [cancelConnecting, setConfirmPending, editorMode, setSelectedLandmark, setSelectedTile, setMainView]);
 
-  if (!currentMap || initialLoading) {
+  if (!currentMap) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-background text-muted-foreground text-sm">
         Loading session…

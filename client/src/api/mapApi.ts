@@ -778,6 +778,24 @@ export async function removeCollaborator(mapId: string, collaboratorId: string):
   return handleResponse<SessionState>(res);
 }
 
+// ── Metrics (initial load) ───────────────────────────────────────────────────
+
+export async function fetchMetrics(mapId: string): Promise<Record<string, import('../types/landmark').QualityMetric>> {
+  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/metrics`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+// ── Collaborator Matrix (initial load) ───────────────────────────────────────
+
+export async function fetchCollaboratorMatrix(mapId: string): Promise<import('../types/matrix').CollaboratorMatrix> {
+  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/collaborator-matrix`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
 // ── Chore Lists ──────────────────────────────────────────────────────────────
 
 export async function fetchChoreLists(mapId: string): Promise<ChoreList[]> {

@@ -844,7 +844,7 @@ describe('MapPage – landmark search field', () => {
     await setMapState({ processMode: true, processesFetched: true });
     await waitFor(() => screen.getByPlaceholderText('Search…'));
     fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'tower one' } });
-    const result = await screen.findByText('Tower One');
+    const result = await screen.findAllByText('Tower One').then((els) => els[0]);
     fireEvent.mouseDown(result);
     await waitFor(() => {
       const state = useMapStore.getState();

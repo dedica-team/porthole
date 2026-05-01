@@ -9,16 +9,25 @@ import team.dedica.porthole.adapter.`in`.web.dto.EditCollaboratorMatrixRequest
 import team.dedica.porthole.adapter.`in`.web.dto.SetMatrixEntryRequest
 import team.dedica.porthole.application.session.metrics.ClearMatrixEntryUseCase
 import team.dedica.porthole.application.session.metrics.EditCollaboratorMatrixUseCase
+import team.dedica.porthole.application.session.metrics.GetCollaboratorMatrixUseCase
 import team.dedica.porthole.application.session.metrics.SetMatrixEntryUseCase
 import team.dedica.porthole.domain.MatrixLevel
 
 @RestController
 @RequestMapping("/api/maps/{id}/collaborator-matrix")
 class CollaboratorMatrixController(
+    private val getCollaboratorMatrixUseCase: GetCollaboratorMatrixUseCase,
     private val editCollaboratorMatrixUseCase: EditCollaboratorMatrixUseCase,
     private val setMatrixEntryUseCase: SetMatrixEntryUseCase,
     private val clearMatrixEntryUseCase: ClearMatrixEntryUseCase,
 ) {
+    @GetMapping
+    fun getMatrix(
+        @PathVariable id: String,
+        @AuthenticationPrincipal user: UserDetails,
+    ): ResponseEntity<Any> =
+        ResponseEntity.ok(getCollaboratorMatrixUseCase.execute(id, user.username))
+
     @PatchMapping
     fun editMatrix(
         @PathVariable id: String,

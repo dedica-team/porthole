@@ -1,4 +1,4 @@
-// Chore todo list types
+// Chore list types
 import type React from 'react';
 
 export type ChoreEntryState = 'NONE' | 'ONGOING' | 'BLOCKED' | 'DONE';

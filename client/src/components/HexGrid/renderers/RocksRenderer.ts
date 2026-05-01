@@ -3,6 +3,7 @@ import type { HexTile } from '@/types/hex';
 import { RockBatcher, DEFAULT_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
 
 export class RocksRenderer implements TerrainRenderer {
+
   private batcher: RockBatcher | null = null;
 
   tileColors(): TileColors { return DEFAULT_TILE_COLORS; }

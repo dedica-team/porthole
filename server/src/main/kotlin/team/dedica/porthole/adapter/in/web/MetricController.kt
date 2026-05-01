@@ -11,6 +11,7 @@ import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
 import team.dedica.porthole.application.session.metrics.ClearLandmarkMetricUseCase
 import team.dedica.porthole.application.session.metrics.CreateMetricUseCase
 import team.dedica.porthole.application.session.metrics.EditMetricUseCase
+import team.dedica.porthole.application.session.metrics.ListMetricsUseCase
 import team.dedica.porthole.application.session.metrics.RemoveMetricUseCase
 import team.dedica.porthole.application.session.metrics.SetLandmarkMetricUseCase
 import team.dedica.porthole.domain.QualityLevel
@@ -18,10 +19,18 @@ import team.dedica.porthole.domain.QualityLevel
 @RestController
 @RequestMapping("/api/maps/{id}/metrics")
 class MetricController(
+    private val listMetricsUseCase: ListMetricsUseCase,
     private val createMetricUseCase: CreateMetricUseCase,
     private val editMetricUseCase: EditMetricUseCase,
     private val removeMetricUseCase: RemoveMetricUseCase,
 ) {
+    @GetMapping
+    fun listMetrics(
+        @PathVariable id: String,
+        @AuthenticationPrincipal user: UserDetails,
+    ): ResponseEntity<*> =
+        ResponseEntity.ok(listMetricsUseCase.execute(id, user.username))
+
     @PostMapping
     fun createMetric(
         @PathVariable id: String,

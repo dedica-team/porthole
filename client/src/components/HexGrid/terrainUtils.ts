@@ -185,18 +185,20 @@ export class RockBatcher {
     const { radius, minCount, countSpread, heightScale } = this.opts;
     const { q, r } = tile.coordinate;
     const { x, z } = hexToWorld(q, r, 1);
-    const top    = tileHeight(tile.elevation);
-    const s      = seed(tile, 53, 29, 91);
-    const count  = minCount + (s % (countSpread + 1));
-    const hSlice = 30 / Math.max(count, 1);
+    const top = tileHeight(tile.elevation);
+
+    let rng = seed(tile, 53, 29, 91);
+    let v: number;
+
+    [rng, v] = lcgNext(rng);
+    const count = minCount + Math.floor(v * (countSpread + 1));
 
     for (let i = 0; i < count; i++) {
-      const angle   = ((s * (i + 1) * 137 + i * 73) % 360) * (Math.PI / 180);
-      const dist    = 0.05 + ((s * (i + 3) * 59 + i * 41) % 55) / 100;
-      const hBucket = i * hSlice;
-      const hOffset = ((s * (i + 7) * 31 + i * 23) % Math.max(1, Math.floor(hSlice)));
-      const h       = (0.15 + (hBucket + hOffset) / 100) * heightScale;
-      const rotY    = ((s * (i + 9) * 73) % 360) * (Math.PI / 180);
+      let angle: number, dist: number, h: number, rotY: number;
+      [rng, angle] = lcgNext(rng); angle *= Math.PI * 2;
+      [rng, dist]  = lcgNext(rng); dist  = 0.05 + dist * 0.55;
+      [rng, h]     = lcgNext(rng); h     = (0.15 + h * 0.30) * heightScale;
+      [rng, rotY]  = lcgNext(rng); rotY  *= Math.PI * 2;
 
       this._dummy.position.set(x + Math.cos(angle) * dist, top + h / 2, z + Math.sin(angle) * dist);
       this._dummy.scale.set(radius, h, radius);
@@ -306,18 +308,3 @@ export class PointsBatcher {
     return pts;
   }
 }
-
-/** Builds and adds rock InstancedMesh + edge LineSegments to the scene.
- *  Returns the two objects so the caller can store and dispose them.
- *  Returns null if all tiles produce zero rocks.
- *  @deprecated Prefer RockBatcher for map-wide batching. */
-export function placeRocks(
-  tiles: HexTile[],
-  scene: THREE.Scene,
-  opts: RockPlacementOptions = {},
-): { columns: THREE.InstancedMesh; edges: THREE.LineSegments } | null {
-  const batcher = new RockBatcher(opts);
-  tiles.forEach((t) => batcher.addTile(t));
-  return batcher.flush(scene);
-}
-
