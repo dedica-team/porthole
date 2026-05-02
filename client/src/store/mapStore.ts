@@ -85,11 +85,11 @@ interface MapStore {
   setMaps: (maps: SessionState[]) => void;
   setCurrentMap: (map: SessionState | null) => void;
   updateMap: (map: SessionState) => void;
-  updateTile: (mapId: UUID, tile: HexTile) => void;
+  updateTile: (mapId: string, tile: HexTile) => void;
   /** Remove a tile from the pending set once the server has confirmed it. */
-  commitTile: (mapId: UUID, q: number, r: number) => void;
+  commitTile: (mapId: string, q: number, r: number) => void;
   /** Revert an optimistic tile update and remove it from the pending set. */
-  revertTile: (mapId: UUID, original: HexTile) => void;
+  revertTile: (mapId: string, original: HexTile) => void;
   setSelectedTile: (tile: { q: number; r: number } | null) => void;
   setSelectedLandmark: (landmark: Landmark | null) => void;
   setSelectedConnectionId: (id: string | null) => void;

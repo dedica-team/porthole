@@ -244,7 +244,7 @@ export async function requestJoin(id: string): Promise<SessionState> {
   return handleResponse<SessionState>(res);
 }
 
-export async function acceptJoinRequest(mapId: UUID, requestId: string): Promise<SessionState> {
+export async function acceptJoinRequest(mapId: string, requestId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/join-requests/${encodeURIComponent(requestId)}/accept`, {
     method: 'POST',
     headers: authHeaders(),
@@ -252,7 +252,7 @@ export async function acceptJoinRequest(mapId: UUID, requestId: string): Promise
   return handleResponse<SessionState>(res);
 }
 
-export async function declineJoinRequest(mapId: UUID, requestId: string): Promise<SessionState> {
+export async function declineJoinRequest(mapId: string, requestId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/join-requests/${encodeURIComponent(requestId)}/decline`, {
     method: 'POST',
     headers: authHeaders(),
@@ -282,7 +282,7 @@ export async function setCollaborationMode(id: string, mode: CollaborationMode):
 }
 
 export async function placeLandmark(
-  mapId: UUID,
+  mapId: string,
   q: number,
   r: number,
   name: string,
@@ -297,7 +297,7 @@ export async function placeLandmark(
 }
 
 export async function removeLandmark(
-  mapId: UUID,
+  mapId: string,
   landmarkId: string,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
@@ -308,7 +308,7 @@ export async function removeLandmark(
 }
 
 export async function editLandmark(
-  mapId: UUID,
+  mapId: string,
   landmarkId: string,
   name?: string,
   type?: LandmarkType,
@@ -334,7 +334,7 @@ export async function editLandmark(
   return handleResponse<SessionState>(res);
 }
 
-export async function createGroup(mapId: UUID, name: string, color: string, description?: string, link?: string): Promise<SessionState> {
+export async function createGroup(mapId: string, name: string, color: string, description?: string, link?: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/groups`, {
     method: 'POST',
     headers: authHeaders(),
@@ -344,7 +344,7 @@ export async function createGroup(mapId: UUID, name: string, color: string, desc
 }
 
 export async function editGroup(
-  mapId: UUID,
+  mapId: string,
   groupId: string,
   name?: string,
   color?: string,
@@ -368,7 +368,7 @@ export async function editGroup(
   return handleResponse<SessionState>(res);
 }
 
-export async function removeGroup(mapId: UUID, groupId: string): Promise<SessionState> {
+export async function removeGroup(mapId: string, groupId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/groups/${encodeURIComponent(groupId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
@@ -377,7 +377,7 @@ export async function removeGroup(mapId: UUID, groupId: string): Promise<Session
 }
 
 export async function createConnection(
-  mapId: UUID,
+  mapId: string,
   fromTowerId: string,
   toTowerId: string,
   type: ConnectionType = 'PIPE',
@@ -393,7 +393,7 @@ export async function createConnection(
 }
 
 export async function editConnection(
-  mapId: UUID,
+  mapId: string,
   connectionId: string,
   type?: ConnectionType,
   name?: string,
@@ -416,7 +416,7 @@ export async function editConnection(
 }
 
 export async function removeConnection(
-  mapId: UUID,
+  mapId: string,
   connectionId: string,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/connections/${encodeURIComponent(connectionId)}`, {
@@ -427,7 +427,7 @@ export async function removeConnection(
 }
 
 export async function editTile(
-  mapId: UUID,
+  mapId: string,
   q: number,
   r: number,
   elevation?: number,
@@ -443,7 +443,7 @@ export async function editTile(
 
 // ── Quality Metrics ──────────────────────────────────────────────────────────
 
-export async function createMetric(mapId: UUID, name: string, description: string): Promise<SessionState> {
+export async function createMetric(mapId: string, name: string, description: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/metrics`, {
     method: 'POST',
     headers: authHeaders(),
@@ -453,7 +453,7 @@ export async function createMetric(mapId: UUID, name: string, description: strin
 }
 
 export async function editMetric(
-  mapId: UUID,
+  mapId: string,
   metricId: string,
   name?: string,
   description?: string,
@@ -466,7 +466,7 @@ export async function editMetric(
   return handleResponse<SessionState>(res);
 }
 
-export async function removeMetric(mapId: UUID, metricId: string): Promise<SessionState> {
+export async function removeMetric(mapId: string, metricId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
@@ -475,7 +475,7 @@ export async function removeMetric(mapId: UUID, metricId: string): Promise<Sessi
 }
 
 export async function setLandmarkMetric(
-  mapId: UUID,
+  mapId: string,
   landmarkId: string,
   metricId: string,
   value: string | undefined,
@@ -495,7 +495,7 @@ export async function setLandmarkMetric(
 }
 
 export async function clearLandmarkMetric(
-  mapId: UUID,
+  mapId: string,
   landmarkId: string,
   metricId: string,
 ): Promise<SessionState> {
@@ -519,7 +519,7 @@ export async function fetchMetricTemplates(): Promise<MetricTemplate[]> {
 }
 
 export async function createUnpositionedLandmark(
-  mapId: UUID,
+  mapId: string,
   name: string,
   type: LandmarkType = 'KEEP',
   description?: string,
@@ -541,7 +541,7 @@ export async function createUnpositionedLandmark(
 }
 
 export async function positionLandmark(
-  mapId: UUID,
+  mapId: string,
   landmarkId: string,
   q: number,
   r: number,
@@ -556,7 +556,7 @@ export async function positionLandmark(
 
 // ── Collaborator Matrix ──────────────────────────────────────────────────────
 
-export async function editCollaboratorMatrix(mapId: UUID, name: string): Promise<SessionState> {
+export async function editCollaboratorMatrix(mapId: string, name: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/collaborator-matrix`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -566,7 +566,7 @@ export async function editCollaboratorMatrix(mapId: UUID, name: string): Promise
 }
 
 export async function setMatrixEntry(
-  mapId: UUID,
+  mapId: string,
   landmarkId: string,
   collaboratorId: string,
   level: MatrixLevel,
@@ -583,7 +583,7 @@ export async function setMatrixEntry(
 }
 
 export async function clearMatrixEntry(
-  mapId: UUID,
+  mapId: string,
   landmarkId: string,
   collaboratorId: string,
 ): Promise<SessionState> {
@@ -630,7 +630,7 @@ export async function exportMapJson(mapId: string): Promise<SessionState> {
   return handleResponse<SessionState>(res);
 }
 
-export async function changeLandmarkOwner(mapId: UUID, landmarkId: string, ownerId: string | null): Promise<SessionState> {
+export async function changeLandmarkOwner(mapId: string, landmarkId: string, ownerId: string | null): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/owner`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -648,7 +648,7 @@ export async function fetchProcesses(mapId: string): Promise<Process[]> {
   return handleResponse<Process[]>(res);
 }
 
-export async function createProcess(mapId: UUID, name: string, description?: string): Promise<Process[]> {
+export async function createProcess(mapId: string, name: string, description?: string): Promise<Process[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes`, {
     method: 'POST',
     headers: authHeaders(),
@@ -657,7 +657,7 @@ export async function createProcess(mapId: UUID, name: string, description?: str
   return handleResponse<Process[]>(res);
 }
 
-export async function editProcess(mapId: UUID, processId: string, name?: string, description?: string): Promise<Process[]> {
+export async function editProcess(mapId: string, processId: string, name?: string, description?: string): Promise<Process[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -666,7 +666,7 @@ export async function editProcess(mapId: UUID, processId: string, name?: string,
   return handleResponse<Process[]>(res);
 }
 
-export async function removeProcess(mapId: UUID, processId: string): Promise<Process[]> {
+export async function removeProcess(mapId: string, processId: string): Promise<Process[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
@@ -674,7 +674,7 @@ export async function removeProcess(mapId: UUID, processId: string): Promise<Pro
   return handleResponse<Process[]>(res);
 }
 
-export async function createProcessStage(mapId: UUID, processId: string, name: string | undefined, order: number): Promise<Process[]> {
+export async function createProcessStage(mapId: string, processId: string, name: string | undefined, order: number): Promise<Process[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages`, {
     method: 'POST',
     headers: authHeaders(),
@@ -683,7 +683,7 @@ export async function createProcessStage(mapId: UUID, processId: string, name: s
   return handleResponse<Process[]>(res);
 }
 
-export async function removeProcessStage(mapId: UUID, processId: string, stageId: string): Promise<Process[]> {
+export async function removeProcessStage(mapId: string, processId: string, stageId: string): Promise<Process[]> {
   const res = await fetch(
     `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}`,
     { method: 'DELETE', headers: authHeaders() },
@@ -691,7 +691,7 @@ export async function removeProcessStage(mapId: UUID, processId: string, stageId
   return handleResponse<Process[]>(res);
 }
 
-export async function reorderProcessStages(mapId: UUID, processId: string, stageIds: string[]): Promise<Process[]> {
+export async function reorderProcessStages(mapId: string, processId: string, stageIds: string[]): Promise<Process[]> {
   const res = await fetch(
     `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/reorder`,
     {
@@ -704,7 +704,7 @@ export async function reorderProcessStages(mapId: UUID, processId: string, stage
 }
 
 export async function editProcessStage(
-  mapId: UUID,
+  mapId: string,
   processId: string,
   stageId: string,
   patch: { name?: string; clearName?: boolean; order?: number },
@@ -721,7 +721,7 @@ export async function editProcessStage(
 }
 
 export async function addConnectionToStage(
-  mapId: UUID,
+  mapId: string,
   processId: string,
   stageId: string,
   connectionId: string,
@@ -740,7 +740,7 @@ export async function addConnectionToStage(
 }
 
 export async function editStageConnection(
-  mapId: UUID,
+  mapId: string,
   processId: string,
   stageId: string,
   stageConnId: string,
@@ -758,7 +758,7 @@ export async function editStageConnection(
 }
 
 export async function removeConnectionFromStage(
-  mapId: UUID,
+  mapId: string,
   processId: string,
   stageId: string,
   stageConnId: string,
@@ -770,7 +770,7 @@ export async function removeConnectionFromStage(
   return handleResponse<Process[]>(res);
 }
 
-export async function removeCollaborator(mapId: UUID, collaboratorId: string): Promise<SessionState> {
+export async function removeCollaborator(mapId: string, collaboratorId: string): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     { method: 'DELETE', headers: authHeaders() },
@@ -805,7 +805,7 @@ export async function fetchChoreLists(mapId: string): Promise<ChoreList[]> {
   return handleResponse<ChoreList[]>(res);
 }
 
-export async function createChoreList(mapId: UUID, title: string, landmarkIds: string[], link?: string): Promise<ChoreList[]> {
+export async function createChoreList(mapId: string, title: string, landmarkIds: string[], link?: string): Promise<ChoreList[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists`, {
     method: 'POST',
     headers: authHeaders(),
@@ -814,7 +814,7 @@ export async function createChoreList(mapId: UUID, title: string, landmarkIds: s
   return handleResponse<ChoreList[]>(res);
 }
 
-export async function editChoreList(mapId: UUID, listId: string, title?: string, landmarkIds?: string[], link?: string): Promise<ChoreList[]> {
+export async function editChoreList(mapId: string, listId: string, title?: string, landmarkIds?: string[], link?: string): Promise<ChoreList[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -823,7 +823,7 @@ export async function editChoreList(mapId: UUID, listId: string, title?: string,
   return handleResponse<ChoreList[]>(res);
 }
 
-export async function toggleChoreListCompleted(mapId: UUID, listId: string): Promise<ChoreList> {
+export async function toggleChoreListCompleted(mapId: string, listId: string): Promise<ChoreList> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/complete`, {
     method: 'PATCH',
     headers: authHeaders(),
@@ -831,7 +831,7 @@ export async function toggleChoreListCompleted(mapId: UUID, listId: string): Pro
   return handleResponse<ChoreList>(res);
 }
 
-export async function deleteChoreList(mapId: UUID, listId: string): Promise<void> {
+export async function deleteChoreList(mapId: string, listId: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
@@ -843,7 +843,7 @@ export async function deleteChoreList(mapId: UUID, listId: string): Promise<void
 }
 
 export async function updateChoreEntry(
-  mapId: UUID,
+  mapId: string,
   listId: string,
   landmarkId: string,
   patch: { state?: ChoreEntryState; assigneeId?: string | null; clearAssignee?: boolean; link?: string | null; clearLink?: boolean; note?: string | null; clearNote?: boolean },

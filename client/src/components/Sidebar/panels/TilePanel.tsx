@@ -36,7 +36,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
   );
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Regenerate UUID each time WALL is (re-)selected, and reset the editable id field
+  // Regenerate string each time WALL is (re-)selected, and reset the editable id field
   useEffect(() => {
     if (selectedType === 'WALL') {
       setWallId(crypto.randomUUID());
@@ -71,7 +71,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
   const slug = toSlug(name);
   const slugTaken = !isDecorativeLandmark && slug.length > 0 && Object.keys(currentMap.landmarks ?? {}).includes(slug);
   const wallIdTaken = isDecorativeLandmark && Object.keys(currentMap.landmarks ?? {}).includes(wallId.trim());
-  // For decorative types, name is optional (falls back to the UUID); submit is blocked only by id collision or loading
+  // For decorative types, name is optional (falls back to the string); submit is blocked only by id collision or loading
   const canSubmit = (isDecorativeLandmark || name.trim().length > 0) && !slugTaken && !wallIdTaken && !loading;
 
   const handlePlaceClick = () => {
@@ -85,7 +85,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
     if (!canSubmit) return;
     setShowNameForm(false);
     setConfirmPending(false);
-    // For decorative types use the UUID as name fallback when the name field was left empty
+    // For decorative types use the string as name fallback when the name field was left empty
     const effectiveName = isDecorativeLandmark && name.trim().length === 0 ? wallId : name.trim();
     setName('');
     onPlaceLandmark(selectedTile.q, selectedTile.r, effectiveName, selectedType);
@@ -211,7 +211,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
               {isDecorativeLandmark ? (
                 <div className="flex flex-col gap-0.5">
                   <Input
-                    placeholder="ID (UUID)"
+                    placeholder="ID (string)"
                     value={wallId}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setWallId(e.target.value as `${string}-${string}-${string}-${string}-${string}`)

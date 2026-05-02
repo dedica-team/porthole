@@ -1,9 +1,9 @@
 /**
  * Tests for TilePanel – decorative landmark behaviour:
  *  - isDecorative() / DECORATIVE_LANDMARK_TYPES contract (map.ts)
- *  - UUID is shown as ID preview when a decorative type (WALL) is selected
- *  - UUID is a valid v4 UUID
- *  - UUID regenerates when WALL is (re-)selected
+ *  - string is shown as ID preview when a decorative type (WALL) is selected
+ *  - string is a valid v4 string
+ *  - string regenerates when WALL is (re-)selected
  *  - canSubmit does not require a name for decorative types
  *  - Slug-taken check is skipped for decorative types
  *  - Non-decorative types still require a name and show slug previews
@@ -13,7 +13,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import TilePanel from '../components/Sidebar/panels/TilePanel';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import { isDecorative, DECORATIVE_LANDMARK_TYPES, ALL_LANDMARK_TYPES } from '../types/landmark';
-// ── UUID format ───────────────────────────────────────────────────────────────
+// ── string format ───────────────────────────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // ── store fixtures ────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ describe('isDecorative() and DECORATIVE_LANDMARK_TYPES (map.ts)', () => {
 describe('TilePanel – slug id preview for non-decorative types', () => {
   beforeEach(() => { vi.clearAllMocks(); setup(); });
 
-  it('shows slug id preview (not UUID) when non-decorative type is selected', () => {
+  it('shows slug id preview (not string) when non-decorative type is selected', () => {
     openForm();
     fireEvent.change(screen.getByPlaceholderText(/iron keep/i), { target: { value: 'Iron Gate' } });
     selectType('KEEP');
@@ -151,7 +151,7 @@ describe('TilePanel – submit validation for decorative vs non-decorative types
     expect(onPlace).toHaveBeenCalledWith(1, 0, 'East Wall', 'WALL');
   });
 
-  it('calls onPlaceLandmark with UUID as name when no name is entered for decorative type (WALL)', () => {
+  it('calls onPlaceLandmark with string as name when no name is entered for decorative type (WALL)', () => {
     const onPlace = vi.fn();
     render(<TilePanel onPlaceLandmark={onPlace} onPositionLandmark={vi.fn()} loading={false} />);
     fireEvent.click(screen.getByRole('button', { name: /create landmark/i }));
@@ -165,23 +165,23 @@ describe('TilePanel – submit validation for decorative vs non-decorative types
   });
 });
 
-// ── UUID id input (decorative types) ─────────────────────────────────────────
+// ── string id input (decorative types) ─────────────────────────────────────────
 
-describe('TilePanel – UUID id input for decorative types', () => {
+describe('TilePanel – string id input for decorative types', () => {
   beforeEach(() => { vi.clearAllMocks(); setup(); });
 
-  it('shows an editable UUID id input when WALL (decorative) is selected', () => {
+  it('shows an editable string id input when WALL (decorative) is selected', () => {
     openForm();
     selectType('WALL');
-    const idInput = screen.getByPlaceholderText(/ID \(UUID\)/i) as HTMLInputElement;
+    const idInput = screen.getByPlaceholderText(/ID \(string\)/i) as HTMLInputElement;
     expect(idInput).toBeDefined();
     expect(idInput.value).toMatch(UUID_RE);
   });
 
-  it('does not show the UUID id input for non-decorative types', () => {
+  it('does not show the string id input for non-decorative types', () => {
     openForm();
     selectType('KEEP');
-    expect(screen.queryByPlaceholderText(/ID \(UUID\)/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/ID \(string\)/i)).not.toBeInTheDocument();
   });
 
   it('name input shows "(optional)" placeholder for decorative type', () => {
@@ -197,19 +197,19 @@ describe('TilePanel – UUID id input for decorative types', () => {
   });
 });
 
-// ── UUID regeneration ─────────────────────────────────────────────────────────
+// ── string regeneration ─────────────────────────────────────────────────────────
 
-describe('TilePanel – UUID regenerates when decorative type is re-selected', () => {
+describe('TilePanel – string regenerates when decorative type is re-selected', () => {
   beforeEach(() => { vi.clearAllMocks(); setup(); });
 
-  it('UUID changes when switching away from WALL and back', () => {
+  it('string changes when switching away from WALL and back', () => {
     openForm();
     selectType('WALL');
-    const first = (screen.getByPlaceholderText(/ID \(UUID\)/i) as HTMLInputElement).value;
+    const first = (screen.getByPlaceholderText(/ID \(string\)/i) as HTMLInputElement).value;
 
     selectType('KEEP');
     selectType('WALL');
-    const second = (screen.getByPlaceholderText(/ID \(UUID\)/i) as HTMLInputElement).value;
+    const second = (screen.getByPlaceholderText(/ID \(string\)/i) as HTMLInputElement).value;
 
     expect(first).toMatch(UUID_RE);
     expect(second).toMatch(UUID_RE);
