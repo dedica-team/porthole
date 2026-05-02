@@ -1,0 +1,71 @@
+package team.dedica.porthole.application
+
+import java.util.UUID
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import team.dedica.porthole.adapter.out.repository.UserRecord
+import team.dedica.porthole.application.lobby.JoinMapUseCase
+import team.dedica.porthole.domain.CollaborationMode
+import team.dedica.porthole.domain.HexMap
+import team.dedica.porthole.domain.SessionState
+
+class JoinMapUseCaseTest {
+
+    private val userId = UUID.nameUUIDFromBytes("u1".toByteArray())
+    private lateinit var mapStatePort: InMemorySessionStatePort
+    private lateinit var userPort: InMemoryTestUserRepository
+    private lateinit var useCase: JoinMapUseCase
+    private lateinit var state: SessionState
+
+    @BeforeEach
+    fun setup() {
+        mapStatePort = InMemorySessionStatePort()
+        userPort = InMemoryTestUserRepository()
+        userPort.save(UserRecord(id = userId, username = "alice", githubId = "gh-1"))
+        state = SessionState(map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }),
+            collaborationMode = CollaborationMode.OPEN)
+        mapStatePort.save(state)
+        useCase = JoinMapUseCase(mapStatePort, userPort, NoOpBroadcastPort())
+    }
+
+    @Test
+    fun `joining an open map adds user as collaborator`() {
+        val result = useCase.execute(state.id, userId)
+        assertTrue(result.collaborators.any { it.id == userId })
+    }
+
+    @Test
+    fun `joining a second time throws IllegalArgumentException`() {
+        useCase.execute(state.id, userId)
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.execute(state.id, userId)
+        }
+    }
+
+    @Test
+    fun `joining a non-open map throws IllegalStateException`() {
+        val requestState = SessionState(
+            map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 }),
+            collaborationMode = CollaborationMode.REQUEST
+        )
+        mapStatePort.save(requestState)
+        assertThrows(IllegalStateException::class.java) {
+            useCase.execute(requestState.id, userId)
+        }
+    }
+
+    @Test
+    fun `unknown map throws NoSuchElementException`() {
+        assertThrows(NoSuchElementException::class.java) {
+            useCase.execute(UUID.randomUUID(), userId)
+        }
+    }
+
+    @Test
+    fun `unknown user throws NoSuchElementException`() {
+        assertThrows(NoSuchElementException::class.java) {
+            useCase.execute(state.id, UUID.randomUUID())
+        }
+    }
+}
