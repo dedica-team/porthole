@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import team.dedica.porthole.adapter.`in`.web.security.*
 import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.application.port.GetMetricTemplatesUseCase
+import team.dedica.porthole.application.port.GetMetricTemplatesPort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthProperties
 import team.dedica.porthole.domain.MetricTemplate
@@ -39,7 +39,7 @@ class MetricTemplateControllerTest {
     @Autowired lateinit var jwtTokenProvider: JwtTokenProvider
 
     @MockitoBean
-    lateinit var getMetricTemplatesUseCase: GetMetricTemplatesUseCase
+    lateinit var getMetricTemplatesPort: GetMetricTemplatesPort
 
     @MockitoBean
     lateinit var userPort: UserPort
@@ -84,7 +84,7 @@ class MetricTemplateControllerTest {
 
     @Test
     fun `GET metric-templates returns 200 with correct content type`() {
-        given(getMetricTemplatesUseCase.getTemplates()).willReturn(allTemplates)
+        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
 
         mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
             .andExpect(status().isOk)
@@ -93,7 +93,7 @@ class MetricTemplateControllerTest {
 
     @Test
     fun `GET metric-templates returns all 27 templates`() {
-        given(getMetricTemplatesUseCase.getTemplates()).willReturn(allTemplates)
+        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
 
         mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
             .andExpect(status().isOk)
@@ -102,7 +102,7 @@ class MetricTemplateControllerTest {
 
     @Test
     fun `GET metric-templates each entry has id name and description`() {
-        given(getMetricTemplatesUseCase.getTemplates()).willReturn(allTemplates)
+        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
 
         mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
             .andExpect(status().isOk)
@@ -113,7 +113,7 @@ class MetricTemplateControllerTest {
 
     @Test
     fun `GET metric-templates contains all 12-factor ids`() {
-        given(getMetricTemplatesUseCase.getTemplates()).willReturn(allTemplates)
+        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
 
         val result = mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
             .andExpect(status().isOk)
@@ -129,7 +129,7 @@ class MetricTemplateControllerTest {
 
     @Test
     fun `GET metric-templates contains all NFR ids`() {
-        given(getMetricTemplatesUseCase.getTemplates()).willReturn(allTemplates)
+        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
 
         val result = mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
             .andExpect(status().isOk)
@@ -146,7 +146,7 @@ class MetricTemplateControllerTest {
 
     @Test
     fun `GET metric-templates does not set a custom max-age cache header`() {
-        given(getMetricTemplatesUseCase.getTemplates()).willReturn(allTemplates)
+        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
 
         // Spring Security always adds Cache-Control: no-cache, no-store.
         // We verify our controller does NOT override this with a permissive max-age.

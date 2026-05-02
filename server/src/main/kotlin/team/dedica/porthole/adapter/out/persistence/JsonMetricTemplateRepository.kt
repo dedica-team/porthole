@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Component
-import team.dedica.porthole.application.port.GetMetricTemplatesUseCase
+import team.dedica.porthole.application.port.GetMetricTemplatesPort
 import team.dedica.porthole.domain.MetricTemplate
 
 /**
@@ -18,7 +18,7 @@ import team.dedica.porthole.domain.MetricTemplate
 @Component
 class JsonMetricTemplateRepository(
     private val objectMapper: ObjectMapper,
-) : GetMetricTemplatesUseCase {
+) : GetMetricTemplatesPort {
 
     override fun getTemplates(): List<MetricTemplate> =
         objectMapper.readValue(ClassPathResource("metricTemplates.json").inputStream)

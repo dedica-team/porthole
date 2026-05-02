@@ -5,7 +5,7 @@ import team.dedica.porthole.domain.MetricTemplate
 /**
  * Input port for retrieving the list of pre-defined metric templates.
  */
-interface GetMetricTemplatesUseCase {
+interface GetMetricTemplatesPort {
     fun getTemplates(): List<MetricTemplate>
 }
 
