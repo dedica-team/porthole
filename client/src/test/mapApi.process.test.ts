@@ -51,7 +51,7 @@ describe('fetchProcesses', () => {
     mockFetch(mockProcesses);
     await fetchProcesses(MAP_ID);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes`);
     expect(init.method).toBeUndefined(); // defaults to GET
   });
 
@@ -75,7 +75,7 @@ describe('createProcess', () => {
     mockFetch(mockProcesses);
     await createProcess(MAP_ID, 'New Flow', 'desc');
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes`);
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as { name: string; description: string };
     expect(body.name).toBe('New Flow');
@@ -98,7 +98,7 @@ describe('editProcess', () => {
     mockFetch(mockProcesses);
     await editProcess(MAP_ID, PROC_ID, 'Renamed');
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes/${PROC_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}`);
     expect(init.method).toBe('PATCH');
   });
 });
@@ -110,7 +110,7 @@ describe('removeProcess', () => {
     mockFetch(mockProcesses);
     await removeProcess(MAP_ID, PROC_ID);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes/${PROC_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}`);
     expect(init.method).toBe('DELETE');
   });
 });
@@ -122,7 +122,7 @@ describe('createProcessStage', () => {
     mockFetch(mockProcesses);
     await createProcessStage(MAP_ID, PROC_ID, 'Stage A', 0);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes/${PROC_ID}/stages`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}/stages`);
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as { name: string; order: number };
     expect(body.name).toBe('Stage A');
@@ -145,7 +145,7 @@ describe('removeProcessStage', () => {
     mockFetch(mockProcesses);
     await removeProcessStage(MAP_ID, PROC_ID, STAGE_ID);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}`);
     expect(init.method).toBe('DELETE');
   });
 });
@@ -157,7 +157,7 @@ describe('addConnectionToStage', () => {
     mockFetch(mockProcesses);
     await addConnectionToStage(MAP_ID, PROC_ID, STAGE_ID, CONN_ID, 'Send report', 'REVERSE');
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}/connections`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}/connections`);
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as { connectionId: string; title: string; direction: string };
     expect(body.connectionId).toBe(CONN_ID);
@@ -182,7 +182,7 @@ describe('editStageConnection', () => {
     mockFetch(mockProcesses);
     await editStageConnection(MAP_ID, PROC_ID, STAGE_ID, SC_ID, { direction: 'BIDIRECTIONAL' });
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}/connections/${SC_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}/connections/${SC_ID}`);
     expect(init.method).toBe('PATCH');
     const body = JSON.parse(init.body as string) as { direction: string };
     expect(body.direction).toBe('BIDIRECTIONAL');
@@ -196,7 +196,7 @@ describe('removeConnectionFromStage', () => {
     mockFetch(mockProcesses);
     await removeConnectionFromStage(MAP_ID, PROC_ID, STAGE_ID, SC_ID);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}/connections/${SC_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}/stages/${STAGE_ID}/connections/${SC_ID}`);
     expect(init.method).toBe('DELETE');
   });
 });

@@ -222,14 +222,14 @@ export async function listMaps(): Promise<SessionState[]> {
 }
 
 export async function getMap(id: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${id}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${id}`, {
     headers: authHeaders(),
   });
   return handleResponse<SessionState>(res);
 }
 
 export async function joinMap(id: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${id}/join`, {
+  const res = await fetch(`${BASE_URL}/sessions/${id}/join`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -237,7 +237,7 @@ export async function joinMap(id: string): Promise<SessionState> {
 }
 
 export async function requestJoin(id: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${id}/join-requests`, {
+  const res = await fetch(`${BASE_URL}/sessions/${id}/join-requests`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -245,7 +245,7 @@ export async function requestJoin(id: string): Promise<SessionState> {
 }
 
 export async function acceptJoinRequest(mapId: UUID, requestId: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/join-requests/${encodeURIComponent(requestId)}/accept`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/join-requests/${encodeURIComponent(requestId)}/accept`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -253,7 +253,7 @@ export async function acceptJoinRequest(mapId: UUID, requestId: string): Promise
 }
 
 export async function declineJoinRequest(mapId: UUID, requestId: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/join-requests/${encodeURIComponent(requestId)}/decline`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/join-requests/${encodeURIComponent(requestId)}/decline`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -265,7 +265,7 @@ export async function editMap(
   name?: string,
   description?: string,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${id}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${id}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ name: name ?? null, description: description ?? null }),
@@ -273,7 +273,7 @@ export async function editMap(
   return handleResponse<SessionState>(res);
 }
 
-export async function setCollaborationMode(id: string, mode: CollaborationMode): Promise<SessionState> {  const res = await fetch(`${BASE_URL}/maps/${id}/collaboration-mode`, {
+export async function setCollaborationMode(id: string, mode: CollaborationMode): Promise<SessionState> {  const res = await fetch(`${BASE_URL}/sessions/${id}/collaboration-mode`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ mode }),
@@ -288,7 +288,7 @@ export async function placeLandmark(
   name: string,
   type: LandmarkType = 'KEEP',
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ q, r, name, type }),
@@ -300,7 +300,7 @@ export async function removeLandmark(
   mapId: UUID,
   landmarkId: string,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -318,7 +318,7 @@ export async function editLandmark(
   link?: string,
   clearLink?: boolean,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({
@@ -335,7 +335,7 @@ export async function editLandmark(
 }
 
 export async function createGroup(mapId: UUID, name: string, color: string, description?: string, link?: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/groups`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/groups`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ name, color, description: description ?? null, link: link ?? null }),
@@ -353,7 +353,7 @@ export async function editGroup(
   link?: string,
   clearLink?: boolean,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/groups/${encodeURIComponent(groupId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/groups/${encodeURIComponent(groupId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({
@@ -369,7 +369,7 @@ export async function editGroup(
 }
 
 export async function removeGroup(mapId: UUID, groupId: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/groups/${encodeURIComponent(groupId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/groups/${encodeURIComponent(groupId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -384,7 +384,7 @@ export async function createConnection(
   name?: string,
   description?: string,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/connections`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/connections`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ fromTowerId, toTowerId, type, name: name ?? null, description: description ?? null }),
@@ -401,7 +401,7 @@ export async function editConnection(
   clearName?: boolean,
   clearDescription?: boolean,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/connections/${encodeURIComponent(connectionId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/connections/${encodeURIComponent(connectionId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({
@@ -419,7 +419,7 @@ export async function removeConnection(
   mapId: UUID,
   connectionId: string,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/connections/${encodeURIComponent(connectionId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/connections/${encodeURIComponent(connectionId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -433,7 +433,7 @@ export async function editTile(
   elevation?: number,
   terrain?: Terrain,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/tiles/${q}/${r}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/tiles/${q}/${r}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ elevation: elevation ?? null, terrain: terrain ?? null }),
@@ -444,7 +444,7 @@ export async function editTile(
 // ── Quality Metrics ──────────────────────────────────────────────────────────
 
 export async function createMetric(mapId: UUID, name: string, description: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/metrics`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/metrics`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ name, description }),
@@ -458,7 +458,7 @@ export async function editMetric(
   name?: string,
   description?: string,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ name: name ?? null, description: description ?? null }),
@@ -467,7 +467,7 @@ export async function editMetric(
 }
 
 export async function removeMetric(mapId: UUID, metricId: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -484,7 +484,7 @@ export async function setLandmarkMetric(
   badges?: Record<string, string>,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
+    `${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
     {
       method: 'PUT',
       headers: authHeaders(),
@@ -500,7 +500,7 @@ export async function clearLandmarkMetric(
   metricId: string,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
+    `${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
     {
       method: 'DELETE',
       headers: authHeaders(),
@@ -526,7 +526,7 @@ export async function createUnpositionedLandmark(
   groupId?: string,
   link?: string,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/unpositioned`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/unpositioned`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
@@ -546,7 +546,7 @@ export async function positionLandmark(
   q: number,
   r: number,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/position`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/position`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ q, r }),
@@ -557,7 +557,7 @@ export async function positionLandmark(
 // ── Collaborator Matrix ──────────────────────────────────────────────────────
 
 export async function editCollaboratorMatrix(mapId: UUID, name: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/collaborator-matrix`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/collaborator-matrix`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ name }),
@@ -572,7 +572,7 @@ export async function setMatrixEntry(
   level: MatrixLevel,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/maps/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
+    `${BASE_URL}/sessions/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     {
       method: 'PUT',
       headers: authHeaders(),
@@ -588,7 +588,7 @@ export async function clearMatrixEntry(
   collaboratorId: string,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/maps/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
+    `${BASE_URL}/sessions/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     {
       method: 'DELETE',
       headers: authHeaders(),
@@ -600,7 +600,7 @@ export async function clearMatrixEntry(
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 export async function deleteMap(mapId: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -616,7 +616,7 @@ export async function deleteMap(mapId: string): Promise<void> {
 }
 
 export async function adminJoinMap(mapId: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/admin-join`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/admin-join`, {
     method: 'POST',
     headers: authHeaders(),
   });
@@ -624,14 +624,14 @@ export async function adminJoinMap(mapId: string): Promise<SessionState> {
 }
 
 export async function exportMapJson(mapId: string): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/export`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/export`, {
     headers: authHeaders(),
   });
   return handleResponse<SessionState>(res);
 }
 
 export async function changeLandmarkOwner(mapId: UUID, landmarkId: string, ownerId: string | null): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/owner`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/owner`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ ownerId }),
@@ -642,14 +642,14 @@ export async function changeLandmarkOwner(mapId: UUID, landmarkId: string, owner
 
 
 export async function fetchProcesses(mapId: string): Promise<Process[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes`, {
     headers: authHeaders(),
   });
   return handleResponse<Process[]>(res);
 }
 
 export async function createProcess(mapId: UUID, name: string, description?: string): Promise<Process[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ name, description: description ?? null }),
@@ -658,7 +658,7 @@ export async function createProcess(mapId: UUID, name: string, description?: str
 }
 
 export async function editProcess(mapId: UUID, processId: string, name?: string, description?: string): Promise<Process[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ name: name ?? null, description: description ?? null }),
@@ -667,7 +667,7 @@ export async function editProcess(mapId: UUID, processId: string, name?: string,
 }
 
 export async function removeProcess(mapId: UUID, processId: string): Promise<Process[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -675,7 +675,7 @@ export async function removeProcess(mapId: UUID, processId: string): Promise<Pro
 }
 
 export async function createProcessStage(mapId: UUID, processId: string, name: string | undefined, order: number): Promise<Process[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ name: name ?? null, order }),
@@ -685,7 +685,7 @@ export async function createProcessStage(mapId: UUID, processId: string, name: s
 
 export async function removeProcessStage(mapId: UUID, processId: string, stageId: string): Promise<Process[]> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}`,
     { method: 'DELETE', headers: authHeaders() },
   );
   return handleResponse<Process[]>(res);
@@ -693,7 +693,7 @@ export async function removeProcessStage(mapId: UUID, processId: string, stageId
 
 export async function reorderProcessStages(mapId: UUID, processId: string, stageIds: string[]): Promise<Process[]> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/reorder`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/reorder`,
     {
       method: 'POST',
       headers: authHeaders(),
@@ -710,7 +710,7 @@ export async function editProcessStage(
   patch: { name?: string; clearName?: boolean; order?: number },
 ): Promise<Process[]> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}`,
     {
       method: 'PATCH',
       headers: authHeaders(),
@@ -729,7 +729,7 @@ export async function addConnectionToStage(
   direction: StageConnectionDirection = 'FORWARD',
 ): Promise<Process[]> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}/connections`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}/connections`,
     {
       method: 'POST',
       headers: authHeaders(),
@@ -747,7 +747,7 @@ export async function editStageConnection(
   patch: { title?: string; clearTitle?: boolean; direction?: StageConnectionDirection },
 ): Promise<Process[]> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}/connections/${encodeURIComponent(stageConnId)}`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}/connections/${encodeURIComponent(stageConnId)}`,
     {
       method: 'PATCH',
       headers: authHeaders(),
@@ -764,7 +764,7 @@ export async function removeConnectionFromStage(
   stageConnId: string,
 ): Promise<Process[]> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}/connections/${encodeURIComponent(stageConnId)}`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}/stages/${encodeURIComponent(stageId)}/connections/${encodeURIComponent(stageConnId)}`,
     { method: 'DELETE', headers: authHeaders() },
   );
   return handleResponse<Process[]>(res);
@@ -772,7 +772,7 @@ export async function removeConnectionFromStage(
 
 export async function removeCollaborator(mapId: UUID, collaboratorId: string): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     { method: 'DELETE', headers: authHeaders() },
   );
   return handleResponse<SessionState>(res);
@@ -781,7 +781,7 @@ export async function removeCollaborator(mapId: UUID, collaboratorId: string): P
 // ── Metrics (initial load) ───────────────────────────────────────────────────
 
 export async function fetchMetrics(mapId: string): Promise<Record<string, import('../types/landmark').QualityMetric>> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/metrics`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/metrics`, {
     headers: authHeaders(),
   });
   return handleResponse(res);
@@ -790,7 +790,7 @@ export async function fetchMetrics(mapId: string): Promise<Record<string, import
 // ── Collaborator Matrix (initial load) ───────────────────────────────────────
 
 export async function fetchCollaboratorMatrix(mapId: string): Promise<import('../types/matrix').CollaboratorMatrix> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/collaborator-matrix`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/collaborator-matrix`, {
     headers: authHeaders(),
   });
   return handleResponse(res);
@@ -799,14 +799,14 @@ export async function fetchCollaboratorMatrix(mapId: string): Promise<import('..
 // ── Chore Lists ──────────────────────────────────────────────────────────────
 
 export async function fetchChoreLists(mapId: string): Promise<ChoreList[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists`, {
     headers: authHeaders(),
   });
   return handleResponse<ChoreList[]>(res);
 }
 
 export async function createChoreList(mapId: UUID, title: string, landmarkIds: string[], link?: string): Promise<ChoreList[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ title, landmarkIds, link: link ?? null }),
@@ -815,7 +815,7 @@ export async function createChoreList(mapId: UUID, title: string, landmarkIds: s
 }
 
 export async function editChoreList(mapId: UUID, listId: string, title?: string, landmarkIds?: string[], link?: string): Promise<ChoreList[]> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ title: title ?? null, landmarkIds: landmarkIds ?? null, link: link !== undefined ? link : null, clearLink: link === undefined }),
@@ -824,7 +824,7 @@ export async function editChoreList(mapId: UUID, listId: string, title?: string,
 }
 
 export async function toggleChoreListCompleted(mapId: UUID, listId: string): Promise<ChoreList> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/complete`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/complete`, {
     method: 'PATCH',
     headers: authHeaders(),
   });
@@ -832,7 +832,7 @@ export async function toggleChoreListCompleted(mapId: UUID, listId: string): Pro
 }
 
 export async function deleteChoreList(mapId: UUID, listId: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
@@ -849,7 +849,7 @@ export async function updateChoreEntry(
   patch: { state?: ChoreEntryState; assigneeId?: string | null; clearAssignee?: boolean; link?: string | null; clearLink?: boolean; note?: string | null; clearNote?: boolean },
 ): Promise<ChoreList> {
   const res = await fetch(
-    `${BASE_URL}/maps/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/entries/${encodeURIComponent(landmarkId)}`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/entries/${encodeURIComponent(landmarkId)}`,
     {
       method: 'PATCH',
       headers: authHeaders(),

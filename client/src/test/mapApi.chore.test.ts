@@ -45,7 +45,7 @@ describe('fetchChoreLists', () => {
     mockFetch([mockList]);
     await fetchChoreLists(MAP_ID);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/chore-lists`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/chore-lists`);
     expect(init?.method).toBeUndefined();
   });
 
@@ -69,7 +69,7 @@ describe('createChoreList', () => {
     mockFetch([mockList]);
     await createChoreList(MAP_ID, 'Sprint Audit', [LM_ID], 'https://wiki.example');
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/chore-lists`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/chore-lists`);
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string);
     expect(body.title).toBe('Sprint Audit');
@@ -103,7 +103,7 @@ describe('editChoreList', () => {
     mockFetch([mockList]);
     await editChoreList(MAP_ID, LIST_ID, 'New Title', [LM_ID], 'https://example.com');
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/chore-lists/${LIST_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/chore-lists/${LIST_ID}`);
     expect(init.method).toBe('PATCH');
     const body = JSON.parse(init.body as string);
     expect(body.title).toBe('New Title');
@@ -127,7 +127,7 @@ describe('toggleChoreListCompleted', () => {
     mockFetch({ ...mockList, completed: true });
     await toggleChoreListCompleted(MAP_ID, LIST_ID);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/chore-lists/${LIST_ID}/complete`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/chore-lists/${LIST_ID}/complete`);
     expect(init.method).toBe('PATCH');
   });
 
@@ -145,7 +145,7 @@ describe('deleteChoreList', () => {
     mockFetch204();
     await deleteChoreList(MAP_ID, LIST_ID);
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/chore-lists/${LIST_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/chore-lists/${LIST_ID}`);
     expect(init.method).toBe('DELETE');
   });
 
@@ -162,7 +162,7 @@ describe('updateChoreEntry', () => {
     mockFetch(mockList);
     await updateChoreEntry(MAP_ID, LIST_ID, LM_ID, { state: 'DONE' });
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`/api/maps/${MAP_ID}/chore-lists/${LIST_ID}/entries/${LM_ID}`);
+    expect(url).toBe(`/api/sessions/${MAP_ID}/chore-lists/${LIST_ID}/entries/${LM_ID}`);
     expect(init.method).toBe('PATCH');
   });
 

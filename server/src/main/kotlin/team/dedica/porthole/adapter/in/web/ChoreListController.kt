@@ -10,7 +10,7 @@ import team.dedica.porthole.application.session.chorelists.*
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps/{id}/chore-lists")
+@RequestMapping("/api/sessions/{id}/chore-lists")
 class ChoreListController(
     private val listChoreListsUseCase: ListChoreListsUseCase,
     private val createChoreListUseCase: CreateChoreListUseCase,
@@ -95,7 +95,7 @@ class ChoreListController(
     ): ResponseEntity<Any> =
         ResponseEntity.ok(
             updateChoreEntryUseCase.execute(
-                mapId = UUID.fromString(id),
+                sessionId = UUID.fromString(id),
                 listId = UUID.fromString(listId),
                 landmarkId = UUID.fromString(landmarkId),
                 state = request.state,

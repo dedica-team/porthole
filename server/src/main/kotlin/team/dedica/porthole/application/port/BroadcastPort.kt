@@ -10,9 +10,9 @@ import java.util.UUID
  * Web socket broadcasts.
  */
 interface BroadcastPort {
-    fun send(mapId: UUID, state: SessionState)
-    fun sendMatrix(mapId: UUID, matrix: CollaboratorMatrix)
-    fun sendMetrics(mapId: UUID, metrics: Map<UUID, QualityMetric>)
-    fun sendChoreLists(mapId: UUID, choreLists: Map<UUID, ChoreList>)
+    fun send(sessionId: UUID, state: SessionState)
+    fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix)
+    fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>)
+    fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>)
 }
 

@@ -12,8 +12,8 @@ class RemoveProcessStageUseCase(
     private val sessionStatePort: SessionStatePort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, processId: UUID?, stageId: UUID?, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, processId: UUID?, stageId: UUID?, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val process = state.processes[processId] ?: throw NoSuchElementException("Process $processId not found")
         val removed = process.stages.removeIf { it.id == stageId }
         require(removed) { "Stage $stageId not found in process $processId" }

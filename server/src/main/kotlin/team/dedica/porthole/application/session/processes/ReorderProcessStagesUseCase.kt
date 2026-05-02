@@ -16,8 +16,8 @@ class ReorderProcessStagesUseCase(
      * Accepts an ordered list of stage IDs and reassigns their `order` field
      * to match the position in the list (0-based).
      */
-    fun execute(mapId: UUID, processId: UUID, stageIds: List<UUID>, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, processId: UUID, stageIds: List<UUID>, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val process = state.processes[processId]
             ?: throw NoSuchElementException("Process $processId not found")
         require(stageIds.size == process.stages.size) {

@@ -10,8 +10,8 @@ import java.util.UUID
 class ListMetricsUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID): Map<UUID, QualityMetric> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.VIEWER)
+    fun execute(sessionId: UUID, callerId: UUID): Map<UUID, QualityMetric> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.VIEWER)
         return state.metrics
     }
 }

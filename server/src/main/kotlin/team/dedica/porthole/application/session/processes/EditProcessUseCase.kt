@@ -12,8 +12,8 @@ class EditProcessUseCase(
     private val sessionStatePort: SessionStatePort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, processId: UUID, name: String?, description: String?, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, processId: UUID, name: String?, description: String?, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val process = state.processes[processId] ?: throw NoSuchElementException("Process $processId not found")
         name?.trim()?.takeIf { it.isNotBlank() }?.let { process.name = it }
         description?.let { process.description = it.trim().takeIf { d -> d.isNotBlank() } }

@@ -11,7 +11,7 @@ import team.dedica.porthole.domain.QualityLevel
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps/{id}/metrics")
+@RequestMapping("/api/sessions/{id}/metrics")
 class MetricController(
     private val listMetricsUseCase: ListMetricsUseCase,
     private val createMetricUseCase: CreateMetricUseCase,
@@ -64,7 +64,7 @@ class MetricController(
 }
 
 @RestController
-@RequestMapping("/api/maps/{id}/landmarks/{landmarkId}/metrics")
+@RequestMapping("/api/sessions/{id}/landmarks/{landmarkId}/metrics")
 class LandmarkMetricController(
     private val setLandmarkMetricUseCase: SetLandmarkMetricUseCase,
     private val clearLandmarkMetricUseCase: ClearLandmarkMetricUseCase,

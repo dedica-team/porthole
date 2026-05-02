@@ -16,7 +16,7 @@ class UpdateChoreEntryUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         listId: UUID,
         landmarkId: UUID,
         state: ChoreEntryState?,
@@ -28,7 +28,7 @@ class UpdateChoreEntryUseCase(
         clearNote: Boolean,
         callerId: UUID,
     ): ChoreList {
-        val mapState = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val mapState = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val list = mapState.choreLists[listId]
             ?: throw NoSuchElementException("Chore list $listId not found")
         val entry = list.entries[landmarkId]
@@ -37,7 +37,7 @@ class UpdateChoreEntryUseCase(
         when {
             clearAssignee -> entry.assigneeId = null
             assigneeId != null -> {
-                require(mapState.isCollaborator(assigneeId)) { "Assignee $assigneeId is not a collaborator on map $mapId" }
+                require(mapState.isCollaborator(assigneeId)) { "Assignee $assigneeId is not a collaborator in session $sessionId" }
                 entry.assigneeId = assigneeId
             }
         }
@@ -50,7 +50,7 @@ class UpdateChoreEntryUseCase(
             note != null -> entry.note = note.trim().takeIf { it.isNotBlank() }
         }
         sessionStatePort.save(mapState)
-        broadcastPort.sendChoreLists(mapId, mapState.choreLists)
+        broadcastPort.sendChoreLists(sessionId, mapState.choreLists)
         return list
     }
 }

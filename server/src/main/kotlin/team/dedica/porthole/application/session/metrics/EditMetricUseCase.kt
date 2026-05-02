@@ -12,13 +12,13 @@ class EditMetricUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID, metricId: UUID, name: String?, description: String?): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, callerId: UUID, metricId: UUID, name: String?, description: String?): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val existing = state.metrics[metricId] ?: throw NoSuchElementException("Metric $metricId not found")
         if (name != null) require(name.isNotBlank()) { "Metric name must not be empty" }
         state.metrics[metricId] = existing.copy(name = name?.trim() ?: existing.name, description = description?.trim() ?: existing.description)
         sessionStatePort.save(state)
-        broadcastPort.sendMetrics(mapId, state.metrics)
+        broadcastPort.sendMetrics(sessionId, state.metrics)
         return state
     }
 }

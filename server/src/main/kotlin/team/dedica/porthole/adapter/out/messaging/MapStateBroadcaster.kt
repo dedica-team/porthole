@@ -13,26 +13,26 @@ import java.util.UUID
 class MapStateBroadcaster(private val messaging: SimpMessagingTemplate) : BroadcastPort {
 
     @Async
-    override fun send(mapId: UUID, state: SessionState) {
-        messaging.convertAndSend("/topic/map/$mapId", MapStateBroadcastDto.from(state))
+    override fun send(sessionId: UUID, state: SessionState) {
+        messaging.convertAndSend("/topic/map/$sessionId", MapStateBroadcastDto.from(state))
     }
 
     @Async
-    override fun sendMatrix(mapId: UUID, matrix: CollaboratorMatrix) {
+    override fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix) {
         val snapshot = CollaboratorMatrix(
             name = matrix.name,
             entries = matrix.entries.entries.associate { (k, v) -> k to v.toMap().toMutableMap() }.toMutableMap(),
         )
-        messaging.convertAndSend("/topic/map/$mapId/matrix", snapshot)
+        messaging.convertAndSend("/topic/map/$sessionId/matrix", snapshot)
     }
 
     @Async
-    override fun sendMetrics(mapId: UUID, metrics: Map<UUID, QualityMetric>) {
-        messaging.convertAndSend("/topic/map/$mapId/metrics", metrics.toMap())
+    override fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>) {
+        messaging.convertAndSend("/topic/map/$sessionId/metrics", metrics.toMap())
     }
 
     @Async
-    override fun sendChoreLists(mapId: UUID, choreLists: Map<UUID, ChoreList>) {
-        messaging.convertAndSend("/topic/map/$mapId/chore-lists", choreLists.toMap())
+    override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) {
+        messaging.convertAndSend("/topic/map/$sessionId/chore-lists", choreLists.toMap())
     }
 }

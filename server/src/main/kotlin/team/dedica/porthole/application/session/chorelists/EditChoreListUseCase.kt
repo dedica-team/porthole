@@ -16,7 +16,7 @@ class EditChoreListUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         listId: UUID,
         title: String?,
         landmarkIds: List<UUID>?,
@@ -24,7 +24,7 @@ class EditChoreListUseCase(
         clearLink: Boolean,
         callerId: UUID
     ): List<ChoreList> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val list = state.choreLists[listId]
             ?: throw NoSuchElementException("Chore list $listId not found")
         title?.trim()?.takeIf { it.isNotBlank() }?.let { list.title = it }
@@ -35,7 +35,7 @@ class EditChoreListUseCase(
         if (landmarkIds != null) {
             // Validate all landmarks exist
             landmarkIds.forEach { id ->
-                require(state.landmarks.containsKey(id)) { "Landmark $id not found on map $mapId" }
+                require(state.landmarks.containsKey(id)) { "Landmark $id not found in session $sessionId" }
             }
             val landmarkKeys = landmarkIds.map { it }
             // Remove entries for de-selected landmarks
@@ -46,7 +46,7 @@ class EditChoreListUseCase(
             }
         }
         sessionStatePort.save(state)
-        broadcastPort.sendChoreLists(mapId, state.choreLists)
+        broadcastPort.sendChoreLists(sessionId, state.choreLists)
         return state.choreLists.values.sortedBy { it.title }
     }
 }

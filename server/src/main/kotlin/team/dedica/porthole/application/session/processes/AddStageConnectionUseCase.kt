@@ -15,7 +15,7 @@ class AddStageConnectionUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         processId: UUID?,
         stageId: UUID?,
         connectionId: UUID,
@@ -23,7 +23,7 @@ class AddStageConnectionUseCase(
         direction: String,
         callerId: UUID
     ): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.connections.containsKey(connectionId)) { "Connection $connectionId not found" }
         val process = state.processes[processId]
             ?: throw NoSuchElementException("Process $processId not found")

@@ -12,8 +12,8 @@ class RemoveMetricUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID, metricId: UUID): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, callerId: UUID, metricId: UUID): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.metrics.containsKey(metricId)) { "Metric $metricId not found" }
         state.metrics.remove(metricId)
         // Cascade: remove this metric's entry from every landmark
@@ -24,7 +24,7 @@ class RemoveMetricUseCase(
                 landmark
         }
         sessionStatePort.save(state)
-        broadcastPort.sendMetrics(mapId, state.metrics)
+        broadcastPort.sendMetrics(sessionId, state.metrics)
         return state
     }
 }

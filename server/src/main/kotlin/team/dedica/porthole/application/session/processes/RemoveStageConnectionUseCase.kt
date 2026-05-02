@@ -12,8 +12,8 @@ class RemoveStageConnectionUseCase(
     private val sessionStatePort: SessionStatePort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, processId: UUID?, stageId: UUID?, stageConnId: UUID?, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, processId: UUID?, stageId: UUID?, stageConnId: UUID?, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val process = state.processes[processId] ?: throw NoSuchElementException("Process $processId not found")
         val stage = process.stages.find { it.id == stageId } ?: throw NoSuchElementException("Stage $stageId not found in process $processId")
         stage.connections.removeIf { it.id == stageConnId }

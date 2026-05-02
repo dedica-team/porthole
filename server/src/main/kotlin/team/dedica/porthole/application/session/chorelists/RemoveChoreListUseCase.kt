@@ -13,11 +13,11 @@ class RemoveChoreListUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, listId: UUID, callerId: UUID) {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, listId: UUID, callerId: UUID) {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.choreLists.containsKey(listId)) { "Chore list $listId not found" }
         state.choreLists.remove(listId)
         sessionStatePort.save(state)
-        broadcastPort.sendChoreLists(mapId, state.choreLists)
+        broadcastPort.sendChoreLists(sessionId, state.choreLists)
     }
 }

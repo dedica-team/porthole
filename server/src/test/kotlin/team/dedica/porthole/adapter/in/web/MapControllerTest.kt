@@ -69,20 +69,20 @@ class MapControllerTest {
 
     @Test
     fun `GET maps returns 200`() {
-        mockMvc.perform(get("/api/maps").header("Authorization", "Bearer $token"))
+        mockMvc.perform(get("/api/sessions").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
     }
 
     @Test
     fun `GET map by id returns 200`() {
-        mockMvc.perform(get("/api/maps/$mapId").header("Authorization", "Bearer $token"))
+        mockMvc.perform(get("/api/sessions/$mapId").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(mapId.toString()))
     }
 
     @Test
     fun `GET map with unknown id returns 404`() {
-        mockMvc.perform(get("/api/maps/" + UUID.randomUUID()).header("Authorization", "Bearer $token"))
+        mockMvc.perform(get("/api/sessions/" + UUID.randomUUID()).header("Authorization", "Bearer $token"))
             .andExpect(status().isNotFound)
     }
 
@@ -90,7 +90,7 @@ class MapControllerTest {
     fun `POST landmark places landmark and returns 200`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Iron Keep", "type" to "KEEP")
         val result = mockMvc.perform(
-            post("/api/maps/$mapId/landmarks")
+            post("/api/sessions/$mapId/landmarks")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -107,7 +107,7 @@ class MapControllerTest {
     fun `POST landmark with unknown type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Test", "type" to "DRAGON_LAIR")
         mockMvc.perform(
-            post("/api/maps/$mapId/landmarks")
+            post("/api/sessions/$mapId/landmarks")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -118,7 +118,7 @@ class MapControllerTest {
     fun `POST landmark with removed WELL type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Old Well", "type" to "WELL")
         mockMvc.perform(
-            post("/api/maps/$mapId/landmarks")
+            post("/api/sessions/$mapId/landmarks")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -129,7 +129,7 @@ class MapControllerTest {
     fun `POST landmark with DEPRECATED_WELL type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Old Well", "type" to "DEPRECATED_WELL")
         mockMvc.perform(
-            post("/api/maps/$mapId/landmarks")
+            post("/api/sessions/$mapId/landmarks")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -140,7 +140,7 @@ class MapControllerTest {
     fun `PATCH tile changes elevation`() {
         val body = mapOf("elevation" to 4, "terrain" to null)
         mockMvc.perform(
-            patch("/api/maps/$mapId/tiles/0/0")
+            patch("/api/sessions/$mapId/tiles/0/0")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -151,7 +151,7 @@ class MapControllerTest {
     fun `PATCH tile with unknown terrain returns 400`() {
         val body = mapOf("elevation" to null, "terrain" to "LAVA")
         mockMvc.perform(
-            patch("/api/maps/$mapId/tiles/0/0")
+            patch("/api/sessions/$mapId/tiles/0/0")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -162,7 +162,7 @@ class MapControllerTest {
     fun `POST group creates group`() {
         val body = mapOf("name" to "Alpha Team", "color" to "#ff0000")
         mockMvc.perform(
-            post("/api/maps/$mapId/groups")
+            post("/api/sessions/$mapId/groups")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -171,7 +171,7 @@ class MapControllerTest {
 
     @Test
     fun `unauthenticated request returns 401 or 403`() {
-        val status = mockMvc.perform(get("/api/maps"))
+        val status = mockMvc.perform(get("/api/sessions"))
             .andReturn().response.status
         assertTrue(status == 401 || status == 403) { "Expected 401 or 403 but got $status" }
     }
@@ -185,7 +185,7 @@ class MapControllerTest {
         sessionStatePort.save(state)
 
         mockMvc.perform(
-            delete("/api/maps/$mapId/landmarks/$lmId")
+            delete("/api/sessions/$mapId/landmarks/$lmId")
                 .header("Authorization", "Bearer $token")
         ).andExpect(status().isOk)
     }
@@ -194,7 +194,7 @@ class MapControllerTest {
     fun `PATCH map sets name and description`() {
         val body = mapOf("name" to "My Campaign", "description" to "A great adventure")
         mockMvc.perform(
-            patch("/api/maps/$mapId")
+            patch("/api/sessions/$mapId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -212,7 +212,7 @@ class MapControllerTest {
         )
         val body = mapOf("name" to "New Name", "description" to null)
         mockMvc.perform(
-            patch("/api/maps/$mapId")
+            patch("/api/sessions/$mapId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -226,7 +226,7 @@ class MapControllerTest {
     fun `PATCH map with blank name stores null`() {
         val body = mapOf("name" to "   ", "description" to null)
         mockMvc.perform(
-            patch("/api/maps/$mapId")
+            patch("/api/sessions/$mapId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -239,7 +239,7 @@ class MapControllerTest {
     fun `PATCH map unauthenticated returns 401 or 403`() {
         val body = mapOf("name" to "Hacked", "description" to null)
         val status = mockMvc.perform(
-            patch("/api/maps/$mapId")
+            patch("/api/sessions/$mapId")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
         ).andReturn().response.status
@@ -252,7 +252,7 @@ class MapControllerTest {
     fun `POST metric creates metric and returns 200`() {
         val body = mapOf("name" to "Availability", "description" to "Uptime percentage")
         mockMvc.perform(
-            post("/api/maps/$mapId/metrics")
+            post("/api/sessions/$mapId/metrics")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -265,7 +265,7 @@ class MapControllerTest {
         // create
         val createBody = mapOf("name" to "Latency", "description" to "Response time")
         val createResult = mockMvc.perform(
-            post("/api/maps/$mapId/metrics")
+            post("/api/sessions/$mapId/metrics")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createBody))
@@ -275,7 +275,7 @@ class MapControllerTest {
 
         val editBody = mapOf("name" to "P99 Latency", "description" to null)
         mockMvc.perform(
-            patch("/api/maps/$mapId/metrics/$metricId")
+            patch("/api/sessions/$mapId/metrics/$metricId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(editBody))
@@ -287,7 +287,7 @@ class MapControllerTest {
         // create
         val createBody = mapOf("name" to "Error Rate", "description" to "Errors per second")
         val createResult = mockMvc.perform(
-            post("/api/maps/$mapId/metrics")
+            post("/api/sessions/$mapId/metrics")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createBody))
@@ -296,7 +296,7 @@ class MapControllerTest {
         val metricId = tree["metrics"].fieldNames().next()
 
         mockMvc.perform(
-            delete("/api/maps/$mapId/metrics/$metricId")
+            delete("/api/sessions/$mapId/metrics/$metricId")
                 .header("Authorization", "Bearer $token")
         ).andExpect(status().isOk)
             .andExpect(jsonPath("$.metrics").isEmpty)
@@ -313,7 +313,7 @@ class MapControllerTest {
         // create metric
         val metricBody = mapOf("name" to "Availability", "description" to "Uptime")
         val metricResult = mockMvc.perform(
-            post("/api/maps/$mapId/metrics")
+            post("/api/sessions/$mapId/metrics")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(metricBody))
@@ -323,7 +323,7 @@ class MapControllerTest {
         // set landmark metric
         val entryBody = mapOf("value" to "99.9 %", "level" to "OK", "link" to null)
         mockMvc.perform(
-            put("/api/maps/$mapId/landmarks/$lmId/metrics/$metricId")
+            put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(entryBody))
@@ -340,7 +340,7 @@ class MapControllerTest {
 
         val metricBody = mapOf("name" to "SLA", "description" to "Service level")
         val metricResult = mockMvc.perform(
-            post("/api/maps/$mapId/metrics")
+            post("/api/sessions/$mapId/metrics")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(metricBody))
@@ -349,7 +349,7 @@ class MapControllerTest {
 
         val entryBody = mapOf("value" to "99 %", "level" to "CRITICAL")
         mockMvc.perform(
-            put("/api/maps/$mapId/landmarks/$lmId/metrics/$metricId")
+            put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(entryBody))
@@ -367,7 +367,7 @@ class MapControllerTest {
         // create + assign metric
         val metricBody = mapOf("name" to "Health", "description" to "Health check")
         val metricResult = mockMvc.perform(
-            post("/api/maps/$mapId/metrics")
+            post("/api/sessions/$mapId/metrics")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(metricBody))
@@ -375,7 +375,7 @@ class MapControllerTest {
         val metricId = objectMapper.readTree(metricResult.response.contentAsString)["metrics"].fieldNames().next()
 
         mockMvc.perform(
-            put("/api/maps/$mapId/landmarks/$lmId/metrics/$metricId")
+            put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(mapOf("value" to "ok", "level" to "OK")))
@@ -383,17 +383,17 @@ class MapControllerTest {
 
         // clear
         mockMvc.perform(
-            delete("/api/maps/$mapId/landmarks/$lmId/metrics/$metricId")
+            delete("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
                 .header("Authorization", "Bearer $token")
         ).andExpect(status().isOk)
     }
 
-    // ── POST /api/maps – mapType and mapSize ──────────────────────────────────
+    // ── POST /api/sessions – mapType and mapSize ──────────────────────────────────
 
     @Test
     fun `POST maps with no body creates LAND MEDIUM map`() {
         val result = mockMvc.perform(
-            post("/api/maps")
+            post("/api/sessions")
                 .header("Authorization", "Bearer $token")
         ).andExpect(status().isOk)
             .andReturn()
@@ -405,7 +405,7 @@ class MapControllerTest {
     fun `POST maps with BLANK type creates all-grass map`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "SMALL")
         val result = mockMvc.perform(
-            post("/api/maps")
+            post("/api/sessions")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -422,7 +422,7 @@ class MapControllerTest {
     fun `POST maps with SMALL size creates 625-tile map`() {
         val body = mapOf("mapType" to "LAND", "mapSize" to "SMALL")
         val result = mockMvc.perform(
-            post("/api/maps")
+            post("/api/sessions")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -436,7 +436,7 @@ class MapControllerTest {
     fun `POST maps with MEDIUM size creates 2500-tile map`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "MEDIUM")
         val result = mockMvc.perform(
-            post("/api/maps")
+            post("/api/sessions")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -450,7 +450,7 @@ class MapControllerTest {
     fun `POST maps with LARGE size creates 6400-tile map`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "LARGE")
         val result = mockMvc.perform(
-            post("/api/maps")
+            post("/api/sessions")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -464,7 +464,7 @@ class MapControllerTest {
     fun `POST maps with SEA type creates mostly-water map`() {
         val body = mapOf("mapType" to "SEA", "mapSize" to "SMALL")
         val result = mockMvc.perform(
-            post("/api/maps")
+            post("/api/sessions")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
@@ -479,7 +479,7 @@ class MapControllerTest {
     fun `POST maps unauthenticated returns 401 or 403`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "SMALL")
         val status = mockMvc.perform(
-            post("/api/maps")
+            post("/api/sessions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
         ).andReturn().response.status

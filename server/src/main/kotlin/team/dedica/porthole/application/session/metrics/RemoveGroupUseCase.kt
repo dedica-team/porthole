@@ -14,8 +14,8 @@ class RemoveGroupUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID, groupId: UUID): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, callerId: UUID, groupId: UUID): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.groups.containsKey(groupId)) { "Group $groupId not found" }
         state.groups.remove(groupId)
         // Clear groupId on all landmarks that referenced this group
@@ -23,7 +23,7 @@ class RemoveGroupUseCase(
             if (landmark.groupId == groupId) landmark.copy(groupId = null, metrics = landmark.metrics) else landmark
         }
         sessionStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

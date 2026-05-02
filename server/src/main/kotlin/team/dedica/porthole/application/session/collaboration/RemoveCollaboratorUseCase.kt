@@ -24,7 +24,7 @@ class RemoveCollaboratorUseCase(
         val state = authorizationPort.accessSession(callerId, sessionId,SessionRole.ADMIN)
 
         val removed = state.collaborators.removeIf { it.id == collaboratorId }
-        if (!removed) throw NoSuchElementException("Collaborator $collaboratorId not found in map $sessionId")
+        if (!removed) throw NoSuchElementException("Collaborator $collaboratorId not found in session $sessionId")
         sessionStatePort.save(state)
         broadcastPort.send(sessionId, state)
         return state

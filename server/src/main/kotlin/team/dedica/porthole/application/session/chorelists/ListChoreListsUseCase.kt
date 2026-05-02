@@ -10,8 +10,8 @@ import java.util.UUID
 class ListChoreListsUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID): List<ChoreList> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.VIEWER)
+    fun execute(sessionId: UUID, callerId: UUID): List<ChoreList> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.VIEWER)
         return state.choreLists.values.sortedBy { it.title }
     }
 }

@@ -588,7 +588,7 @@ class DemoDataLoader(
             assigneeId: UUID? = null, note: String? = null
         ) =
             updateChoreEntryUseCase.execute(
-                mapId = DEMO_MAP_ID,
+                sessionId = DEMO_MAP_ID,
                 listId = listId,
                 landmarkId = landmarkId,
                 state = state,

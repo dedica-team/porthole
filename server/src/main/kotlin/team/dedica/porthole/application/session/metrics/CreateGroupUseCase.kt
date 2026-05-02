@@ -17,14 +17,14 @@ class CreateGroupUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         callerId: UUID,
         name: String,
         color: String,
         description: String? = null,
         link: String? = null,
     ): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(name.isNotBlank()) { "Group name must not be empty" }
         require(DataSanitationUtils.HEX_COLOR_REGEX.matches(color)) { "Color must be a CSS hex string like #a1b2c3" }
         val validatedLink = link?.let { DataSanitationUtils.cleanLink(link) }
@@ -37,7 +37,7 @@ class CreateGroupUseCase(
             link = validatedLink,
         )
         sessionStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

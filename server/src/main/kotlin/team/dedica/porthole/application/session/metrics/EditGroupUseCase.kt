@@ -18,7 +18,7 @@ class EditGroupUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         callerId: UUID,
         groupId: UUID,
         name: String?,
@@ -28,7 +28,7 @@ class EditGroupUseCase(
         link: String? = null,
         clearLink: Boolean = false,
     ): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val group = state.groups[groupId]
             ?: throw NoSuchElementException("Group $groupId not found")
         if (name != null) require(name.isNotBlank()) { "Group name must not be empty" }
@@ -50,7 +50,7 @@ class EditGroupUseCase(
             link = newLink,
         )
         sessionStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

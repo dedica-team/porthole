@@ -14,14 +14,14 @@ class ClearLandmarkMetricUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, landmarkId: UUID, metricId: UUID, callerId: UUID): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, landmarkId: UUID, metricId: UUID, callerId: UUID): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val landmark = state.landmarks[landmarkId]
             ?: throw NoSuchElementException("Landmark $landmarkId not found")
         if (landmark.metrics.containsKey(metricId)) {
             state.landmarks[landmarkId] = landmark.copy(metrics = landmark.metrics - metricId)
             sessionStatePort.save(state)
-            broadcastPort.send(mapId, state)
+            broadcastPort.send(sessionId, state)
         }
         return state
     }

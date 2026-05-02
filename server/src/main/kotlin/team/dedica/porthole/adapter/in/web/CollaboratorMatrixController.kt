@@ -11,7 +11,7 @@ import team.dedica.porthole.domain.MatrixLevel
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps/{id}/collaborator-matrix")
+@RequestMapping("/api/sessions/{id}/collaborator-matrix")
 class CollaboratorMatrixController(
     private val getCollaboratorMatrixUseCase: GetCollaboratorMatrixUseCase,
     private val editCollaboratorMatrixUseCase: EditCollaboratorMatrixUseCase,

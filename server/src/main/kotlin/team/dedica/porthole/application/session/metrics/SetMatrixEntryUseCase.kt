@@ -17,14 +17,14 @@ class SetMatrixEntryUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID, landmarkId: UUID, collaboratorId: UUID, level: MatrixLevel): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, callerId: UUID, landmarkId: UUID, collaboratorId: UUID, level: MatrixLevel): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.landmarks.containsKey(landmarkId)) { "Landmark $landmarkId not found" }
         require(state.collaborators.any { it.id == collaboratorId }) { "Collaborator $collaboratorId not found" }
         val byLandmark = state.collaboratorMatrix.entries.getOrPut(landmarkId) { ConcurrentHashMap() }
         byLandmark[collaboratorId] = CollaboratorMatrixEntry(level)
         sessionStatePort.save(state)
-        broadcastPort.sendMatrix(mapId, state.collaboratorMatrix)
+        broadcastPort.sendMatrix(sessionId, state.collaboratorMatrix)
         return state
     }
 }

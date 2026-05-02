@@ -13,8 +13,8 @@ class AddProcessStageUseCase(
     private val sessionStatePort: SessionStatePort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, processId: UUID, name: String?, order: Int, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, processId: UUID, name: String?, order: Int, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val process = state.processes[processId] ?: throw NoSuchElementException("Process $processId not found")
         val stage = ProcessStage(name = name?.trim()?.takeIf { it.isNotBlank() }, order = order)
         process.stages.add(stage)

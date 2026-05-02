@@ -14,12 +14,12 @@ class EditCollaboratorMatrixUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID, name: String): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, callerId: UUID, name: String): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(name.isNotBlank()) { "Matrix name must not be blank" }
         state.collaboratorMatrix = state.collaboratorMatrix.copy(name = name.trim())
         sessionStatePort.save(state)
-        broadcastPort.sendMatrix(mapId, state.collaboratorMatrix)
+        broadcastPort.sendMatrix(sessionId, state.collaboratorMatrix)
         return state
     }
 }

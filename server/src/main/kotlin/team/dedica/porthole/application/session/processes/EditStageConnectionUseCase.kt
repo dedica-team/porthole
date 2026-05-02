@@ -14,7 +14,7 @@ class EditStageConnectionUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         processId: UUID,
         stageId: UUID,
         stageConnId: UUID,
@@ -23,7 +23,7 @@ class EditStageConnectionUseCase(
         direction: String?,
         callerId: UUID,
     ): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val process = state.processes[processId]
             ?: throw NoSuchElementException("Process $processId not found")
         val stage = process.stages.find { it.id == stageId }

@@ -12,8 +12,8 @@ class RemoveProcessUseCase(
     private val sessionStatePort: SessionStatePort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, processId: UUID, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, processId: UUID, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.processes.containsKey(processId)) { "Process $processId not found" }
         state.processes.remove(processId)
         sessionStatePort.save(state)

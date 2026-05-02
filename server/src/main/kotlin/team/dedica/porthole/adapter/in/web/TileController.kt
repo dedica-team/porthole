@@ -11,7 +11,7 @@ import team.dedica.porthole.domain.Terrain
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps/{id}/tiles")
+@RequestMapping("/api/sessions/{id}/tiles")
 class TileController(
     private val editTileUseCase: EditTileUseCase,
 ) {

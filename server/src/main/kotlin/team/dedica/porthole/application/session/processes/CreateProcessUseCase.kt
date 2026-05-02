@@ -12,8 +12,8 @@ class CreateProcessUseCase(
     private val sessionStatePort: SessionStatePort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, name: String, description: String?, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, name: String, description: String?, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val trimmed = name.trim()
         require(trimmed.isNotBlank()) { "Process name must not be blank" }
         val process = Process(name = trimmed, description = description?.trim()?.takeIf { it.isNotBlank() })

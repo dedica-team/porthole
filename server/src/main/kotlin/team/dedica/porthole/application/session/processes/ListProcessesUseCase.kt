@@ -10,8 +10,8 @@ import java.util.UUID
 class ListProcessesUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID): List<Process> {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.VIEWER)
+    fun execute(sessionId: UUID, callerId: UUID): List<Process> {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.VIEWER)
         return state.processes.values.sortedBy { it.name }
     }
 }

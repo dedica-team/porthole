@@ -10,7 +10,7 @@ import team.dedica.porthole.application.session.processes.*
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps/{id}/processes")
+@RequestMapping("/api/sessions/{id}/processes")
 class ProcessController(
     private val listProcessesUseCase: ListProcessesUseCase,
     private val createProcessUseCase: CreateProcessUseCase,

@@ -11,7 +11,7 @@ import team.dedica.porthole.domain.ConnectionType
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps/{id}/connections")
+@RequestMapping("/api/sessions/{id}/connections")
 class ConnectionController(
     private val createConnectionUseCase: CreateConnectionUseCase,
     private val editConnectionUseCase: EditConnectionUseCase,

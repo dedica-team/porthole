@@ -10,7 +10,7 @@ import team.dedica.porthole.application.session.metrics.*
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps/{id}/groups")
+@RequestMapping("/api/sessions/{id}/groups")
 class GroupController(
     private val createGroupUseCase: CreateGroupUseCase,
     private val editGroupUseCase: EditGroupUseCase,

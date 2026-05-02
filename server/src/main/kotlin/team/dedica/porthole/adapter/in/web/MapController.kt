@@ -33,7 +33,7 @@ import org.springframework.security.access.AccessDeniedException
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/maps")
+@RequestMapping("/api/sessions")
 class MapController(
     private val createMapUseCase: CreateMapUseCase,
     private val joinMapUseCase: JoinMapUseCase,

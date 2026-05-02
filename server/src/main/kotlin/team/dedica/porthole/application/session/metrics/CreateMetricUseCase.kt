@@ -15,13 +15,13 @@ class CreateMetricUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID, name: String, description: String): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, callerId: UUID, name: String, description: String): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(name.isNotBlank()) { "Metric name must not be empty" }
         val id = UUID.randomUUID()
         state.metrics[id] = QualityMetric(id = id, name = name.trim(), description = description.trim())
         sessionStatePort.save(state)
-        broadcastPort.sendMetrics(mapId, state.metrics)
+        broadcastPort.sendMetrics(sessionId, state.metrics)
         return state
     }
 }

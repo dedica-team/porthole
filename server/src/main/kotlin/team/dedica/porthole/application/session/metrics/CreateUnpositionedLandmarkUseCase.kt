@@ -21,7 +21,7 @@ class CreateUnpositionedLandmarkUseCase(
 ) {
 
     fun execute(
-        mapId: UUID,
+        sessionId: UUID,
         callerId: UUID,
         name: String,
         type: LandmarkType = LandmarkType.KEEP,
@@ -29,7 +29,7 @@ class CreateUnpositionedLandmarkUseCase(
         groupId: UUID? = null,
         link: String? = null,
     ): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
 
         require(name.isNotBlank()) { "Landmark name must not be empty" }
         require(type != LandmarkType.WALL) { "Decorative landmarks (WALL) must be placed on a tile" }
@@ -49,7 +49,7 @@ class CreateUnpositionedLandmarkUseCase(
         )
 
         sessionStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

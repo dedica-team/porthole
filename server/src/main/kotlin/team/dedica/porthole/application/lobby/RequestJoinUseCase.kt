@@ -15,9 +15,9 @@ class RequestJoinUseCase(
     private val userPort: UserPort,
     private val broadcastPort: BroadcastPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID): SessionState {
-        val state = sessionStatePort.findById(mapId)
-            ?: throw NoSuchElementException("Map $mapId not found")
+    fun execute(sessionId: UUID, callerId: UUID): SessionState {
+        val state = sessionStatePort.findById(sessionId)
+            ?: throw NoSuchElementException("Session $sessionId not found")
         val user = userPort.findById(callerId)
             ?: throw NoSuchElementException("User $callerId not found")
 
@@ -35,7 +35,7 @@ class RequestJoinUseCase(
             JoinRequest(userId = user.id, username = user.username, avatarUrl = user.avatarUrl)
         )
         sessionStatePort.save(state)
-        broadcastPort.send(mapId, state)
+        broadcastPort.send(sessionId, state)
         return state
     }
 }

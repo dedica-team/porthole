@@ -14,14 +14,14 @@ class ClearMatrixEntryUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID, landmarkId: UUID, collaboratorId: UUID): SessionState {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, callerId: UUID, landmarkId: UUID, collaboratorId: UUID): SessionState {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val byLandmark = state.collaboratorMatrix.entries[landmarkId]
         if (byLandmark != null) {
             byLandmark.remove(collaboratorId)
             if (byLandmark.isEmpty()) state.collaboratorMatrix.entries.remove(landmarkId)
             sessionStatePort.save(state)
-            broadcastPort.sendMatrix(mapId, state.collaboratorMatrix)
+            broadcastPort.sendMatrix(sessionId, state.collaboratorMatrix)
         }
         return state
     }

@@ -10,8 +10,8 @@ import java.util.UUID
 class GetCollaboratorMatrixUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, callerId: UUID): CollaboratorMatrix {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.VIEWER)
+    fun execute(sessionId: UUID, callerId: UUID): CollaboratorMatrix {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.VIEWER)
         return state.collaboratorMatrix
     }
 }

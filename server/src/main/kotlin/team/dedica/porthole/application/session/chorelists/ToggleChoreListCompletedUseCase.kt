@@ -14,12 +14,12 @@ class ToggleChoreListCompletedUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(mapId: UUID, listId: UUID, callerId: UUID): ChoreList {
-        val state = authorizationPort.accessSession(callerId, mapId, SessionRole.COLLABORATOR)
+    fun execute(sessionId: UUID, listId: UUID, callerId: UUID): ChoreList {
+        val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val list = state.choreLists[listId] ?: throw NoSuchElementException("Chore list $listId not found")
         list.completed = !list.completed
         sessionStatePort.save(state)
-        broadcastPort.sendChoreLists(mapId, state.choreLists)
+        broadcastPort.sendChoreLists(sessionId, state.choreLists)
         return list
     }
 }
