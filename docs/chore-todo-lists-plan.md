@@ -93,7 +93,7 @@ Jackson/`JsonStore` serialises all `MutableMap` fields automatically; no custom 
 ## 2. Backend REST API
 
 **New controller: `ChoreListController.kt`**
-Base path: `/api/maps/{id}/chore-lists`
+Base path: `/api/sessions/{id}/chore-lists`
 
 | Method | Path | Description | Permission |
 |--------|------|-------------|------------|

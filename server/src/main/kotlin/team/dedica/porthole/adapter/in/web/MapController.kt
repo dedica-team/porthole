@@ -241,7 +241,13 @@ class MapController(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ) = ResponseEntity.ok(removeLandmarkUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(landmarkId)))
+    ) = ResponseEntity.ok(
+        removeLandmarkUseCase.execute(
+            UUID.fromString(id),
+            user.userId,
+            UUID.fromString(landmarkId)
+        )
+    )
 
     @PatchMapping("/{id}/landmarks/{landmarkId}")
     fun editLandmark(
@@ -262,7 +268,7 @@ class MapController(
                 request.name,
                 type,
                 request.description,
-                UUID.fromString(request.groupId),
+                request.groupId?.let { UUID.fromString(it) },
                 request.clearGroup,
                 request.link,
                 request.clearLink

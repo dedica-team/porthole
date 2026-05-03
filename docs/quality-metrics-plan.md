@@ -161,11 +161,11 @@ data class SetLandmarkMetricRequest(
 
 | Methode  | Pfad                                                         | Use Case                    |
 |----------|--------------------------------------------------------------|-----------------------------|
-| `POST`   | `/api/maps/{id}/metrics`                                     | `CreateMetricUseCase`       |
-| `PATCH`  | `/api/maps/{id}/metrics/{metricId}`                          | `EditMetricUseCase`         |
-| `DELETE` | `/api/maps/{id}/metrics/{metricId}`                          | `RemoveMetricUseCase`       |
-| `PUT`    | `/api/maps/{id}/landmarks/{landmarkId}/metrics/{metricId}`   | `SetLandmarkMetricUseCase`  |
-| `DELETE` | `/api/maps/{id}/landmarks/{landmarkId}/metrics/{metricId}`   | `ClearLandmarkMetricUseCase`|
+| `POST`   | `/api/sessions/{id}/metrics`                                     | `CreateMetricUseCase`       |
+| `PATCH`  | `/api/sessions/{id}/metrics/{metricId}`                          | `EditMetricUseCase`         |
+| `DELETE` | `/api/sessions/{id}/metrics/{metricId}`                          | `RemoveMetricUseCase`       |
+| `PUT`    | `/api/sessions/{id}/landmarks/{landmarkId}/metrics/{metricId}`   | `SetLandmarkMetricUseCase`  |
+| `DELETE` | `/api/sessions/{id}/landmarks/{landmarkId}/metrics/{metricId}`   | `ClearLandmarkMetricUseCase`|
 
 ---
 
@@ -414,7 +414,7 @@ berechnet wird, aktualisiert sich das Licht automatisch.
 Nutzer setzt Metric-Wert für Landmark
         │
         ▼
-PUT /api/maps/{id}/landmarks/{lId}/metrics/{mId}
+PUT /api/sessions/{id}/landmarks/{lId}/metrics/{mId}
         │
         ▼
 SetLandmarkMetricUseCase → Landmark.metrics aktualisiert

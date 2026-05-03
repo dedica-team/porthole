@@ -105,7 +105,7 @@ fun hasPendingRequest(userId: String): Boolean =
 ### 2.6 Modify `GetMapUseCase`
 
 - If the map's mode is `PRIVATE` and the requesting user is **not** a collaborator: throw `AccessDeniedException("Map is private")` (results in 403)
-- The `GET /api/maps` list endpoint: filter out `PRIVATE` maps for which the caller is not a collaborator
+- The `GET /api/sessions` list endpoint: filter out `PRIVATE` maps for which the caller is not a collaborator
 
 ### 2.7 Add collaborator guard helper
 
@@ -133,32 +133,32 @@ data class SetCollaborationModeRequest(val mode: String)  // "OPEN" | "REQUEST" 
 ### 3.2 New endpoints on `MapController`
 
 ```
-PATCH /api/maps/{id}/collaboration-mode
+PATCH /api/sessions/{id}/collaboration-mode
     Body: { "mode": "REQUEST" }
     Auth: must be collaborator
     → 200 MapState | 400 unknown mode | 403 not a collaborator
 
-POST  /api/maps/{id}/join-requests
+POST  /api/sessions/{id}/join-requests
     (replaces current POST /{id}/join behaviour for REQUEST/PRIVATE maps)
     Auth: authenticated user who is not yet a collaborator
     → 200 MapState | 409 request already pending | 422 already a collaborator
 
-POST  /api/maps/{id}/join-requests/{requestId}/accept
+POST  /api/sessions/{id}/join-requests/{requestId}/accept
     Auth: must be collaborator
     → 200 MapState | 403 | 404 request not found
 
-POST  /api/maps/{id}/join-requests/{requestId}/decline
+POST  /api/sessions/{id}/join-requests/{requestId}/decline
     Auth: must be collaborator
     → 200 MapState | 403 | 404 request not found
 ```
 
-Keep `POST /api/maps/{id}/join` but let it route through `JoinMapUseCase` which now throws for non-OPEN maps, so the client can detect the mode and show the request button instead.
+Keep `POST /api/sessions/{id}/join` but let it route through `JoinMapUseCase` which now throws for non-OPEN maps, so the client can detect the mode and show the request button instead.
 
 ### 3.3 Modify `MapController.getMap` / `listMaps`
 
-- Inject the authenticated user principal into `GET /api/maps/{id}` and `GET /api/maps` and pass it to the use cases for the visibility check.  
-- `GET /api/maps/{id}` for an unauthenticated user on a PRIVATE map → 403.  
-- `GET /api/maps` filters PRIVATE maps to only those where the caller is a collaborator.
+- Inject the authenticated user principal into `GET /api/sessions/{id}` and `GET /api/sessions` and pass it to the use cases for the visibility check.  
+- `GET /api/sessions/{id}` for an unauthenticated user on a PRIVATE map → 403.  
+- `GET /api/sessions` filters PRIVATE maps to only those where the caller is a collaborator.
 
 ---
 
@@ -268,19 +268,19 @@ GET maps list as collaborator shows own PRIVATE map → 200, PRIVATE map in list
 These tests verify the new collaborator guard added in step 2.7. For each mutating endpoint, send a request from `otheruser` who is **not** a collaborator and assert 403:
 
 ```
-POST  /api/maps/{id}/landmarks            → 403 for non-collaborator
-DELETE /api/maps/{id}/landmarks/{lmId}   → 403 for non-collaborator
-PATCH  /api/maps/{id}/landmarks/{lmId}   → 403 for non-collaborator
-PATCH  /api/maps/{id}/tiles/{q}/{r}      → 403 for non-collaborator
-POST   /api/maps/{id}/groups             → 403 for non-collaborator
-PATCH  /api/maps/{id}/groups/{gId}       → 403 for non-collaborator
-DELETE /api/maps/{id}/groups/{gId}       → 403 for non-collaborator
-POST   /api/maps/{id}/metrics            → 403 for non-collaborator
-PATCH  /api/maps/{id}/metrics/{mId}      → 403 for non-collaborator
-DELETE /api/maps/{id}/metrics/{mId}      → 403 for non-collaborator
-PUT    /api/maps/{id}/landmarks/{lmId}/metrics/{mId} → 403 for non-collaborator
-DELETE /api/maps/{id}/landmarks/{lmId}/metrics/{mId} → 403 for non-collaborator
-PATCH  /api/maps/{id}                    → 403 for non-collaborator
+POST  /api/sessions/{id}/landmarks            → 403 for non-collaborator
+DELETE /api/sessions/{id}/landmarks/{lmId}   → 403 for non-collaborator
+PATCH  /api/sessions/{id}/landmarks/{lmId}   → 403 for non-collaborator
+PATCH  /api/sessions/{id}/tiles/{q}/{r}      → 403 for non-collaborator
+POST   /api/sessions/{id}/groups             → 403 for non-collaborator
+PATCH  /api/sessions/{id}/groups/{gId}       → 403 for non-collaborator
+DELETE /api/sessions/{id}/groups/{gId}       → 403 for non-collaborator
+POST   /api/sessions/{id}/metrics            → 403 for non-collaborator
+PATCH  /api/sessions/{id}/metrics/{mId}      → 403 for non-collaborator
+DELETE /api/sessions/{id}/metrics/{mId}      → 403 for non-collaborator
+PUT    /api/sessions/{id}/landmarks/{lmId}/metrics/{mId} → 403 for non-collaborator
+DELETE /api/sessions/{id}/landmarks/{lmId}/metrics/{mId} → 403 for non-collaborator
+PATCH  /api/sessions/{id}                    → 403 for non-collaborator
 ```
 
 ---

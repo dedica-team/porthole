@@ -108,12 +108,12 @@ data class EditGroupRequest(val name: String?, val color: String?)
 
 | Method   | Path                                  | Use case             |
 |----------|---------------------------------------|----------------------|
-| `POST`   | `/api/maps/{id}/groups`               | `CreateGroupUseCase` |
-| `PATCH`  | `/api/maps/{id}/groups/{groupId}`     | `EditGroupUseCase`   |
-| `DELETE` | `/api/maps/{id}/groups/{groupId}`     | `RemoveGroupUseCase` |
+| `POST`   | `/api/sessions/{id}/groups`               | `CreateGroupUseCase` |
+| `PATCH`  | `/api/sessions/{id}/groups/{groupId}`     | `EditGroupUseCase`   |
+| `DELETE` | `/api/sessions/{id}/groups/{groupId}`     | `RemoveGroupUseCase` |
 
 ### 3.3 Existing landmark endpoints – only request body changes
-`PATCH /api/maps/{id}/landmarks/{landmarkId}` accepts the extended
+`PATCH /api/sessions/{id}/landmarks/{landmarkId}` accepts the extended
 `EditLandmarkRequest` with the two new fields.
 
 ---

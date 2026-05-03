@@ -107,10 +107,10 @@ Add a private helper `fun resolveUserId(user: UserDetails): String` that calls `
 
 | Endpoint | Method | Path | Implementation |
 |---|---|---|---|
-| Delete session | `DELETE` | `/api/maps/{id}` | `deleteMapUseCase.execute(id, resolveUserId(user))` → `204 No Content` |
-| Admin join | `POST` | `/api/maps/{id}/admin-join` | `adminJoinMapUseCase.execute(id, user.username)` → `200 MapState` |
-| Export session JSON | `GET` | `/api/maps/{id}/export` | Return `getMapUseCase` result with header `Content-Disposition: attachment; filename="session-{id}.json"` after asserting `adminService.isAdmin(resolveUserId(user))` |
-| Change landmark owner | `PATCH` | `/api/maps/{id}/landmarks/{landmarkId}/owner` | Body: `{ "ownerId": "..." }`; calls `changeLandmarkOwnerUseCase.execute(...)` |
+| Delete session | `DELETE` | `/api/sessions/{id}` | `deleteMapUseCase.execute(id, resolveUserId(user))` → `204 No Content` |
+| Admin join | `POST` | `/api/sessions/{id}/admin-join` | `adminJoinMapUseCase.execute(id, user.username)` → `200 MapState` |
+| Export session JSON | `GET` | `/api/sessions/{id}/export` | Return `getMapUseCase` result with header `Content-Disposition: attachment; filename="session-{id}.json"` after asserting `adminService.isAdmin(resolveUserId(user))` |
+| Change landmark owner | `PATCH` | `/api/sessions/{id}/landmarks/{landmarkId}/owner` | Body: `{ "ownerId": "..." }`; calls `changeLandmarkOwnerUseCase.execute(...)` |
 
 **Add a DTO** `ChangeLandmarkOwnerRequest(val ownerId: String)` in the appropriate `dto` package.
 
@@ -157,16 +157,16 @@ Add `isAdmin?: boolean` to the `AuthSession` interface.
 Add four functions:
 
 ```typescript
-// DELETE /api/maps/{id}
+// DELETE /api/sessions/{id}
 export async function deleteMap(mapId: string): Promise<void>
 
-// POST /api/maps/{id}/admin-join
+// POST /api/sessions/{id}/admin-join
 export async function adminJoinMap(mapId: string): Promise<MapState>
 
-// GET /api/maps/{id}/export
+// GET /api/sessions/{id}/export
 export async function exportMapJson(mapId: string): Promise<MapState>
 
-// PATCH /api/maps/{id}/landmarks/{landmarkId}/owner
+// PATCH /api/sessions/{id}/landmarks/{landmarkId}/owner
 export async function changeLandmarkOwner(mapId: UUID, landmarkId: string, ownerId: string): Promise<MapState>
 ```
 
@@ -220,9 +220,9 @@ export async function changeLandmarkOwner(mapId: UUID, landmarkId: string, owner
 | `AdminJoinMapUseCaseTest` | Admin joins `PRIVATE` map successfully; already-collaborator case is idempotent/gracefully no-op |
 | `ChangeLandmarkOwnerUseCaseTest` | Admin reassigns to valid collaborator; non-collaborator target rejected; non-admin caller rejected |
 | `GET /api/auth/session` (integration) | Returns `"isAdmin": true` when caller in `PORTHOLE_ADMIN_USER_IDS`, `false` otherwise |
-| `DELETE /api/maps/{id}` (integration) | `204` for admin, `403` for non-admin |
-| `GET /api/maps/{id}/export` (integration) | `200` + `Content-Disposition` attachment header for admin, `403` for non-admin |
-| `PATCH /api/maps/{id}/landmarks/{id}/owner` (integration) | `200` + updated `MapState` for admin, `403` for non-admin |
+| `DELETE /api/sessions/{id}` (integration) | `204` for admin, `403` for non-admin |
+| `GET /api/sessions/{id}/export` (integration) | `200` + `Content-Disposition` attachment header for admin, `403` for non-admin |
+| `PATCH /api/sessions/{id}/landmarks/{id}/owner` (integration) | `200` + updated `MapState` for admin, `403` for non-admin |
 
 ### Frontend — Component Tests (`client/src/test/`)
 

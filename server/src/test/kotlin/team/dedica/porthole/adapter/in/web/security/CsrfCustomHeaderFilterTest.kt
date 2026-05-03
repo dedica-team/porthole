@@ -24,19 +24,19 @@ class CsrfCustomHeaderFilterTest {
 
     @Test
     fun `GET requests to api pass without custom header`() {
-        val res = doFilter(request("GET", "/api/maps"))
+        val res = doFilter(request("GET", "/api/sessions"))
         assertNotEquals(403, res.status)
     }
 
     @Test
     fun `OPTIONS requests to api pass without custom header`() {
-        val res = doFilter(request("OPTIONS", "/api/maps"))
+        val res = doFilter(request("OPTIONS", "/api/sessions"))
         assertNotEquals(403, res.status)
     }
 
     @Test
     fun `HEAD requests to api pass without custom header`() {
-        val res = doFilter(request("HEAD", "/api/maps"))
+        val res = doFilter(request("HEAD", "/api/sessions"))
         assertNotEquals(403, res.status)
     }
 
@@ -52,25 +52,25 @@ class CsrfCustomHeaderFilterTest {
 
     @Test
     fun `POST to api without custom header returns 403`() {
-        val res = doFilter(request("POST", "/api/maps"))
+        val res = doFilter(request("POST", "/api/sessions"))
         assertEquals(403, res.status)
     }
 
     @Test
     fun `PUT to api without custom header returns 403`() {
-        val res = doFilter(request("PUT", "/api/maps/1/landmarks/2/metrics/3"))
+        val res = doFilter(request("PUT", "/api/sessions/1/landmarks/2/metrics/3"))
         assertEquals(403, res.status)
     }
 
     @Test
     fun `PATCH to api without custom header returns 403`() {
-        val res = doFilter(request("PATCH", "/api/maps/1"))
+        val res = doFilter(request("PATCH", "/api/sessions/1"))
         assertEquals(403, res.status)
     }
 
     @Test
     fun `DELETE to api without custom header returns 403`() {
-        val res = doFilter(request("DELETE", "/api/maps/1/landmarks/2"))
+        val res = doFilter(request("DELETE", "/api/sessions/1/landmarks/2"))
         assertEquals(403, res.status)
     }
 
@@ -78,7 +78,7 @@ class CsrfCustomHeaderFilterTest {
 
     @Test
     fun `POST to api with X-Requested-With header passes`() {
-        val req = request("POST", "/api/maps").apply {
+        val req = request("POST", "/api/sessions").apply {
             addHeader("X-Requested-With", "XMLHttpRequest")
         }
         val res = doFilter(req)
@@ -87,7 +87,7 @@ class CsrfCustomHeaderFilterTest {
 
     @Test
     fun `DELETE to api with X-Requested-With header passes`() {
-        val req = request("DELETE", "/api/maps/1").apply {
+        val req = request("DELETE", "/api/sessions/1").apply {
             addHeader("X-Requested-With", "XMLHttpRequest")
         }
         val res = doFilter(req)
@@ -98,7 +98,7 @@ class CsrfCustomHeaderFilterTest {
 
     @Test
     fun `POST to api with Bearer auth passes without custom header`() {
-        val req = request("POST", "/api/maps").apply {
+        val req = request("POST", "/api/sessions").apply {
             addHeader("Authorization", "Bearer some-jwt-token")
         }
         val res = doFilter(req)

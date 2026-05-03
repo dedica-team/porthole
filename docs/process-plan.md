@@ -95,7 +95,7 @@ val processes: MutableMap<String, Process> = mutableMapOf()
 
 ## 2. Backend API Endpoints
 
-New controller: `ProcessController.kt` — base path `/api/maps/{id}/processes`
+New controller: `ProcessController.kt` — base path `/api/sessions/{id}/processes`
 
 | Method   | Path                                                          | Access            | Description                                         |
 |----------|---------------------------------------------------------------|-------------------|-----------------------------------------------------|

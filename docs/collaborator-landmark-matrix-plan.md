@@ -66,7 +66,7 @@ data class SetMatrixEntryRequest(
 )
 ```
 
-Neuer `CollaboratorMatrixController` mit Basis-Mapping `/api/maps/{id}/collaborator-matrix`:
+Neuer `CollaboratorMatrixController` mit Basis-Mapping `/api/sessions/{id}/collaborator-matrix`:
 
 | Methode | Pfad | Aktion |
 |---|---|---|

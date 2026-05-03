@@ -60,7 +60,7 @@ data class EditMapRequest(
 ### 3.2 `MapController.kt` – neuer Endpunkt
 
 ```http
-PATCH /api/maps/{id}
+PATCH /api/sessions/{id}
 ```
 
 - Request Body: `EditMapRequest`
@@ -96,7 +96,7 @@ export async function editMap(
 ): Promise<MapState>
 ```
 
-Sendet `PATCH /api/maps/{id}` mit `{ name: name ?? null, description: description ?? null }`.
+Sendet `PATCH /api/sessions/{id}` mit `{ name: name ?? null, description: description ?? null }`.
 
 ---
 

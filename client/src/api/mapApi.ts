@@ -202,7 +202,7 @@ export type MapType = 'LAND' | 'SEA' | 'BLANK';
 export type MapSize = 'SMALL' | 'MEDIUM' | 'LARGE';
 
 export async function createMap(mapType: MapType = 'LAND', mapSize: MapSize = 'MEDIUM', collaborationMode?: CollaborationMode): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/maps`, {
+  const res = await fetch(`${BASE_URL}/sessions`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ mapType, mapSize }),
@@ -215,7 +215,7 @@ export async function createMap(mapType: MapType = 'LAND', mapSize: MapSize = 'M
 }
 
 export async function listMaps(): Promise<SessionState[]> {
-  const res = await fetch(`${BASE_URL}/maps`, {
+  const res = await fetch(`${BASE_URL}/sessions`, {
     headers: authHeaders(),
   });
   return handleResponse<SessionState[]>(res);

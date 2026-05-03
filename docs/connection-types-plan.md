@@ -82,7 +82,7 @@ Der `POST /{id}/connections`-Handler in `MapController` leitet `type`, `name` un
 Ein neuer Endpunkt ermöglicht nachträgliches Bearbeiten:
 
 ```
-PATCH /api/maps/{id}/connections/{connectionId}
+PATCH /api/sessions/{id}/connections/{connectionId}
 Body: EditConnectionRequest
 ```
 
@@ -228,7 +228,7 @@ export async function editConnection(
   clearName?: boolean,
   clearDescription?: boolean,
 ): Promise<MapState>
-// PATCH /api/maps/{mapId}/connections/{connectionId}
+// PATCH /api/sessions/{mapId}/connections/{connectionId}
 ```
 
 ### 3. `components/HexGrid/HexGrid.tsx` – Connection-Rendering nach Typ aufsplitten

@@ -65,7 +65,7 @@ private fun toSlug(name: String): String =
 
 - `PlaceTowerRequest` um `name: String` erweitern.
 - Den `name`-Parameter an `PlaceTowerUseCase.execute` weitergeben.
-- Neuen Endpunkt `DELETE /api/maps/{id}/towers/{towerId}` hinzufügen.
+- Neuen Endpunkt `DELETE /api/sessions/{id}/towers/{towerId}` hinzufügen.
 
 ```kotlin
 data class PlaceTowerRequest(val q: Int, val r: Int, val name: String)

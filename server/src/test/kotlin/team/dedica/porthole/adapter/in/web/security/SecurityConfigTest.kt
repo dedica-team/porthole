@@ -56,7 +56,7 @@ class SecurityConfigTest {
 
     @Test
     fun `protected api endpoint returns 401 or 403 without token`() {
-        val status = mockMvc.perform(get("/api/maps")).andReturn().response.status
+        val status = mockMvc.perform(get("/api/sessions")).andReturn().response.status
         assertTrue(status == 401 || status == 403,
             "Expected 401 or 403 for unauthenticated request, got $status")
     }
@@ -66,7 +66,7 @@ class SecurityConfigTest {
     @Test
     fun `CORS preflight from Vite dev origin is accepted`() {
         mockMvc.perform(
-            options("/api/maps")
+            options("/api/sessions")
                 .header("Origin", "http://localhost:5173")
                 .header("Access-Control-Request-Method", "GET")
         ).andExpect(status().isOk)
