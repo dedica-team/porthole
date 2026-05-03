@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Castle, Link, Loader2, Trash2, ExternalLink, X, Move, MoreHorizontal } from 'lucide-react';
+import { Castle, Link, Loader2, Trash2, ExternalLink, X, Move, MoreHorizontal, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { useMapStore, useAuthStore } from '@/store/mapStore';
 import type { LandmarkType, QualityLevel } from '@/types/landmark';
 import type { ConnectionType } from '@/types/connection';
 import type { MatrixLevel } from '@/types/matrix';
+import { CHORE_ENTRY_STATE_LABEL, CHORE_ENTRY_STATE_BADGE_STYLE } from '@/types/chores';
 import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_COLOR, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_ORDER, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel } from '@/types/landmark';
 import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
 import { MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
@@ -51,6 +52,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const currentMap = useMapStore((s) => s.currentMap);
   const storeMetrics = useMapStore((s) => s.metrics);
   const collaboratorMatrix = useMapStore((s) => s.collaboratorMatrix);
+  const choreLists = useMapStore((s) => s.choreLists);
   const updateMap = useMapStore((s) => s.updateMap);
   const userId = useAuthStore((s) => s.userId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
@@ -534,6 +536,61 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
             </div>
           </>
         )}
+        {/* ── Chore Lists ──────────────────────────────────────────────────── */}
+        {(() => {
+          const relevantLists = choreLists.filter((list) => selectedLandmark.id in list.entries);
+          if (relevantLists.length === 0) return null;
+          return (
+            <>
+              <Separator className="bg-border" />
+              <div className="flex flex-col gap-2 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-foreground">Chore Lists</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {relevantLists.map((list) => {
+                    const entry = list.entries[selectedLandmark.id];
+                    const assignee = entry.assigneeId
+                      ? currentMap!.collaborators.find((c) => c.id === entry.assigneeId)
+                      : null;
+                    return (
+                      <div key={list.id} className="flex flex-col gap-1 rounded-md border border-border px-2 py-1.5 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 min-w-0">
+                          <span className="text-[11px] font-medium text-foreground truncate">{list.title}</span>
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                            style={CHORE_ENTRY_STATE_BADGE_STYLE[entry.state]}>
+                            {CHORE_ENTRY_STATE_LABEL[entry.state]}
+                          </span>
+                        </div>
+                        {assignee && (
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {assignee.avatarUrl ? (
+                              <img src={assignee.avatarUrl} alt={assignee.username} className="h-3.5 w-3.5 rounded-full shrink-0 object-cover" />
+                            ) : (
+                              <span className="h-3.5 w-3.5 rounded-full bg-muted shrink-0 flex items-center justify-center text-[8px] text-muted-foreground">
+                                {assignee.username.slice(0, 1).toUpperCase()}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground truncate">{assignee.username}</span>
+                          </div>
+                        )}
+                        {entry.note && (
+                          <span className="text-[10px] text-muted-foreground/70 leading-relaxed">{entry.note}</span>
+                        )}
+                        {entry.link && (
+                          <a href={entry.link} target="_blank" rel="noopener noreferrer"
+                            className="text-[10px] text-blue-400 hover:text-blue-300 truncate underline underline-offset-2"
+                            title={entry.link}>{entry.link}</a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          );
+        })()}
         {/* ── Connections ─────────────────────────────────────────────────── */}
         {connections.length > 0 && (
           <>
