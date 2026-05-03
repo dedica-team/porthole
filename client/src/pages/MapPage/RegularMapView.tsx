@@ -6,8 +6,6 @@
  * All CRUD actions come from the shared useMapPageActions hook via the `actions` prop.
  */
 import { useRef, useCallback } from 'react';
-import { Pencil } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -32,7 +30,7 @@ export default function RegularMapView({ actions }: Props) {
     connectingFromLandmarkId,
     relocatingLandmarkId, setRelocatingLandmark,
     pendingConnectionMeta, setPendingConnectionMeta,
-    editorMode, editorTool, editorTerrain, setEditorMode,
+    editorMode, editorTool, editorTerrain,
     mainView, setMainView, setConfirmPending,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
@@ -41,7 +39,7 @@ export default function RegularMapView({ actions }: Props) {
     connectingFromLandmarkId: s.connectingFromLandmarkId,
     relocatingLandmarkId: s.relocatingLandmarkId, setRelocatingLandmark: s.setRelocatingLandmark,
     pendingConnectionMeta: s.pendingConnectionMeta, setPendingConnectionMeta: s.setPendingConnectionMeta,
-    editorMode: s.editorMode, editorTool: s.editorTool, editorTerrain: s.editorTerrain, setEditorMode: s.setEditorMode,
+    editorMode: s.editorMode, editorTool: s.editorTool, editorTerrain: s.editorTerrain,
     mainView: s.mainView, setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
   })));
 
@@ -51,11 +49,6 @@ export default function RegularMapView({ actions }: Props) {
   const patchTileRef = useRef<((q: number, r: number, terrain: Terrain, elevation: number) => void) | null>(null);
   const fpsRef = useRef<HTMLDivElement>(null);
 
-  const handleEditorToggle = useCallback(() => {
-    const next = !editorMode;
-    setEditorMode(next);
-    if (!next) { setSelectedLandmark(null); setSelectedTile(null); }
-  }, [editorMode, setEditorMode, setSelectedLandmark, setSelectedTile]);
 
   const handleTileClick = useCallback((q: number, r: number) => {
     const landmark = landmarkByCoord.get(`${q},${r}`);
@@ -144,15 +137,6 @@ export default function RegularMapView({ actions }: Props) {
 
       {isCollaborator && (
         <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
-          <Button
-            className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${editorMode
-              ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30 hover:text-amber-300'
-              : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'}`}
-            variant="ghost" onClick={handleEditorToggle} aria-pressed={editorMode}
-          >
-            <Pencil className="h-4 w-4 shrink-0" />
-            <span className="text-xs">{editorMode ? 'Exit landscape editor' : 'Landscape editor'}</span>
-          </Button>
           <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} />
         </div>
       )}

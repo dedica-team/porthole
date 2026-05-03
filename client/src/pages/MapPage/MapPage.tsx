@@ -73,14 +73,13 @@ export default function MapPage() {
   const setSelectedLandmark = useMapStore((s) => s.setSelectedLandmark);
   const setSelectedTile = useMapStore((s) => s.setSelectedTile);
   const setMainView = useMapStore((s) => s.setMainView);
-  const editorMode = useMapStore((s) => s.editorMode);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         cancelConnecting();
         setConfirmPending(false);
-        if (!editorMode) {
+        if (mainView !== 'editor') {
           setSelectedLandmark(null);
           setSelectedTile(null);
           setMainView('idle');
@@ -89,7 +88,7 @@ export default function MapPage() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [cancelConnecting, setConfirmPending, editorMode, setSelectedLandmark, setSelectedTile, setMainView]);
+  }, [cancelConnecting, setConfirmPending, mainView, setSelectedLandmark, setSelectedTile, setMainView]);
 
   if (!currentMap) {
     return (

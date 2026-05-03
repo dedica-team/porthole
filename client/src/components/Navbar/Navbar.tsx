@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare } from 'lucide-react';
+import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -109,9 +109,6 @@ export default function Navbar() {
     });
   };
 
-  const handleProcessToggle = () => {
-    setProcessMode(!processMode);
-  };
 
   const handleRemoveCollaborator = async (collaboratorId: string) => {
     if (!currentMap) return;
@@ -381,7 +378,7 @@ export default function Navbar() {
                     <button
                       className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
                         isActive
-                          ? 'border-[hsl(185,100%,54%)] text-[hsl(185,100%,54%)]'
+                          ? 'border-amber-400 text-amber-400'
                           : 'border-transparent text-muted-foreground hover:text-foreground'
                       }`}
                       onClick={() => !isActive && setMainView(view)}
@@ -401,7 +398,7 @@ export default function Navbar() {
                 <button
                   className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
                     mainView === 'chores'
-                      ? 'border-[hsl(185,100%,54%)] text-[hsl(185,100%,54%)]'
+                      ? 'border-amber-400 text-amber-400'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                   onClick={() => setMainView('chores')}
@@ -418,12 +415,12 @@ export default function Navbar() {
               <TooltipTrigger asChild>
                 <button
                   className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
-                    mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && !processMode
-                      ? 'border-[hsl(185,100%,54%)] text-[hsl(185,100%,54%)]'
+                    mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'editor' && !processMode
+                      ? 'border-amber-400 text-amber-400'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                   onClick={() => setMainView('idle')}
-                  aria-current={mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && !processMode ? 'page' : undefined}
+                  aria-current={mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'editor' && !processMode ? 'page' : undefined}
                 >
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
@@ -439,10 +436,10 @@ export default function Navbar() {
                 <button
                   className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
                     processMode
-                      ? 'border-[hsl(185,100%,54%)] text-[hsl(185,100%,54%)]'
+                      ? 'border-amber-400 text-amber-400'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
-                  onClick={handleProcessToggle}
+                  onClick={() => setProcessMode(!processMode)}
                   aria-current={processMode ? 'page' : undefined}
                 >
                   <Radiation className="h-3.5 w-3.5" />
@@ -451,6 +448,26 @@ export default function Navbar() {
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">Processes as sequences of connections</TooltipContent>
             </Tooltip>
+            {/* Landscape editor nav entry – collaborators only */}
+            {isCollaborator && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
+                      mainView === 'editor'
+                        ? 'border-amber-400 text-amber-400'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setMainView(mainView === 'editor' ? 'idle' : 'editor')}
+                    aria-current={mainView === 'editor' ? 'page' : undefined}
+                  >
+                    <Trees className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Landscape</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Landscape editor</TooltipContent>
+              </Tooltip>
+            )}
             {/* Admin: Download session JSON */}
             {isAdmin && (
               <Tooltip>

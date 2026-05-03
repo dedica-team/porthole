@@ -261,6 +261,7 @@ export const useMapStore = create<MapStore>((set) => ({
   setEditorTerrain: (terrain) => set({ editorTerrain: terrain }),
   setMainView: (view) => set((state) => ({
     mainView: view,
+    editorMode: view === 'editor',
     processMode: view === 'process' ? state.processMode : false,
   })),
   setConfirmPending: (pending) => set({ confirmPending: pending }),

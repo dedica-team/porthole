@@ -32,10 +32,10 @@ class InMemoryTestUserRepository : UserPort {
 }
 
 class NoOpBroadcastPort : BroadcastPort {
-    override fun send(mapId: UUID, state: SessionState) {}
-    override fun sendMatrix(mapId: UUID, matrix: CollaboratorMatrix) {}
-    override fun sendMetrics(mapId: UUID, metrics: Map<UUID, QualityMetric>) {}
-    override fun sendChoreLists(mapId: UUID, choreLists: Map<UUID, ChoreList>) {}
+    override fun send(sessionId: UUID, state: SessionState) {}
+    override fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix) {}
+    override fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>) {}
+    override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) {}
 }
 
 class InMemoryAuthorizationPort(

@@ -238,11 +238,10 @@ export default function Sidebar({
   const connectingFromLandmarkId = useMapStore((s) => s.connectingFromLandmarkId);
   const relocatingLandmarkId = useMapStore((s) => s.relocatingLandmarkId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
-  const editorMode = useMapStore((s) => s.editorMode);
   const processMode = useMapStore((s) => s.processMode);
 
   // Hide sidebar when nothing is selected and not in editor/process mode
-  const isVisible = editorMode || processMode || mainView !== 'idle' || !!connectingFromLandmarkId || !!relocatingLandmarkId;
+  const isVisible = mainView === 'editor' || processMode || mainView !== 'idle' || !!connectingFromLandmarkId || !!relocatingLandmarkId;
   if (!isVisible) return null;
 
   const handleClose = () => {
@@ -254,7 +253,7 @@ export default function Sidebar({
   return (
     <aside className="absolute inset-y-0 right-0 z-20 flex flex-col w-(--sidebar-width) min-w-0 bg-card border-l border-border overflow-hidden md:relative md:shrink-0">
       {/* Close button – always visible top-right */}
-      {!editorMode && !processMode && (
+      {mainView !== 'editor' && !processMode && (
         <div className="flex items-center justify-end px-2 pt-2 shrink-0">
           <Button
             size="icon"
@@ -334,7 +333,7 @@ export default function Sidebar({
           ) : (
             <ProcessPanel />
           )
-        ) : editorMode ? (
+        ) : mainView === 'editor' ? (
           <EditorPanel />
         ) : (
           <>
@@ -362,7 +361,6 @@ export default function Sidebar({
                 loading={loading}
               />
             )}
-            {mainView === 'editor' && <EditorPanel />}
           </>
         )}
       </ScrollArea>
