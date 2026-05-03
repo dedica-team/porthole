@@ -6,7 +6,7 @@
  * connection-click handler, and the "New Connection" overlay.
  */
 import { useRef, useCallback, useMemo, useState } from 'react';
-import { Plus, Layers } from 'lucide-react';
+import { Plus, Layers, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import HexGrid from '@/components/HexGrid/HexGrid';
@@ -15,7 +15,10 @@ import CreateConnectionDialog from '@/components/CreateConnectionDialog';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { useShallow } from 'zustand/react/shallow';
-import { addConnectionToStage, removeConnectionFromStage } from '@/api/mapApi';
+import { addConnectionToStage, removeConnectionFromStage, createProcess } from '@/api/mapApi';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import type { Connection } from '@/types/connection';
 import type { StageConnection } from '@/types/process';
 import { QUALITY_LEVEL_COLOR, QUALITY_LEVEL_SIGN } from '@/types/landmark';
@@ -38,6 +41,7 @@ export default function ProcessMapView({ actions }: Props) {
     activeProcessId, activeStageId,
     processes, setProcesses,
     pickingConnection,
+    setActiveProcessId,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     updateMap: s.updateMap,
@@ -48,13 +52,38 @@ export default function ProcessMapView({ actions }: Props) {
     activeProcessId: s.activeProcessId, activeStageId: s.activeStageId,
     processes: s.processes, setProcesses: s.setProcesses,
     pickingConnection: s.pickingConnection,
+    setActiveProcessId: s.setActiveProcessId,
   })));
 
   const userId = useAuthStore((s) => s.userId);
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
 
   const [createConnOpen, setCreateConnOpen] = useState(false);
+  const [newProcPopoverOpen, setNewProcPopoverOpen] = useState(false);
+  const [newProcName, setNewProcName] = useState('');
+  const [newProcDesc, setNewProcDesc] = useState('');
+  const [newProcSaving, setNewProcSaving] = useState(false);
+  const [newProcError, setNewProcError] = useState('');
   const fpsRef = useRef<HTMLDivElement>(null);
+
+  const handleCreateProcess = async () => {
+    if (!currentMap || !newProcName.trim()) return;
+    setNewProcSaving(true);
+    setNewProcError('');
+    try {
+      const updated = await createProcess(currentMap.id, newProcName.trim(), newProcDesc.trim() || undefined);
+      setProcesses(updated);
+      const created = updated.find((p) => p.name === newProcName.trim());
+      if (created) setActiveProcessId(created.id);
+      setNewProcPopoverOpen(false);
+      setNewProcName('');
+      setNewProcDesc('');
+    } catch (err: unknown) {
+      setNewProcError(err instanceof Error ? err.message : 'Failed to create process');
+    } finally {
+      setNewProcSaving(false);
+    }
+  };
 
   // ── Process-specific memos ───────────────────────────────────────────────────
 
@@ -246,7 +275,7 @@ export default function ProcessMapView({ actions }: Props) {
         </ErrorBoundary>
       </div>
 
-      {/* Collaborator overlay: new connection + search */}
+      {/* Collaborator overlay: new connection + new process + search */}
       {isCollaborator && (
         <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
           <Button
@@ -257,6 +286,54 @@ export default function ProcessMapView({ actions }: Props) {
             <Plus className="h-4 w-4 shrink-0" />
             <span className="text-xs">New Connection</span>
           </Button>
+          <Popover open={newProcPopoverOpen} onOpenChange={(o) => { setNewProcPopoverOpen(o); if (!o) { setNewProcName(''); setNewProcDesc(''); setNewProcError(''); } }}>
+            <PopoverTrigger asChild>
+              <Button
+                className="h-9 px-3 rounded-lg shadow-lg border gap-2 bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card"
+                variant="ghost"
+              >
+                <GitBranch className="h-4 w-4 shrink-0" />
+                <span className="text-xs">New Process</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-4" side="bottom" align="start">
+              <p className="text-sm font-semibold mb-3">Create Process</p>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="new-proc-name" className="text-xs">Name <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="new-proc-name"
+                    value={newProcName}
+                    onChange={(e) => setNewProcName(e.target.value)}
+                    placeholder="Process name"
+                    className="h-8 text-xs"
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreateProcess()}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="new-proc-desc" className="text-xs">Description</Label>
+                  <Textarea
+                    id="new-proc-desc"
+                    value={newProcDesc}
+                    onChange={(e) => setNewProcDesc(e.target.value)}
+                    placeholder="Optional description…"
+                    className="text-xs resize-none"
+                    rows={3}
+                  />
+                </div>
+                {newProcError && <p className="text-xs text-destructive">{newProcError}</p>}
+                <Button
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={handleCreateProcess}
+                  disabled={newProcSaving || !newProcName.trim()}
+                >
+                  {newProcSaving ? 'Creating…' : 'Create'}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} />
         </div>
       )}
