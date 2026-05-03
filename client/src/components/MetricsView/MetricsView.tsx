@@ -673,9 +673,18 @@ export default function MetricsView({
         </div>
       )}
 
-      {metrics.length === 0 && landmarks.length === 0 && (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-          No metrics defined yet. Add one below.
+      {metrics.length === 0 && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
+          <BarChart2 className="h-8 w-8 opacity-20" />
+          <span>No metrics defined yet.</span>
+          {isCollaborator && (
+            <button
+              className="text-xs text-primary hover:underline"
+              onClick={() => setShowTemplateSelector(true)}
+            >
+              + Add your first metric
+            </button>
+          )}
         </div>
       )}
 
@@ -734,7 +743,7 @@ export default function MetricsView({
       />
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
-      {(metrics.length > 0 || landmarks.length > 0) && (
+      {metrics.length > 0 && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
             <table className="w-full text-xs border-separate border-spacing-0">
