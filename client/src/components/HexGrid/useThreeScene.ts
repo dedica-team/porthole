@@ -45,14 +45,20 @@ export function useThreeScene({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(TRON_BLACK);
 
+    // Use getBoundingClientRect for the initial size – it reflects the actual
+    // painted dimensions even when clientWidth/clientHeight are still 0 (e.g.
+    // immediately after a conditional mount / mode switch).
+    const initRect = mount.getBoundingClientRect();
+    const initW = initRect.width  || mount.clientWidth  || 1;
+    const initH = initRect.height || mount.clientHeight || 1;
 
-    const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.1, 200);
+    const camera = new THREE.PerspectiveCamera(55, initW / initH, 0.1, 200);
     camera.position.set(0, 60, 60);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(mount.clientWidth, mount.clientHeight);
+    renderer.setSize(initW, initH);
     renderer.shadowMap.enabled = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.4;
@@ -60,7 +66,7 @@ export function useThreeScene({
 
     // ── CSS2D overlay renderer ─────────────────────────────────────────────────
     const css2dRenderer = new CSS2DRenderer();
-    css2dRenderer.setSize(mount.clientWidth, mount.clientHeight);
+    css2dRenderer.setSize(initW, initH);
     css2dRenderer.domElement.style.position = 'absolute';
     css2dRenderer.domElement.style.top = '0';
     css2dRenderer.domElement.style.left = '0';
@@ -190,15 +196,34 @@ export function useThreeScene({
 
     const handleResize = () => {
       if (!mount) return;
-      camera.aspect = mount.clientWidth / mount.clientHeight;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      if (w === 0 || h === 0) return;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(mount.clientWidth, mount.clientHeight);
-      css2dRenderer.setSize(mount.clientWidth, mount.clientHeight);
+      renderer.setSize(w, h);
+      css2dRenderer.setSize(w, h);
+      requestRender();
     };
+    // Use ResizeObserver to catch all size changes (window resize, panel open/close, etc.).
+    // The FIRST callback fires after the browser has completed layout for the newly-mounted
+    // element – this is the earliest moment we have reliable clientWidth/clientHeight.
+    // We use it to correct the renderer size (getBoundingClientRect() in a React useEffect
+    // runs before the browser paint and may still return 0×0), then immediately render.
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(mount);
+    // Also keep window resize as a fallback
     window.addEventListener('resize', handleResize);
+    // Cancel the deferred initial sync RAF – no longer needed since we size
+    // correctly up-front with getBoundingClientRect().
+    const initialSyncRaf = requestAnimationFrame(handleResize);
 
     return () => {
       cancelAnimationFrame(frameRef.current);
+      cancelAnimationFrame(initialSyncRaf);
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       if (onNativePointerMove) renderer.domElement.removeEventListener('pointermove', onNativePointerMove);
       controls.removeEventListener('change', requestRender);

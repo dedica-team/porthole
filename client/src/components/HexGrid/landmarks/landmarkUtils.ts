@@ -112,23 +112,33 @@ const GLOW_FRAG = /* glsl */`
 `;
 
 /** Create a pulsing Fresnel-glow ShaderMaterial in the given tint colour.
- *  Each call produces an independent material with its own uniforms. */
+ *  Shares the compiled GL program across all instances (same vertex/fragment
+ *  source strings) but each call gets its own uniform set so colours/intensity
+ *  are independent. */
+let _glowTemplate: THREE.ShaderMaterial | null = null;
+
 export function glowMat(tintColor: THREE.Color, intensity = 1.0): THREE.ShaderMaterial {
-  const uniforms = {
-    uColor:     { value: tintColor.clone() },
-    uTime:      { value: 0.0 },
-    uIntensity: { value: intensity },
-  };
-  const m = new THREE.ShaderMaterial({
-    uniforms,
-    vertexShader:   GLOW_VERT,
-    fragmentShader: GLOW_FRAG,
-    transparent:    true,
-    blending:       THREE.AdditiveBlending,
-    depthWrite:     false,
-    side:           THREE.FrontSide,
-  });
-  m.onBeforeRender = () => { uniforms.uTime.value = performance.now() / 1000; };
+  if (!_glowTemplate) {
+    _glowTemplate = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor:     { value: new THREE.Color() },
+        uTime:      { value: 0.0 },
+        uIntensity: { value: 1.0 },
+      },
+      vertexShader:   GLOW_VERT,
+      fragmentShader: GLOW_FRAG,
+      transparent:    true,
+      blending:       THREE.AdditiveBlending,
+      depthWrite:     false,
+      side:           THREE.FrontSide,
+    });
+  }
+  // .clone() reuses the same compiled GL program but gives independent uniforms.
+  const m = _glowTemplate.clone();
+  m.uniforms = THREE.UniformsUtils.clone(_glowTemplate.uniforms);
+  m.uniforms['uColor'].value     = tintColor.clone();
+  m.uniforms['uIntensity'].value = intensity;
+  m.onBeforeRender = () => { m.uniforms['uTime'].value = performance.now() / 1000; };
   return m;
 }
 
@@ -136,6 +146,8 @@ export function glowMat(tintColor: THREE.Color, intensity = 1.0): THREE.ShaderMa
 // Keyed by "<name>|<hexColor>" so the same name+colour combination reuses the
 // same WebGL texture across landmark rebuilds (e.g. after every WS update).
 const _namePlaneCache = new Map<string, THREE.CanvasTexture>();
+// Shared plane geometry reused by every namePlane() call (same dimensions).
+const _namePlaneGeo = new THREE.PlaneGeometry(2.8, 0.44);
 
 /** Call this when the entire landmark layer is torn down (scene clear / unmount). */
 export function clearNamePlaneCache(): void {
@@ -183,8 +195,7 @@ export function namePlane(
     depthTest:  false,   // always render above streets / connections
     side: THREE.DoubleSide,
   });
-  const geo = new THREE.PlaneGeometry(2.8, 0.44);
-  const planeMesh = new THREE.Mesh(geo, planeMat);
+  const planeMesh = new THREE.Mesh(_namePlaneGeo, planeMat);
   planeMesh.name = 'namePlane';
   // Always render on top: disable depth test so geometry never occludes the
   // label, and use a high renderOrder so it draws after all connections and
@@ -221,6 +232,45 @@ const STATUS_FRAG = /* glsl */`
   }
 `;
 
+// ── Shared status-light geometries (allocated once, reused by every statusLight()) ──
+const STATUS_RADIUS  = 0.03;
+const _statusOuterGeo = new THREE.SphereGeometry(STATUS_RADIUS,        12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+const _statusInnerGeo = new THREE.SphereGeometry(STATUS_RADIUS * 0.82, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+
+/** Cache of pre-compiled ShaderMaterials keyed by "level" – one per QualityLevel.
+ *  Each instance has its own uniforms so onBeforeRender can update uTime independently. */
+const _statusMatCache = new Map<QualityLevel, THREE.ShaderMaterial>();
+
+function _getStatusMat(level: QualityLevel): THREE.ShaderMaterial {
+  const cached = _statusMatCache.get(level);
+  if (cached) {
+    // Clone shares the same compiled GL program but gets independent uniforms.
+    const c = cached.clone();
+    c.uniforms = THREE.UniformsUtils.clone(cached.uniforms);
+    c.onBeforeRender = () => { c.uniforms['uTime'].value = performance.now() / 1000; };
+    return c;
+  }
+  const colorHex = QUALITY_LEVEL_COLOR[level];
+  const color = new THREE.Color(colorHex);
+  const freq  = level === 'ERROR' ? 2.0 : level === 'WARNING' ? 1.0 : 0.0;
+  const uniforms = {
+    uTime:  { value: 0.0 },
+    uColor: { value: color.clone() },
+    uFreq:  { value: freq },
+  };
+  const m = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader:   STATUS_VERT,
+    fragmentShader: STATUS_FRAG,
+    transparent:    true,
+    blending:       THREE.AdditiveBlending,
+    depthWrite:     false,
+  });
+  m.onBeforeRender = () => { m.uniforms['uTime'].value = performance.now() / 1000; };
+  _statusMatCache.set(level, m);
+  return m;
+}
+
 /**
  * Creates a small blinking status sphere positioned at the top-right of a
  * landmark model. Colour and blink-rate depend on the worst quality level.
@@ -232,39 +282,14 @@ const STATUS_FRAG = /* glsl */`
  */
 export function statusLight(level: QualityLevel, x = 0.35, y = 1.1, z = 0.0): THREE.Mesh {
   const colorHex = QUALITY_LEVEL_COLOR[level];
-  const color = new THREE.Color(colorHex);
-  const freq = level === 'ERROR' ? 2.0 : level === 'WARNING' ? 1.0 : 0.0;
-  const on   = level !== 'NONE' ? 1.0 : 0.0;
+  const color    = new THREE.Color(colorHex);
 
-  const uniforms = {
-    uTime:  { value: 0.0 },
-    uColor: { value: color },
-    uFreq:  { value: freq },
-  };
-  const mat = new THREE.ShaderMaterial({
-    uniforms,
-    vertexShader:   STATUS_VERT,
-    fragmentShader: STATUS_FRAG,
-    transparent:    true,
-    blending:       THREE.AdditiveBlending,
-    depthWrite:     false,
-  });
-  mat.onBeforeRender = () => { uniforms.uTime.value = performance.now() / 1000; };
-
-  const RADIUS = 0.03;
-  const outerGeo = new THREE.SphereGeometry(RADIUS,        12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-  const innerGeo = new THREE.SphereGeometry(RADIUS * 0.82, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-
-  // Static dark inner dome – always visible, gives the light a physical base.
-  const innerMat = new THREE.MeshBasicMaterial({
-    color: color.clone().multiplyScalar(0.25),
-  });
-  const innerMesh = new THREE.Mesh(innerGeo, innerMat);
-
-  // Outer dome carries the additive blinking shader.
-  const outerMesh = new THREE.Mesh(outerGeo, mat);
+  const outerMat  = _getStatusMat(level);
+  const innerMat  = new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(0.25) });
+  const innerMesh = new THREE.Mesh(_statusInnerGeo, innerMat);
+  const outerMesh = new THREE.Mesh(_statusOuterGeo, outerMat);
   outerMesh.position.set(x, y, z);
-  outerMesh.visible = on > 0;
+  outerMesh.visible = level !== 'NONE';
   outerMesh.add(innerMesh);
 
   return outerMesh;
