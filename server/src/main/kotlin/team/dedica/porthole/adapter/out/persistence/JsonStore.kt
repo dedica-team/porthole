@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Component
 class JsonStore(
-    @Qualifier("persistenceObjectMapper") private val mapper: ObjectMapper,
+    @param:Qualifier("persistenceObjectMapper") private val mapper: ObjectMapper,
     @Value("\${porthole.storage.path:data/json}") storagePath: String,
     @param:Value("\${porthole.storage.debounce-ms:5000}") private val debounceMs: Long,
 ) {
