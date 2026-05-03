@@ -32,6 +32,7 @@ export default function RegularMapView({ actions }: Props) {
     pendingConnectionMeta, setPendingConnectionMeta,
     editorMode, editorTool, editorTerrain,
     mainView, setMainView, setConfirmPending,
+    rendererQualityProfile,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     selectedTile: s.selectedTile, setSelectedTile: s.setSelectedTile,
@@ -41,6 +42,7 @@ export default function RegularMapView({ actions }: Props) {
     pendingConnectionMeta: s.pendingConnectionMeta, setPendingConnectionMeta: s.setPendingConnectionMeta,
     editorMode: s.editorMode, editorTool: s.editorTool, editorTerrain: s.editorTerrain,
     mainView: s.mainView, setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
+    rendererQualityProfile: s.rendererQualityProfile,
   })));
 
   const userId = useAuthStore((s) => s.userId);
@@ -131,7 +133,8 @@ export default function RegularMapView({ actions }: Props) {
             brushMode={editorMode}
             crosshairCursor={!!connectingFromLandmarkId || !!relocatingLandmarkId}
             patchTileRef={patchTileRef}
-            processRenderMode={false}
+            hideDecorations={false}
+            rendererQualityProfile={rendererQualityProfile}
             onFirstRender={() => dismissOverlayRef.current?.()}
           />
         </ErrorBoundary>

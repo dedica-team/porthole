@@ -14,19 +14,18 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
   default: ({
     onTileClick,
     brushMode,
-    processRenderMode,
+    hideDecorations,
     onConnectionClick,
   }: {
     onTileClick: (q: number, r: number) => void;
     brushMode?: boolean;
-    processRenderMode?: boolean;
+    hideDecorations?: boolean;
     onConnectionClick?: (connectionId: string) => void;
   }) => {
     const clickTile = (q: number, r: number) => {
       useMapStore.getState().setSelectedTile({ q, r });
       onTileClick(q, r);
     };
-    // Brush helpers: pointerDown starts a stroke, pointerMove continues it
     const brushDown = (q: number, r: number) => {
       if (brushMode) onTileClick(q, r);
     };
@@ -34,7 +33,7 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
       if (brushMode) onTileClick(q, r);
     };
     return (
-      <div data-testid="hex-grid" data-process-render-mode={processRenderMode ? 'true' : 'false'}>
+      <div data-testid="hex-grid" data-process-render-mode={hideDecorations ? 'true' : 'false'}>
         <button data-testid="tile-empty"   onClick={() => clickTile(1, 0)}>Empty Tile</button>
         <button data-testid="tile-tower"   onClick={() => clickTile(0, 0)}>Tower Tile</button>
         <button data-testid="tile-tower-2" onClick={() => clickTile(3, 0)}>Tower Tile 2</button>

@@ -13,6 +13,7 @@ import {getLandmarkRenderer} from './landmarks/index';
 import {clearNamePlaneCache} from './landmarks/landmarkUtils';
 import {buildConnectionGroup, buildSimpleConnectionLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
+import type {RendererQualityProfile} from './renderQuality';
 import {
     buildTileGeo,
     EDGE_MAT, EDGE_MAT_VERT, EDGE_MAT_DARK,
@@ -79,7 +80,9 @@ interface Props {
      */
     processStageConnections?: StageConnectionEntry[];
     /** When true, terrain decorations (trees, rocks, vegetation) are not rendered. */
-    processRenderMode?: boolean;
+    hideDecorations?: boolean;
+    /** Renderer quality profile – passed to useThreeScene to (re-)init the WebGL renderer. */
+    rendererQualityProfile?: RendererQualityProfile;
 }
 
 const HEX_SIZE = 1;
@@ -110,7 +113,8 @@ export default function HexGrid({
                                     onConnectionClick,
                                     patchTileRef,
                                     processStageConnections,
-                                    processRenderMode = false,
+                                    hideDecorations = false,
+                                    rendererQualityProfile,
                                 }: Props) {
     const mountRef = useRef<HTMLDivElement>(null);
 
@@ -198,7 +202,7 @@ export default function HexGrid({
     const stableNativeMove = useRef((e: PointerEvent) => onNativeMoveRef.current(e));
 
     // ── Scene (delegated to useThreeScene) ───────────────────────────────────
-    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, onFirstRender});
+    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, qualityProfile: rendererQualityProfile, onSceneReady: onFirstRender});
 
     const requestRender = () => {
         threeRef.current?.requestRender();
@@ -259,8 +263,6 @@ export default function HexGrid({
 
     // ── Hex tiles (merged geometry, single material per face type) ─────────────
     useEffect(() => {
-        // Defer heavy geometry work so the browser can paint the loading overlay first.
-        const tid = setTimeout(() => {
         const scene = threeRef.current?.scene;
         if (!scene) return;
         if (tileMergedRef.current) {
@@ -293,7 +295,7 @@ export default function HexGrid({
 
             let topRGB: [number, number, number];
             let sideRGB: [number, number, number];
-            if (processRenderMode) {
+            if (hideDecorations) {
                 // Process mode: flat uniform grey
                 topRGB = PROCESS_TOP_RGB;
                 sideRGB = PROCESS_SIDE_RGB;
@@ -316,7 +318,7 @@ export default function HexGrid({
             const {topGeo, sideGeo, edgeGeoH, edgeGeoV} = buildTileGeo(tile.elevation, x, z, topRGB, sideRGB);
             topGeos.push(topGeo);
             sideGeos.push(sideGeo);
-            if (processRenderMode) {
+            if (hideDecorations) {
                 // All edges into a single bucket – rendered with the grey material
                 edgeGeosDark.push(edgeGeoH, edgeGeoV);
             } else {
@@ -367,7 +369,7 @@ export default function HexGrid({
             ? mergeGeometries(edgeGeosDark, false) ?? new THREE.BufferGeometry()
             : new THREE.BufferGeometry();
         edgeGeosDark.forEach((g) => g.dispose());
-        const edgeLinesDark = new THREE.LineSegments(mergedEdgeDark, processRenderMode ? PROCESS_EDGE_MAT : EDGE_MAT_DARK);
+        const edgeLinesDark = new THREE.LineSegments(mergedEdgeDark, hideDecorations ? PROCESS_EDGE_MAT : EDGE_MAT_DARK);
         scene.add(edgeLinesDark);
 
         tileMergedRef.current = {
@@ -394,14 +396,11 @@ export default function HexGrid({
         applyTileHighlights(tiles);
 
         requestRender();
-        }); // end setTimeout
-        return () => clearTimeout(tid);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.map, processRenderMode]);
+    }, [map.map, hideDecorations]);
 
     // ── Landmark meshes ─────────────────────────────────────────────────────────
     useEffect(() => {
-        const tid = setTimeout(() => {
         const scene = threeRef.current?.scene;
         if (!scene) return;
         landmarkMeshMapRef.current.forEach((g) => {
@@ -465,9 +464,7 @@ export default function HexGrid({
             landmarkMeshMapRef.current.set(landmark.id, landmarkGroup);
         });
         requestRender();
-        }); // end setTimeout
         return () => {
-            clearTimeout(tid);
             clearNamePlaneCache();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -533,7 +530,7 @@ export default function HexGrid({
         // Let each renderer pre-allocate shared GPU resources.
         // We pass the total tile count as a safe upper bound; each renderer
         // multiplies by its own MAX_X_PER_TILE constant internally.
-        if (!processRenderMode) {
+        if (!hideDecorations) {
             Object.entries(TERRAIN_RENDERER_MAP).forEach(([terrain, renderer]) => {
                 if (renderer.init) {
                     const objs = renderer.init(scene, tiles.length);
@@ -571,7 +568,7 @@ export default function HexGrid({
             capturedTerrainObjects.clear();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.map.tiles, processRenderMode]);
+    }, [map.map.tiles, hideDecorations]);
 
     // ── Connection lines ─────────────────────────────────────────────────────────
     useEffect(() => {
@@ -592,7 +589,7 @@ export default function HexGrid({
 
         const tiles = map.map?.tiles ?? [];
         Object.values(map.connections ?? {}).forEach((conn) => {
-            const obj = processRenderMode
+            const obj = hideDecorations
                 ? buildSimpleConnectionLine(conn, tiles)
                 : buildConnectionGroup(conn, tiles);
             if (!obj) return;
@@ -602,7 +599,7 @@ export default function HexGrid({
 
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.connections, map.map.tiles, processRenderMode]);
+    }, [map.connections, map.map.tiles, hideDecorations]);
 
     // ── Connection highlight / dim / hide in process mode ────────────────────────────────
     useEffect(() => {
@@ -633,7 +630,7 @@ export default function HexGrid({
     const applyTileHighlights = (tiles = map.map?.tiles ?? []) => {
         const topInfo = topColBufRef.current;
         const sideInfo = sideColBufRef.current;
-        if (!topInfo || !sideInfo || !processRenderMode) return;
+        if (!topInfo || !sideInfo || !hideDecorations) return;
         const highlighted = stageHighlightTilesRef.current;
         // When no set is provided the stage-specific highlight feature is inactive —
         // reset everything to uniform process grey.

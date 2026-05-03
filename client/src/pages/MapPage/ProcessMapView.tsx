@@ -42,6 +42,7 @@ export default function ProcessMapView({ actions }: Props) {
     processes, setProcesses,
     pickingConnection,
     setActiveProcessId,
+    rendererQualityProfile,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     updateMap: s.updateMap,
@@ -53,6 +54,7 @@ export default function ProcessMapView({ actions }: Props) {
     processes: s.processes, setProcesses: s.setProcesses,
     pickingConnection: s.pickingConnection,
     setActiveProcessId: s.setActiveProcessId,
+    rendererQualityProfile: s.rendererQualityProfile,
   })));
 
   const userId = useAuthStore((s) => s.userId);
@@ -263,7 +265,8 @@ export default function ProcessMapView({ actions }: Props) {
             fpsRef={fpsRef}
             brushMode={false}
             crosshairCursor={pickingConnection}
-            processRenderMode={true}
+            hideDecorations={true}
+            rendererQualityProfile={rendererQualityProfile}
             highlightConnectionIds={activeProcessConnectionIds}
             activeStageConnectionIds={activeStageConnectionIds}
             processStageConnections={processStageConnections}

@@ -13,6 +13,14 @@ import { useAuthStore, useMapStore } from '@/store/mapStore';
 import { editMap, setCollaborationMode, acceptJoinRequest, declineJoinRequest, logoutSession, exportMapJson, removeCollaborator } from '@/api/mapApi';
 import type { CollaborationMode } from '@/types/session';
 import { COLLABORATION_MODE_LABELS } from '@/types/session';
+import type { RendererQualityProfile } from '@/components/HexGrid/renderQuality';
+
+const RENDERER_QUALITY_LABELS: Record<RendererQualityProfile, string> = {
+  high: 'High',
+  balanced: 'Balanced',
+  low: 'Low',
+};
+
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,6 +36,8 @@ export default function Navbar() {
   const setMainView = useMapStore((s) => s.setMainView);
   const processMode = useMapStore((s) => s.processMode);
   const setProcessMode = useMapStore((s) => s.setProcessMode);
+  const rendererQualityProfile = useMapStore((s) => s.rendererQualityProfile);
+  const setRendererQualityProfile = useMapStore((s) => s.setRendererQualityProfile);
   const isOnMap = location.pathname.startsWith('/map/');
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -506,7 +516,7 @@ export default function Navbar() {
             <Separator orientation="vertical" className="h-5 bg-border" />
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0" aria-label="User menu">
                   <Avatar className="h-7 w-7">
                     {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
                     <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
@@ -515,7 +525,7 @@ export default function Navbar() {
                   </Avatar>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-48 p-4" align="end">
+              <PopoverContent className="w-56 p-4" align="end">
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-0.5">
                     <p className="text-xs font-semibold text-foreground truncate">{username}</p>
@@ -523,6 +533,21 @@ export default function Navbar() {
                     {userId && (
                       <p className="text-[10px] text-muted-foreground font-mono truncate select-all mt-0.5" title={userId}>{userId}</p>
                     )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="renderer-quality-profile" className="text-xs">Rendering quality</Label>
+                    <select
+                      id="renderer-quality-profile"
+                      value={rendererQualityProfile}
+                      onChange={(e) => setRendererQualityProfile(e.target.value as RendererQualityProfile)}
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      {(Object.keys(RENDERER_QUALITY_LABELS) as RendererQualityProfile[]).map((profile) => (
+                        <option key={profile} value={profile}>
+                          {RENDERER_QUALITY_LABELS[profile]}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <Separator />
                   <Button
