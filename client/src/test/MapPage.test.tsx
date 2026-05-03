@@ -14,12 +14,12 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
   default: ({
     onTileClick,
     brushMode,
-    hideDecorations,
+    processRenderMode,
     onConnectionClick,
   }: {
     onTileClick: (q: number, r: number) => void;
     brushMode?: boolean;
-    hideDecorations?: boolean;
+    processRenderMode?: boolean;
     onConnectionClick?: (connectionId: string) => void;
   }) => {
     const clickTile = (q: number, r: number) => {
@@ -34,7 +34,7 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
       if (brushMode) onTileClick(q, r);
     };
     return (
-      <div data-testid="hex-grid" data-hide-decorations={hideDecorations ? 'true' : 'false'}>
+      <div data-testid="hex-grid" data-process-render-mode={processRenderMode ? 'true' : 'false'}>
         <button data-testid="tile-empty"   onClick={() => clickTile(1, 0)}>Empty Tile</button>
         <button data-testid="tile-tower"   onClick={() => clickTile(0, 0)}>Tower Tile</button>
         <button data-testid="tile-tower-2" onClick={() => clickTile(3, 0)}>Tower Tile 2</button>
@@ -580,7 +580,7 @@ describe('MapPage – brush mode', () => {
 
 // ── MapPage – process mode ────────────────────────────────────────────────────
 
-describe('MapPage – process mode: hideDecorations', () => {
+describe('MapPage – process mode: processRenderMode', () => {
   const MAP_WITH_CONNECTION = makeMap({
     connections: {
       'conn-1': {
@@ -596,7 +596,7 @@ describe('MapPage – process mode: hideDecorations', () => {
     vi.mocked(mapApi.getMap).mockResolvedValue(MAP_WITH_CONNECTION);
   });
 
-  it('passes hideDecorations=true to HexGrid when processMode is active', async () => {
+  it('passes processRenderMode=true to HexGrid when processMode is active', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
@@ -608,11 +608,11 @@ describe('MapPage – process mode: hideDecorations', () => {
     // Set processMode after initial load (getMap/setCurrentMap may reset it)
     await setMapState({ processMode: true, processesFetched: true });
     await waitFor(() =>
-      expect(screen.getByTestId('hex-grid').dataset.hideDecorations).toBe('true'),
+      expect(screen.getByTestId('hex-grid').dataset.processRenderMode).toBe('true'),
     );
   });
 
-  it('passes hideDecorations=false to HexGrid when processMode is inactive', async () => {
+  it('passes processRenderMode=false to HexGrid when processMode is inactive', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
@@ -621,7 +621,7 @@ describe('MapPage – process mode: hideDecorations', () => {
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
-    expect(screen.getByTestId('hex-grid').dataset.hideDecorations).toBe('false');
+    expect(screen.getByTestId('hex-grid').dataset.processRenderMode).toBe('false');
   });
 
   it('tile clicks do nothing (no sidebar panel) when processMode is active', async () => {
@@ -635,7 +635,7 @@ describe('MapPage – process mode: hideDecorations', () => {
     await waitFor(() => screen.getByTestId('hex-grid'));
     await setMapState({ processMode: true, processesFetched: true });
     await waitFor(() =>
-      expect(screen.getByTestId('hex-grid').dataset.hideDecorations).toBe('true'),
+      expect(screen.getByTestId('hex-grid').dataset.processRenderMode).toBe('true'),
     );
     fireEvent.click(screen.getByTestId('tile-empty'));
     expect(screen.queryByText('Create Landmark')).not.toBeInTheDocument();

@@ -270,7 +270,6 @@ export const useMapStore = create<MapStore>((set) => ({
     mainView: on ? 'process' : state.mainView,
     editorMode: on ? false : state.editorMode,
     pickingConnection: on ? state.pickingConnection : false,
-    // Clear sidebar selection when entering or leaving process mode
     selectedLandmark: on ? null : state.selectedLandmark,
     selectedTile: on ? null : state.selectedTile,
     selectedConnectionId: on ? null : state.selectedConnectionId,
@@ -288,7 +287,6 @@ export const useMapStore = create<MapStore>((set) => ({
   setChoreListsError: (e) => set({ choreListsError: e }),
   setActiveChoreListId: (id) => set({ activeChoreListId: id }),
 }));
-
 
 
 

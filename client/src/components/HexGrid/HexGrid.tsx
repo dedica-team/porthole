@@ -1,10 +1,10 @@
 import {useEffect, useRef} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import type { HexCoordinate, HexTile, Terrain } from '@/types/hex';
-import type { Landmark } from '@/types/landmark';
-import type { SessionState } from '@/types/session';
-import { worstLevel } from '@/types/landmark';
+import type {HexCoordinate, HexTile, Terrain} from '@/types/hex';
+import type {Landmark} from '@/types/landmark';
+import type {SessionState} from '@/types/session';
+import {worstLevel} from '@/types/landmark';
 import {hexToWorld} from '@/utils/hexUtils.ts';
 import {useMapStore} from '@/store/mapStore.ts';
 import {TERRAIN_RENDERER_MAP, tileHeight,} from './terrainRenderers';
@@ -20,18 +20,18 @@ import {
     TMPL_TOP_VERT_COUNT, TMPL_SIDE_VERT_COUNT,
     SELECTION_COL_HEIGHT, SELECTION_GEO, SELECTION_MAT,
 } from './tileGeometry';
-import { ProcessArrowRenderer } from './ProcessArrowRenderer';
-import type { StageConnectionEntry } from './ProcessArrowRenderer';
-import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import {ProcessArrowRenderer} from './ProcessArrowRenderer';
+import type {StageConnectionEntry} from './ProcessArrowRenderer';
+import {CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
 
 /** Uniform grey used for all tiles in process mode. */
-const PROCESS_TOP_RGB:  [number, number, number] = [0.13, 0.13, 0.13];
+const PROCESS_TOP_RGB: [number, number, number] = [0.13, 0.13, 0.13];
 const PROCESS_SIDE_RGB: [number, number, number] = [0.07, 0.07, 0.07];
-const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x2a2a2a, transparent: false });
+const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({color: 0x2a2a2a, transparent: false});
 
 /** Lighter grey for tiles belonging to the active stage. */
-const STAGE_TOP_RGB:  [number, number, number] = [0.32, 0.32, 0.34];
+const STAGE_TOP_RGB: [number, number, number] = [0.32, 0.32, 0.34];
 const STAGE_SIDE_RGB: [number, number, number] = [0.28, 0.28, 0.30];
 
 interface Props {
@@ -40,6 +40,8 @@ interface Props {
     fpsRef?: React.RefObject<HTMLDivElement | null>;
     brushMode?: boolean;
     crosshairCursor?: boolean;
+    /** Called once after the first Three.js frame with scene content. */
+    onFirstRender?: () => void;
     /**
      * All connection IDs that belong to the active process (used for dimming/hiding).
      * Connections in this set that are also in activeStageConnectionIds are hidden (replaced by arrows).
@@ -77,7 +79,7 @@ interface Props {
      */
     processStageConnections?: StageConnectionEntry[];
     /** When true, terrain decorations (trees, rocks, vegetation) are not rendered. */
-    hideDecorations?: boolean;
+    processRenderMode?: boolean;
 }
 
 const HEX_SIZE = 1;
@@ -99,16 +101,17 @@ export default function HexGrid({
                                     fpsRef,
                                     brushMode = false,
                                     crosshairCursor = false,
+                                    onFirstRender,
                                     highlightConnectionIds,
                                     activeStageConnectionIds,
                                     landmarkHighlightColors,
                                     stageHighlightTiles,
                                     metricOverlayEntries,
                                     onConnectionClick,
-                                     patchTileRef,
-                                     processStageConnections,
-                                     hideDecorations = false,
-                                 }: Props) {
+                                    patchTileRef,
+                                    processStageConnections,
+                                    processRenderMode = false,
+                                }: Props) {
     const mountRef = useRef<HTMLDivElement>(null);
 
     const tileMergedRef = useRef<{
@@ -119,7 +122,7 @@ export default function HexGrid({
         edgesDark: THREE.LineSegments
     } | null>(null);
     /** Flat Float32Array of RGB vertex colours for every top vertex, in tile order. */
-    const topColBufRef  = useRef<{ buf: THREE.Float32BufferAttribute; vertsPerTile: number } | null>(null);
+    const topColBufRef = useRef<{ buf: THREE.Float32BufferAttribute; vertsPerTile: number } | null>(null);
     const sideColBufRef = useRef<{ buf: THREE.Float32BufferAttribute; vertsPerTile: number } | null>(null);
     const tileIndexRef = useRef<Map<string, number>>(new Map());
     const tileByCoordRef = useRef<Map<string, HexTile>>(new Map());
@@ -133,7 +136,9 @@ export default function HexGrid({
     const optimisticTerrainRef = useRef<Map<string, Terrain>>(new Map());
     const selectionMeshRef = useRef<THREE.Mesh | null>(null);
     const stageHighlightTilesRef = useRef<Set<string> | undefined>(stageHighlightTiles);
-    useEffect(() => { stageHighlightTilesRef.current = stageHighlightTiles; }, [stageHighlightTiles]);
+    useEffect(() => {
+        stageHighlightTilesRef.current = stageHighlightTiles;
+    }, [stageHighlightTiles]);
 
     const selectedTile = useMapStore((s) => s.selectedTile);
     const setSelectedTile = useMapStore((s) => s.setSelectedTile);
@@ -193,7 +198,7 @@ export default function HexGrid({
     const stableNativeMove = useRef((e: PointerEvent) => onNativeMoveRef.current(e));
 
     // ── Scene (delegated to useThreeScene) ───────────────────────────────────
-    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current});
+    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, onFirstRender});
 
     const requestRender = () => {
         threeRef.current?.requestRender();
@@ -206,7 +211,7 @@ export default function HexGrid({
         optimisticTerrainRef.current.set(`${q},${r}`, terrain);
         const tc = TERRAIN_RENDERER_MAP[terrain]?.tileColors() ?? TERRAIN_RENDERER_MAP['GRASS'].tileColors();
 
-        const topInfo  = topColBufRef.current;
+        const topInfo = topColBufRef.current;
         const sideInfo = sideColBufRef.current;
 
         const writeRGB = (info: { buf: THREE.Float32BufferAttribute; vertsPerTile: number },
@@ -217,14 +222,14 @@ export default function HexGrid({
             const g = Math.min(1, col.g + emissive.g);
             const b = Math.min(1, col.b + emissive.b);
             for (let v = 0; v < info.vertsPerTile; v++) {
-                info.buf.array[base + v * 3]     = r;
+                info.buf.array[base + v * 3] = r;
                 info.buf.array[base + v * 3 + 1] = g;
                 info.buf.array[base + v * 3 + 2] = b;
             }
             info.buf.needsUpdate = true;
         };
 
-        if (topInfo)  writeRGB(topInfo,  tc.topColor,  tc.topEmissive);
+        if (topInfo) writeRGB(topInfo, tc.topColor, tc.topEmissive);
         if (sideInfo) writeRGB(sideInfo, tc.sideColor, tc.sideEmissive);
         void elevation;
         requestRender();
@@ -234,7 +239,7 @@ export default function HexGrid({
         if (patchTileRef) {
             (patchTileRef as React.MutableRefObject<typeof patchTileMaterial | null>).current = patchTileMaterial;
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const disposeHighlightRings = (scene: THREE.Scene) => {
@@ -254,6 +259,8 @@ export default function HexGrid({
 
     // ── Hex tiles (merged geometry, single material per face type) ─────────────
     useEffect(() => {
+        // Defer heavy geometry work so the browser can paint the loading overlay first.
+        const tid = setTimeout(() => {
         const scene = threeRef.current?.scene;
         if (!scene) return;
         if (tileMergedRef.current) {
@@ -264,7 +271,7 @@ export default function HexGrid({
             tileMergedRef.current.edgesVert.geometry.dispose();
             tileMergedRef.current.edgesDark.geometry.dispose();
         }
-        topColBufRef.current  = null;
+        topColBufRef.current = null;
         sideColBufRef.current = null;
         tileIndexRef.current.clear();
         tileByCoordRef.current.clear();
@@ -276,24 +283,24 @@ export default function HexGrid({
         const tiles = map.map?.tiles ?? [];
         const topGeos: THREE.BufferGeometry[] = [], sideGeos: THREE.BufferGeometry[] = [];
         const edgeGeosBright: THREE.BufferGeometry[] = [];   // land H edges (top/bottom rings)
-        const edgeGeosVert:   THREE.BufferGeometry[] = [];   // land V edges (pillars)
-        const edgeGeosDark:   THREE.BufferGeometry[] = [];   // water/swamp all edges
+        const edgeGeosVert: THREE.BufferGeometry[] = [];   // land V edges (pillars)
+        const edgeGeosDark: THREE.BufferGeometry[] = [];   // water/swamp all edges
         const tmp = new THREE.Color();
 
         tiles.forEach((tile: HexTile, idx: number) => {
             const {q, r} = tile.coordinate;
             const {x, z} = hexToWorld(q, r, HEX_SIZE);
 
-            let topRGB:  [number, number, number];
+            let topRGB: [number, number, number];
             let sideRGB: [number, number, number];
-            if (hideDecorations) {
+            if (processRenderMode) {
                 // Process mode: flat uniform grey
-                topRGB  = PROCESS_TOP_RGB;
+                topRGB = PROCESS_TOP_RGB;
                 sideRGB = PROCESS_SIDE_RGB;
             } else {
                 const tc = TERRAIN_RENDERER_MAP[tile.terrain]?.tileColors() ?? TERRAIN_RENDERER_MAP['GRASS'].tileColors();
                 tmp.setHex(tc.topColor);
-                topRGB  = [
+                topRGB = [
                     Math.min(1, tmp.r + tc.topEmissive.r),
                     Math.min(1, tmp.g + tc.topEmissive.g),
                     Math.min(1, tmp.b + tc.topEmissive.b),
@@ -309,7 +316,7 @@ export default function HexGrid({
             const {topGeo, sideGeo, edgeGeoH, edgeGeoV} = buildTileGeo(tile.elevation, x, z, topRGB, sideRGB);
             topGeos.push(topGeo);
             sideGeos.push(sideGeo);
-            if (hideDecorations) {
+            if (processRenderMode) {
                 // All edges into a single bucket – rendered with the grey material
                 edgeGeosDark.push(edgeGeoH, edgeGeoV);
             } else {
@@ -326,7 +333,7 @@ export default function HexGrid({
         });
 
         // Merge without groups → single draw call each
-        const mergedTop  = mergeGeometries(topGeos,  false) ?? new THREE.BufferGeometry();
+        const mergedTop = mergeGeometries(topGeos, false) ?? new THREE.BufferGeometry();
         topGeos.forEach((g) => g.dispose());
         const topMesh = new THREE.Mesh(mergedTop, TILE_TOP_MAT);
         scene.add(topMesh);
@@ -337,10 +344,10 @@ export default function HexGrid({
         scene.add(sideMesh);
 
         // Store colour buffer refs for patchTileMaterial
-        const topColAttr  = mergedTop.getAttribute('color')  as THREE.Float32BufferAttribute | undefined;
+        const topColAttr = mergedTop.getAttribute('color') as THREE.Float32BufferAttribute | undefined;
         const sideColAttr = mergedSide.getAttribute('color') as THREE.Float32BufferAttribute | undefined;
-        if (topColAttr)  topColBufRef.current  = { buf: topColAttr,  vertsPerTile: TMPL_TOP_VERT_COUNT };
-        if (sideColAttr) sideColBufRef.current = { buf: sideColAttr, vertsPerTile: TMPL_SIDE_VERT_COUNT };
+        if (topColAttr) topColBufRef.current = {buf: topColAttr, vertsPerTile: TMPL_TOP_VERT_COUNT};
+        if (sideColAttr) sideColBufRef.current = {buf: sideColAttr, vertsPerTile: TMPL_SIDE_VERT_COUNT};
 
         const mergedEdgeBright = edgeGeosBright.length
             ? mergeGeometries(edgeGeosBright, false) ?? new THREE.BufferGeometry()
@@ -360,10 +367,16 @@ export default function HexGrid({
             ? mergeGeometries(edgeGeosDark, false) ?? new THREE.BufferGeometry()
             : new THREE.BufferGeometry();
         edgeGeosDark.forEach((g) => g.dispose());
-        const edgeLinesDark = new THREE.LineSegments(mergedEdgeDark, hideDecorations ? PROCESS_EDGE_MAT : EDGE_MAT_DARK);
+        const edgeLinesDark = new THREE.LineSegments(mergedEdgeDark, processRenderMode ? PROCESS_EDGE_MAT : EDGE_MAT_DARK);
         scene.add(edgeLinesDark);
 
-        tileMergedRef.current = {tops: topMesh, sides: sideMesh, edges: edgeLines, edgesVert: edgeLinesVert, edgesDark: edgeLinesDark};
+        tileMergedRef.current = {
+            tops: topMesh,
+            sides: sideMesh,
+            edges: edgeLines,
+            edgesVert: edgeLinesVert,
+            edgesDark: edgeLinesDark
+        };
 
         // Ensure the process arrow group is in the scene after every tile rebuild.
         // (The tile effect clears and re-creates the scene objects, so we must re-add.)
@@ -381,11 +394,14 @@ export default function HexGrid({
         applyTileHighlights(tiles);
 
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.map, hideDecorations]);
+        }); // end setTimeout
+        return () => clearTimeout(tid);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [map.map, processRenderMode]);
 
     // ── Landmark meshes ─────────────────────────────────────────────────────────
     useEffect(() => {
+        const tid = setTimeout(() => {
         const scene = threeRef.current?.scene;
         if (!scene) return;
         landmarkMeshMapRef.current.forEach((g) => {
@@ -449,10 +465,12 @@ export default function HexGrid({
             landmarkMeshMapRef.current.set(landmark.id, landmarkGroup);
         });
         requestRender();
+        }); // end setTimeout
         return () => {
+            clearTimeout(tid);
             clearNamePlaneCache();
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map.landmarks, map.map.tiles]);
 
     // ── Highlight selected tile – infinity column ────────────────────────────
@@ -480,13 +498,13 @@ export default function HexGrid({
         }
 
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTile, map.map.tiles]);
 
     const adjacentTiles = (coordinate: HexCoordinate): HexTile[] => {
         return HEX_DIRS.map(
             dir => {
-                const adjacent = coordinate.q+dir.dq + ',' + (coordinate.r+dir.dr);
+                const adjacent = coordinate.q + dir.dq + ',' + (coordinate.r + dir.dr);
                 return tileByCoordRef.current.get(adjacent)
             }
         ).filter((tile): tile is HexTile => tile !== undefined);
@@ -515,27 +533,27 @@ export default function HexGrid({
         // Let each renderer pre-allocate shared GPU resources.
         // We pass the total tile count as a safe upper bound; each renderer
         // multiplies by its own MAX_X_PER_TILE constant internally.
-        if (!hideDecorations) {
-        Object.entries(TERRAIN_RENDERER_MAP).forEach(([terrain, renderer]) => {
-            if (renderer.init) {
-                const objs = renderer.init(scene, tiles.length);
-                if (objs.length) terrainObjectsRef.current.set(`__init__${terrain}`, objs);
-            }
-        });
+        if (!processRenderMode) {
+            Object.entries(TERRAIN_RENDERER_MAP).forEach(([terrain, renderer]) => {
+                if (renderer.init) {
+                    const objs = renderer.init(scene, tiles.length);
+                    if (objs.length) terrainObjectsRef.current.set(`__init__${terrain}`, objs);
+                }
+            });
 
-        tiles.forEach((tile) => {
-            const key = `${tile.coordinate.q},${tile.coordinate.r}`;
-            const objs = TERRAIN_RENDERER_MAP[tile.terrain].build(tile, scene, adjacentTiles(tile.coordinate));
-            if (objs.length) terrainObjectsRef.current.set(key, objs);
-        });
+            tiles.forEach((tile) => {
+                const key = `${tile.coordinate.q},${tile.coordinate.r}`;
+                const objs = TERRAIN_RENDERER_MAP[tile.terrain].build(tile, scene, adjacentTiles(tile.coordinate));
+                if (objs.length) terrainObjectsRef.current.set(key, objs);
+            });
 
-        // Flush all renderers that batch across tiles
-        Object.entries(TERRAIN_RENDERER_MAP).forEach(([terrain, renderer]) => {
-            if (renderer.flush) {
-                const objs = renderer.flush(scene);
-                if (objs.length) terrainObjectsRef.current.set(`__flush__${terrain}`, objs);
-            }
-        });
+            // Flush all renderers that batch across tiles
+            Object.entries(TERRAIN_RENDERER_MAP).forEach(([terrain, renderer]) => {
+                if (renderer.flush) {
+                    const objs = renderer.flush(scene);
+                    if (objs.length) terrainObjectsRef.current.set(`__flush__${terrain}`, objs);
+                }
+            });
         }
         requestRender();
         // Capture ref map for cleanup — the ref may point elsewhere by the time
@@ -545,13 +563,15 @@ export default function HexGrid({
             capturedTerrainObjects.forEach((objs) => {
                 objs.forEach((obj) => {
                     scene.remove(obj);
-                    obj.traverse((child) => { (child as THREE.Mesh).geometry?.dispose(); });
+                    obj.traverse((child) => {
+                        (child as THREE.Mesh).geometry?.dispose();
+                    });
                 });
             });
             capturedTerrainObjects.clear();
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.map.tiles, hideDecorations]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [map.map.tiles, processRenderMode]);
 
     // ── Connection lines ─────────────────────────────────────────────────────────
     useEffect(() => {
@@ -572,7 +592,7 @@ export default function HexGrid({
 
         const tiles = map.map?.tiles ?? [];
         Object.values(map.connections ?? {}).forEach((conn) => {
-            const obj = hideDecorations
+            const obj = processRenderMode
                 ? buildSimpleConnectionLine(conn, tiles)
                 : buildConnectionGroup(conn, tiles);
             if (!obj) return;
@@ -581,13 +601,13 @@ export default function HexGrid({
         });
 
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.connections, map.map.tiles, hideDecorations]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [map.connections, map.map.tiles, processRenderMode]);
 
     // ── Connection highlight / dim / hide in process mode ────────────────────────────────
     useEffect(() => {
         connectionMeshMapRef.current.forEach((obj, connId) => {
-            const inProcess   = !highlightConnectionIds || highlightConnectionIds.has(connId);
+            const inProcess = !highlightConnectionIds || highlightConnectionIds.has(connId);
             const inOpenStage = !!(activeStageConnectionIds?.has(connId));
             // Connections in the open stage are hidden — replaced by the arrow overlay
             obj.visible = !inOpenStage;
@@ -604,38 +624,38 @@ export default function HexGrid({
             });
         });
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [highlightConnectionIds, activeStageConnectionIds]);
 
     // ── Stage tile highlight (lighter grey for active-stage tiles in process mode) ──
     // Extracted as a plain function so it can be called both after geometry rebuild
     // and whenever stageHighlightTiles changes — avoiding the ordering race.
     const applyTileHighlights = (tiles = map.map?.tiles ?? []) => {
-        const topInfo  = topColBufRef.current;
+        const topInfo = topColBufRef.current;
         const sideInfo = sideColBufRef.current;
-        if (!topInfo || !sideInfo || !hideDecorations) return;
+        if (!topInfo || !sideInfo || !processRenderMode) return;
         const highlighted = stageHighlightTilesRef.current;
         // When no set is provided the stage-specific highlight feature is inactive —
         // reset everything to uniform process grey.
         tiles.forEach((_tile, idx) => {
             const key = `${_tile.coordinate.q},${_tile.coordinate.r}`;
             const isHighlighted = highlighted != null && highlighted.has(key);
-            const [tr, tg, tb] = isHighlighted ? STAGE_TOP_RGB  : PROCESS_TOP_RGB;
+            const [tr, tg, tb] = isHighlighted ? STAGE_TOP_RGB : PROCESS_TOP_RGB;
             const [sr, sg, sb] = isHighlighted ? STAGE_SIDE_RGB : PROCESS_SIDE_RGB;
             const tBase = idx * topInfo.vertsPerTile * 3;
             for (let v = 0; v < topInfo.vertsPerTile; v++) {
-                topInfo.buf.array[tBase + v * 3]     = tr;
+                topInfo.buf.array[tBase + v * 3] = tr;
                 topInfo.buf.array[tBase + v * 3 + 1] = tg;
                 topInfo.buf.array[tBase + v * 3 + 2] = tb;
             }
             const sBase = idx * sideInfo.vertsPerTile * 3;
             for (let v = 0; v < sideInfo.vertsPerTile; v++) {
-                sideInfo.buf.array[sBase + v * 3]     = sr;
+                sideInfo.buf.array[sBase + v * 3] = sr;
                 sideInfo.buf.array[sBase + v * 3 + 1] = sg;
                 sideInfo.buf.array[sBase + v * 3 + 2] = sb;
             }
         });
-        topInfo.buf.needsUpdate  = true;
+        topInfo.buf.needsUpdate = true;
         sideInfo.buf.needsUpdate = true;
     };
 
@@ -644,7 +664,7 @@ export default function HexGrid({
         stageHighlightTilesRef.current = stageHighlightTiles;
         applyTileHighlights();
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stageHighlightTiles]);
 
     // ── Highlighted tile ring mesh (process mode) ─────────────────────────────────
@@ -673,22 +693,22 @@ export default function HexGrid({
         landmarkHighlightColors.forEach((color, key) => {
             const tile = tileByCoordRef.current.get(key);
             if (!tile) return;
-            const { q, r } = tile.coordinate;
-            const { x: cx, z: cz } = hexToWorld(q, r, HEX_SIZE);
+            const {q, r} = tile.coordinate;
+            const {x: cx, z: cz} = hexToWorld(q, r, HEX_SIZE);
             const y = tileHeight(tile.elevation) + 0.04;
 
             const verts: number[] = [];
             const idx: number[] = [];
             for (let k = 0; k < 6; k++) {
-                const a0 = (k       * Math.PI * 2) / 6 + CORNER;
+                const a0 = (k * Math.PI * 2) / 6 + CORNER;
                 const a1 = ((k + 1) * Math.PI * 2) / 6 + CORNER;
                 const ox0 = cx + OUTER * Math.cos(a0), oz0 = cz + OUTER * Math.sin(a0);
                 const ox1 = cx + OUTER * Math.cos(a1), oz1 = cz + OUTER * Math.sin(a1);
                 const ix0 = cx + INNER * Math.cos(a0), iz0 = cz + INNER * Math.sin(a0);
                 const ix1 = cx + INNER * Math.cos(a1), iz1 = cz + INNER * Math.sin(a1);
                 const base = k * 4;
-                verts.push(ox0, y, oz0,  ox1, y, oz1,  ix1, y, iz1,  ix0, y, iz0);
-                idx.push(base, base+1, base+2,  base, base+2, base+3);
+                verts.push(ox0, y, oz0, ox1, y, oz1, ix1, y, iz1, ix0, y, iz0);
+                idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
             }
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
@@ -698,7 +718,10 @@ export default function HexGrid({
             geosByColor.get(color)!.push(geo);
         });
 
-        if (geosByColor.size === 0) { requestRender(); return; }
+        if (geosByColor.size === 0) {
+            requestRender();
+            return;
+        }
 
         // Merge per-colour group and add one Mesh per unique colour.
         // Store all in a Group so we can remove them at once via highlightEdgesRef.
@@ -722,7 +745,7 @@ export default function HexGrid({
         scene.add(group);
         highlightEdgesRef.current = group;
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [landmarkHighlightColors, map.map.tiles]);
 
     // ── Metric overlay labels (CSS2D billboarding) ───────────────────────────────
@@ -747,7 +770,7 @@ export default function HexGrid({
             if (!entry || !landmark.coordinate) return;
 
             const tile = tileByCoordRef.current.get(`${landmark.coordinate.q},${landmark.coordinate.r}`);
-            const { x, z } = hexToWorld(landmark.coordinate.q, landmark.coordinate.r, HEX_SIZE);
+            const {x, z} = hexToWorld(landmark.coordinate.q, landmark.coordinate.r, HEX_SIZE);
             const y = tileHeight(tile?.elevation ?? 0) + 1.25;
 
             const el = document.createElement('div');
@@ -774,7 +797,7 @@ export default function HexGrid({
         });
 
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [metricOverlayEntries, map.landmarks, map.map.tiles]);
 
     // ── Process arrow overlay ─────────────────────────────────────────────────────
@@ -790,7 +813,7 @@ export default function HexGrid({
             renderer.update(processStageConnections, tiles);
         }
         requestRender();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [processStageConnections, map.map]);
 
     // Dispose arrow renderer on unmount

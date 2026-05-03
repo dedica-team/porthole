@@ -6,11 +6,12 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import { TRON_BLACK } from './terrainUtils';
 
-interface UseThreeSceneOptions {
+export interface UseThreeSceneOptions {
   mountRef: React.RefObject<HTMLDivElement | null>;
   fpsRef?: React.RefObject<HTMLDivElement | null>;
-  /** Called whenever the scene should re-render. Set needsRender = true inside. */
   onNativePointerMove?: (e: PointerEvent) => void;
+  /** Called once after the first Three.js frame that contains scene geometry. */
+  onFirstRender?: () => void;
 }
 
 export interface ThreeRefs {
@@ -34,9 +35,12 @@ export function useThreeScene({
   mountRef,
   fpsRef,
   onNativePointerMove,
+  onFirstRender,
 }: UseThreeSceneOptions): React.RefObject<ThreeRefs | null> {
   const threeRef = useRef<ThreeRefs | null>(null);
   const frameRef = useRef<number>(0);
+  const onFirstRenderRef = useRef(onFirstRender);
+  onFirstRenderRef.current = onFirstRender;
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -74,7 +78,12 @@ export function useThreeScene({
     mount.appendChild(css2dRenderer.domElement);
 
     const needsRenderRef = { current: true };
-    const requestRender = () => { needsRenderRef.current = true; };
+    let externalRenderSeen = false;
+    let firstRenderPending = true;
+    const requestRender = () => {
+      externalRenderSeen = true;
+      needsRenderRef.current = true;
+    };
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -164,6 +173,12 @@ export function useThreeScene({
         renderer.render(scene, camera);
         css2dRenderer.render(scene, camera);
         const renderCost = performance.now() - t0;
+
+        if (firstRenderPending && externalRenderSeen) {
+          firstRenderPending = false;
+          onFirstRenderRef.current?.();
+        }
+
 
         // Update EMA of render cost.
         renderCostEma = EMA_ALPHA * renderCost + (1 - EMA_ALPHA) * renderCostEma;

@@ -7,10 +7,10 @@
  */
 import { useRef, useCallback } from 'react';
 import HexGrid from '@/components/HexGrid/HexGrid';
+import MapInitOverlay from '@/components/HexGrid/MapInitOverlay';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { useMapStore, useAuthStore } from '@/store/mapStore';
-import { useShallow } from 'zustand/react/shallow';
+import { useMapStore, useAuthStore } from '@/store/mapStore';import { useShallow } from 'zustand/react/shallow';
 import { positionLandmark, createConnection } from '@/api/mapApi';
 import type { Terrain } from '@/types/hex';
 import type { Landmark } from '@/types/landmark';
@@ -48,6 +48,7 @@ export default function RegularMapView({ actions }: Props) {
 
   const patchTileRef = useRef<((q: number, r: number, terrain: Terrain, elevation: number) => void) | null>(null);
   const fpsRef = useRef<HTMLDivElement>(null);
+  const dismissOverlayRef = useRef<(() => void) | null>(null);
 
 
   const handleTileClick = useCallback((q: number, r: number) => {
@@ -130,10 +131,18 @@ export default function RegularMapView({ actions }: Props) {
             brushMode={editorMode}
             crosshairCursor={!!connectingFromLandmarkId || !!relocatingLandmarkId}
             patchTileRef={patchTileRef}
-            hideDecorations={false}
+            processRenderMode={false}
+            onFirstRender={() => dismissOverlayRef.current?.()}
           />
         </ErrorBoundary>
       </div>
+
+      <MapInitOverlay
+        tileCount={currentMap.map?.tiles?.length ?? 0}
+        landmarkCount={Object.keys(currentMap.landmarks ?? {}).length}
+        onDismiss={(fn) => { dismissOverlayRef.current = fn; }}
+      />
+
 
       {isCollaborator && (
         <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
