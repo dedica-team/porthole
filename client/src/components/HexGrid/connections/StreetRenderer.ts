@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import type { Connection } from '@/types/connection';
-import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 import { tileHeight, TRON_CYAN } from '../terrainUtils';
 import { LANDMARK_SURFACE_GREY } from '../landmarks/landmarkUtils.ts';
-import type { ConnectionRenderer } from './ConnectionRenderer.ts';
+import type { ConnectionRenderer, TileLookup } from './ConnectionRenderer.ts';
 
 const HEX_SIZE      = 1;
 const STREET_WIDTH  = 0.30;
@@ -35,19 +34,15 @@ export class StreetRenderer implements ConnectionRenderer {
   });
   private readonly pillarMat = new THREE.MeshToonMaterial({ color: 0x4a5a6a });
 
-  build(conn: Connection, tiles: HexTile[]): THREE.Group | null {
+  build(conn: Connection, tileLookup: TileLookup): THREE.Group | null {
     if (conn.path.length < 2) return null;
 
     const SAMPLES = Math.max(conn.path.length * 6, 24);
 
     const group = new THREE.Group();
 
-    // ── O(1) tile lookup ──────────────────────────────────────────────────────
-    const tileMap = new Map<string, HexTile>();
-    for (const t of tiles) tileMap.set(`${t.coordinate.q},${t.coordinate.r}`, t);
-
     const tileTopY = (q: number, r: number): number => {
-      const tile = tileMap.get(`${q},${r}`);
+      const tile = tileLookup.get(`${q},${r}`);
       const base = tileHeight(tile?.elevation ?? 1) + LIFT;
       return tile?.terrain === 'WATER' ? base + BRIDGE_LIFT : base;
     };
@@ -160,7 +155,7 @@ export class StreetRenderer implements ConnectionRenderer {
 
     // ── Bridge pillars under water tiles ─────────────────────────────────────
     conn.path.forEach(({ q, r }) => {
-      const tile = tileMap.get(`${q},${r}`);
+      const tile = tileLookup.get(`${q},${r}`);
       if (tile?.terrain !== 'WATER') return;
       const { x: px, z: pz } = hexToWorld(q, r, HEX_SIZE);
       const waterSurface = tileHeight(tile.elevation);

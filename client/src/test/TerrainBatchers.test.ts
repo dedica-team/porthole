@@ -24,7 +24,7 @@ import type { HexTile } from '@/types/hex';
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function makeTile(q: number, r: number, terrain: HexTile['terrain'] = 'GRASS', elevation = 1): HexTile {
-  return { coordinate: { q, r }, terrain, elevation, ownerId: null };
+  return { coordinate: { q, r }, terrain, elevation };
 }
 
 function makeScene() {

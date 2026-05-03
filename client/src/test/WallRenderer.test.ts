@@ -53,7 +53,7 @@ function makeWallLandmark(): Landmark {
 }
 
 function makeHexTile(elevation: number): HexTile {
-  return { coordinate: { q: 0, r: 0 }, elevation, terrain: 'GRASS', ownerId: null };
+  return { coordinate: { q: 0, r: 0 }, elevation, terrain: 'GRASS' };
 }
 
 function owned(x: number, y: number, neighbourElevation = 1): Adjacent {

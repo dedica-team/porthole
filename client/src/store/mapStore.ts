@@ -7,6 +7,20 @@ import type { Process } from '../types/process';
 import type { ChoreList } from '../types/chores';
 import type { CollaboratorMatrix } from '../types/matrix';
 import type { QualityMetric } from '../types/landmark';
+import {
+  DEFAULT_RENDERER_QUALITY_PROFILE,
+  RENDERER_QUALITY_STORAGE_KEY,
+  readRendererQualityOverride,
+  type RendererQualityProfile,
+} from '../components/HexGrid/renderQuality';
+
+function getInitialRendererQualityProfile(): RendererQualityProfile {
+  if (typeof window === 'undefined') return DEFAULT_RENDERER_QUALITY_PROFILE;
+  return readRendererQualityOverride({
+    localStorageValue: window.localStorage.getItem(RENDERER_QUALITY_STORAGE_KEY),
+  }) ?? DEFAULT_RENDERER_QUALITY_PROFILE;
+}
+
 interface AuthState {
   token: string | null;
   userId: string | null;
@@ -71,6 +85,7 @@ interface MapStore {
   editorMode: boolean;
   editorTool: 'RAISE' | 'LOWER' | 'TERRAIN';
   editorTerrain: Terrain;
+  rendererQualityProfile: RendererQualityProfile;
   mainView: MainView;
   confirmPending: boolean;
   // ── Process mode ──────────────────────────────────────────────────────────
@@ -99,6 +114,7 @@ interface MapStore {
   setEditorMode: (on: boolean) => void;
   setEditorTool: (tool: 'RAISE' | 'LOWER' | 'TERRAIN') => void;
   setEditorTerrain: (terrain: Terrain) => void;
+  setRendererQualityProfile: (profile: RendererQualityProfile) => void;
   setMainView: (view: MainView) => void;
   setConfirmPending: (pending: boolean) => void;
   setProcessMode: (on: boolean) => void;
@@ -141,6 +157,7 @@ export const useMapStore = create<MapStore>((set) => ({
   editorMode: false,
   editorTool: 'RAISE',
   editorTerrain: 'GRASS',
+  rendererQualityProfile: getInitialRendererQualityProfile(),
   mainView: 'metrics',
   confirmPending: false,
   processMode: false,
@@ -259,6 +276,12 @@ export const useMapStore = create<MapStore>((set) => ({
   setEditorMode: (on) => set({ editorMode: on, mainView: on ? 'editor' : 'idle', processMode: false }),
   setEditorTool: (tool) => set({ editorTool: tool }),
   setEditorTerrain: (terrain) => set({ editorTerrain: terrain }),
+  setRendererQualityProfile: (profile) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(RENDERER_QUALITY_STORAGE_KEY, profile);
+    }
+    set({ rendererQualityProfile: profile });
+  },
   setMainView: (view) => set((state) => ({
     mainView: view,
     editorMode: view === 'editor',

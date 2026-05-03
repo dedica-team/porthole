@@ -39,6 +39,7 @@ export default function ProcessMapView({ actions }: Props) {
     setSelectedTile,
     setSelectedConnectionId,
     activeProcessId, activeStageId,
+    rendererQualityProfile,
     processes, setProcesses,
     pickingConnection,
     setActiveProcessId,
@@ -50,6 +51,7 @@ export default function ProcessMapView({ actions }: Props) {
     setSelectedTile: s.setSelectedTile,
     setSelectedConnectionId: s.setSelectedConnectionId,
     activeProcessId: s.activeProcessId, activeStageId: s.activeStageId,
+    rendererQualityProfile: s.rendererQualityProfile,
     processes: s.processes, setProcesses: s.setProcesses,
     pickingConnection: s.pickingConnection,
     setActiveProcessId: s.setActiveProcessId,
@@ -271,6 +273,7 @@ export default function ProcessMapView({ actions }: Props) {
             stageHighlightTiles={stageHighlightTiles}
             metricOverlayEntries={metricOverlayEntries}
             onConnectionClick={handleConnectionClick}
+            rendererQualityProfile={rendererQualityProfile}
           />
         </ErrorBoundary>
       </div>

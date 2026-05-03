@@ -1,9 +1,8 @@
 import * as THREE from 'three';
 import type { Connection } from '@/types/connection';
-import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 import { tileHeight, TRON_CYAN } from '../terrainUtils';
-import type { ConnectionRenderer } from './ConnectionRenderer.ts';
+import type { ConnectionRenderer, TileLookup } from './ConnectionRenderer.ts';
 
 const HEX_SIZE      = 1;
 /** Width of the flat arrow shaft. */
@@ -49,19 +48,15 @@ export class ArrowRenderer implements ConnectionRenderer {
     depthWrite: true,
   });
 
-  build(conn: Connection, tiles: HexTile[]): THREE.Group | null {
+  build(conn: Connection, tileLookup: TileLookup): THREE.Group | null {
     if (conn.path.length < 2) return null;
 
     const SAMPLES = Math.max(conn.path.length * 6, 24);
 
     const group = new THREE.Group();
 
-    // ── O(1) tile lookup ──────────────────────────────────────────────────────
-    const tileMap = new Map<string, HexTile>();
-    for (const t of tiles) tileMap.set(`${t.coordinate.q},${t.coordinate.r}`, t);
-
     const tileTopY = (q: number, r: number): number => {
-      const tile = tileMap.get(`${q},${r}`);
+      const tile = tileLookup.get(`${q},${r}`);
       const base = tileHeight(tile?.elevation ?? 1) + LIFT;
       return tile?.terrain === 'WATER' ? base + BRIDGE_LIFT : base;
     };

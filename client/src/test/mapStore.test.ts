@@ -11,9 +11,9 @@ const makeMap = (): SessionState => ({
   groups: {},
   map: {
     tiles: [
-      { coordinate: { q: 0, r: 0 }, elevation: 2, terrain: 'FOREST', ownerId: null },
-      { coordinate: { q: 1, r: 0 }, elevation: 1, terrain: 'GRASS',  ownerId: null },
-      { coordinate: { q: 2, r: 0 }, elevation: 0, terrain: 'WATER',  ownerId: null },
+      { coordinate: { q: 0, r: 0 }, elevation: 2, terrain: 'FOREST' },
+      { coordinate: { q: 1, r: 0 }, elevation: 1, terrain: 'GRASS' },
+      { coordinate: { q: 2, r: 0 }, elevation: 0, terrain: 'WATER' },
     ],
   },
 });
@@ -29,7 +29,7 @@ describe('mapStore – updateTile (regression: updateTile was missing from imple
 
   it('replaces only the target tile, leaving others unchanged', () => {
     const { updateTile } = useMapStore.getState();
-    updateTile('g1', { coordinate: { q: 1, r: 0 }, elevation: 3, terrain: 'ROCKS', ownerId: null });
+    updateTile('g1', { coordinate: { q: 1, r: 0 }, elevation: 3, terrain: 'ROCKS' });
 
     const tiles = useMapStore.getState().currentMap!.map.tiles;
     const changed = tiles.find((t) => t.coordinate.q === 1 && t.coordinate.r === 0)!;
@@ -45,7 +45,7 @@ describe('mapStore – updateTile (regression: updateTile was missing from imple
   it('does nothing when the mapId does not match', () => {
     const before = useMapStore.getState().currentMap!.map.tiles;
     useMapStore.getState().updateTile('other-map', {
-      coordinate: { q: 0, r: 0 }, elevation: 5, terrain: 'ROCKS', ownerId: null,
+      coordinate: { q: 0, r: 0 }, elevation: 5, terrain: 'ROCKS',
     });
     expect(useMapStore.getState().currentMap!.map.tiles).toBe(before);
   });
@@ -58,7 +58,7 @@ describe('mapStore – updateTile (regression: updateTile was missing from imple
     };
     useMapStore.setState({ currentMap: map });
     useMapStore.getState().updateTile('g1', {
-      coordinate: { q: 0, r: 0 }, elevation: 0, terrain: 'WATER', ownerId: null,
+      coordinate: { q: 0, r: 0 }, elevation: 0, terrain: 'WATER',
     });
     const state = useMapStore.getState().currentMap!;
     expect(Object.keys(state.landmarks)).toHaveLength(1);

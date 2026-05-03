@@ -5,12 +5,16 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import { TRON_BLACK } from './terrainUtils';
+import { resolveRendererQuality, type RendererQualityProfile } from './renderQuality';
 
 interface UseThreeSceneOptions {
   mountRef: React.RefObject<HTMLDivElement | null>;
   fpsRef?: React.RefObject<HTMLDivElement | null>;
   /** Called whenever the scene should re-render. Set needsRender = true inside. */
   onNativePointerMove?: (e: PointerEvent) => void;
+  qualityProfile?: RendererQualityProfile;
+  /** Called after the Three.js scene has been (re-)initialised. */
+  onSceneReady?: () => void;
 }
 
 export interface ThreeRefs {
@@ -21,6 +25,7 @@ export interface ThreeRefs {
   controls: OrbitControls;
   needsRenderRef: React.MutableRefObject<boolean>;
   requestRender: () => void;
+  setCss2dActive: (active: boolean) => void;
 }
 
 /**
@@ -34,6 +39,8 @@ export function useThreeScene({
   mountRef,
   fpsRef,
   onNativePointerMove,
+  qualityProfile,
+  onSceneReady,
 }: UseThreeSceneOptions): React.RefObject<ThreeRefs | null> {
   const threeRef = useRef<ThreeRefs | null>(null);
   const frameRef = useRef<number>(0);
@@ -44,18 +51,19 @@ export function useThreeScene({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(TRON_BLACK);
+    const rendererQuality = resolveRendererQuality(qualityProfile);
 
 
     const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.1, 200);
     camera.position.set(0, 60, 60);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const renderer = new THREE.WebGLRenderer({ antialias: rendererQuality.antialias });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, rendererQuality.maxPixelRatio));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     renderer.shadowMap.enabled = false;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.4;
+    renderer.toneMapping = rendererQuality.toneMapping;
+    renderer.toneMappingExposure = rendererQuality.toneMappingExposure;
     mount.appendChild(renderer.domElement);
 
     // ── CSS2D overlay renderer ─────────────────────────────────────────────────
@@ -65,10 +73,29 @@ export function useThreeScene({
     css2dRenderer.domElement.style.top = '0';
     css2dRenderer.domElement.style.left = '0';
     css2dRenderer.domElement.style.pointerEvents = 'none';
+    css2dRenderer.domElement.style.display = 'none';
     mount.appendChild(css2dRenderer.domElement);
 
     const needsRenderRef = { current: true };
-    const requestRender = () => { needsRenderRef.current = true; };
+    const css2dActiveRef = { current: false };
+    let disposed = false;
+
+    const scheduleFrame = () => {
+      if (disposed || frameRef.current !== 0) return;
+      frameRef.current = requestAnimationFrame(animate);
+    };
+
+    const requestRender = () => {
+      needsRenderRef.current = true;
+      scheduleFrame();
+    };
+
+    const setCss2dActive = (active: boolean) => {
+      if (css2dActiveRef.current === active) return;
+      css2dActiveRef.current = active;
+      css2dRenderer.domElement.style.display = active ? '' : 'none';
+      requestRender();
+    };
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -87,7 +114,10 @@ export function useThreeScene({
     fill.position.set(-20, 20, -20);
     scene.add(fill);
 
-    threeRef.current = { scene, camera, renderer, css2dRenderer, controls, needsRenderRef, requestRender };
+    threeRef.current = { scene, camera, renderer, css2dRenderer, controls, needsRenderRef, requestRender, setCss2dActive };
+
+    // Notify the consumer that a fresh scene is ready (e.g. to re-populate objects).
+    onSceneReady?.();
 
     // ── Stats (native three.js FPS panel) ─────────────────────────────────────
     const stats = new Stats();
@@ -142,47 +172,63 @@ export function useThreeScene({
     let settleCounter  = SETTLE_FRAMES;            // skip adaptation on startup
 
     const animate = (now: DOMHighResTimeStamp) => {
-      frameRef.current = requestAnimationFrame(animate);
+      frameRef.current = 0;
       stats.begin();
 
       // Always tick controls so damping / auto-rotate interpolate correctly.
       const stillDamping = controls.update();
+      const wantsRender = needsRenderRef.current || stillDamping;
 
       const elapsed = now - lastRenderTime;
-      if (elapsed >= frameBudget || needsRenderRef.current || stillDamping) {
-        lastRenderTime = now - (elapsed % frameBudget);
-        needsRenderRef.current = false;
+      if (!wantsRender) {
+        stats.end();
+        return;
+      }
 
-        // Measure render cost exclusively (GPU flush is synchronous for WebGL).
-        const t0 = performance.now();
-        renderer.render(scene, camera);
+      if (elapsed < frameBudget) {
+        stats.end();
+        scheduleFrame();
+        return;
+      }
+
+      lastRenderTime = now;
+      needsRenderRef.current = false;
+
+      // Measure render cost exclusively (GPU flush is synchronous for WebGL).
+      const t0 = performance.now();
+      renderer.render(scene, camera);
+      if (css2dActiveRef.current) {
         css2dRenderer.render(scene, camera);
-        const renderCost = performance.now() - t0;
+      }
+      const renderCost = performance.now() - t0;
 
-        // Update EMA of render cost.
-        renderCostEma = EMA_ALPHA * renderCost + (1 - EMA_ALPHA) * renderCostEma;
+      // Update EMA of render cost.
+      renderCostEma = EMA_ALPHA * renderCost + (1 - EMA_ALPHA) * renderCostEma;
 
-        // Adaptive tier evaluation (skip during settle period).
-        if (settleCounter > 0) {
-          settleCounter--;
-        } else {
-          if (renderCostEma > frameBudget * DOWNGRADE_FACTOR && tierIndex < FPS_TIERS.length - 1) {
-            // Too slow for current tier – drop down.
-            tierIndex++;
-            frameBudget   = 1000 / FPS_TIERS[tierIndex];
-            settleCounter = SETTLE_FRAMES;
-          } else if (renderCostEma < frameBudget * UPGRADE_FACTOR && tierIndex > 0) {
-            // Plenty of headroom – try going faster.
-            tierIndex--;
-            frameBudget   = 1000 / FPS_TIERS[tierIndex];
-            settleCounter = SETTLE_FRAMES;
-          }
+      // Adaptive tier evaluation (skip during settle period).
+      if (settleCounter > 0) {
+        settleCounter--;
+      } else {
+        if (renderCostEma > frameBudget * DOWNGRADE_FACTOR && tierIndex < FPS_TIERS.length - 1) {
+          // Too slow for current tier – drop down.
+          tierIndex++;
+          frameBudget   = 1000 / FPS_TIERS[tierIndex];
+          settleCounter = SETTLE_FRAMES;
+        } else if (renderCostEma < frameBudget * UPGRADE_FACTOR && tierIndex > 0) {
+          // Plenty of headroom – try going faster.
+          tierIndex--;
+          frameBudget   = 1000 / FPS_TIERS[tierIndex];
+          settleCounter = SETTLE_FRAMES;
         }
       }
 
       stats.end();
+
+      if (needsRenderRef.current || stillDamping) {
+        scheduleFrame();
+      }
     };
-    animate(0);
+    requestRender();
 
     if (onNativePointerMove) {
       renderer.domElement.addEventListener('pointermove', onNativePointerMove);
@@ -194,11 +240,14 @@ export function useThreeScene({
       camera.updateProjectionMatrix();
       renderer.setSize(mount.clientWidth, mount.clientHeight);
       css2dRenderer.setSize(mount.clientWidth, mount.clientHeight);
+      requestRender();
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
       window.removeEventListener('resize', handleResize);
       if (onNativePointerMove) renderer.domElement.removeEventListener('pointermove', onNativePointerMove);
       controls.removeEventListener('change', requestRender);
@@ -210,8 +259,7 @@ export function useThreeScene({
       if (mount.contains(stats.dom)) mount.removeChild(stats.dom);
       if (fpsEl) fpsEl.style.display = '';
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fpsRef, mountRef, onNativePointerMove, onSceneReady, qualityProfile]);
 
   return threeRef;
 }

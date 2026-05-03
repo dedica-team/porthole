@@ -12,6 +12,17 @@ export { tileHeight, TRON_BLACK };
 /** Greyish surface colour derived from the tile base (TRON_BLACK lightened + desaturated). */
 export const LANDMARK_SURFACE_GREY = new THREE.Color(0x3a3d42);
 
+const SHARED_RESOURCE_KEY = '__hexgridSharedResource';
+
+function markSharedResource<T extends { userData: Record<string, unknown> }>(resource: T): T {
+  resource.userData[SHARED_RESOURCE_KEY] = true;
+  return resource;
+}
+
+function isSharedResource(resource: { userData?: Record<string, unknown> } | null | undefined): boolean {
+  return resource?.userData?.[SHARED_RESOURCE_KEY] === true;
+}
+
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 export interface Adjacent {
@@ -64,7 +75,7 @@ export function mat(bodyColor: THREE.Color, emissiveFraction = 0.12): THREE.Mesh
 }
 
 // Shared edge material – all outlines use the same TRON_BLACK colour.
-const EDGE_LINE_MAT = new THREE.LineBasicMaterial({ color: TRON_BLACK });
+const EDGE_LINE_MAT = markSharedResource(new THREE.LineBasicMaterial({ color: TRON_BLACK }));
 
 
 /** Solid mesh using the shared toon material with the given tint colour. */
@@ -81,10 +92,39 @@ export function edges(m: THREE.Mesh): THREE.LineSegments {
   const uuid = m.geometry.uuid;
   let eg = _edgesGeoCache.get(uuid);
   if (!eg) {
-    eg = new THREE.EdgesGeometry(m.geometry);
+    eg = markSharedResource(new THREE.EdgesGeometry(m.geometry));
     _edgesGeoCache.set(uuid, eg);
   }
   return new THREE.LineSegments(eg, EDGE_LINE_MAT);
+}
+
+function disposeMaterial(material: THREE.Material, disposeMaps: boolean): void {
+  if (isSharedResource(material)) return;
+  if (disposeMaps) {
+    const textureKeys = [
+      'map', 'alphaMap', 'aoMap', 'bumpMap', 'displacementMap', 'emissiveMap',
+      'envMap', 'gradientMap', 'lightMap', 'metalnessMap', 'normalMap',
+      'roughnessMap', 'specularMap',
+    ] as const;
+    textureKeys.forEach((key) => {
+      const texture = material[key as keyof THREE.Material] as THREE.Texture | null | undefined;
+      if (texture && !isSharedResource(texture)) texture.dispose();
+    });
+  }
+  material.dispose();
+}
+
+export function disposeObjectTree(root: THREE.Object3D, options?: { disposeMaps?: boolean }): void {
+  const disposeMaps = options?.disposeMaps ?? false;
+  root.traverse((child) => {
+    const geometry = (child as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+    if (geometry && !isSharedResource(geometry)) geometry.dispose();
+
+    const material = (child as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+    if (!material) return;
+    if (Array.isArray(material)) material.forEach((m) => disposeMaterial(m, disposeMaps));
+    else disposeMaterial(material, disposeMaps);
+  });
 }
 
 // ── Glow material ─────────────────────────────────────────────────────────────

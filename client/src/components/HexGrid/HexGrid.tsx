@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { HexCoordinate, HexTile, Terrain } from '@/types/hex';
@@ -10,7 +10,7 @@ import {useMapStore} from '@/store/mapStore.ts';
 import {TERRAIN_RENDERER_MAP, tileHeight,} from './terrainRenderers';
 import type {Adjacent} from './landmarks/index';
 import {getLandmarkRenderer} from './landmarks/index';
-import {clearNamePlaneCache} from './landmarks/landmarkUtils';
+import {clearNamePlaneCache, disposeObjectTree} from './landmarks/landmarkUtils';
 import {buildConnectionGroup, buildSimpleConnectionLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
 import {
@@ -23,6 +23,8 @@ import {
 import { ProcessArrowRenderer } from './ProcessArrowRenderer';
 import type { StageConnectionEntry } from './ProcessArrowRenderer';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { createTileRenderKey } from './tileRenderKey';
+import type { RendererQualityProfile } from './renderQuality';
 
 
 /** Uniform grey used for all tiles in process mode. */
@@ -78,6 +80,7 @@ interface Props {
     processStageConnections?: StageConnectionEntry[];
     /** When true, terrain decorations (trees, rocks, vegetation) are not rendered. */
     hideDecorations?: boolean;
+    rendererQualityProfile?: RendererQualityProfile;
 }
 
 const HEX_SIZE = 1;
@@ -108,8 +111,11 @@ export default function HexGrid({
                                      patchTileRef,
                                      processStageConnections,
                                      hideDecorations = false,
+                                      rendererQualityProfile,
                                  }: Props) {
     const mountRef = useRef<HTMLDivElement>(null);
+    const tiles = useMemo(() => map.map?.tiles ?? [], [map.map?.tiles]);
+    const tileRenderKey = useMemo(() => createTileRenderKey(tiles), [tiles]);
 
     const tileMergedRef = useRef<{
         tops: THREE.Mesh;
@@ -139,61 +145,18 @@ export default function HexGrid({
     const setSelectedTile = useMapStore((s) => s.setSelectedTile);
     const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
 
-    const onTileClickRef = useRef(onTileClick);
-    useEffect(() => {
-        onTileClickRef.current = onTileClick;
-    }, [onTileClick]);
-
-    const brushModeRef = useRef(brushMode);
-    useEffect(() => {
-        brushModeRef.current = brushMode;
-    }, [brushMode]);
-
     const brushActiveRef = useRef(false);
     const brushedInStrokeRef = useRef<Set<string>>(new Set());
     const raycasterRef = useRef(new THREE.Raycaster());
 
-    // ── Native pointermove handler (passed to useThreeScene) ─────────────────
-    const onNativeMove = (e: PointerEvent) => {
-        const three = threeRef.current;
-        if (!three) return;
-        const {camera, renderer, requestRender} = three;
-
-        const pickTileNative = (clientX: number, clientY: number) => {
-            const merged = tileMergedRef.current;
-            if (!merged) return null;
-            const rect = renderer.domElement.getBoundingClientRect();
-            const ndc = new THREE.Vector2(
-                ((clientX - rect.left) / rect.width) * 2 - 1,
-                -((clientY - rect.top) / rect.height) * 2 + 1,
-            );
-            const ray = raycasterRef.current;
-            ray.setFromCamera(ndc, camera);
-            const hits = ray.intersectObject(merged.tops);
-            if (!hits.length) return null;
-            const tiles = useMapStore.getState().currentMap?.map?.tiles ?? [];
-            const idx = Math.floor((hits[0].face?.a ?? 0) / TMPL_TOP_VERT_COUNT);
-            const tile = tiles[idx];
-            return tile ? tile.coordinate : null;
-        };
-
-        if (!brushModeRef.current || !brushActiveRef.current) return;
-        const coord = pickTileNative(e.clientX, e.clientY);
-        if (!coord) return;
-        const key = `${coord.q},${coord.r}`;
-        if (brushedInStrokeRef.current.has(key)) return;
-        brushedInStrokeRef.current.add(key);
-        onTileClickRef.current(coord.q, coord.r);
-        requestRender();
-    };
-    const onNativeMoveRef = useRef(onNativeMove);
-    useEffect(() => {
-        onNativeMoveRef.current = onNativeMove;
-    });
-    const stableNativeMove = useRef((e: PointerEvent) => onNativeMoveRef.current(e));
-
     // ── Scene (delegated to useThreeScene) ───────────────────────────────────
-    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current});
+    // sceneRevision increments every time the Three.js scene is (re-)created
+    // (e.g. when rendererQualityProfile changes), forcing all scene-dependent
+    // effects to re-run and re-populate the new, empty scene.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [sceneRevision, setSceneRevision] = useState(0);
+    const onSceneReady = useCallback(() => setSceneRevision((n) => n + 1), []);
+    const threeRef = useThreeScene({mountRef, fpsRef, qualityProfile: rendererQualityProfile, onSceneReady});
 
     const requestRender = () => {
         threeRef.current?.requestRender();
@@ -273,7 +236,6 @@ export default function HexGrid({
         // Remove stale highlight ring on tile rebuild – not needed here;
         // the ring effect re-runs via the map.map.tiles dependency.
 
-        const tiles = map.map?.tiles ?? [];
         const topGeos: THREE.BufferGeometry[] = [], sideGeos: THREE.BufferGeometry[] = [];
         const edgeGeosBright: THREE.BufferGeometry[] = [];   // land H edges (top/bottom rings)
         const edgeGeosVert:   THREE.BufferGeometry[] = [];   // land V edges (pillars)
@@ -382,7 +344,7 @@ export default function HexGrid({
 
         requestRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.map, hideDecorations]);
+    }, [tileRenderKey, hideDecorations, sceneRevision]);
 
     // ── Landmark meshes ─────────────────────────────────────────────────────────
     useEffect(() => {
@@ -390,14 +352,7 @@ export default function HexGrid({
         if (!scene) return;
         landmarkMeshMapRef.current.forEach((g) => {
             scene.remove(g);
-            g.traverse((child) => {
-                if ((child as THREE.Mesh).geometry) (child as THREE.Mesh).geometry.dispose();
-                if ((child as THREE.Sprite).material) {
-                    const m = (child as THREE.Sprite).material as THREE.SpriteMaterial;
-                    m.map?.dispose();
-                    m.dispose();
-                }
-            });
+            disposeObjectTree(g);
         });
         landmarkMeshMapRef.current.clear();
 
@@ -453,7 +408,7 @@ export default function HexGrid({
             clearNamePlaneCache();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.landmarks, map.map.tiles]);
+    }, [map.landmarks, tileRenderKey, sceneRevision]);
 
     // ── Highlight selected tile – infinity column ────────────────────────────
     useEffect(() => {
@@ -467,7 +422,6 @@ export default function HexGrid({
         }
 
         if (selectedTile) {
-            const tiles = map.map?.tiles ?? [];
             const idx = tileIndexRef.current.get(`${selectedTile.q},${selectedTile.r}`);
             const tile = idx !== undefined ? tiles[idx] : undefined;
             const {x, z} = hexToWorld(selectedTile.q, selectedTile.r, HEX_SIZE);
@@ -481,7 +435,7 @@ export default function HexGrid({
 
         requestRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedTile, map.map.tiles]);
+    }, [selectedTile, tileRenderKey, sceneRevision]);
 
     const adjacentTiles = (coordinate: HexCoordinate): HexTile[] => {
         return HEX_DIRS.map(
@@ -509,8 +463,6 @@ export default function HexGrid({
             });
         });
         terrainObjectsRef.current.clear();
-
-        const tiles = map.map?.tiles ?? [];
 
         // Let each renderer pre-allocate shared GPU resources.
         // We pass the total tile count as a safe upper bound; each renderer
@@ -550,10 +502,10 @@ export default function HexGrid({
             });
             capturedTerrainObjects.clear();
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.map.tiles, hideDecorations]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tileRenderKey, hideDecorations, sceneRevision]);
 
-    // ── Connection lines ─────────────────────────────────────────────────────────
+    // ── Connection lines
     useEffect(() => {
         const scene = threeRef.current?.scene;
         if (!scene) return;
@@ -570,11 +522,11 @@ export default function HexGrid({
         });
         connectionMeshMapRef.current.clear();
 
-        const tiles = map.map?.tiles ?? [];
+        const tileLookup = tileByCoordRef.current;
         Object.values(map.connections ?? {}).forEach((conn) => {
             const obj = hideDecorations
-                ? buildSimpleConnectionLine(conn, tiles)
-                : buildConnectionGroup(conn, tiles);
+                ? buildSimpleConnectionLine(conn, tileLookup)
+                : buildConnectionGroup(conn, tileLookup);
             if (!obj) return;
             scene.add(obj);
             connectionMeshMapRef.current.set(conn.id, obj);
@@ -582,7 +534,7 @@ export default function HexGrid({
 
         requestRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [map.connections, map.map.tiles, hideDecorations]);
+    }, [map.connections, tileRenderKey, hideDecorations, sceneRevision]);
 
     // ── Connection highlight / dim / hide in process mode ────────────────────────────────
     useEffect(() => {
@@ -693,7 +645,6 @@ export default function HexGrid({
             const geo = new THREE.BufferGeometry();
             geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
             geo.setIndex(idx);
-            geo.computeVertexNormals();
             if (!geosByColor.has(color)) geosByColor.set(color, []);
             geosByColor.get(color)!.push(geo);
         });
@@ -723,12 +674,15 @@ export default function HexGrid({
         highlightEdgesRef.current = group;
         requestRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [landmarkHighlightColors, map.map.tiles]);
+    }, [landmarkHighlightColors, tileRenderKey]);
 
     // ── Metric overlay labels (CSS2D billboarding) ───────────────────────────────
     useEffect(() => {
         const scene = threeRef.current?.scene;
         if (!scene) return;
+        const setCss2dActive = (active: boolean) => {
+            threeRef.current?.setCss2dActive(active);
+        };
 
         // Remove previous overlay labels
         metricOverlayObjectsRef.current.forEach((obj) => {
@@ -736,6 +690,7 @@ export default function HexGrid({
             obj.element.remove();
         });
         metricOverlayObjectsRef.current = [];
+        setCss2dActive(false);
 
         if (!metricOverlayEntries || metricOverlayEntries.size === 0) {
             requestRender();
@@ -773,34 +728,38 @@ export default function HexGrid({
             metricOverlayObjectsRef.current.push(obj);
         });
 
+        setCss2dActive(metricOverlayObjectsRef.current.length > 0);
         requestRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [metricOverlayEntries, map.landmarks, map.map.tiles]);
+    }, [metricOverlayEntries, map.landmarks, tileRenderKey]);
 
     // ── Process arrow overlay ─────────────────────────────────────────────────────
     useEffect(() => {
         const renderer = processArrowRendererRef.current;
         if (!renderer) return;
-
-        const tiles = map.map?.tiles ?? [];
+        const tileLookup = tileByCoordRef.current;
 
         if (!processStageConnections || processStageConnections.length === 0) {
-            renderer.update([], tiles);
+            renderer.update([], tileLookup);
         } else {
-            renderer.update(processStageConnections, tiles);
+            renderer.update(processStageConnections, tileLookup);
         }
         requestRender();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [processStageConnections, map.map]);
+    }, [processStageConnections, tileRenderKey, sceneRevision]);
 
     // Dispose arrow renderer on unmount
     useEffect(() => {
+        const setCss2dInactive = () => {
+            threeRef.current?.setCss2dActive(false);
+        };
         return () => {
             processArrowRendererRef.current?.dispose();
             metricOverlayObjectsRef.current.forEach((obj) => obj.element.remove());
             metricOverlayObjectsRef.current = [];
+            setCss2dInactive();
         };
-    }, []);
+    }, [threeRef]);
 
     // ── Shared raycaster helper ──────────────────────────────────────────────────
     const pickTile = (clientX: number, clientY: number): { q: number; r: number } | null => {

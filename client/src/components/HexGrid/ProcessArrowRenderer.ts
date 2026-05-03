@@ -28,6 +28,8 @@ export interface StageConnectionEntry {
   connection: Connection;
 }
 
+type TileLookup = ReadonlyMap<string, HexTile>;
+
 // ── Shared material (one instance, opacity controlled per-arrow via clone) ───
 function makeMat(opacity: number) {
   return new THREE.MeshBasicMaterial({
@@ -71,16 +73,13 @@ function clearLabelCache() {
 // ── Core ribbon builder ───────────────────────────────────────────────────────
 function buildArrowRibbon(
   pathCoords: Array<{ q: number; r: number }>,
-  tiles: HexTile[],
+  tileLookup: TileLookup,
   opacity: number,
 ): { group: THREE.Group; midY: number } | null {
   if (pathCoords.length < 2) return null;
 
-  const tileMap = new Map<string, HexTile>();
-  for (const t of tiles) tileMap.set(`${t.coordinate.q},${t.coordinate.r}`, t);
-
   const tileTopY = (q: number, r: number) => {
-    const tile = tileMap.get(`${q},${r}`);
+    const tile = tileLookup.get(`${q},${r}`);
     return tileHeight(tile?.elevation ?? 1) + LIFT;
   };
 
@@ -182,7 +181,6 @@ function buildArrowRibbon(
   const shaftGeo = new THREE.BufferGeometry();
   shaftGeo.setAttribute('position', new THREE.Float32BufferAttribute(shaftVerts, 3));
   shaftGeo.setIndex(shaftIdx);
-  shaftGeo.computeVertexNormals();
   group.add(new THREE.Mesh(shaftGeo, mat));
 
   // ── Triangle tip: base at shaftEndIdx, tip = base + tangent * HEAD_WORLD_LEN ─
@@ -199,7 +197,6 @@ function buildArrowRibbon(
   const tipGeo = new THREE.BufferGeometry();
   tipGeo.setAttribute('position', new THREE.Float32BufferAttribute(tipVerts, 3));
   tipGeo.setIndex([0, 2, 1]);
-  tipGeo.computeVertexNormals();
   group.add(new THREE.Mesh(tipGeo, mat));
 
   return { group, midY };
@@ -210,18 +207,12 @@ function buildLabel(
   title: string,
   stageConnId: string,
   pathCoords: Array<{ q: number; r: number }>,
-  tiles: HexTile[],
   arrowMidY: number,
 ): THREE.Mesh {
-  const tileMap = new Map<string, HexTile>();
-  for (const t of tiles) tileMap.set(`${t.coordinate.q},${t.coordinate.r}`, t);
-
   // Midpoint world position
   const midIdx = Math.floor(pathCoords.length / 2);
   const { q: mq, r: mr } = pathCoords[midIdx];
   const { x: mx, z: mz } = hexToWorld(mq, mr, HEX_SIZE);
-  const tile = tileMap.get(`${mq},${mr}`);
-  void tile; // height comes from arrowMidY
   const midY = arrowMidY + 0.35;
 
   // Tangent direction at midpoint
@@ -261,15 +252,15 @@ function buildLabel(
 // ── ProcessArrowRenderer ──────────────────────────────────────────────────────
 export class ProcessArrowRenderer {
   private readonly group = new THREE.Group();
-  private readonly childGeos: THREE.BufferGeometry[] = [];
+  private readonly childGeos = new Set<THREE.BufferGeometry>();
+  private readonly childMaterials = new Set<THREE.Material>();
 
   getGroup(): THREE.Group { return this.group; }
 
-  update(entries: StageConnectionEntry[], tiles: HexTile[]): void {
+  update(entries: StageConnectionEntry[], tileLookup: TileLookup): void {
     // Dispose previous children
     this.group.clear();
-    this.childGeos.forEach((g) => g.dispose());
-    this.childGeos.length = 0;
+    this.disposeTrackedResources();
 
     for (const { stageConn, connection } of entries) {
       if (!connection.path || connection.path.length < 2) continue;
@@ -278,49 +269,60 @@ export class ProcessArrowRenderer {
 
       let arrowMidY = 0;
       if (direction === 'BIDIRECTIONAL') {
-        const fwd = buildArrowRibbon(connection.path, tiles, 0.36);
-        const rev = buildArrowRibbon([...connection.path].reverse(), tiles, 0.36);
+        const fwd = buildArrowRibbon(connection.path, tileLookup, 0.36);
+        const rev = buildArrowRibbon([...connection.path].reverse(), tileLookup, 0.36);
         if (fwd) {
           arrowMidY = fwd.midY;
-          this.collectGeos(fwd.group);
+          this.collectResources(fwd.group);
           this.group.add(fwd.group);
         }
         if (rev) {
-          this.collectGeos(rev.group);
+          this.collectResources(rev.group);
           this.group.add(rev.group);
         }
       } else {
         const path = direction === 'REVERSE'
           ? [...connection.path].reverse()
           : connection.path;
-        const arrow = buildArrowRibbon(path, tiles, 0.72);
+        const arrow = buildArrowRibbon(path, tileLookup, 0.72);
         if (arrow) {
           arrowMidY = arrow.midY;
-          this.collectGeos(arrow.group);
+          this.collectResources(arrow.group);
           this.group.add(arrow.group);
         }
       }
 
       // Title label – floats above the actual arrow ribbon mid-height
       if (stageConn.title) {
-        const label = buildLabel(stageConn.title, stageConn.id, connection.path, tiles, arrowMidY);
+        const label = buildLabel(stageConn.title, stageConn.id, connection.path, arrowMidY);
+        this.collectResources(label);
         this.group.add(label);
       }
     }
   }
 
-  private collectGeos(grp: THREE.Group) {
-    grp.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        this.childGeos.push((child as THREE.Mesh).geometry);
-      }
+  private collectResources(root: THREE.Object3D) {
+    root.traverse((child) => {
+      const geometry = (child as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+      if (geometry) this.childGeos.add(geometry);
+
+      const material = (child as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (!material) return;
+      if (Array.isArray(material)) material.forEach((m) => this.childMaterials.add(m));
+      else this.childMaterials.add(material);
     });
+  }
+
+  private disposeTrackedResources(): void {
+    this.childGeos.forEach((g) => g.dispose());
+    this.childGeos.clear();
+    this.childMaterials.forEach((m) => m.dispose());
+    this.childMaterials.clear();
   }
 
   dispose(): void {
     this.group.clear();
-    this.childGeos.forEach((g) => g.dispose());
-    this.childGeos.length = 0;
+    this.disposeTrackedResources();
     clearLabelCache();
   }
 }

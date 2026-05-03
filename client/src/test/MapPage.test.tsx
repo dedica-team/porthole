@@ -73,10 +73,10 @@ const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   groups: {},
   map: {
     tiles: [
-      { coordinate: { q: 0, r: 0 }, elevation: 3, terrain: 'ROCKS' as const, ownerId: COLLABORATOR_ID },
-      { coordinate: { q: 1, r: 0 }, elevation: 4, terrain: 'ROCKS' as const, ownerId: null },
-      { coordinate: { q: 2, r: 0 }, elevation: 0, terrain: 'WATER' as const, ownerId: null },
-      { coordinate: { q: 3, r: 0 }, elevation: 3, terrain: 'ROCKS' as const, ownerId: COLLABORATOR_ID },
+      { coordinate: { q: 0, r: 0 }, elevation: 3, terrain: 'ROCKS' as const },
+      { coordinate: { q: 1, r: 0 }, elevation: 4, terrain: 'ROCKS' as const },
+      { coordinate: { q: 2, r: 0 }, elevation: 0, terrain: 'WATER' as const },
+      { coordinate: { q: 3, r: 0 }, elevation: 3, terrain: 'ROCKS' as const },
     ],
   },
   ...overrides,

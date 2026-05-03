@@ -33,8 +33,8 @@ const BASE_MAP = {
   groups: {},
   map: {
     tiles: [
-      { coordinate: { q: 1, r: 0 }, elevation: 2, terrain: 'GRASS' as const, ownerId: null },
-      { coordinate: { q: 2, r: 0 }, elevation: 0, terrain: 'WATER' as const, ownerId: null },
+      { coordinate: { q: 1, r: 0 }, elevation: 2, terrain: 'GRASS' as const },
+      { coordinate: { q: 2, r: 0 }, elevation: 0, terrain: 'WATER' as const },
     ],
   },
 };

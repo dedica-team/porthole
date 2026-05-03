@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar/Navbar';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import type { SessionState } from '../types/session';
+import { RENDERER_QUALITY_STORAGE_KEY } from '../components/HexGrid/renderQuality';
 vi.mock('../api/mapApi');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -38,6 +39,7 @@ function renderNavbar(path = `/map/${MAP_ID}`) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
   useMapStore.setState({
     currentMap: makeMap(),
     maps: [],
@@ -45,6 +47,7 @@ beforeEach(() => {
     selectedTile: null,
     selectedLandmark: null,
     editorMode: false,
+    rendererQualityProfile: 'balanced',
     mainView: 'idle',
   });
   useAuthStore.setState({
@@ -73,6 +76,31 @@ describe('Navbar – map ID button', () => {
   it('does not show a name element when name is undefined', () => {
     renderNavbar();
     expect(screen.queryByText('My Campaign')).not.toBeInTheDocument();
+  });
+});
+
+describe('Navbar – user menu rendering quality', () => {
+  it('shows the current renderer quality in the user popover', async () => {
+    useMapStore.setState({ rendererQualityProfile: 'balanced' });
+    renderNavbar();
+
+    fireEvent.click(screen.getByRole('button', { name: /user menu/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Rendering quality')).toHaveValue('balanced');
+    });
+  });
+
+  it('updates store and localStorage when renderer quality changes', async () => {
+    renderNavbar();
+
+    fireEvent.click(screen.getByRole('button', { name: /user menu/i }));
+    await waitFor(() => screen.getByLabelText('Rendering quality'));
+
+    fireEvent.change(screen.getByLabelText('Rendering quality'), { target: { value: 'low' } });
+
+    expect(useMapStore.getState().rendererQualityProfile).toBe('low');
+    expect(window.localStorage.getItem(RENDERER_QUALITY_STORAGE_KEY)).toBe('low');
   });
 });
 

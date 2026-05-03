@@ -4,8 +4,7 @@
  */
 import * as THREE from 'three';
 import type { Connection } from '@/types/connection';
-import type { HexTile } from '@/types/hex';
-import type { ConnectionRenderer }  from './connections/ConnectionRenderer.ts';
+import type { ConnectionRenderer, TileLookup }  from './connections/ConnectionRenderer.ts';
 import { PipeRenderer }             from './connections/PipeRenderer.ts';
 import { TelegraphRenderer }        from './connections/TelegraphRenderer.ts';
 import { StreetRenderer }           from './connections/StreetRenderer.ts';
@@ -27,13 +26,13 @@ const RENDERERS: Record<string, ConnectionRenderer> = {
   ARROW:     new ArrowRenderer(),
 };
 
-export function buildConnectionGroup(conn: Connection, tiles: HexTile[]): THREE.Group | null {
+export function buildConnectionGroup(conn: Connection, tileLookup: TileLookup): THREE.Group | null {
   const renderer = RENDERERS[conn.type ?? 'PIPE'];
   if (!renderer) {
     console.warn(`[connectionRenderers] Unknown connection type "${conn.type}", falling back to PIPE.`);
-    return RENDERERS['PIPE'].build(conn, tiles);
+    return RENDERERS['PIPE'].build(conn, tileLookup);
   }
-  return renderer.build(conn, tiles);
+  return renderer.build(conn, tileLookup);
 }
 
 /** Dim grey line material shared by all process-mode simple connections. */
@@ -53,20 +52,21 @@ const RIBBON_HALF = 0.09;  // half of SHAFT_WIDTH (0.18) from ProcessArrowRender
  * Width matches the process arrow shaft so the two look consistent.
  * Used in process mode instead of the full renderer to keep the map clean.
  */
-export function buildSimpleConnectionLine(conn: Connection, tiles: HexTile[]): THREE.Mesh | null {
-  const pts = resolvePoints(conn, tiles);
+export function buildSimpleConnectionLine(conn: Connection, tileLookup: TileLookup): THREE.Mesh | null {
+  const pts = resolvePoints(conn, tileLookup);
   if (pts.length < 2) return null;
 
   const positions: number[] = [];
   const indices:   number[] = [];
   const up = new THREE.Vector3(0, 1, 0);
   const side = new THREE.Vector3();
+  const tangent = new THREE.Vector3();
 
   for (let i = 0; i < pts.length; i++) {
     // tangent direction
     const prev = pts[Math.max(0, i - 1)];
     const next = pts[Math.min(pts.length - 1, i + 1)];
-    const tangent = new THREE.Vector3().subVectors(next, prev).normalize();
+    tangent.subVectors(next, prev).normalize();
     side.crossVectors(tangent, up).normalize().multiplyScalar(RIBBON_HALF);
 
     const p = pts[i];
@@ -83,9 +83,7 @@ export function buildSimpleConnectionLine(conn: Connection, tiles: HexTile[]): T
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geo.setIndex(indices);
-  geo.computeVertexNormals();
 
-  const mesh = new THREE.Mesh(geo, PROCESS_LINE_MAT);
-  return mesh;
+  return new THREE.Mesh(geo, PROCESS_LINE_MAT);
 }
 

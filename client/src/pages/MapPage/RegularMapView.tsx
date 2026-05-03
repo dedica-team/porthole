@@ -31,6 +31,7 @@ export default function RegularMapView({ actions }: Props) {
     relocatingLandmarkId, setRelocatingLandmark,
     pendingConnectionMeta, setPendingConnectionMeta,
     editorMode, editorTool, editorTerrain,
+    rendererQualityProfile,
     mainView, setMainView, setConfirmPending,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
@@ -40,6 +41,7 @@ export default function RegularMapView({ actions }: Props) {
     relocatingLandmarkId: s.relocatingLandmarkId, setRelocatingLandmark: s.setRelocatingLandmark,
     pendingConnectionMeta: s.pendingConnectionMeta, setPendingConnectionMeta: s.setPendingConnectionMeta,
     editorMode: s.editorMode, editorTool: s.editorTool, editorTerrain: s.editorTerrain,
+    rendererQualityProfile: s.rendererQualityProfile,
     mainView: s.mainView, setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
   })));
 
@@ -131,6 +133,7 @@ export default function RegularMapView({ actions }: Props) {
             crosshairCursor={!!connectingFromLandmarkId || !!relocatingLandmarkId}
             patchTileRef={patchTileRef}
             hideDecorations={false}
+            rendererQualityProfile={rendererQualityProfile}
           />
         </ErrorBoundary>
       </div>

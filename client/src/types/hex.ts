@@ -11,7 +11,6 @@ export interface HexTile {
   coordinate: HexCoordinate;
   elevation: number;
   terrain: Terrain;
-  ownerId: string | null;
 }
 
 export interface MapData {

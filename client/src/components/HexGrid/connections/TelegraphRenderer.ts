@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import type { Connection } from '@/types/connection';
-import type { HexTile } from '@/types/hex';
 import { TRON_CYAN } from '../terrainUtils';
-import type { ConnectionRenderer } from './ConnectionRenderer.ts';
+import type { ConnectionRenderer, TileLookup } from './ConnectionRenderer.ts';
 import { resolvePoints } from './resolvePoints.ts';
 
 const POLE_HEIGHT = 0.55;
@@ -23,8 +22,8 @@ export class TelegraphRenderer implements ConnectionRenderer {
   });
   private readonly wireMat  = new THREE.LineBasicMaterial({ color: TRON_CYAN });
 
-  build(conn: Connection, tiles: HexTile[]): THREE.Group | null {
-    const points = resolvePoints(conn, tiles);
+  build(conn: Connection, tileLookup: TileLookup): THREE.Group | null {
+    const points = resolvePoints(conn, tileLookup);
     if (points.length < 2) return null;
 
     const group      = new THREE.Group();
