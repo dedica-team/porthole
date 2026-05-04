@@ -46,6 +46,7 @@ beforeEach(() => {
     selectedLandmark: null,
     editorMode: false,
     mainView: 'idle',
+    pendingView: null,
   });
   useAuthStore.setState({
     token: 'tok',
@@ -382,6 +383,15 @@ describe('Navbar – admin export button', () => {
     });
 
     vi.restoreAllMocks();
+  });
+});
+
+describe('Navbar – early pending view state', () => {
+  it('sets pendingView immediately when switching to metrics', () => {
+    renderNavbar();
+    fireEvent.click(screen.getByText('Quality Metrics'));
+    expect(useMapStore.getState().pendingView).toBe('metrics');
+    expect(useMapStore.getState().mainView).toBe('metrics');
   });
 });
 

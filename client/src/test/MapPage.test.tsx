@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import MapPage from '../pages/MapPage/MapPage';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
+import { LOADING_COPY } from '../components/ui/loadingCopy';
 import type { SessionState } from '../types/session';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,10 @@ async function setMapState(state: Partial<ReturnType<typeof useMapStore.getState
   });
 }
 
+beforeEach(() => {
+  useMapStore.setState({ pendingView: null });
+});
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('MapPage – landmark placement confirmation', () => {
@@ -116,6 +121,12 @@ describe('MapPage – landmark placement confirmation', () => {
   it('renders the hex grid', async () => {
     renderMapPage();
     await waitFor(() => expect(screen.getByTestId('hex-grid')).toBeInTheDocument());
+  });
+
+  it('shows the early loading fallback when a pending view is set', () => {
+    useMapStore.setState({ currentMap: makeMap(), mainView: 'idle', pendingView: 'metrics' });
+    renderMapPage();
+    expect(screen.getByText(LOADING_COPY.view)).toBeInTheDocument();
   });
 
   it('shows TilePanel in sidebar when clicking an empty tile', async () => {

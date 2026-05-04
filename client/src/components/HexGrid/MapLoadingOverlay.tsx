@@ -8,6 +8,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Layers, Castle } from 'lucide-react';
+import { LOADING_COPY } from '@/components/ui/loadingCopy';
 
 interface Props {
   /** Set to true after the first Three.js frame has been drawn. */
@@ -50,7 +51,7 @@ export default function MapLoadingOverlay({ ready, tileCount, landmarkCount, mod
       {/* Label */}
       <div className="flex flex-col items-center gap-1">
         <span className="text-xs font-medium text-muted-foreground tracking-widest uppercase">
-          {mode === 'process' ? 'Building Process View' : 'Rendering Map'}
+          {mode === 'process' ? LOADING_COPY.process : LOADING_COPY.render}
         </span>
         {/* Live stats */}
         <div className="flex items-center gap-4 mt-1">

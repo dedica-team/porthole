@@ -21,6 +21,18 @@ const RENDERER_QUALITY_LABELS: Record<RendererQualityProfile, string> = {
   low: 'Low',
 };
 
+// ── NavTab ────────────────────────────────────────────────────────────────────
+interface NavTab {
+  id: string;
+  label: string;
+  tooltip: string;
+  icon: React.ReactNode;
+  isActive: boolean;
+  onClick: () => void;
+  /** When false the tab is hidden. Defaults to true. */
+  visible?: boolean;
+}
+
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,6 +45,7 @@ export default function Navbar() {
   const currentMap = useMapStore((s) => s.currentMap);
   const updateMap = useMapStore((s) => s.updateMap);
   const mainView = useMapStore((s) => s.mainView);
+  const setPendingView = useMapStore((s) => s.setPendingView);
   const setMainView = useMapStore((s) => s.setMainView);
   const processMode = useMapStore((s) => s.processMode);
   const setProcessMode = useMapStore((s) => s.setProcessMode);
@@ -141,6 +154,74 @@ export default function Navbar() {
       navigate('/');
     }
   };
+
+  // ── Active-state predicates (one named constant per tab) ─────────────────
+  const isMetricsActive  = mainView === 'metrics';
+  const isMatrixActive   = mainView === 'matrix';
+  const isChoresActive   = mainView === 'chores';
+  const isEditorActive   = mainView === 'editor';
+  const isXRayActive     = processMode;
+  const isFlightActive   = !isMetricsActive && !isMatrixActive && !isChoresActive && !isEditorActive && !isXRayActive;
+
+  // The active-tab bottom border class.
+  const activeBorderCls = 'border-amber-400';
+
+  const NAV_TABS: NavTab[] = [
+    {
+      id: 'metrics',
+      label: 'Quality Metrics',
+      tooltip: 'Manage quality metrics and goals',
+      icon: <BarChart2 className="h-3.5 w-3.5" />,
+      isActive: isMetricsActive,
+      onClick: () => { setPendingView('metrics'); setMainView('metrics'); },
+    },
+    {
+      id: 'matrix',
+      label: 'Bus Matrix',
+      tooltip: 'Who knows what',
+      icon: <Bus className="h-3.5 w-3.5" />,
+      isActive: isMatrixActive,
+      onClick: () => { setPendingView('matrix'); setMainView('matrix'); },
+    },
+    {
+      id: 'chores',
+      label: 'Chores',
+      tooltip: 'Chore todo lists per landmark',
+      icon: <CheckSquare className="h-3.5 w-3.5" />,
+      isActive: isChoresActive,
+      onClick: () => { setPendingView('chores'); setMainView('chores'); },
+    },
+    {
+      id: 'flight',
+      label: 'Flight mode',
+      tooltip: 'A 10.000ft view',
+      icon: (
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+        </svg>
+      ),
+      isActive: isFlightActive,
+      onClick: () => { setPendingView('idle'); setProcessMode(false); setMainView('idle'); },
+    },
+    {
+      id: 'xray',
+      label: 'X-Ray',
+      tooltip: 'Processes as sequences of connections',
+      icon: <Radiation className="h-3.5 w-3.5" />,
+      isActive: isXRayActive,
+      onClick: () => { setPendingView(processMode ? 'idle' : 'process'); setProcessMode(!processMode); },
+    },
+    {
+      id: 'landscape',
+      label: 'Landscape',
+      tooltip: 'Landscape editor',
+      icon: <Trees className="h-3.5 w-3.5" />,
+      isActive: isEditorActive,
+      onClick: () => { const nextView = isEditorActive ? 'idle' : 'editor'; setPendingView(nextView); setMainView(nextView); },
+      visible: isCollaborator,
+    },
+  ];
+
   return (
     <TooltipProvider>
       <header className="flex items-center h-12 px-4 gap-3 bg-card border-b border-border shrink-0 z-10">
@@ -372,112 +453,27 @@ export default function Navbar() {
                 </PopoverContent>
               </Popover>
             )}
-            {/* View switcher buttons */}
-            {(['metrics', 'matrix'] as const).map((view) => {
-              const isActive = mainView === view;
-              const icon = view === 'metrics' ? (
-                <BarChart2 className="h-3.5 w-3.5" />
-              ) : (
-                <Bus className="h-3.5 w-3.5" />
-              );
-              const label = view === 'metrics' ? 'Quality Metrics' : 'Bus Matrix';
-              const tooltip = view === 'metrics' ? 'Manage quality metrics and goals' : 'Who knows what';
-              return (
-                <Tooltip key={view}>
-                  <TooltipTrigger asChild>
-                    <button
-                      className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
-                        isActive
-                          ? 'border-amber-400 text-amber-400'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
-                      }`}
-                      onClick={() => !isActive && setMainView(view)}
-                      aria-current={isActive ? 'page' : undefined}
-                    >
-                      {icon}
-                      <span className="hidden sm:inline">{label}</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">{tooltip}</TooltipContent>
-                </Tooltip>
-              );
-            })}
-            {/* Chores nav entry */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
-                    mainView === 'chores'
-                      ? 'border-amber-400 text-amber-400'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                  onClick={() => setMainView('chores')}
-                  aria-current={mainView === 'chores' ? 'page' : undefined}
-                >
-                  <CheckSquare className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Chores</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">Chore todo lists per landmark</TooltipContent>
-            </Tooltip>
-            {/* Flight mode nav entry */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
-                    mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'editor' && !processMode
-                      ? 'border-amber-400 text-amber-400'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                  onClick={() => setMainView('idle')}
-                  aria-current={mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'editor' && !processMode ? 'page' : undefined}
-                >
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-                  </svg>
-                  <span className="hidden sm:inline">Flight mode</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">A 10.000ft view</TooltipContent>
-            </Tooltip>
-            {/* Processes nav entry */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
-                    processMode
-                      ? 'border-amber-400 text-amber-400'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                  onClick={() => setProcessMode(!processMode)}
-                  aria-current={processMode ? 'page' : undefined}
-                >
-                  <Radiation className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">X-Ray</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">Processes as sequences of connections</TooltipContent>
-            </Tooltip>
-            {/* Landscape editor nav entry – collaborators only */}
-            {isCollaborator && (
-              <Tooltip>
+            {/* ── Nav tabs ─────────────────────────────────────────────────── */}
+            {NAV_TABS.filter((t) => t.visible !== false).map((tab) => (
+              <Tooltip key={tab.id}>
                 <TooltipTrigger asChild>
                   <button
                     className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
-                      mainView === 'editor'
-                        ? 'border-amber-400 text-amber-400'
+                      tab.isActive
+                        ? `${activeBorderCls} text-amber-400`
                         : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
-                    onClick={() => setMainView(mainView === 'editor' ? 'idle' : 'editor')}
-                    aria-current={mainView === 'editor' ? 'page' : undefined}
+                    onClick={tab.onClick}
+                    aria-current={tab.isActive ? 'page' : undefined}
                   >
-                    <Trees className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Landscape</span>
+                    {tab.icon}
+                    <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Landscape editor</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">{tab.tooltip}</TooltipContent>
               </Tooltip>
-            )}
+            ))}
+
             {/* Admin: Download session JSON */}
             {isAdmin && (
               <Tooltip>

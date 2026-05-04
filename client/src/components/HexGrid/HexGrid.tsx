@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type {HexCoordinate, HexTile, Terrain} from '@/types/hex';
@@ -14,6 +14,8 @@ import {clearNamePlaneCache} from './landmarks/landmarkUtils';
 import {buildConnectionGroup, buildSimpleConnectionLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
 import type {RendererQualityProfile} from './renderQuality';
+import LoadingOverlay from '@/components/ui/LoadingOverlay';
+import { LOADING_COPY } from '@/components/ui/loadingCopy';
 import {
     buildTileGeo,
     EDGE_MAT, EDGE_MAT_VERT, EDGE_MAT_DARK,
@@ -41,10 +43,7 @@ interface Props {
     fpsRef?: React.RefObject<HTMLDivElement | null>;
     brushMode?: boolean;
     crosshairCursor?: boolean;
-    /** Called once after the first Three.js frame with scene content. */
-    onFirstRender?: () => void;
-    /**
-     * All connection IDs that belong to the active process (used for dimming/hiding).
+    /**     * All connection IDs that belong to the active process (used for dimming/hiding).
      * Connections in this set that are also in activeStageConnectionIds are hidden (replaced by arrows).
      * Connections in this set but not in activeStageConnectionIds stay at full opacity.
      * Connections not in this set are dimmed to 0.18 opacity.
@@ -104,7 +103,6 @@ export default function HexGrid({
                                     fpsRef,
                                     brushMode = false,
                                     crosshairCursor = false,
-                                    onFirstRender,
                                     highlightConnectionIds,
                                     activeStageConnectionIds,
                                     landmarkHighlightColors,
@@ -117,6 +115,7 @@ export default function HexGrid({
                                     rendererQualityProfile,
                                 }: Props) {
     const mountRef = useRef<HTMLDivElement>(null);
+    const [loading, setLoading] = useState(true);
 
     const tileMergedRef = useRef<{
         tops: THREE.Mesh;
@@ -202,11 +201,12 @@ export default function HexGrid({
     const stableNativeMove = useRef((e: PointerEvent) => onNativeMoveRef.current(e));
 
     // ── Scene (delegated to useThreeScene) ───────────────────────────────────
-    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, qualityProfile: rendererQualityProfile, onSceneReady: onFirstRender});
+    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, qualityProfile: rendererQualityProfile});
 
     const requestRender = () => {
         threeRef.current?.requestRender();
     };
+
 
     // ── patchTileMaterial ─────────────────────────────────────────────────────
     const patchTileMaterial = (q: number, r: number, terrain: Terrain, elevation: number) => {
@@ -265,6 +265,12 @@ export default function HexGrid({
     useEffect(() => {
         const scene = threeRef.current?.scene;
         if (!scene) return;
+
+        setLoading(true);
+
+        // Defer all expensive geometry work so the browser can paint the loading
+        // overlay above before the JS thread is blocked.
+        const tid = setTimeout(() => {
         if (tileMergedRef.current) {
             scene.remove(tileMergedRef.current.tops, tileMergedRef.current.sides, tileMergedRef.current.edges, tileMergedRef.current.edgesVert, tileMergedRef.current.edgesDark);
             tileMergedRef.current.tops.geometry.dispose();
@@ -396,6 +402,12 @@ export default function HexGrid({
         applyTileHighlights(tiles);
 
         requestRender();
+        setLoading(false);
+        }); // end setTimeout
+        return () => {
+            clearTimeout(tid);
+            setLoading(false);
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map.map, hideDecorations]);
 
@@ -918,15 +930,20 @@ export default function HexGrid({
     };
 
     return (
-        <div
-            ref={mountRef}
-            className="w-full h-full block"
-            style={{cursor: (brushMode || crosshairCursor) ? 'crosshair' : 'default'}}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerLeave}
-            onClick={handleClick}
-        />
+        <div className="relative w-full h-full">
+            <div
+                ref={mountRef}
+                className="w-full h-full block"
+                style={{cursor: (brushMode || crosshairCursor) ? 'crosshair' : 'default'}}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerLeave}
+                onClick={handleClick}
+            />
+            {loading && (
+                <LoadingOverlay label={LOADING_COPY.render} variant="overlay" />
+            )}
+        </div>
     );
 }

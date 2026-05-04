@@ -38,30 +38,47 @@ export function useSessionWebSocket(mapId: string | undefined) {
   useEffect(() => {
     if (!mapId) return;
 
+    let cancelled = false;
+    const currentMapId = useMapStore.getState().currentMap?.id;
+
+    const runIfPromise = <T>(
+      request: Promise<T> | undefined,
+      onSuccess: (value: T) => void,
+    ) => {
+      if (!request || typeof request.then !== 'function') return;
+      request.then((value) => {
+        if (!cancelled) onSuccess(value);
+      }).catch(() => { /* ignore – WS broadcast will update */ });
+    };
+
+    const hydrateAuxiliarySlices = () => {
+      runIfPromise(fetchMetrics(mapId), (metrics) => {
+        setMetricsRef.current(metrics);
+      });
+      runIfPromise(fetchCollaboratorMatrix(mapId), (matrix) => {
+        setCollaboratorMatrixRef.current(matrix);
+      });
+      runIfPromise(fetchChoreLists(mapId), (lists) => {
+          setChoreListsRef.current(lists);
+          setChoreListsFetchedRef.current(true);
+      });
+    };
+
+    if (currentMapId === mapId) {
+      hydrateAuxiliarySlices();
+    } else {
+      getMap(mapId).then((map) => {
+        if (cancelled) return;
+        setCurrentMapRef.current(map);
+        hydrateAuxiliarySlices();
+      }).catch(() => { /* WS updates will follow */ });
+    }
+
     const wsUrl = buildWsUrl();
 
     const client = new Client({
       brokerURL: wsUrl,
       onConnect: () => {
-        // ── Hydrate all store slices from dedicated endpoints on (re-)connect ─
-        // Each slice is fetched independently so that the full map payload is not
-        // required to carry choreLists / metrics / collaboratorMatrix.
-        // Load map first (setCurrentMap resets metrics/matrix/choreLists),
-        // then fetch the dedicated slices so they are not cleared afterwards.
-        getMap(mapId).then((map) => {
-          setCurrentMapRef.current(map);
-          fetchMetrics(mapId).then((metrics) => {
-            setMetricsRef.current(metrics);
-          }).catch(() => { /* ignore – WS broadcast will update */ });
-          fetchCollaboratorMatrix(mapId).then((matrix) => {
-            setCollaboratorMatrixRef.current(matrix);
-          }).catch(() => { /* ignore – WS broadcast will update */ });
-          fetchChoreLists(mapId).then((lists) => {
-            setChoreListsRef.current(lists);
-            setChoreListsFetchedRef.current(true);
-          }).catch(() => { /* ignore – WS broadcast will update */ });
-        }).catch(() => { /* WS updates will follow */ });
-
         client.subscribe(`/topic/map/${mapId}`, (message) => {
           try {
             const payload = JSON.parse(message.body) as SessionState;
@@ -104,6 +121,7 @@ export function useSessionWebSocket(mapId: string | undefined) {
     clientRef.current = client;
 
     return () => {
+      cancelled = true;
       client.deactivate();
       clientRef.current = null;
     };

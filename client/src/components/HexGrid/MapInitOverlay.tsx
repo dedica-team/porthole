@@ -6,6 +6,7 @@
  * is called from HexGrid's onFirstRender callback once scene geometry is ready.
  */
 import { useState } from 'react';
+import { LOADING_COPY } from '@/components/ui/loadingCopy';
 
 interface Props {
   tileCount: number;
@@ -36,7 +37,7 @@ export default function MapInitOverlay({ tileCount, landmarkCount, onDismiss }: 
         <div className="h-0.5 w-48 rounded-full bg-muted overflow-hidden">
           <div className="h-full bg-cyan-500/50 rounded-full animate-pulse w-full" />
         </div>
-        <span className="text-[11px] text-muted-foreground/60 tracking-widest uppercase">Rendering map</span>
+        <span className="text-[11px] text-muted-foreground/60 tracking-widest uppercase">{LOADING_COPY.render}</span>
         <div className="flex gap-4 text-[10px] text-muted-foreground/40">
           <span>{tileCount.toLocaleString()} tiles</span>
           <span>{landmarkCount.toLocaleString()} landmarks</span>

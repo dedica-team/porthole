@@ -69,6 +69,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 export type MainView = 'idle' | 'tile' | 'landmark' | 'editor' | 'groups' | 'metrics' | 'matrix' | 'process' | 'chores';
+export type PendingView = MainView | null;
 
 interface MapStore {
   maps: SessionState[];
@@ -87,6 +88,7 @@ interface MapStore {
   editorTerrain: Terrain;
   rendererQualityProfile: RendererQualityProfile;
   mainView: MainView;
+  pendingView: PendingView;
   confirmPending: boolean;
   // ── Process mode ──────────────────────────────────────────────────────────
   processMode: boolean;
@@ -116,6 +118,7 @@ interface MapStore {
   setEditorTerrain: (terrain: Terrain) => void;
   setRendererQualityProfile: (profile: RendererQualityProfile) => void;
   setMainView: (view: MainView) => void;
+  setPendingView: (view: PendingView) => void;
   setConfirmPending: (pending: boolean) => void;
   setProcessMode: (on: boolean) => void;
   setActiveProcessId: (id: string | null) => void;
@@ -158,7 +161,8 @@ export const useMapStore = create<MapStore>((set) => ({
   editorTool: 'RAISE',
   editorTerrain: 'GRASS',
   rendererQualityProfile: getInitialRendererQualityProfile(),
-  mainView: 'metrics',
+  mainView: 'idle',
+  pendingView: null,
   confirmPending: false,
   processMode: false,
   activeProcessId: null,
@@ -183,7 +187,8 @@ export const useMapStore = create<MapStore>((set) => ({
     selectedTile: null,
     selectedLandmark: null,
     selectedConnectionId: null,
-    mainView: (map == null || state.currentMap == null || state.currentMap.id !== map.id) ? 'metrics' : state.mainView,
+    mainView: (map == null || state.currentMap == null || state.currentMap.id !== map.id) ? 'idle' : state.mainView,
+    pendingView: null,
     confirmPending: false,
     // Reset process state when switching maps
     processesFetched: false,
@@ -287,6 +292,7 @@ export const useMapStore = create<MapStore>((set) => ({
     editorMode: view === 'editor',
     processMode: view === 'process' ? state.processMode : false,
   })),
+  setPendingView: (view) => set({ pendingView: view }),
   setConfirmPending: (pending) => set({ confirmPending: pending }),
   setProcessMode: (on) => set((state) => ({
     processMode: on,

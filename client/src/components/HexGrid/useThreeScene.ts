@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
@@ -43,22 +43,42 @@ export function useThreeScene({
 }: UseThreeSceneOptions): React.RefObject<ThreeRefs | null> {
   const threeRef = useRef<ThreeRefs | null>(null);
   const frameRef = useRef<number>(0);
+  const sizeVecRef = useRef(new THREE.Vector2());
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+
+    const readMountSize = () => {
+      const rect = mount.getBoundingClientRect();
+      const width = Math.max(0, Math.floor(rect.width || mount.clientWidth));
+      const height = Math.max(0, Math.floor(rect.height || mount.clientHeight));
+      return { width, height };
+    };
+
+    const initialSize = readMountSize();
+    const initialWidth = Math.max(1, initialSize.width);
+    const initialHeight = Math.max(1, initialSize.height);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(TRON_BLACK);
     const rendererQuality = resolveRendererQuality(qualityProfile);
 
-    const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.1, 200);
+    const camera = new THREE.PerspectiveCamera(
+      55,
+      initialSize.width > 0 && initialSize.height > 0 ? initialSize.width / initialSize.height : 1,
+      0.1,
+      200,
+    );
     camera.position.set(0, 60, 60);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: rendererQuality.antialias });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, rendererQuality.maxPixelRatio));
-    renderer.setSize(mount.clientWidth, mount.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, rendererQuality.maxPixelRatio));
+    renderer.setSize(initialWidth, initialHeight, false);
+    renderer.domElement.style.display = 'block';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
     renderer.shadowMap.enabled = false;
     renderer.toneMapping = rendererQuality.toneMapping;
     renderer.toneMappingExposure = rendererQuality.toneMappingExposure;
@@ -66,17 +86,46 @@ export function useThreeScene({
 
     // ── CSS2D overlay renderer ─────────────────────────────────────────────────
     const css2dRenderer = new CSS2DRenderer();
-    css2dRenderer.setSize(mount.clientWidth, mount.clientHeight);
+    css2dRenderer.setSize(initialWidth, initialHeight);
     css2dRenderer.domElement.style.position = 'absolute';
     css2dRenderer.domElement.style.top = '0';
     css2dRenderer.domElement.style.left = '0';
+    css2dRenderer.domElement.style.width = '100%';
+    css2dRenderer.domElement.style.height = '100%';
     css2dRenderer.domElement.style.pointerEvents = 'none';
     css2dRenderer.domElement.style.display = 'none';
     mount.appendChild(css2dRenderer.domElement);
 
     const needsRenderRef = { current: true };
     const css2dActiveRef = { current: false };
+    let hasValidViewport = false;
     let disposed = false;
+
+    const syncViewportSize = () => {
+      const { width, height } = readMountSize();
+      if (width <= 0 || height <= 0) {
+        hasValidViewport = false;
+        return false;
+      }
+
+      const dpr = Math.min(window.devicePixelRatio || 1, rendererQuality.maxPixelRatio);
+      const currentSize = renderer.getSize(sizeVecRef.current);
+      const needsResize = currentSize.x !== width || currentSize.y !== height;
+      const needsDprUpdate = renderer.getPixelRatio() !== dpr;
+
+      if (needsResize || needsDprUpdate || !hasValidViewport) {
+        renderer.setPixelRatio(dpr);
+        renderer.setSize(width, height, false);
+        renderer.setViewport(0, 0, width, height);
+        renderer.setScissorTest(false);
+        css2dRenderer.setSize(width, height);
+      }
+
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      hasValidViewport = true;
+      return true;
+    };
 
     const scheduleFrame = () => {
       if (disposed || frameRef.current !== 0) return;
@@ -164,6 +213,11 @@ export function useThreeScene({
       lastRenderTime = now;
       needsRenderRef.current = false;
 
+      if (!syncViewportSize()) {
+        stats.end();
+        return;
+      }
+
       const t0 = performance.now();
       renderer.render(scene, camera);
       if (css2dActiveRef.current) {
@@ -193,28 +247,22 @@ export function useThreeScene({
         scheduleFrame();
       }
     };
-    requestRender();
 
     if (onNativePointerMove) {
       renderer.domElement.addEventListener('pointermove', onNativePointerMove);
     }
 
     const handleResize = () => {
-      if (!mount) return;
-      const w = mount.clientWidth;
-      const h = mount.clientHeight;
-      if (w === 0 || h === 0) return;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-      css2dRenderer.setSize(w, h);
+      if (!syncViewportSize()) return;
       requestRender();
     };
+    handleResize();
     const resizeObserver = new ResizeObserver(() => {
       handleResize();
     });
     resizeObserver.observe(mount);
     window.addEventListener('resize', handleResize);
+    requestRender();
 
     return () => {
       disposed = true;

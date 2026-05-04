@@ -23,7 +23,8 @@ beforeEach(() => {
     processesLoading: false,
     processesError: null,
     editorMode: false,
-    mainView: 'metrics',
+    mainView: 'idle',
+    pendingView: null,
   });
 });
 
@@ -92,12 +93,14 @@ describe('mapStore – setCurrentMap resets process state', () => {
       processes: [{ id: 'p1', name: 'Old', stages: [] }],
       processesFetched: true,
       processMode: true,
+      mainView: 'metrics',
     });
     useMapStore.getState().setCurrentMap({ ...makeMap(), id: 'map-2' });
     const s = useMapStore.getState();
     expect(s.processes).toHaveLength(0);
     expect(s.processesFetched).toBe(false);
     expect(s.processMode).toBe(false);
+    expect(s.mainView).toBe('idle');
   });
 
   it('always resets processesFetched when setCurrentMap is called (forces re-fetch)', () => {

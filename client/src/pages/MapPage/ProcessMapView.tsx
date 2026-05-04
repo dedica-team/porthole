@@ -8,7 +8,6 @@
 import { useRef, useCallback, useMemo, useState } from 'react';import { Plus, Layers, GitBranch } from 'lucide-react';import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import HexGrid from '@/components/HexGrid/HexGrid';
-import MapInitOverlay from '@/components/HexGrid/MapInitOverlay';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import CreateConnectionDialog from '@/components/CreateConnectionDialog';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -31,7 +30,7 @@ export default function ProcessMapView({ actions }: Props) {
   const { positionedLandmarks, setError, landmarkByCoord } = actions;
 
   const [selectedMetricId, setSelectedMetricId] = useState<string | null>(null);
-  const dismissOverlayRef = useRef<(() => void) | null>(null);
+
 
   const {
     currentMap, updateMap, metrics,
@@ -274,16 +273,10 @@ export default function ProcessMapView({ actions }: Props) {
             stageHighlightTiles={stageHighlightTiles}
             metricOverlayEntries={metricOverlayEntries}
             onConnectionClick={handleConnectionClick}
-            onFirstRender={() => dismissOverlayRef.current?.()}
           />
         </ErrorBoundary>
       </div>
 
-      <MapInitOverlay
-        tileCount={currentMap.map?.tiles?.length ?? 0}
-        landmarkCount={Object.keys(currentMap.landmarks ?? {}).length}
-        onDismiss={(fn) => { dismissOverlayRef.current = fn; }}
-      />
 
       {/* Collaborator overlay: new connection + new process + search */}
       {isCollaborator && (

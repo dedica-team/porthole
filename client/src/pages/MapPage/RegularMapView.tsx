@@ -7,7 +7,6 @@
  */
 import { useRef, useCallback } from 'react';
 import HexGrid from '@/components/HexGrid/HexGrid';
-import MapInitOverlay from '@/components/HexGrid/MapInitOverlay';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useMapStore, useAuthStore } from '@/store/mapStore';import { useShallow } from 'zustand/react/shallow';
@@ -50,8 +49,6 @@ export default function RegularMapView({ actions }: Props) {
 
   const patchTileRef = useRef<((q: number, r: number, terrain: Terrain, elevation: number) => void) | null>(null);
   const fpsRef = useRef<HTMLDivElement>(null);
-  const dismissOverlayRef = useRef<(() => void) | null>(null);
-
 
   const handleTileClick = useCallback((q: number, r: number) => {
     const landmark = landmarkByCoord.get(`${q},${r}`);
@@ -135,16 +132,9 @@ export default function RegularMapView({ actions }: Props) {
             patchTileRef={patchTileRef}
             hideDecorations={false}
             rendererQualityProfile={rendererQualityProfile}
-            onFirstRender={() => dismissOverlayRef.current?.()}
           />
         </ErrorBoundary>
       </div>
-
-      <MapInitOverlay
-        tileCount={currentMap.map?.tiles?.length ?? 0}
-        landmarkCount={Object.keys(currentMap.landmarks ?? {}).length}
-        onDismiss={(fn) => { dismissOverlayRef.current = fn; }}
-      />
 
 
       {isCollaborator && (
