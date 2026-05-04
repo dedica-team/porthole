@@ -676,6 +676,12 @@ export default function HexGrid({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stageHighlightTiles]);
 
+    // ── CSS2D metric overlay renderer toggle ───────────────────────────────────
+    useEffect(() => {
+        const hasMetricOverlayEntries = !!metricOverlayEntries && metricOverlayEntries.size > 0;
+        threeRef.current?.setCss2dActive(hasMetricOverlayEntries);
+    }, [metricOverlayEntries, threeRef]);
+
     // ── Highlighted tile ring mesh (process mode) ─────────────────────────────────
     // For each landmark tile: build a flat annular hex ring (6 quads) that sits
     // on the top surface, using the landmark's group colour.
