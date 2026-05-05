@@ -129,15 +129,15 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
       {totalEntries > 0 && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
-            <table className="w-full text-xs border-separate border-spacing-0">
+            <table className="data-display-table w-full text-xs border-separate border-spacing-0">
               <thead>
                 <tr>
                   {/* colour stripe col */}
-                  <th className="w-4 p-0 sticky top-0 left-0 z-20 bg-card border-b border-border" />
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-48">Landmark</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-28">State</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-36">Assignee</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-64">Details</th>
+                  <th className="w-4 p-0 sticky top-0 left-0 z-20 bg-card border-b border-border data-sticky-header" />
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-48 data-sticky-header">Landmark</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-28 data-sticky-header">State</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-36 data-sticky-header">Assignee</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-64 data-sticky-header">Details</th>
                 </tr>
               </thead>
               <tbody>

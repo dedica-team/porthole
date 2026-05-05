@@ -576,13 +576,13 @@ export default function MetricsView({
     worstLevel(Object.values(landmarksMap[landmarkId]?.metrics ?? {}));
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <div className="metrics-view flex flex-col h-full bg-background overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-6 py-3 shrink-0">
+      <div className="metrics-header flex flex-wrap items-center gap-x-3 gap-y-2 px-6 py-3 shrink-0">
         <BarChart2 className="h-4 w-4 text-muted-foreground" />
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex items-center gap-1.5 group" title="Help">
+            <button className="metrics-help-trigger flex items-center gap-1.5 group" title="Help">
               <h2 className="text-sm font-semibold text-foreground group-hover:opacity-70 transition-opacity">Quality Metrics</h2>
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
             </button>
@@ -606,7 +606,7 @@ export default function MetricsView({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 gap-1.5 text-xs"
+            className="metrics-toolbar-button h-7 gap-1.5 text-xs"
             onClick={() => setShowGroupsDialog(true)}
             title="Manage groups"
           >
@@ -618,7 +618,7 @@ export default function MetricsView({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 gap-1.5 text-xs"
+                className="metrics-toolbar-button h-7 gap-1.5 text-xs"
                 onClick={() => setShowCreateLandmarkDialog(true)}
                 title="Create a new landmark without position"
               >
@@ -627,7 +627,7 @@ export default function MetricsView({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 gap-1.5 text-xs"
+                className="metrics-toolbar-button h-7 gap-1.5 text-xs"
                 onClick={() => setShowTemplateSelector(true)}
                 title="Add metric"
               >
@@ -746,11 +746,11 @@ export default function MetricsView({
       {metrics.length > 0 && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
-            <table className="w-full text-xs border-separate border-spacing-0">
+            <table className="data-display-table w-full text-xs border-separate border-spacing-0">
               <thead>
                 <tr>
-                  <th className="w-4 p-0 sticky left-0 z-20" style={{ background: 'hsl(var(--card))' }} />
-                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20"
+                  <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
+                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 data-sticky-header"
                     style={{ left: '1rem', background: 'hsl(var(--card))' }}>
                     <Button
                       ref={filterBtnRef}
@@ -767,10 +767,10 @@ export default function MetricsView({
                     </Button>
                   </th>
                   {metrics.map((m) => (
-                    <th key={m.id} className="text-left px-3 py-2 font-medium min-w-40 bg-transparent">
+                    <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium min-w-40 bg-transparent align-bottom">
                       {isCollaborator ? (
                         <button
-                          className="text-sm font-semibold hover:opacity-70 transition-opacity text-left"
+                          className="metrics-metric-trigger text-sm font-semibold hover:opacity-70 transition-opacity text-left normal-case"
                           style={{ color: 'hsl(185,100%,54%)' }}
                           title={m.description || undefined}
                           onClick={() => openMetricDef(m)}
@@ -778,7 +778,7 @@ export default function MetricsView({
                           {m.name}
                         </button>
                       ) : (
-                        <span className="text-sm font-semibold" style={{ color: 'hsl(185,100%,54%)' }} title={m.description || undefined}>
+                        <span className="metrics-metric-trigger text-sm font-semibold normal-case" style={{ color: 'hsl(185,100%,54%)' }} title={m.description || undefined}>
                           {m.name}
                         </span>
                       )}
@@ -796,12 +796,12 @@ export default function MetricsView({
                       {sectionLandmarks.map((landmark, rowIdx) => {
                         const lmWorst = worstForLandmark(landmark.id);
                         return (
-                          <tr key={landmark.id}>
+                          <tr key={landmark.id} className={`metrics-row${rowIdx === 0 ? ' metrics-row-group-start' : ''}`}>
                             {/* Colour stripe – only on first row, spans all rows in group */}
                             {rowIdx === 0 && (
                               <td
                                 rowSpan={sectionLandmarks.length}
-                                className="group-stripe w-4 p-0 sticky left-0 z-30 select-none"
+                                className="group-stripe metrics-group-stripe w-4 p-0 sticky left-0 z-30 select-none"
                                 style={{
                                   backgroundColor: `color-mix(in srgb, ${color} 40%, black)`,
                                   minWidth: '1rem',
@@ -813,7 +813,7 @@ export default function MetricsView({
                                   style={{ height: `${sectionLandmarks.length * 2.25}rem`, minHeight: '2rem' }}
                                 >
                                   <span
-                                    className="text-[9px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                                    className="metrics-group-label text-[9px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
                                     style={{
                                     writingMode: 'vertical-rl',
                                     transform: 'rotate(180deg)',
@@ -828,20 +828,20 @@ export default function MetricsView({
                               </td>
                             )}
                             {/* Landmark name + overall badge */}
-                            <td className="px-4 py-2 sticky z-20" style={{ left: '1rem', background: 'hsl(var(--card))' }}>
+                            <td className="metrics-landmark-cell px-4 py-2 sticky z-20 data-sticky-cell" style={{ left: '1rem', background: 'hsl(var(--card))' }}>
                               <div className="flex items-center gap-2 min-w-0">
                                 {/* Overall badge */}
                                 <div className="shrink-0">
                                   {lmWorst !== 'NONE' ? (
                                     <span
-                                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block font-mono"
+                                      className="metrics-overall-badge text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block font-mono"
                                       style={QUALITY_LEVEL_BADGE_STYLE[lmWorst]}
                                     >
                                       {QUALITY_LEVEL_SIGN[lmWorst]}
                                     </span>
                                   ) : (
                                     <span
-                                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block font-mono"
+                                      className="metrics-overall-badge text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block font-mono"
                                       style={QUALITY_LEVEL_BADGE_STYLE['NONE']}
                                     >
                                       —
@@ -884,29 +884,30 @@ export default function MetricsView({
 
                               return (
                                 <td key={m.id}
-                                  className={`px-3 py-2 transition-colors group${isCollaborator ? ' cursor-pointer' : ''}`}
+                                  data-level={entry?.level ?? 'NONE'}
+                                  className={`metrics-metric-cell px-3 py-2 transition-colors group${isCollaborator ? ' cursor-pointer' : ''}`}
                                   onClick={isCollaborator ? () => openCellEdit(landmark.id, m.id) : undefined}
                                   title={entry ? `${QUALITY_LEVEL_LABEL[entry.level]}${entry.value ? `: ${entry.value}` : ''}` : (isCollaborator ? 'Click to set value' : undefined)}
                                 >
                                   {entry ? (
-                                    <div className="flex items-center gap-1.5 min-w-0">
+                                    <div className="metrics-cell-content flex items-center gap-1.5 min-w-0">
                                       {entry.level !== 'NONE' && (
                                         <span
-                                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block w-fit font-mono"
+                                          className="metrics-value-badge text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block w-fit font-mono"
                                           style={QUALITY_LEVEL_BADGE_STYLE[entry.level]}
                                         >
                                           {entry.value ?? QUALITY_LEVEL_SIGN[entry.level]}
                                         </span>
                                       )}
                                       {entry.badges && Object.entries(entry.badges).map(([key, url]) => (
-                                        <div key={key} className="flex items-center gap-1 min-w-0"
+                                        <div key={key} className="metrics-inline-badge flex items-center gap-1 min-w-0"
                                           onClick={(e) => e.stopPropagation()}>
-                                          <span className="text-[9px] text-muted-foreground shrink-0">{key}</span>
+                                          <span className="data-subtle text-[9px] text-muted-foreground shrink-0">{key}</span>
                                           <img src={url} alt={key} title={key} className="h-4 max-w-24 object-contain" />
                                         </div>
                                       ))}
                                       {entry.link && (
-                                        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                                        <div className="metrics-cell-link flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
                                           <a href={entry.link} target="_blank" rel="noopener noreferrer"
                                             className="text-muted-foreground hover:text-blue-400"
                                             onClick={(e) => e.stopPropagation()} title={entry.link}>
@@ -916,7 +917,7 @@ export default function MetricsView({
                                       )}
                                     </div>
                                   ) : (
-                                    <span className="text-muted-foreground/30 text-[10px] italic group-hover:text-muted-foreground/60 transition-colors">
+                                      <span className="data-empty text-[10px] italic transition-colors group-hover:text-muted-foreground">
                                       not set
                                     </span>
                                   )}

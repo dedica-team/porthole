@@ -199,13 +199,13 @@ export default function CollaboratorMatrixView({
       {landmarks.length > 0 && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
-            <table className="w-full text-xs border-separate border-spacing-0">
+            <table className="data-display-table w-full text-xs border-separate border-spacing-0">
               <thead>
                 <tr>
                   {/* colour-stripe placeholder */}
-                  <th className="w-4 p-0 sticky left-0 z-20" style={{ background: 'hsl(var(--card))' }} />
+                  <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
                   {/* landmark col header + group filter */}
-                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 bg-card" style={{ left: '1rem' }}>
+                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 bg-card data-sticky-header" style={{ left: '1rem' }}>
                     <Button
                       ref={filterBtnRef}
                       size="sm"
@@ -284,7 +284,7 @@ export default function CollaboratorMatrixView({
                           )}
                           {/* Landmark name + mini summary squares */}
                           <td
-                            className="px-4 py-2 sticky z-10"
+                            className="px-4 py-2 sticky z-10 data-sticky-cell"
                             style={{ left: '1rem', background: 'hsl(var(--card))' }}
                           >
                             <LandmarkInfoPopover

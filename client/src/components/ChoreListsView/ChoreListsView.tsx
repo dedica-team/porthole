@@ -92,20 +92,20 @@ export default function ChoreListsView() {
       {!choreListsLoading && sorted.length > 0 && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
-            <table className="w-full text-xs border-separate border-spacing-0">
+            <table className="data-display-table w-full text-xs border-separate border-spacing-0">
               <thead>
                 <tr>
-                  <th className="text-left px-6 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-56">
+                  <th className="text-left px-6 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-56 data-sticky-header">
                     Title
                   </th>
                   {CHORE_ENTRY_STATES.map((s) => (
-                    <th key={s} className="text-center px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-24">
+                    <th key={s} className="text-center px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-24 data-sticky-header">
                       <span style={CHORE_ENTRY_STATE_BADGE_STYLE[s]} className="px-1.5 py-0.5 rounded text-[10px] font-medium">
                         {CHORE_ENTRY_STATE_LABEL[s]}
                       </span>
                     </th>
                   ))}
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-36">
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-36 data-sticky-header">
                     Assignees
                   </th>
                 </tr>
@@ -154,7 +154,7 @@ export default function ChoreListsView() {
                               {counts[s]}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/40">—</span>
+                            <span className="data-empty">—</span>
                           )}
                         </td>
                       ))}
@@ -173,7 +173,7 @@ export default function ChoreListsView() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-muted-foreground/40">—</span>
+                           <span className="data-empty">—</span>
                         )}
                       </td>
                     </tr>
