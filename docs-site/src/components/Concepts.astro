@@ -5,6 +5,8 @@ const concepts = [
   { term: 'Connection', def: 'A directed or undirected link between two landmarks representing a dependency or integration.' },
   { term: 'Quality Metric', def: 'A map-wide metric definition (name + description) that can be evaluated for each landmark.' },
   { term: 'Landmark Metric Entry', def: 'The concrete evaluation of a metric for a specific landmark: value, link, and quality level.' },
+  { term: 'Greenkeeping Rotation', def: 'A recurring stewardship cycle for one or more groups, with an ordered collaborator sequence, optional context, and a clearly visible active owner.' },
+  { term: 'Active Collaborator', def: 'The first collaborator in a rotation whose current cycle entry is still unfinished. Advancing the rotation marks that entry done and moves ownership to the next person.' },
   { term: 'Quality Level', def: 'NONE / OK / WARNING / ERROR — the health status of a single metric entry.' },
   { term: 'Worst-of Status', def: 'The highest (worst) quality level across all metric entries for a landmark, shown as a blinking status light on the map.' },
 ];

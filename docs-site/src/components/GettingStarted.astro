@@ -120,15 +120,18 @@ make dev</code></pre>
         </p>
       </div>
       <div id="tab-docker" class="tab-pane">
-        <pre><code><span style="color:#8b949e"># 1. Clone &amp; configure</span>
-git clone https://github.com/dedica-team/porthole.git
-cd porthole
-cp .env.example .env    <span style="color:#8b949e"># add PORTHOLE_GITHUB_CLIENT_ID / SECRET</span>
-<span style="color:#8b949e"># 2. Build &amp; run the container</span>
-make docker-build
-make docker-run</code></pre>
+        <pre><code><span style="color:#8b949e"># 1. Create a folder for persistent JSON data</span>
+mkdir -p ./data
+<span style="color:#8b949e"># 2. Pull the published image</span>
+docker pull dedica/porthole:latest
+<span style="color:#8b949e"># 3. Run Porthole (expects auth-related env vars in .env)</span>
+docker run -d --name porthole -p 8080:8080 -p 8081:8081 \
+  --env-file .env \
+  -e PORTHOLE_ALLOWED_ORIGINS=http://localhost:8080 \
+  -v "$(pwd)/data:/data" \
+  dedica/porthole:latest</code></pre>
         <p style="color:var(--muted); font-size:0.875rem; margin-top:0.75rem;">
-          Full app (API + UI) available at <a href="http://localhost:8080">localhost:8080</a>.
+          Full app (API + UI) available at <a href="http://localhost:8080">localhost:8080</a>. No local Docker build is required; just make sure your <code>.env</code> contains the auth-provider settings you want to use, plus redirect/origin values that match <code>http://localhost:8080</code>.
         </p>
       </div>
       <div id="tab-build" class="tab-pane">
