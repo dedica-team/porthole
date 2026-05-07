@@ -181,5 +181,33 @@ data class UpdateChoreEntryRequest(
     val clearNote: Boolean = false,
 )
 
+// ── Greenkeeping Rotations ───────────────────────────────────────────────────
+
+data class GreenkeepingRotationCollaboratorRequest(
+    @param:JsonSerialize(using = UUIDSerializer::class)
+    val id: UUID? = null,
+    @param:JsonSerialize(using = UUIDSerializer::class)
+    val collaboratorId: UUID,
+    val done: Boolean = false,
+)
+
+data class CreateGreenkeepingRotationRequest(
+    @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val name: String,
+    @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
+    @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
+    val groupIds: List<String> = emptyList(),
+    val collaborators: List<GreenkeepingRotationCollaboratorRequest> = emptyList(),
+)
+
+data class EditGreenkeepingRotationRequest(
+    @field:Size(max = NAME_MAX_LENGTH) val name: String? = null,
+    @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
+    val clearDescription: Boolean = false,
+    @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
+    val clearLink: Boolean = false,
+    val groupIds: List<String>? = null,
+    val collaborators: List<GreenkeepingRotationCollaboratorRequest>? = null,
+)
+
 
 

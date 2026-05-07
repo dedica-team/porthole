@@ -27,6 +27,7 @@ data class SessionState(
     var collaboratorMatrix: CollaboratorMatrix = CollaboratorMatrix(),
     val processes: MutableMap<UUID, Process> = mutableMapOf(),
     val choreLists: MutableMap<UUID, ChoreList> = mutableMapOf(),
+    val greenkeepingRotations: MutableMap<UUID, GreenkeepingRotation> = mutableMapOf(),
 ) {
 
     fun getCollaborator(collaboratorId: UUID): Collaborator? = collaborators.find { it.id == collaboratorId }

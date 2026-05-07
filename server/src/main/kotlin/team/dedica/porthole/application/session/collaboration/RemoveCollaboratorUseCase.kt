@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.application.session.greenkeeping.RemoveCollaboratorFromGreenkeepingRotationsUseCase
 import team.dedica.porthole.domain.SessionRole
 import team.dedica.porthole.domain.SessionState
 import java.util.UUID
@@ -13,6 +14,7 @@ class RemoveCollaboratorUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
+    private val removeCollaboratorFromGreenkeepingRotationsUseCase: RemoveCollaboratorFromGreenkeepingRotationsUseCase,
 ) {
     /**
      * Removes [collaboratorId] from the session.
@@ -25,8 +27,10 @@ class RemoveCollaboratorUseCase(
 
         val removed = state.collaborators.removeIf { it.id == collaboratorId }
         if (!removed) throw NoSuchElementException("Collaborator $collaboratorId not found in session $sessionId")
+        removeCollaboratorFromGreenkeepingRotationsUseCase.execute(state, collaboratorId)
         sessionStatePort.save(state)
         broadcastPort.send(sessionId, state)
+        broadcastPort.sendGreenkeepingRotations(sessionId, state.greenkeepingRotations)
         return state
     }
 }

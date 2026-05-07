@@ -5,6 +5,11 @@ import type { ConnectionType } from '../types/connection';
 import type { MatrixLevel } from '../types/matrix';
 import type { Process, StageConnectionDirection } from '../types/process';
 import type { ChoreList, ChoreEntryState } from '../types/chores';
+import type {
+  GreenkeepingRotation,
+  CreateGreenkeepingRotationPayload,
+  EditGreenkeepingRotationPayload,
+} from '../types/greenkeeping';
 const BASE_URL = '/api';
 
 function fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -865,5 +870,68 @@ export async function updateChoreEntry(
     },
   );
   return handleResponse<ChoreList>(res);
+}
+
+// ── Greenkeeping Rotations ───────────────────────────────────────────────────
+
+export async function fetchGreenkeepingRotations(mapId: string): Promise<GreenkeepingRotation[]> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations`, {
+    headers: authHeaders(),
+  });
+  return handleResponse<GreenkeepingRotation[]>(res);
+}
+
+export async function createGreenkeepingRotation(
+  mapId: string,
+  payload: CreateGreenkeepingRotationPayload,
+): Promise<GreenkeepingRotation[]> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      ...payload,
+      description: payload.description ?? null,
+      link: payload.link ?? null,
+    }),
+  });
+  return handleResponse<GreenkeepingRotation[]>(res);
+}
+
+export async function editGreenkeepingRotation(
+  mapId: string,
+  rotationId: string,
+  patch: EditGreenkeepingRotationPayload,
+): Promise<GreenkeepingRotation[]> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      ...patch,
+      description: patch.description ?? null,
+      link: patch.link ?? null,
+      clearDescription: patch.clearDescription ?? false,
+      clearLink: patch.clearLink ?? false,
+    }),
+  });
+  return handleResponse<GreenkeepingRotation[]>(res);
+}
+
+export async function deleteGreenkeepingRotation(mapId: string, rotationId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(body || `HTTP ${res.status}`);
+  }
+}
+
+export async function advanceGreenkeepingRotation(mapId: string, rotationId: string): Promise<GreenkeepingRotation> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}/advance`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse<GreenkeepingRotation>(res);
 }
 

@@ -7,6 +7,7 @@ import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.ChoreList
 import team.dedica.porthole.domain.CollaboratorMatrix
+import team.dedica.porthole.domain.GreenkeepingRotation
 import team.dedica.porthole.domain.SessionRole
 import team.dedica.porthole.domain.SessionState
 import team.dedica.porthole.domain.QualityMetric
@@ -36,6 +37,7 @@ class NoOpBroadcastPort : BroadcastPort {
     override fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix) {}
     override fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>) {}
     override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) {}
+    override fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>) {}
 }
 
 class InMemoryAuthorizationPort(

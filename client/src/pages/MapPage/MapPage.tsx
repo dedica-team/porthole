@@ -16,6 +16,7 @@ const CollaboratorMatrixView = lazy(() => import('@/components/CollaboratorMatri
 const RegularMapView = lazy(() => import('./RegularMapView'));
 const ProcessMapView = lazy(() => import('./ProcessMapView'));
 const ChoreListsView = lazy(() => import('@/components/ChoreListsView/ChoreListsView'));
+const GreenkeepingRotationsView = lazy(() => import('@/components/GreenkeepingRotationsView/GreenkeepingRotationsView'));
 
 export default function MapPage() {
   const { id } = useParams<{ id: string }>();
@@ -134,7 +135,7 @@ export default function MapPage() {
       : LOADING_COPY.view;
 
   return (
-    <AppShell sidebar={pendingView ? undefined : mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' ? sidebar : undefined}>
+    <AppShell sidebar={pendingView ? undefined : mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'greenkeeping' ? sidebar : undefined}>
       {pendingView ? (
         <LoadingOverlay label={fallbackLabel} />
       ) : (
@@ -168,6 +169,8 @@ export default function MapPage() {
           />
         ) : mainView === 'chores' ? (
           <ChoreListsView />
+        ) : mainView === 'greenkeeping' ? (
+          <GreenkeepingRotationsView />
         ) : processMode ? (
           <ProcessMapView actions={actions} />
         ) : (

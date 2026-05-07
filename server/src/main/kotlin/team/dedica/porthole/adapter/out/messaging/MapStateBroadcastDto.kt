@@ -4,8 +4,8 @@ import java.time.Instant
 import java.util.UUID
 /**
  * The payload sent to WebSocket subscribers on /topic/map/{id}.
- * Metrics, chore lists, and the collaborator matrix are broadcast on
- * dedicated sub-topics (/metrics, /chore-lists, /matrix) so that
+ * Metrics, chore lists, greenkeeping rotations, and the collaborator matrix are broadcast on
+ * dedicated sub-topics (/metrics, /chore-lists, /greenkeeping-rotations, /matrix) so that
  * subscribers can selectively consume only what they need.
  */
 data class MapStateBroadcastDto(

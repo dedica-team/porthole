@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.security.access.AccessDeniedException
+import team.dedica.porthole.application.session.greenkeeping.RemoveGroupFromGreenkeepingRotationsUseCase
 import team.dedica.porthole.application.session.metrics.RemoveGroupUseCase
 import team.dedica.porthole.domain.*
 
@@ -36,7 +37,12 @@ class RemoveGroupUseCaseTest {
         mapStatePort = InMemorySessionStatePort()
         mapStatePort.save(state)
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
-        useCase = RemoveGroupUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        useCase = RemoveGroupUseCase(
+            mapStatePort,
+            NoOpBroadcastPort(),
+            authorizationPort,
+            RemoveGroupFromGreenkeepingRotationsUseCase(),
+        )
     }
 
     @Test
@@ -72,7 +78,12 @@ class RemoveGroupUseCaseTest {
 
     @Test
     fun `non-collaborator cannot remove group`() {
-        val uc = RemoveGroupUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        val uc = RemoveGroupUseCase(
+            mapStatePort,
+            NoOpBroadcastPort(),
+            authorizationPort,
+            RemoveGroupFromGreenkeepingRotationsUseCase(),
+        )
         assertThrows(AccessDeniedException::class.java) {
             uc.execute(state.id, collaborator2.id, g1Id)
         }

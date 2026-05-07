@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees } from 'lucide-react';
+import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -159,9 +159,10 @@ export default function Navbar() {
   const isMetricsActive  = mainView === 'metrics';
   const isMatrixActive   = mainView === 'matrix';
   const isChoresActive   = mainView === 'chores';
+  const isGreenkeepingActive = mainView === 'greenkeeping';
   const isEditorActive   = mainView === 'editor';
   const isXRayActive     = processMode;
-  const isFlightActive   = !isMetricsActive && !isMatrixActive && !isChoresActive && !isEditorActive && !isXRayActive;
+  const isFlightActive   = !isMetricsActive && !isMatrixActive && !isChoresActive && !isGreenkeepingActive && !isEditorActive && !isXRayActive;
 
   // The active-tab bottom border class.
   const activeBorderCls = 'border-amber-400';
@@ -190,6 +191,14 @@ export default function Navbar() {
       icon: <CheckSquare className="h-3.5 w-3.5" />,
       isActive: isChoresActive,
       onClick: () => { setPendingView('chores'); setMainView('chores'); },
+    },
+    {
+      id: 'greenkeeping',
+      label: 'Greenkeeping',
+      tooltip: 'Recurring group stewardship rotations',
+      icon: <RefreshCw className="h-3.5 w-3.5" />,
+      isActive: isGreenkeepingActive,
+      onClick: () => { setPendingView('greenkeeping'); setMainView('greenkeeping'); },
     },
     {
       id: 'flight',

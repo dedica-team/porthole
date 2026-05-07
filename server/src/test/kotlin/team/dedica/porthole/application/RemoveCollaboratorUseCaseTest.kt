@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.application.session.collaboration.RemoveCollaboratorUseCase
+import team.dedica.porthole.application.session.greenkeeping.RemoveCollaboratorFromGreenkeepingRotationsUseCase
 import team.dedica.porthole.domain.Collaborator
 import team.dedica.porthole.domain.HexMap
 import team.dedica.porthole.domain.SessionState
@@ -26,7 +27,12 @@ class RemoveCollaboratorUseCaseTest {
         mapStatePort.save(state)
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         authorizationPort.makeAdmin(adminId)
-        useCase = RemoveCollaboratorUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        useCase = RemoveCollaboratorUseCase(
+            mapStatePort,
+            NoOpBroadcastPort(),
+            authorizationPort,
+            RemoveCollaboratorFromGreenkeepingRotationsUseCase(),
+        )
     }
 
     @Test

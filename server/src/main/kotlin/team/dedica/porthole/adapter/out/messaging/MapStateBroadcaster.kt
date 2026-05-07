@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.domain.ChoreList
 import team.dedica.porthole.domain.CollaboratorMatrix
+import team.dedica.porthole.domain.GreenkeepingRotation
 import team.dedica.porthole.domain.SessionState
 import team.dedica.porthole.domain.QualityMetric
 import java.util.UUID
@@ -34,5 +35,10 @@ class MapStateBroadcaster(private val messaging: SimpMessagingTemplate) : Broadc
     @Async
     override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) {
         messaging.convertAndSend("/topic/map/$sessionId/chore-lists", choreLists.toMap())
+    }
+
+    @Async
+    override fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>) {
+        messaging.convertAndSend("/topic/map/$sessionId/greenkeeping-rotations", rotations.toMap())
     }
 }

@@ -2,6 +2,7 @@ package team.dedica.porthole.application.port
 
 import team.dedica.porthole.domain.ChoreList
 import team.dedica.porthole.domain.CollaboratorMatrix
+import team.dedica.porthole.domain.GreenkeepingRotation
 import team.dedica.porthole.domain.SessionState
 import team.dedica.porthole.domain.QualityMetric
 import java.util.UUID
@@ -14,5 +15,6 @@ interface BroadcastPort {
     fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix)
     fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>)
     fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>)
+    fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>)
 }
 

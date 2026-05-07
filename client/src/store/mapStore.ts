@@ -6,6 +6,7 @@ import type { ConnectionType } from '../types/connection';
 import type { Process } from '../types/process';
 import type { ChoreList } from '../types/chores';
 import type { CollaboratorMatrix } from '../types/matrix';
+import type { GreenkeepingRotation } from '../types/greenkeeping';
 import type { QualityMetric } from '../types/landmark';
 import {
   DEFAULT_RENDERER_QUALITY_PROFILE,
@@ -68,7 +69,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSessionLoading: (loading) => set({ sessionLoading: loading }),
 }));
 
-export type MainView = 'idle' | 'tile' | 'landmark' | 'editor' | 'groups' | 'metrics' | 'matrix' | 'process' | 'chores';
+export type MainView = 'idle' | 'tile' | 'landmark' | 'editor' | 'groups' | 'metrics' | 'matrix' | 'process' | 'chores' | 'greenkeeping';
 export type PendingView = MainView | null;
 
 interface MapStore {
@@ -145,6 +146,15 @@ interface MapStore {
   setChoreListsLoading: (v: boolean) => void;
   setChoreListsError: (e: string | null) => void;
   setActiveChoreListId: (id: string | null) => void;
+  // ── Greenkeeping Rotations ─────────────────────────────────────────────────
+  greenkeepingRotations: GreenkeepingRotation[];
+  greenkeepingRotationsFetched: boolean;
+  greenkeepingRotationsLoading: boolean;
+  greenkeepingRotationsError: string | null;
+  setGreenkeepingRotations: (rotations: GreenkeepingRotation[]) => void;
+  setGreenkeepingRotationsFetched: (v: boolean) => void;
+  setGreenkeepingRotationsLoading: (v: boolean) => void;
+  setGreenkeepingRotationsError: (e: string | null) => void;
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -177,6 +187,10 @@ export const useMapStore = create<MapStore>((set) => ({
   choreListsLoading: false,
   choreListsError: null,
   activeChoreListId: null,
+  greenkeepingRotations: [],
+  greenkeepingRotationsFetched: false,
+  greenkeepingRotationsLoading: false,
+  greenkeepingRotationsError: null,
   metrics: {},
   setMetrics: (metrics) => set({ metrics }),
   collaboratorMatrix: null,
@@ -200,6 +214,8 @@ export const useMapStore = create<MapStore>((set) => ({
     choreListsFetched: false,
     choreLists: [],
     activeChoreListId: null,
+    greenkeepingRotationsFetched: false,
+    greenkeepingRotations: [],
     metrics: {},
     collaboratorMatrix: null,
   })),
@@ -315,6 +331,10 @@ export const useMapStore = create<MapStore>((set) => ({
   setChoreListsLoading: (v) => set({ choreListsLoading: v }),
   setChoreListsError: (e) => set({ choreListsError: e }),
   setActiveChoreListId: (id) => set({ activeChoreListId: id }),
+  setGreenkeepingRotations: (rotations) => set({ greenkeepingRotations: rotations }),
+  setGreenkeepingRotationsFetched: (v) => set({ greenkeepingRotationsFetched: v }),
+  setGreenkeepingRotationsLoading: (v) => set({ greenkeepingRotationsLoading: v }),
+  setGreenkeepingRotationsError: (e) => set({ greenkeepingRotationsError: e }),
 }));
 
 

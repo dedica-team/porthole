@@ -3,9 +3,10 @@ import { Client } from '@stomp/stompjs';
 import type { SessionState } from '../types/session';
 import type { ChoreList } from '../types/chores';
 import type { CollaboratorMatrix } from '../types/matrix';
+import type { GreenkeepingRotation } from '../types/greenkeeping';
 import type { QualityMetric } from '../types/landmark';
 import { useMapStore } from '../store/mapStore';
-import { getMap, fetchMetrics, fetchChoreLists, fetchCollaboratorMatrix } from '../api/mapApi';
+import { getMap, fetchMetrics, fetchChoreLists, fetchCollaboratorMatrix, fetchGreenkeepingRotations } from '../api/mapApi';
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -20,18 +21,24 @@ export function useSessionWebSocket(mapId: string | undefined) {
   const setCurrentMap = useMapStore((s) => s.setCurrentMap);
   const setChoreLists = useMapStore((s) => s.setChoreLists);
   const setChoreListsFetched = useMapStore((s) => s.setChoreListsFetched);
+  const setGreenkeepingRotations = useMapStore((s) => s.setGreenkeepingRotations);
+  const setGreenkeepingRotationsFetched = useMapStore((s) => s.setGreenkeepingRotationsFetched);
   const setCollaboratorMatrix = useMapStore((s) => s.setCollaboratorMatrix);
   const setMetrics = useMapStore((s) => s.setMetrics);
   const updateMapRef = useRef(updateMap);
   const setCurrentMapRef = useRef(setCurrentMap);
   const setChoreListsRef = useRef(setChoreLists);
   const setChoreListsFetchedRef = useRef(setChoreListsFetched);
+  const setGreenkeepingRotationsRef = useRef(setGreenkeepingRotations);
+  const setGreenkeepingRotationsFetchedRef = useRef(setGreenkeepingRotationsFetched);
   const setCollaboratorMatrixRef = useRef(setCollaboratorMatrix);
   const setMetricsRef = useRef(setMetrics);
   useEffect(() => { updateMapRef.current = updateMap; }, [updateMap]);
   useEffect(() => { setCurrentMapRef.current = setCurrentMap; }, [setCurrentMap]);
   useEffect(() => { setChoreListsRef.current = setChoreLists; }, [setChoreLists]);
   useEffect(() => { setChoreListsFetchedRef.current = setChoreListsFetched; }, [setChoreListsFetched]);
+  useEffect(() => { setGreenkeepingRotationsRef.current = setGreenkeepingRotations; }, [setGreenkeepingRotations]);
+  useEffect(() => { setGreenkeepingRotationsFetchedRef.current = setGreenkeepingRotationsFetched; }, [setGreenkeepingRotationsFetched]);
   useEffect(() => { setCollaboratorMatrixRef.current = setCollaboratorMatrix; }, [setCollaboratorMatrix]);
   useEffect(() => { setMetricsRef.current = setMetrics; }, [setMetrics]);
 
@@ -61,6 +68,10 @@ export function useSessionWebSocket(mapId: string | undefined) {
       runIfPromise(fetchChoreLists(mapId), (lists) => {
           setChoreListsRef.current(lists);
           setChoreListsFetchedRef.current(true);
+      });
+      runIfPromise(fetchGreenkeepingRotations(mapId), (rotations) => {
+        setGreenkeepingRotationsRef.current(rotations);
+        setGreenkeepingRotationsFetchedRef.current(true);
       });
     };
 
@@ -109,6 +120,14 @@ export function useSessionWebSocket(mapId: string | undefined) {
             setCollaboratorMatrixRef.current(matrix);
           } catch {
             console.error('Failed to parse matrix update', message.body);
+          }
+        });
+        client.subscribe(`/topic/map/${mapId}/greenkeeping-rotations`, (message) => {
+          try {
+            const rotations = JSON.parse(message.body) as Record<string, GreenkeepingRotation>;
+            setGreenkeepingRotationsRef.current(Object.values(rotations));
+          } catch {
+            console.error('Failed to parse greenkeeping rotations update', message.body);
           }
         });
       },
