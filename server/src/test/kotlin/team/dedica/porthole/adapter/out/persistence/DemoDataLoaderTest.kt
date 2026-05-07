@@ -8,6 +8,8 @@ import team.dedica.porthole.application.InMemorySessionStatePort
 import team.dedica.porthole.application.InMemoryTestUserRepository
 import team.dedica.porthole.application.NoOpBroadcastPort
 import team.dedica.porthole.application.lobby.JoinMapUseCase
+import team.dedica.porthole.application.session.greenkeeping.AdvanceGreenkeepingRotationUseCase
+import team.dedica.porthole.application.session.greenkeeping.CreateGreenkeepingRotationUseCase
 import team.dedica.porthole.application.session.landscaping.CreateConnectionUseCase
 import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
 import team.dedica.porthole.application.session.landscaping.PlaceLandmarkUseCase
@@ -49,6 +51,8 @@ class DemoDataLoaderTest {
         addStageConnectionUseCase = AddStageConnectionUseCase(mapPort, authPort),
         createChoreListUseCase  = CreateChoreListUseCase(mapPort, broadcast, authPort),
         updateChoreEntryUseCase = UpdateChoreEntryUseCase(mapPort, broadcast, authPort),
+        createGreenkeepingRotationUseCase = CreateGreenkeepingRotationUseCase(mapPort, broadcast, authPort),
+        advanceGreenkeepingRotationUseCase = AdvanceGreenkeepingRotationUseCase(mapPort, broadcast, authPort),
     )
 
     @Test
@@ -139,7 +143,6 @@ class DemoDataLoaderTest {
     fun `all connection paths are non-empty and start and end at landmark tiles`() {
         loader.run(DefaultApplicationArguments())
         val map = mapPort.findById(DEMO_MAP_ID)!!
-        val landmarkCoords = map.landmarks.values.mapNotNull { it.coordinate }.toSet()
         map.connections.values.forEach { conn ->
             assertTrue(conn.path.isNotEmpty(), "Connection '${conn.name}' has empty path")
             val origin = map.landmarks[conn.originId]?.coordinate
@@ -219,6 +222,47 @@ class DemoDataLoaderTest {
                     "Chore list '${list.title}' has entry for unknown landmark '$landmarkId'")
             }
         }
+    }
+
+    @Test
+    fun `map has 3 greenkeeping rotations`() {
+        loader.run(DefaultApplicationArguments())
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+        assertEquals(3, map.greenkeepingRotations.size, "Expected 3 greenkeeping rotations")
+    }
+
+    @Test
+    fun `greenkeeping rotations reference valid groups and collaborators`() {
+        loader.run(DefaultApplicationArguments())
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+
+        map.greenkeepingRotations.values.forEach { rotation ->
+            assertTrue(rotation.groupIds.isNotEmpty(), "Rotation '${rotation.name}' must reference at least one group")
+            rotation.groupIds.forEach { groupId ->
+                assertNotNull(map.groups[groupId], "Rotation '${rotation.name}' references unknown group '$groupId'")
+            }
+            assertTrue(rotation.collaborators.isNotEmpty(), "Rotation '${rotation.name}' must reference at least one collaborator")
+            rotation.collaborators.forEach { collaborator ->
+                assertTrue(
+                    map.collaborators.any { it.id == collaborator.collaboratorId },
+                    "Rotation '${rotation.name}' references unknown collaborator '${collaborator.collaboratorId}'"
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `greenkeeping rotations include progressed demo state`() {
+        loader.run(DefaultApplicationArguments())
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+
+        val clinicalRotation = map.greenkeepingRotations.values.first { it.name == "Clinical Hygiene Steward" }
+        val diagnosticsRotation = map.greenkeepingRotations.values.first { it.name == "Diagnostics Equipment Steward" }
+        val facilitiesRotation = map.greenkeepingRotations.values.first { it.name == "Front-of-House Readiness" }
+
+        assertEquals(listOf(true, false, false), clinicalRotation.collaborators.map { it.done })
+        assertEquals(listOf(true, true, false), diagnosticsRotation.collaborators.map { it.done })
+        assertEquals(listOf(true, false, false), facilitiesRotation.collaborators.map { it.done })
     }
 
     @Test
