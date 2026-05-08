@@ -34,7 +34,7 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/api/sessions")
-class MapController(
+class SessionController(
     private val createMapUseCase: CreateMapUseCase,
     private val joinMapUseCase: JoinMapUseCase,
     private val adminJoinMapUseCase: AdminJoinMapUseCase,
@@ -215,7 +215,7 @@ class MapController(
                 request.name,
                 type,
                 request.description,
-                UUID.fromString(request.groupId),
+                request.groupId?.let { UUID.fromString(it) },
                 request.link
             )
         )

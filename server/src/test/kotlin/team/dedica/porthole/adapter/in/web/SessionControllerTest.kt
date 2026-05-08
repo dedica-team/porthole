@@ -4,6 +4,7 @@ import java.util.UUID
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,7 +28,7 @@ import team.dedica.porthole.TestStorageCleaner
 @AutoConfigureMockMvc
 @ActiveProfiles("test", "dev")
 @ContextConfiguration(initializers = [TestStorageCleaner::class])
-class MapControllerTest {
+class SessionControllerTest {
 
     @Autowired
     lateinit var mockMvc: MockMvc
@@ -134,6 +135,56 @@ class MapControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body))
         ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `POST unpositioned landmark with null groupId creates landmark without group`() {
+        val body = mapOf(
+            "name" to "Floating Tower",
+            "type" to "KEEP",
+            "description" to "Awaiting placement",
+            "groupId" to null,
+            "link" to null,
+        )
+
+        mockMvc.perform(
+            post("/api/sessions/$mapId/landmarks/unpositioned")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body))
+        ).andExpect(status().isOk)
+
+        val landmark = sessionStatePort.findById(mapId)!!.landmarks.values.first { it.name == "Floating Tower" }
+        assertNull(landmark.coordinate)
+        assertNull(landmark.groupId)
+    }
+
+    @Test
+    fun `POST unpositioned landmark with groupId assigns group`() {
+        val groupId = UUID.randomUUID()
+        val state = sessionStatePort.findById(mapId)!!
+        state.groups[groupId] = LandmarkGroup(groupId, "Ops", "#00ffcc")
+        sessionStatePort.save(state)
+
+        val body = mapOf(
+            "name" to "Ops Buffer",
+            "type" to "KEEP",
+            "description" to "Staged for planning",
+            "groupId" to groupId.toString(),
+            "link" to "https://example.test/ops-buffer",
+        )
+
+        mockMvc.perform(
+            post("/api/sessions/$mapId/landmarks/unpositioned")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body))
+        ).andExpect(status().isOk)
+
+        val landmark = sessionStatePort.findById(mapId)!!.landmarks.values.first { it.name == "Ops Buffer" }
+        assertEquals(groupId, landmark.groupId)
+        assertEquals("https://example.test/ops-buffer", landmark.link)
+        assertNull(landmark.coordinate)
     }
 
     @Test
