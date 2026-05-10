@@ -599,7 +599,7 @@ export default function ProcessPanel() {
                 <HelpCircle className="h-3.5 w-3.5" />
               </button>
             </PopoverTrigger>
-            <PopoverContent side="right" className="max-w-72 text-xs space-y-1.5 leading-relaxed">
+            <PopoverContent side="bottom" align="center" className="max-w-72 text-xs space-y-1.5 leading-relaxed">
               <p className="font-semibold">Processes</p>
               <p>Processes model ordered sequences of map connections — useful for workflows, routes, or data flows.</p>
               <p><span className="font-medium">Stages</span> are the steps within a process. Each stage can hold one or more connections.</p>

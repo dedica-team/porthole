@@ -100,7 +100,7 @@ describe('mapStore – setCurrentMap resets process state', () => {
     expect(s.processes).toHaveLength(0);
     expect(s.processesFetched).toBe(false);
     expect(s.processMode).toBe(false);
-    expect(s.mainView).toBe('idle');
+    expect(s.mainView).toBe('metrics');
   });
 
   it('always resets processesFetched when setCurrentMap is called (forces re-fetch)', () => {

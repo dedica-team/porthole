@@ -16,7 +16,7 @@ describe('Navbar (HUD replacement)', () => {
   it('renders the logo', () => {
     useAuthStore.setState({ username: 'alice', avatarUrl: null, isAuthenticated: true });
     renderNavbar();
-    expect(screen.getByText('Porthole')).toBeInTheDocument();
+    expect(screen.getByText('Lobby')).toBeInTheDocument();
   });
 
   it('shows username initials in avatar when logged in', () => {

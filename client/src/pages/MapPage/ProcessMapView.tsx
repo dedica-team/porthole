@@ -42,6 +42,8 @@ export default function ProcessMapView({ actions }: Props) {
     pickingConnection,
     setActiveProcessId,
     rendererQualityProfile,
+    processSidebarHidden,
+    setProcessSidebarHidden,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     updateMap: s.updateMap,
@@ -54,6 +56,8 @@ export default function ProcessMapView({ actions }: Props) {
     pickingConnection: s.pickingConnection,
     setActiveProcessId: s.setActiveProcessId,
     rendererQualityProfile: s.rendererQualityProfile,
+    processSidebarHidden: s.processSidebarHidden,
+    setProcessSidebarHidden: s.setProcessSidebarHidden,
   })));
 
   const userId = useAuthStore((s) => s.userId);
@@ -349,6 +353,23 @@ export default function ProcessMapView({ actions }: Props) {
       )}
 
       <div ref={fpsRef} className="absolute bottom-2 left-2 text-[10px] text-white/40 pointer-events-none font-mono" />
+
+      {/* Floating Processes sidebar toggle */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <Button
+          size="sm"
+          variant="ghost"
+          className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${
+            !processSidebarHidden
+              ? 'bg-sky-950 text-sky-300 border-sky-700 hover:bg-sky-900'
+              : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
+          }`}
+          onClick={() => setProcessSidebarHidden(!processSidebarHidden)}
+        >
+          <GitBranch className="h-4 w-4 shrink-0" />
+          <span className="text-xs">Processes</span>
+        </Button>
+      </div>
 
       {/* Metric layer selector – top-right, always visible in process mode */}
       {Object.keys(metrics).length > 0 && (() => {

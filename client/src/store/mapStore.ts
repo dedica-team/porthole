@@ -93,6 +93,7 @@ interface MapStore {
   confirmPending: boolean;
   // ── Process mode ──────────────────────────────────────────────────────────
   processMode: boolean;
+  processSidebarHidden: boolean;
   activeProcessId: string | null;
   activeStageId: string | null;
   pickingConnection: boolean;  // crosshair pick mode within an open stage
@@ -122,6 +123,7 @@ interface MapStore {
   setPendingView: (view: PendingView) => void;
   setConfirmPending: (pending: boolean) => void;
   setProcessMode: (on: boolean) => void;
+  setProcessSidebarHidden: (hidden: boolean) => void;
   setActiveProcessId: (id: string | null) => void;
   setActiveStageId: (id: string | null) => void;
   setPickingConnection: (picking: boolean) => void;
@@ -175,6 +177,7 @@ export const useMapStore = create<MapStore>((set) => ({
   pendingView: null,
   confirmPending: false,
   processMode: false,
+  processSidebarHidden: false,
   activeProcessId: null,
   activeStageId: null,
   pickingConnection: false,
@@ -289,8 +292,8 @@ export const useMapStore = create<MapStore>((set) => ({
       };
     }),
   setSelectedTile: (tile) => set({ selectedTile: tile }),
-  setSelectedLandmark: (landmark) => set({ selectedLandmark: landmark }),
-  setSelectedConnectionId: (id) => set({ selectedConnectionId: id }),
+  setSelectedLandmark: (landmark) => set({ selectedLandmark: landmark, ...(landmark ? { processSidebarHidden: false } : {}) }),
+  setSelectedConnectionId: (id) => set({ selectedConnectionId: id, ...(id ? { processSidebarHidden: false } : {}) }),
   setConnectingFromLandmark: (id) => set({ connectingFromLandmarkId: id }),
   setRelocatingLandmark: (id) => set({ relocatingLandmarkId: id }),
   setPendingConnectionMeta: (meta) => set({ pendingConnectionMeta: meta }),
@@ -312,6 +315,7 @@ export const useMapStore = create<MapStore>((set) => ({
   setConfirmPending: (pending) => set({ confirmPending: pending }),
   setProcessMode: (on) => set((state) => ({
     processMode: on,
+    processSidebarHidden: false,
     mainView: on ? 'process' : state.mainView,
     editorMode: on ? false : state.editorMode,
     pickingConnection: on ? state.pickingConnection : false,
@@ -319,6 +323,7 @@ export const useMapStore = create<MapStore>((set) => ({
     selectedTile: on ? null : state.selectedTile,
     selectedConnectionId: on ? null : state.selectedConnectionId,
   })),
+  setProcessSidebarHidden: (hidden) => set({ processSidebarHidden: hidden }),
   setActiveProcessId: (id) => set({ activeProcessId: id }),
   setActiveStageId: (id) => set({ activeStageId: id, pickingConnection: false }),
   setPickingConnection: (picking) => set({ pickingConnection: picking }),
