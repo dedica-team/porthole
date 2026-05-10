@@ -235,25 +235,41 @@ export default function Navbar() {
     <TooltipProvider>
       <header className="flex items-center h-12 px-4 gap-3 bg-card border-b border-border shrink-0 z-10">
         {/* Logo – icon only */}
-        <button
-          onClick={() => navigate(isOnMap ? '/lobby' : '/')}
-          className="flex items-center select-none transition-all group shrink-0 cursor-pointer"
-          style={{ textDecoration: 'none' }}
-          title={isOnMap ? 'Back to lobby' : tagline}
-        >
-          <img
-            src="/logo.svg"
-            alt="Porthole"
-            width={22}
-            height={22}
-            style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }}
-          />
-        </button>
-        <Separator orientation="vertical" className="h-5 bg-border shrink-0" />
+        {!isOnMap ? (
+          <div
+            className="flex items-center select-none shrink-0"
+            title={tagline}
+          >
+            <img
+              src="/logo.svg"
+              alt="Porthole"
+              width={22}
+              height={22}
+              style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }}
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate(isOnMap ? '/lobby' : '/')}
+            className="flex items-center select-none transition-all group shrink-0 cursor-pointer"
+            style={{ textDecoration: 'none' }}
+            title={isOnMap ? 'Back to lobby' : tagline}
+          >
+            <img
+              src="/logo.svg"
+              alt="Porthole"
+              width={22}
+              height={22}
+              style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }}
+            />
+          </button>
+        )}
 
         {/* Static title when not in a session */}
         {!isOnMap && (
-          <span className="hidden sm:inline tron-logo text-sm" title={tagline}>Porthole</span>
+          <span className=" tron-logo text-sm" title={tagline}>
+            {location.pathname === '/lobby' ? 'Lobby' : 'Porthole'}
+          </span>
         )}
 
         {/* Map session area */}

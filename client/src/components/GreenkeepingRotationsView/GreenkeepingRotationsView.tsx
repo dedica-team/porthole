@@ -115,13 +115,13 @@ export default function GreenkeepingRotationsView() {
 
                   return (
                     <tr key={rotation.id} className="transition-colors hover:bg-muted/30">
-                      <td className="border-b border-border px-6 py-2.5 align-top">
+                      <td className="border-b border-border px-6 py-2.5 align-top w-1/2 max-w-0">
                         <div className="min-w-0">
                           <div className="flex min-w-0 items-center gap-1.5">
                             {isCollaborator ? (
                               <button
                                 type="button"
-                                className="truncate font-medium text-foreground transition-colors hover:text-[hsl(185,100%,54%)] cursor-pointer"
+                                className="truncate text-sm font-medium text-foreground transition-colors hover:text-[hsl(185,100%,54%)] cursor-pointer"
                                 onClick={() => {
                                   setActionError('');
                                   setEditingRotation(rotation);
@@ -130,11 +130,11 @@ export default function GreenkeepingRotationsView() {
                                 {rotation.name}
                               </button>
                             ) : (
-                              <span className="truncate font-medium text-foreground">{rotation.name}</span>
+                              <span className="truncate text-sm font-medium text-foreground">{rotation.name}</span>
                             )}
                           </div>
                           {rotation.description && (
-                            <p className="mt-1 text-[11px] text-muted-foreground">{rotation.description}</p>
+                            <p className="mt-1 text-[11px] text-muted-foreground break-words whitespace-normal w-full">{rotation.description}</p>
                           )}
                           {rotation.link && (
                             <a

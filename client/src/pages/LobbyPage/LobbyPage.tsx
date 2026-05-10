@@ -353,7 +353,7 @@ export default function LobbyPage() {
           <div>
             <h1 className="text-lg font-semibold text-foreground tron-logo">Sessions</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Connect to an active session or initialise a new
+              Connect to an active session or initialise a new one.
             </p>
           </div>
           <Button
@@ -400,7 +400,7 @@ export default function LobbyPage() {
               {maps.map((map) => (
                 <div
                   key={map.id}
-                  className="flex items-center justify-between px-4 py-3 bg-card border border-border transition-all"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 gap-2 bg-card border border-border transition-all"
                   style={{ boxShadow: '0 0 0 transparent', transition: 'box-shadow 0.2s ease, border-color 0.2s ease' }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(0,240,255,0.2), inset 0 0 8px rgba(0,240,255,0.04)';
@@ -413,19 +413,15 @@ export default function LobbyPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-foreground">
+                      <span className="text-s font-semibold text-foreground">
                         {map.name ?? 'Unnamed Map'}
                       </span>
                       {map.description && (
-                        <span className="text-[11px] text-muted-foreground truncate max-w-55">
+                        <span className="text-[11px] text-muted-foreground">
                           {map.description}
                         </span>
                       )}
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-[10px] font-mono text-muted-foreground opacity-60">
-                          #{map.id.slice(0, 8)}
-                        </span>
-                        <span className="text-muted-foreground opacity-40">·</span>
                         <Users className="h-3 w-3 text-muted-foreground" />
                         <span className="text-[11px] text-muted-foreground">
                           {map.collaborators.length} collaborator

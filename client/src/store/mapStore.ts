@@ -201,7 +201,7 @@ export const useMapStore = create<MapStore>((set) => ({
     selectedTile: null,
     selectedLandmark: null,
     selectedConnectionId: null,
-    mainView: (map == null || state.currentMap == null || state.currentMap.id !== map.id) ? 'idle' : state.mainView,
+    mainView: (map == null || state.currentMap == null || state.currentMap.id !== map.id) ? 'metrics' : state.mainView,
     pendingView: null,
     confirmPending: false,
     // Reset process state when switching maps
