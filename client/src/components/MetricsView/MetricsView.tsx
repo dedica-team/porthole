@@ -890,29 +890,39 @@ export default function MetricsView({
                                   title={entry ? `${QUALITY_LEVEL_LABEL[entry.level]}${entry.value ? `: ${entry.value}` : ''}` : (isCollaborator ? 'Click to set value' : undefined)}
                                 >
                                   {entry ? (
-                                    <div className="metrics-cell-content flex items-center gap-1.5 min-w-0">
-                                      {entry.level !== 'NONE' && (
-                                        <span
-                                          className="metrics-value-badge text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block w-fit font-mono"
-                                          style={QUALITY_LEVEL_BADGE_STYLE[entry.level]}
-                                        >
-                                          {entry.value ?? QUALITY_LEVEL_SIGN[entry.level]}
-                                        </span>
-                                      )}
-                                      {entry.badges && Object.entries(entry.badges).map(([key, url]) => (
-                                        <div key={key} className="metrics-inline-badge flex items-center gap-1 min-w-0"
-                                          onClick={(e) => e.stopPropagation()}>
-                                          <span className="data-subtle text-[9px] text-muted-foreground shrink-0">{key}</span>
-                                          <img src={url} alt={key} title={key} className="h-4 max-w-24 object-contain" />
+                                    <div className="metrics-cell-content flex min-w-0 flex-col gap-1.5">
+                                      {(entry.level !== 'NONE' || entry.link) && (
+                                        <div className="flex min-w-0 items-center gap-1.5">
+                                          {entry.level !== 'NONE' && (
+                                            <span
+                                              className="metrics-value-badge text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block w-fit font-mono"
+                                              style={QUALITY_LEVEL_BADGE_STYLE[entry.level]}
+                                            >
+                                              {entry.value ?? QUALITY_LEVEL_SIGN[entry.level]}
+                                            </span>
+                                          )}
+                                          {entry.link && (
+                                            <div className="metrics-cell-link flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                                              <a href={entry.link} target="_blank" rel="noopener noreferrer"
+                                                className="text-muted-foreground hover:text-blue-400"
+                                                onClick={(e) => e.stopPropagation()} title={entry.link}>
+                                                <ExternalLink className="h-3 w-3" />
+                                              </a>
+                                            </div>
+                                          )}
                                         </div>
-                                      ))}
-                                      {entry.link && (
-                                        <div className="metrics-cell-link flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
-                                          <a href={entry.link} target="_blank" rel="noopener noreferrer"
-                                            className="text-muted-foreground hover:text-blue-400"
-                                            onClick={(e) => e.stopPropagation()} title={entry.link}>
-                                            <ExternalLink className="h-3 w-3" />
-                                          </a>
+                                      )}
+                                      {entry.badges && Object.entries(entry.badges).length > 0 && (
+                                        <div className="flex w-full min-w-0 flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+                                          {Object.entries(entry.badges).map(([key, url]) => (
+                                            <img
+                                              key={key}
+                                              src={url}
+                                              alt={key}
+                                              title={key}
+                                              className="block h-auto max-h-8 w-full max-w-full object-contain object-left"
+                                            />
+                                          ))}
                                         </div>
                                       )}
                                     </div>

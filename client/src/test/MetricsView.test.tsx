@@ -278,6 +278,25 @@ describe('MetricsView', () => {
     expect(covImg.src).toBe('https://img.shields.io/badge/coverage-80%25-yellow');
   });
 
+  it('does not render extra badge label text next to badge images in the metric cell', () => {
+    const lmWithBadges = {
+      ...LM_IN_A,
+      metrics: {
+        m1: {
+          metricId: 'm1',
+          level: 'NONE',
+          badges: {
+            build: 'https://img.shields.io/badge/build-passing-green',
+          },
+        },
+      },
+    };
+    setup({ m1: METRIC_AVAIL }, { lm1: lmWithBadges }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+    expect(screen.getByRole('img', { name: 'build' })).toBeInTheDocument();
+    expect(screen.queryByText('build')).not.toBeInTheDocument();
+  });
+
   it('displays only the badge imgs when no value and level is NONE', () => {
     const lmBadgeOnly = {
       ...LM_IN_A,
