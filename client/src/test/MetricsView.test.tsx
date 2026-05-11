@@ -7,6 +7,7 @@ import type { LandmarkGroup, QualityMetric } from '../types/landmark';
 // ── shared fixtures ────────────────────────────────────────────────────────
 
 const METRIC_AVAIL = { id: 'm1', name: 'Availability', description: 'Uptime %' };
+const METRIC_COVERAGE = { id: 'm2', name: 'Coverage', description: 'Test coverage %' };
 
 const GROUP_A: LandmarkGroup = { id: 'g1', name: 'Alpha', color: '#e74c3c' };
 const GROUP_B: LandmarkGroup = { id: 'g2', name: 'Beta',  color: '#3498db' };
@@ -278,6 +279,30 @@ describe('MetricsView', () => {
     expect(covImg.src).toBe('https://img.shields.io/badge/coverage-80%25-yellow');
   });
 
+  it('shows metric cell links as truncated link text with the URL start visible', () => {
+    const link = 'https://example.com/reports/availability/current-build/details';
+    const lmWithLink = {
+      ...LM_IN_A,
+      metrics: {
+        m1: {
+          metricId: 'm1',
+          value: '99.9%',
+          level: 'OK',
+          link,
+        },
+      },
+    };
+    setup({ m1: METRIC_AVAIL }, { lm1: lmWithLink }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+
+    const metricLink = screen.getByRole('link', { name: link });
+    expect(metricLink).toBeInTheDocument();
+    expect(metricLink).toHaveAttribute('href', link);
+    expect(metricLink).toHaveAttribute('title', link);
+    expect(metricLink.className).toContain('truncate');
+    expect(metricLink.textContent).toBe(link);
+  });
+
   it('does not render extra badge label text next to badge images in the metric cell', () => {
     const lmWithBadges = {
       ...LM_IN_A,
@@ -368,32 +393,62 @@ describe('MetricsView', () => {
     expect(screen.getAllByText('✘').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('bases the landmark summary badge only on currently visible metrics', () => {
+    const lmWithMetrics = {
+      ...LM_IN_A,
+      metrics: {
+        m1: { metricId: 'm1', value: '50%', level: 'ERROR' },
+        m2: { metricId: 'm2', value: '95%', level: 'OK' },
+      },
+    };
+    setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: lmWithMetrics }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+
+    expect(screen.getAllByText('✘').length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(screen.getByTitle('Filter table'));
+    const availabilityBtn = screen.getAllByText('Availability')
+      .filter((el) => el.closest('button') !== null)
+      .map((el) => el.closest('button')!)
+      .at(-1)!;
+    fireEvent.click(availabilityBtn);
+    fireEvent.click(screen.getByTitle(/filters active/i));
+
+    expect(screen.queryByText('✘')).not.toBeInTheDocument();
+    expect(screen.getByText('✔')).toBeInTheDocument();
+  });
+
   // ── group filter ──────────────────────────────────────────────────────────
 
       beforeEach(() => {
     localStorage.removeItem('landmarks.metrics.hiddenGroups');
+    localStorage.removeItem('landmarks.metrics.hiddenMetrics');
   });
 
   it('renders the filter icon button in the table header', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
     render(<MetricsView {...DEFAULT_PROPS} />);
-    expect(screen.getByTitle('Filter groups')).toBeInTheDocument();
+    expect(screen.getByTitle('Filter table')).toBeInTheDocument();
   });
 
-  it('clicking the filter button opens the group popover', () => {
-    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
+  it('clicking the filter button opens the combined filter popover', () => {
+    setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
     render(<MetricsView {...DEFAULT_PROPS} />);
-    fireEvent.click(screen.getByTitle('Filter groups'));
+    fireEvent.click(screen.getByTitle('Filter table'));
+    expect(screen.getByText(/filter table/i)).toBeInTheDocument();
     expect(screen.getByText(/show groups/i)).toBeInTheDocument();
+    expect(screen.getByText(/show metrics/i)).toBeInTheDocument();
     expect(screen.getAllByText('Alpha').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Beta').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Availability').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Coverage').length).toBeGreaterThan(0);
   });
 
   it('toggling a group off hides its landmark rows', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
     render(<MetricsView {...DEFAULT_PROPS} />);
     // open popover
-    fireEvent.click(screen.getByTitle('Filter groups'));
+    fireEvent.click(screen.getByTitle('Filter table'));
     // click the "Alpha" row to hide it
     const alphaBtn = screen.getAllByText('Alpha').find(
       (el) => el.closest('button') !== null,
@@ -409,7 +464,7 @@ describe('MetricsView', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
     render(<MetricsView {...DEFAULT_PROPS} />);
     const filterBtn = () =>
-      screen.queryByTitle('Filter groups') ?? screen.getByTitle(/groups filtered/i);
+      screen.queryByTitle('Filter table') ?? screen.getByTitle(/filters active/i);
     fireEvent.click(filterBtn());
     // hide Alpha
     const alphaBtn = () => screen.getAllByText('Alpha').find(
@@ -426,7 +481,7 @@ describe('MetricsView', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
     render(<MetricsView {...DEFAULT_PROPS} />);
     const filterBtn = () =>
-      screen.queryByTitle('Filter groups') ?? screen.getByTitle(/groups filtered/i);
+      screen.queryByTitle('Filter table') ?? screen.getByTitle(/filters active/i);
     fireEvent.click(filterBtn());
     // hide both groups via popover buttons
     const groupBtns = () =>
@@ -442,15 +497,42 @@ describe('MetricsView', () => {
     expect(screen.getByText('Lighthouse')).toBeInTheDocument();
   });
 
-  it('filter icon title changes to "Groups filtered" when a group is hidden', () => {
+  it('filter icon title changes to active state when a group is hidden', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
     render(<MetricsView {...DEFAULT_PROPS} />);
-    fireEvent.click(screen.getByTitle('Filter groups'));
+    fireEvent.click(screen.getByTitle('Filter table'));
     const alphaBtn = screen.getAllByText('Alpha').find(
       (el) => el.closest('button') !== null,
     )!.closest('button')!;
     fireEvent.click(alphaBtn);
-    expect(screen.getByTitle(/groups filtered/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/filters active/i)).toBeInTheDocument();
+  });
+
+  it('toggling a metric off hides its column while keeping other metrics visible', () => {
+    const lmWithMetrics = {
+      ...LM_IN_A,
+      metrics: {
+        m1: { metricId: 'm1', value: '99.9%', level: 'OK' },
+        m2: { metricId: 'm2', value: '87%', level: 'WARN' },
+      },
+    };
+    setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: lmWithMetrics }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+
+    expect(screen.getByText('Availability')).toBeInTheDocument();
+    expect(screen.getByText('Coverage')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Filter table'));
+    const coverageBtn = screen.getAllByText('Coverage')
+      .filter((el) => el.closest('button') !== null)
+      .map((el) => el.closest('button')!)
+      .at(-1)!;
+    fireEvent.click(coverageBtn);
+    fireEvent.click(screen.getByTitle(/filters active/i));
+
+    expect(screen.queryByText('Coverage')).not.toBeInTheDocument();
+    expect(screen.getByText('Availability')).toBeInTheDocument();
+    expect(screen.queryByText('87%')).not.toBeInTheDocument();
+    expect(screen.getByText('99.9%')).toBeInTheDocument();
   });
 
   // ── help button ───────────────────────────────────────────────────────────
@@ -474,9 +556,10 @@ describe('MetricsView', () => {
 
   it('persists hidden groups to localStorage', () => {
     localStorage.removeItem('landmarks.metrics.hiddenGroups');
+    localStorage.removeItem('landmarks.metrics.hiddenMetrics');
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
     render(<MetricsView {...DEFAULT_PROPS} />);
-    fireEvent.click(screen.getByTitle('Filter groups'));
+    fireEvent.click(screen.getByTitle('Filter table'));
     const alphaBtn = screen.getAllByText('Alpha').find(
       (el) => el.closest('button') !== null,
     )!.closest('button')!;
@@ -484,6 +567,24 @@ describe('MetricsView', () => {
     const stored = JSON.parse(localStorage.getItem('landmarks.metrics.hiddenGroups')!);
     expect(stored).toContain('g1');
     localStorage.removeItem('landmarks.metrics.hiddenGroups');
+    localStorage.removeItem('landmarks.metrics.hiddenMetrics');
+  });
+
+  it('persists hidden metrics to localStorage', () => {
+    localStorage.removeItem('landmarks.metrics.hiddenGroups');
+    localStorage.removeItem('landmarks.metrics.hiddenMetrics');
+    setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: LM_IN_A }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+    fireEvent.click(screen.getByTitle('Filter table'));
+    const coverageBtn = screen.getAllByText('Coverage')
+      .filter((el) => el.closest('button') !== null)
+      .map((el) => el.closest('button')!)
+      .at(-1)!;
+    fireEvent.click(coverageBtn);
+    const stored = JSON.parse(localStorage.getItem('landmarks.metrics.hiddenMetrics')!);
+    expect(stored).toContain('m2');
+    localStorage.removeItem('landmarks.metrics.hiddenGroups');
+    localStorage.removeItem('landmarks.metrics.hiddenMetrics');
   });
 });
 

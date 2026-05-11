@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import {
-  BarChart2, Plus, Loader2, Check, X, ExternalLink, AlertTriangle, Users, HelpCircle,
+  BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,6 @@ import CreateLandmarkDialog from './CreateLandmarkDialog';
 import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
 import {
   useGroupFilter,
-  GroupFilterPopover,
 } from '@/components/ui/GroupFilterPopover';
 
 interface Props {
@@ -472,6 +471,8 @@ export default function MetricsView({
   // ── group filter ──────────────────────────────────────────────────────────
   const { hiddenGroups, setHiddenGroups, filterOpen, setFilterOpen, filterBtnRef, filterPopoverRef } =
     useGroupFilter('landmarks.metrics.hiddenGroups');
+  const { hiddenGroups: hiddenMetrics, setHiddenGroups: setHiddenMetrics } =
+    useGroupFilter('landmarks.metrics.hiddenMetrics');
 
   useEffect(() => {
     if (!groupPickerLandmarkId) return;
@@ -489,10 +490,13 @@ export default function MetricsView({
   if (!currentMap) return null;
 
   const metrics   = Object.values(metricsMap).sort((a, b) => a.name.localeCompare(b.name));
+  const visibleMetrics = metrics.filter((metric) => !hiddenMetrics.has(metric.id));
+  const visibleMetricIds = new Set(visibleMetrics.map((metric) => metric.id));
   const landmarks = Object.values(landmarksMap)
     .filter((lm) => !isDecorative(lm.type))
     .sort((a, b) => a.name.localeCompare(b.name));
   const groups    = currentMap.groups ?? {};
+  const totalHiddenFilters = hiddenGroups.size + hiddenMetrics.size;
 
   // Build ordered sections: one per group (sorted by name), then ungrouped
   const groupedSections: Array<{ groupId: string | null; label: string; color: string }> = [
@@ -573,7 +577,11 @@ export default function MetricsView({
   // ── render helpers ────────────────────────────────────────────────────────
 
   const worstForLandmark = (landmarkId: string): QualityLevel =>
-    worstLevel(Object.values(landmarksMap[landmarkId]?.metrics ?? {}));
+    worstLevel(
+      Object.entries(landmarksMap[landmarkId]?.metrics ?? {})
+        .filter(([metricId]) => visibleMetricIds.has(metricId))
+        .map(([, entry]) => entry),
+    );
 
   return (
     <div className="metrics-view flex flex-col h-full bg-background overflow-hidden">
@@ -756,17 +764,17 @@ export default function MetricsView({
                       ref={filterBtnRef}
                       size="sm"
                       variant="outline"
-                      className={`h-7 gap-1.5 text-xs${hiddenGroups.size > 0 ? ' border-primary text-primary' : ''}`}
-                      title={hiddenGroups.size > 0 ? 'Groups filtered — click to change' : 'Filter groups'}
+                      className={`h-7 gap-1.5 text-xs${totalHiddenFilters > 0 ? ' border-primary text-primary' : ''}`}
+                      title={totalHiddenFilters > 0 ? 'Filters active — click to change' : 'Filter table'}
                       onClick={() => setFilterOpen((v) => !v)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
                       </svg>
-                      {hiddenGroups.size > 0 ? `${hiddenGroups.size} hidden` : 'Filter'}
+                      {totalHiddenFilters > 0 ? `${totalHiddenFilters} hidden` : 'Filter'}
                     </Button>
                   </th>
-                  {metrics.map((m) => (
+                  {visibleMetrics.map((m) => (
                     <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium min-w-40 bg-transparent align-bottom">
                       {isCollaborator ? (
                         <button
@@ -879,7 +887,7 @@ export default function MetricsView({
                               </div>
                             </td>
                             {/* One cell per metric */}
-                            {metrics.map((m) => {
+                            {visibleMetrics.map((m) => {
                               const entry = (landmark.metrics ?? {})[m.id];
 
                               return (
@@ -891,26 +899,27 @@ export default function MetricsView({
                                 >
                                   {entry ? (
                                     <div className="metrics-cell-content flex min-w-0 flex-col gap-1.5">
-                                      {(entry.level !== 'NONE' || entry.link) && (
+                                      {entry.level !== 'NONE' && (
                                         <div className="flex min-w-0 items-center gap-1.5">
-                                          {entry.level !== 'NONE' && (
-                                            <span
-                                              className="metrics-value-badge text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block w-fit font-mono"
-                                              style={QUALITY_LEVEL_BADGE_STYLE[entry.level]}
-                                            >
-                                              {entry.value ?? QUALITY_LEVEL_SIGN[entry.level]}
-                                            </span>
-                                          )}
-                                          {entry.link && (
-                                            <div className="metrics-cell-link flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
-                                              <a href={entry.link} target="_blank" rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-blue-400"
-                                                onClick={(e) => e.stopPropagation()} title={entry.link}>
-                                                <ExternalLink className="h-3 w-3" />
-                                              </a>
-                                            </div>
-                                          )}
+                                          <span
+                                            className="metrics-value-badge text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block w-fit font-mono"
+                                            style={QUALITY_LEVEL_BADGE_STYLE[entry.level]}
+                                          >
+                                            {entry.value ?? QUALITY_LEVEL_SIGN[entry.level]}
+                                          </span>
                                         </div>
+                                      )}
+                                      {entry.link && (
+                                        <a
+                                          href={entry.link}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="metrics-cell-link block min-w-0 max-w-full truncate text-[10px] text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                                          onClick={(e) => e.stopPropagation()}
+                                          title={entry.link}
+                                        >
+                                          {entry.link}
+                                        </a>
                                       )}
                                       {entry.badges && Object.entries(entry.badges).length > 0 && (
                                         <div className="flex w-full min-w-0 flex-col gap-1" onClick={(e) => e.stopPropagation()}>
@@ -956,20 +965,80 @@ export default function MetricsView({
         loading={loading}
       />
 
-      {/* ── Group filter popover ─────────────────────────────────────────────── */}
-      <GroupFilterPopover
-        open={filterOpen}
-        btnRef={filterBtnRef}
-        popoverRef={filterPopoverRef}
-        sections={groupedSections.filter((s) => landmarksByGroup(s.groupId).length > 0)}
-        hiddenGroups={hiddenGroups}
-        onToggle={(groupId) => setHiddenGroups((prev) => {
-          const next = new Set(prev);
-          if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
-          return next;
-        })}
-        onShowAll={() => setHiddenGroups(new Set())}
-      />
+      {/* ── Combined table filter popover ────────────────────────────────────── */}
+      {filterOpen && filterBtnRef.current && ReactDOM.createPortal(
+        <div
+          ref={filterPopoverRef}
+          className="fixed z-9999 bg-popover border border-border rounded-md shadow-lg py-1 min-w-56"
+          style={{
+            top: filterBtnRef.current.getBoundingClientRect().bottom + 4,
+            left: filterBtnRef.current.getBoundingClientRect().left,
+          }}
+        >
+          <div className="px-3 py-1 flex items-center justify-between gap-3">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Filter table</span>
+            {totalHiddenFilters > 0 && (
+              <button
+                className="text-[10px] text-primary hover:underline"
+                onClick={() => {
+                  setHiddenGroups(new Set());
+                  setHiddenMetrics(new Set());
+                }}
+              >
+                Show all
+              </button>
+            )}
+          </div>
+
+          <div className="px-3 pt-1 pb-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Show groups</span>
+          </div>
+          {groupedSections.filter((section) => landmarksByGroup(section.groupId).length > 0).map(({ groupId, label, color }) => {
+            const visible = !hiddenGroups.has(groupId);
+            return (
+              <button
+                key={groupId ?? 'ungrouped'}
+                className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-accent transition-colors flex items-center gap-2"
+                onClick={() => setHiddenGroups((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
+                  return next;
+                })}
+              >
+                <span
+                  className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20"
+                  style={{ backgroundColor: color }}
+                />
+                <span className={`flex-1 truncate${visible ? '' : ' line-through text-muted-foreground'}`}>{label}</span>
+                {visible && <Check className="h-3 w-3 text-primary shrink-0" />}
+              </button>
+            );
+          })}
+
+          <div className="mt-1 border-t border-border/70 px-3 pt-2 pb-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Show metrics</span>
+          </div>
+          {metrics.map((metric) => {
+            const visible = !hiddenMetrics.has(metric.id);
+            return (
+              <button
+                key={metric.id}
+                className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-accent transition-colors flex items-center gap-2"
+                onClick={() => setHiddenMetrics((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(metric.id)) next.delete(metric.id); else next.add(metric.id);
+                  return next;
+                })}
+              >
+                <span className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20 bg-[hsl(185,100%,54%)]" />
+                <span className={`flex-1 truncate${visible ? '' : ' line-through text-muted-foreground'}`}>{metric.name}</span>
+                {visible && <Check className="h-3 w-3 text-primary shrink-0" />}
+              </button>
+            );
+          })}
+        </div>,
+        document.body,
+      )}
 
       {/* ── Group picker portal ─────────────────────────────────────────────── */}
       {groupPickerLandmarkId && groupPickerPos && ReactDOM.createPortal(
