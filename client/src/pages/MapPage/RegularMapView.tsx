@@ -9,7 +9,9 @@ import { useRef, useCallback } from 'react';
 import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { useMapStore, useAuthStore } from '@/store/mapStore';import { useShallow } from 'zustand/react/shallow';
+import EditorPanel from '@/components/Sidebar/panels/EditorPanel';
+import { useMapStore, useAuthStore } from '@/store/mapStore';
+import { useShallow } from 'zustand/react/shallow';
 import { positionLandmark, createConnection } from '@/api/mapApi';
 import type { Terrain } from '@/types/hex';
 import type { Landmark } from '@/types/landmark';
@@ -147,6 +149,8 @@ export default function RegularMapView({ actions }: Props) {
           <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} />
         </div>
       )}
+
+      {editorMode && <EditorPanel floating error={actions.error} onClearError={() => actions.setError('')} />}
 
       <div ref={fpsRef} className="absolute bottom-2 left-2 text-[10px] text-white/40 pointer-events-none font-mono" />
 

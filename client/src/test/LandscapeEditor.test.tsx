@@ -32,6 +32,12 @@ describe('EditorPanel (LandscapeEditor replacement)', () => {
     expect(screen.queryByText('🌿 Grass')).not.toBeInTheDocument();
   });
 
+  it('renders a floating toolbar variant for the map overlay', () => {
+    render(<EditorPanel floating />);
+    expect(screen.getByRole('button', { name: '▲ Raise' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+  });
+
   // Additional tests use the real store
 });
 

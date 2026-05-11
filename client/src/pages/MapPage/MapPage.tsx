@@ -135,7 +135,7 @@ export default function MapPage() {
       : LOADING_COPY.view;
 
   return (
-    <AppShell sidebar={pendingView ? undefined : mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'greenkeeping' ? sidebar : undefined}>
+    <AppShell sidebar={pendingView ? undefined : mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'greenkeeping' && mainView !== 'editor' ? sidebar : undefined}>
       {pendingView ? (
         <LoadingOverlay label={fallbackLabel} />
       ) : (

@@ -286,6 +286,15 @@ describe('MapPage – landscape editor', () => {
     fireEvent.click(screen.getByTestId('tile-empty'));
     expect(mapApi.editTile).not.toHaveBeenCalled();
   });
+
+  it('shows floating editor controls without rendering the sidebar', async () => {
+    useMapStore.setState({ editorMode: true, mainView: 'editor' });
+    renderMapPage();
+    await waitFor(() => screen.getByTestId('hex-grid'));
+    expect(screen.getByRole('button', { name: '▲ Raise' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
 });
 
 describe('MapPage – regression: no loading screen during tile edits', () => {

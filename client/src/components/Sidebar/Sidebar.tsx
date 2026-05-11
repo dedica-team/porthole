@@ -6,7 +6,6 @@ import { Separator } from '@/components/ui/separator';
 import { useMapStore } from '@/store/mapStore';
 import TilePanel from './panels/TilePanel';
 import LandmarkPanel from './panels/LandmarkPanel';
-import EditorPanel from './panels/EditorPanel';
 import MetricsPanel from './panels/MetricsPanel';
 import ProcessPanel from './panels/ProcessPanel';
 import type { LandmarkType, QualityLevel } from '@/types/landmark';
@@ -243,9 +242,8 @@ export default function Sidebar({
   const setProcessSidebarHidden = useMapStore((s) => s.setProcessSidebarHidden);
 
   // Hide sidebar when nothing is selected and not in editor/process mode
-  const isVisible = mainView === 'editor'
-    || (processMode && !processSidebarHidden)
-    || (mainView !== 'idle' && mainView !== 'process')
+  const isVisible = (processMode && !processSidebarHidden)
+    || (mainView !== 'idle' && mainView !== 'process' && mainView !== 'editor')
     || !!connectingFromLandmarkId
     || !!relocatingLandmarkId;
   if (!isVisible) return null;
@@ -259,19 +257,17 @@ export default function Sidebar({
   return (
     <aside className="absolute inset-y-0 right-0 z-20 flex flex-col w-(--sidebar-width) min-w-0 bg-card border-l border-border overflow-hidden md:relative md:shrink-0">
       {/* Close button – always visible top-right */}
-      {mainView !== 'editor' && (
-        <div className="flex items-center justify-end px-2 pt-2 shrink-0">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={processMode ? () => { setSelectedTile(null); setSelectedLandmark(null); setSelectedConnectionId(null); setProcessSidebarHidden(true); } : handleClose}
-            aria-label="Close panel"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      <div className="flex items-center justify-end px-2 pt-2 shrink-0">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          onClick={processMode ? () => { setSelectedTile(null); setSelectedLandmark(null); setSelectedConnectionId(null); setProcessSidebarHidden(true); } : handleClose}
+          aria-label="Close panel"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Connecting-Banner – hide in process mode */}
       {connectingFromLandmarkId && !processMode && (
@@ -339,8 +335,6 @@ export default function Sidebar({
           ) : (
             <ProcessPanel />
           )
-        ) : mainView === 'editor' ? (
-          <EditorPanel />
         ) : (
           <>
             {mainView === 'tile' && (
