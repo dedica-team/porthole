@@ -538,7 +538,13 @@ class JsonSessionStateRepositoryTest {
             val map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 })
             val state = SessionState(map = map)
             val metricId = UUID.nameUUIDFromBytes("m1".toByteArray())
-            val entry = LandmarkMetricEntry(metricId = metricId, value = "99.9%", level = QualityLevel.OK)
+            val entry = LandmarkMetricEntry(
+                metricId = metricId,
+                value = "99.9%",
+                link = "https://example.com/report",
+                linkText = "Report",
+                level = QualityLevel.OK,
+            )
             val lmId = UUID.nameUUIDFromBytes("lm1".toByteArray())
             val lm = Landmark(
                 id = lmId, ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()),
@@ -552,6 +558,8 @@ class JsonSessionStateRepositoryTest {
             val loaded = repoAt(dir).findById(state.id)!!
             val restoredEntry = loaded.landmarks[lmId]!!.metrics[metricId]!!
             assertEquals("99.9%", restoredEntry.value)
+            assertEquals("https://example.com/report", restoredEntry.link)
+            assertEquals("Report", restoredEntry.linkText)
             assertEquals(QualityLevel.OK, restoredEntry.level)
         }
     }

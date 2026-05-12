@@ -88,6 +88,7 @@ class LandmarkMetricController(
                 request.value,
                 level,
                 request.link,
+                request.linkText,
                 request.badges,
                 user.userId
             )

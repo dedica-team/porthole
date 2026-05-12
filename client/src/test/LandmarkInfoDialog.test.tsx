@@ -228,7 +228,7 @@ describe('LandmarkPanel – metric value editing (collaborator)', () => {
     fireEvent.click(screen.getByTitle(`${METRIC.name}: ${METRIC.description}`));
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('tower-abc123', 'met-1', '99.9%', 'NONE', undefined, undefined);
+    expect(onSet).toHaveBeenCalledWith('tower-abc123', 'met-1', '99.9%', 'NONE', undefined, undefined, undefined);
   });
 
   it('shows the Clear (trash) button when an entry exists', () => {

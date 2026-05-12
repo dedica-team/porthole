@@ -3,7 +3,6 @@ import java.util.UUID
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.application.NoOpBroadcastPort
 import team.dedica.porthole.application.session.metrics.CreateMetricUseCase
 
 class MetricsTest {
@@ -65,6 +64,24 @@ class MetricsTest {
         val updated = lm.copy(metrics = lm.metrics + (mId to entry))
         assertEquals(entry, updated.metrics[mId])
         assertTrue(lm.metrics.isEmpty(), "original landmark must be unchanged (immutable copy)")
+    }
+
+    @Test
+    fun `landmark metrics may contain link only entries with link text`() {
+        val mId = UUID.randomUUID()
+        val entry = LandmarkMetricEntry(
+            metricId = mId,
+            link = "https://example.com/report",
+            linkText = "Report",
+            level = QualityLevel.NONE,
+        )
+        val lm = Landmark(
+            id = UUID.nameUUIDFromBytes("x".toByteArray()), ownerId = UUID.nameUUIDFromBytes("p1".toByteArray()), coordinate = HexCoordinate(0, 0),
+            metrics = mapOf(mId to entry),
+        )
+        assertNull(lm.metrics[mId]!!.value)
+        assertEquals("https://example.com/report", lm.metrics[mId]!!.link)
+        assertEquals("Report", lm.metrics[mId]!!.linkText)
     }
 
     // ── CreateMetricUseCase integration ───────────────────────────────────────

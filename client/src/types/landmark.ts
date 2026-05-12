@@ -63,6 +63,7 @@ export interface LandmarkMetricEntry {
   metricId: string;
   value?: string;
   link?: string;
+  linkText?: string;
   level: QualityLevel;
   badges?: Record<string, string>;
 }

@@ -43,7 +43,7 @@ interface Props {
     clearDescription?: boolean,
   ) => void;
   onRemoveConnection: (connectionId: string) => void;
-  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, badges?: Record<string, string>) => void;
+  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
   onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;
   loading: boolean;
 }
@@ -78,6 +78,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const [metricValue, setMetricValue] = useState('');
   const [metricLevel, setMetricLevel] = useState<QualityLevel>('NONE');
   const [metricLink, setMetricLink] = useState('');
+  const [metricLinkText, setMetricLinkText] = useState('');
   const [metricLinkError, setMetricLinkError] = useState('');
   const [metricBadges, setMetricBadges] = useState<{ key: string; url: string; error: string }[]>([]);
   const [confirmClearMetricId, setConfirmClearMetricId] = useState<string | null>(null);
@@ -155,6 +156,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
     setMetricValue(entry?.value ?? '');
     setMetricLevel(entry?.level ?? 'NONE');
     setMetricLink(entry?.link ?? '');
+    setMetricLinkText(entry?.linkText ?? '');
     setMetricLinkError('');
     setMetricBadges(entry?.badges ? Object.entries(entry.badges).map(([key, url]) => ({ key, url, error: '' })) : []);
     setConfirmClearMetricId(null);
@@ -172,11 +174,12 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
     const badgesMap: Record<string, string> = {};
     for (const row of validatedRows) badgesMap[row.key.trim()] = row.url.trim();
     const hasBadges = Object.keys(badgesMap).length > 0;
-    if (metricLevel === 'NONE' && !trimmedValue && !hasBadges) return;
     const trimmedLink = metricLink.trim();
+    const trimmedLinkText = metricLinkText.trim();
+    if (metricLevel === 'NONE' && !trimmedValue && !trimmedLink && !hasBadges) return;
     if (trimmedLink && !isValidUrl(trimmedLink)) { setMetricLinkError('Must be a valid http/https URL'); return; }
     onSetLandmarkMetric(selectedLandmark.id, editingMetricId, trimmedValue || defaultValueForLevel(metricLevel),
-      metricLevel, trimmedLink || undefined, hasBadges ? badgesMap : undefined);
+      metricLevel, trimmedLink || undefined, trimmedLink ? (trimmedLinkText || undefined) : undefined, hasBadges ? badgesMap : undefined);
     setEditingMetricId(null);
   };
   return (
@@ -422,6 +425,8 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                             className={`h-7 text-xs${metricLinkError ? ' border-red-500' : ''}`} placeholder="Link (optional, https://…)" type="url" />
                           {metricLinkError && <span className="text-[10px] text-red-400 px-1">{metricLinkError}</span>}
                         </div>
+                        <Input value={metricLinkText} onChange={(e) => setMetricLinkText(e.target.value)} className="h-7 text-xs" maxLength={60}
+                          placeholder="Link text (optional)" />
                         <div className="flex flex-col gap-1.5">
                           <span className="text-[10px] font-semibold text-foreground">Badges</span>
                           {metricBadges.map((badge, index) => (
@@ -439,7 +444,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                           </Button>
                         </div>
                         <div className="flex gap-1.5">
-                          <Button type="submit" size="sm" className="flex-1 h-7 text-xs" disabled={(metricLevel === 'NONE' && !metricValue.trim() && metricBadges.length === 0) || loading}>
+                          <Button type="submit" size="sm" className="flex-1 h-7 text-xs" disabled={(metricLevel === 'NONE' && !metricValue.trim() && !metricLink.trim() && metricBadges.length === 0) || loading}>
                             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
                           </Button>
                           <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingMetricId(null)}>Cancel</Button>

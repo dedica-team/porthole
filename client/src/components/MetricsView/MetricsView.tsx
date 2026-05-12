@@ -32,7 +32,7 @@ interface Props {
   onCreateUnpositionedLandmark: (name: string, type: LandmarkType, description?: string, groupId?: string, link?: string) => void;
   onEditMetric: (metricId: string, name?: string, description?: string) => void;
   onRemoveMetric: (metricId: string) => void;
-  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, badges?: Record<string, string>) => void;
+  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
   onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;
   onEditLandmarkGroup: (landmarkId: string, groupId: string | null) => void;
   onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean) => void;
@@ -54,6 +54,7 @@ interface CellEditState {
   value: string;
   level: QualityLevel;
   link: string;
+  linkText: string;
   linkError: string;
   badges: BadgeRow[];
 }
@@ -225,6 +226,13 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
                 <span className="text-[10px] text-red-400 px-1">{state.linkError}</span>
               )}
             </div>
+            <Input
+              value={state.linkText}
+              onChange={(e) => onChange({ ...state, linkText: e.target.value })}
+              className="h-8 text-sm"
+              maxLength={60}
+              placeholder="Link text (optional)"
+            />
 
             {/* Badges */}
             <div className="flex flex-col gap-1.5">
@@ -276,7 +284,7 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
                 type="submit"
                 size="sm"
                 className="flex-1 gap-1.5 h-8"
-                disabled={(state.level === 'NONE' && !state.value.trim() && state.badges.length === 0) || loading}
+                disabled={(state.level === 'NONE' && !state.value.trim() && !state.link.trim() && state.badges.length === 0) || loading}
               >
                 {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                 Save
@@ -527,6 +535,7 @@ export default function MetricsView({
       value: entry?.value ?? '',
       level: entry?.level ?? 'NONE',
       link:  entry?.link  ?? '',
+      linkText: entry?.linkText ?? '',
       linkError: '',
       badges: entry?.badges
         ? Object.entries(entry.badges).map(([key, url]) => ({ key, url, error: '' }))
@@ -554,9 +563,11 @@ export default function MetricsView({
     const badgesMap: Record<string, string> = {};
     for (const row of validatedRows) badgesMap[row.key.trim()] = row.url.trim();
     const hasBadges = Object.keys(badgesMap).length > 0;
+    const trimmedLink = cellEdit.link.trim();
+    const trimmedLinkText = cellEdit.linkText.trim();
 
-    if (cellEdit.level === 'NONE' && !trimmedValue && !hasBadges) return;
-    if (cellEdit.link.trim() && !isValidUrl(cellEdit.link.trim())) {
+    if (cellEdit.level === 'NONE' && !trimmedValue && !trimmedLink && !hasBadges) return;
+    if (trimmedLink && !isValidUrl(trimmedLink)) {
       setCellEdit({ ...cellEdit, linkError: 'Must be a valid http/https URL' });
       return;
     }
@@ -568,7 +579,8 @@ export default function MetricsView({
       cellEdit.metricId,
       resolvedValue,
       cellEdit.level,
-      cellEdit.link.trim() || undefined,
+      trimmedLink || undefined,
+      trimmedLink ? (trimmedLinkText || undefined) : undefined,
       hasBadges ? badgesMap : undefined,
     );
     setCellEdit(null);
@@ -914,11 +926,11 @@ export default function MetricsView({
                                           href={entry.link}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="metrics-cell-link block min-w-0 max-w-full truncate text-[10px] text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                                          className="metrics-cell-link inline-block max-w-full self-start truncate align-top text-[10px] text-blue-400 hover:text-blue-300 underline underline-offset-2"
                                           onClick={(e) => e.stopPropagation()}
                                           title={entry.link}
                                         >
-                                          {entry.link}
+                                          {entry.linkText || entry.link}
                                         </a>
                                       )}
                                       {entry.badges && Object.entries(entry.badges).length > 0 && (

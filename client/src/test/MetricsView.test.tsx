@@ -217,7 +217,7 @@ describe('MetricsView', () => {
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined);
+    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, undefined);
   });
 
   it('adding a badge row and submitting passes the badges map to onSetLandmarkMetric', () => {
@@ -233,7 +233,7 @@ describe('MetricsView', () => {
       target: { value: 'https://img.shields.io/badge/build-passing-green' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, {
+    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, {
       build: 'https://img.shields.io/badge/build-passing-green',
     });
   });
@@ -249,9 +249,36 @@ describe('MetricsView', () => {
       target: { value: 'https://img.shields.io/badge/coverage-80%25-yellow' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', undefined, {
+    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', undefined, undefined, {
       coverage: 'https://img.shields.io/badge/coverage-80%25-yellow',
     });
+  });
+
+  it('submitting with only a link passes an undefined value and preserves the link', () => {
+    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
+    const onSet = vi.fn();
+    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    fireEvent.click(screen.getByTitle('Click to set value'));
+    fireEvent.change(screen.getByPlaceholderText('Link (optional, https://…)'), {
+      target: { value: 'https://example.com/report' },
+    });
+    fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
+    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', undefined, undefined);
+  });
+
+  it('submitting with a link text passes it alongside the link', () => {
+    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
+    const onSet = vi.fn();
+    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    fireEvent.click(screen.getByTitle('Click to set value'));
+    fireEvent.change(screen.getByPlaceholderText('Link (optional, https://…)'), {
+      target: { value: 'https://example.com/report' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Link text (optional)'), {
+      target: { value: 'Availability report' },
+    });
+    fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
+    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', 'Availability report', undefined);
   });
 
   it('displays each badge in the badges map as an img tag', () => {
@@ -279,7 +306,7 @@ describe('MetricsView', () => {
     expect(covImg.src).toBe('https://img.shields.io/badge/coverage-80%25-yellow');
   });
 
-  it('shows metric cell links as truncated link text with the URL start visible', () => {
+  it('shows metric cell links as truncated url text when no link text is set', () => {
     const link = 'https://example.com/reports/availability/current-build/details';
     const lmWithLink = {
       ...LM_IN_A,
@@ -301,6 +328,29 @@ describe('MetricsView', () => {
     expect(metricLink).toHaveAttribute('title', link);
     expect(metricLink.className).toContain('truncate');
     expect(metricLink.textContent).toBe(link);
+  });
+
+  it('shows linkText instead of the raw url in the matrix when provided', () => {
+    const link = 'https://example.com/reports/availability/current-build/details';
+    const lmWithLink = {
+      ...LM_IN_A,
+      metrics: {
+        m1: {
+          metricId: 'm1',
+          level: 'NONE',
+          link,
+          linkText: 'Open availability report',
+        },
+      },
+    };
+    setup({ m1: METRIC_AVAIL }, { lm1: lmWithLink }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+
+    const metricLink = screen.getByRole('link', { name: 'Open availability report' });
+    expect(metricLink).toBeInTheDocument();
+    expect(metricLink).toHaveAttribute('href', link);
+    expect(metricLink).toHaveAttribute('title', link);
+    expect(metricLink.textContent).toBe('Open availability report');
   });
 
   it('does not render extra badge label text next to badge images in the metric cell', () => {

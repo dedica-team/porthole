@@ -372,13 +372,15 @@ class SessionControllerTest {
         val metricId = objectMapper.readTree(metricResult.response.contentAsString)["metrics"].fieldNames().next()
 
         // set landmark metric
-        val entryBody = mapOf("value" to "99.9 %", "level" to "OK", "link" to null)
+        val entryBody = mapOf("value" to null, "level" to "NONE", "link" to "https://example.com/report", "linkText" to "Report")
         mockMvc.perform(
             put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(entryBody))
         ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.landmarks.$lmId.metrics.$metricId.link").value("https://example.com/report"))
+            .andExpect(jsonPath("$.landmarks.$lmId.metrics.$metricId.linkText").value("Report"))
     }
 
     @Test

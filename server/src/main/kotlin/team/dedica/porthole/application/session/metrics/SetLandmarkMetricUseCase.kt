@@ -25,6 +25,7 @@ class SetLandmarkMetricUseCase(
         value: String?,
         level: QualityLevel,
         link: String? = null,
+        linkText: String? = null,
         badges: Map<String, String> = emptyMap(),
         callerId: UUID,
     ): SessionState {
@@ -34,6 +35,8 @@ class SetLandmarkMetricUseCase(
         require(state.metrics.containsKey(metricId)) { "Metric $metricId not found" }
 
         val trimmedValue = value?.trim()?.ifBlank { null }
+        val cleanedLink = link?.let { cleanLink(it) }
+        val cleanedLinkText = linkText?.trim()?.ifBlank { null }
         val validatedBadges = badges.entries.associate { (key, url) ->
             require(key.isNotBlank()) { "Badge key must not be blank" }
             val trimmed = url.trim()
@@ -43,14 +46,18 @@ class SetLandmarkMetricUseCase(
             }
             key.trim() to trimmed
         }
-        require(trimmedValue != null || validatedBadges.isNotEmpty()) {
-            "Either a value or at least one badge URL must be provided"
+        require(cleanedLink != null || cleanedLinkText == null) {
+            "Link text requires a link"
+        }
+        require(trimmedValue != null || cleanedLink != null || validatedBadges.isNotEmpty()) {
+            "Either a value, a link, or at least one badge URL must be provided"
         }
 
         val entry = LandmarkMetricEntry(
             metricId = metricId,
             value    = trimmedValue,
-            link     = link?.let { cleanLink(it) },
+            link     = cleanedLink,
+            linkText = cleanedLinkText,
             level    = level,
             badges   = validatedBadges,
         )

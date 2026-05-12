@@ -486,6 +486,7 @@ export async function setLandmarkMetric(
   value: string | undefined,
   level: QualityLevel,
   link?: string,
+  linkText?: string,
   badges?: Record<string, string>,
 ): Promise<SessionState> {
   const res = await fetch(
@@ -493,7 +494,7 @@ export async function setLandmarkMetric(
     {
       method: 'PUT',
       headers: authHeaders(),
-      body: JSON.stringify({ value: value ?? null, level, link: link ?? null, badges: badges ?? {} }),
+      body: JSON.stringify({ value: value ?? null, level, link: link ?? null, linkText: linkText ?? null, badges: badges ?? {} }),
     },
   );
   return handleResponse<SessionState>(res);

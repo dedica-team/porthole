@@ -101,7 +101,7 @@ interface ProcessLandmarkViewProps {
   onRemoveLandmark: () => void;
   onEditConnection: Props['onEditConnection'];
   onRemoveConnection: (id: string) => void;
-  onSetLandmarkMetric: Props['onSetLandmarkMetric'];
+  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
   onClearLandmarkMetric: Props['onClearLandmarkMetric'];
   loading: boolean;
   onClose: () => void;
@@ -202,7 +202,7 @@ interface Props {
   onCreateMetric: (name: string, description: string) => void;
   onEditMetric: (metricId: string, name?: string, description?: string) => void;
   onRemoveMetric: (metricId: string) => void;
-  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, badges?: Record<string, string>) => void;
+  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
   onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;
   loading: boolean;
   error: string;

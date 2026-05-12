@@ -57,6 +57,42 @@ class SetLandmarkMetricUseCaseTest {
     }
 
     @Test
+    fun `sets metric entry with link only`() {
+        val result = useCase.execute(
+            state.id,
+            keepId,
+            metricId,
+            value = null,
+            level = QualityLevel.NONE,
+            link = "https://example.com/report",
+            callerId = collaborator.id,
+        )
+
+        val entry = result.landmarks[keepId]!!.metrics[metricId]!!
+        assertNull(entry.value)
+        assertEquals(QualityLevel.NONE, entry.level)
+        assertEquals("https://example.com/report", entry.link)
+    }
+
+    @Test
+    fun `stores trimmed link text`() {
+        val result = useCase.execute(
+            state.id,
+            keepId,
+            metricId,
+            value = null,
+            level = QualityLevel.NONE,
+            link = "https://example.com/report",
+            linkText = " Report details ",
+            callerId = collaborator.id,
+        )
+
+        val entry = result.landmarks[keepId]!!.metrics[metricId]!!
+        assertEquals("https://example.com/report", entry.link)
+        assertEquals("Report details", entry.linkText)
+    }
+
+    @Test
     fun `overwrites existing entry`() {
         useCase.execute(state.id, keepId, metricId, "99.9 %", QualityLevel.OK, callerId = collaborator.id)
         val result = useCase.execute(state.id, keepId, metricId, "50.0 %", QualityLevel.ERROR, callerId = collaborator.id)
@@ -81,9 +117,24 @@ class SetLandmarkMetricUseCaseTest {
     }
 
     @Test
-    fun `null value without badges fails`() {
+    fun `null value without link or badges fails`() {
         assertThrows(IllegalArgumentException::class.java) {
             useCase.execute(state.id, keepId, metricId, null, QualityLevel.OK, callerId = collaborator.id)
+        }
+    }
+
+    @Test
+    fun `link text without link fails`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.execute(
+                state.id,
+                keepId,
+                metricId,
+                value = "99 %",
+                level = QualityLevel.OK,
+                linkText = "Report",
+                callerId = collaborator.id,
+            )
         }
     }
 
