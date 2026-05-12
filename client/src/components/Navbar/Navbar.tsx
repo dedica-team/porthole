@@ -147,6 +147,22 @@ export default function Navbar() {
     }
   };
 
+  const handleExport = async () => {
+    if (!currentMap) return;
+    try {
+      const data = await exportMapJson(currentMap.id);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-${currentMap.id}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently ignore
+    }
+  };
+
   const handleLogout = async () => {    try {
       await logoutSession();
     } finally {
@@ -350,6 +366,17 @@ export default function Navbar() {
                       </Button>
                     </div>
                   </div>
+                  {isCollaborator && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 justify-start gap-2 px-2 text-xs"
+                      onClick={handleExport}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Export session JSON
+                    </Button>
+                  )}
                   {/* Collaborators */}
                   {currentMap.collaborators.length > 0 && (
                     <div className="flex flex-col gap-1.5">
@@ -498,37 +525,6 @@ export default function Navbar() {
                 <TooltipContent side="bottom" className="text-xs">{tab.tooltip}</TooltipContent>
               </Tooltip>
             ))}
-
-            {/* Admin: Download session JSON */}
-            {isAdmin && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 border-transparent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    onClick={async () => {
-                      if (!currentMap) return;
-                      try {
-                        const data = await exportMapJson(currentMap.id);
-                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `session-${currentMap.id}.json`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      } catch {
-                        // silently ignore
-                      }
-                    }}
-                    aria-label="Download session JSON"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Export</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Download session JSON</TooltipContent>
-              </Tooltip>
-            )}
           </>
         )}
         <div className="flex-1" />

@@ -42,6 +42,7 @@ class SessionControllerTest {
     lateinit var userPort: UserPort
 
     private lateinit var token: String
+    private lateinit var viewerToken: String
     private lateinit var mapId: UUID
 
     @BeforeEach
@@ -58,6 +59,18 @@ class SessionControllerTest {
         }
         val user = userPort.findByUsername("testuser")!!
         token = jwtTokenProvider.generateToken(user.id, user.username)
+
+        if (userPort.findByUsername("viewer") == null) {
+            userPort.save(
+                UserRecord(
+                    id = UUID.nameUUIDFromBytes("test-viewer-001".toByteArray()),
+                    username = "viewer",
+                    githubId = "gh-viewer"
+                )
+            )
+        }
+        val viewer = userPort.findByUsername("viewer")!!
+        viewerToken = jwtTokenProvider.generateToken(viewer.id, viewer.username)
 
         // Create a fresh map for each test
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
@@ -85,6 +98,20 @@ class SessionControllerTest {
     fun `GET map with unknown id returns 404`() {
         mockMvc.perform(get("/api/sessions/" + UUID.randomUUID()).header("Authorization", "Bearer $token"))
             .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `GET export returns 200 for collaborators`() {
+        mockMvc.perform(get("/api/sessions/$mapId/export").header("Authorization", "Bearer $token"))
+            .andExpect(status().isOk)
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"session-$mapId.json\""))
+            .andExpect(jsonPath("$.id").value(mapId.toString()))
+    }
+
+    @Test
+    fun `GET export returns 403 for viewers`() {
+        mockMvc.perform(get("/api/sessions/$mapId/export").header("Authorization", "Bearer $viewerToken"))
+            .andExpect(status().isForbidden)
     }
 
     @Test

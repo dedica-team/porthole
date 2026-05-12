@@ -323,9 +323,9 @@ describe('Navbar – join requests (collaborator view)', () => {
   });
 });
 
-// ── Admin Export button ───────────────────────────────────────────────────────
+// ── Session export in map dropdown ───────────────────────────────────────────
 
-describe('Navbar – admin export button', () => {
+describe('Navbar – session export', () => {
   beforeEach(() => {
     useAuthStore.setState({
       token: 'tok',
@@ -333,24 +333,32 @@ describe('Navbar – admin export button', () => {
       username: 'alice',
       avatarUrl: null,
       isAuthenticated: true,
-      isAdmin: true,
+      isAdmin: false,
     });
   });
 
-  it('renders the Export button for admins on a map page', () => {
+  it('renders the Export button in the session dropdown for collaborators', async () => {
     renderNavbar();
-    expect(screen.getByRole('button', { name: /download session json/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /export session json/i })).toBeInTheDocument();
+    });
   });
 
-  it('does NOT render the Export button for non-admins', () => {
-    useAuthStore.setState({ isAdmin: false });
+  it('does NOT render the Export button for viewers', async () => {
+    useMapStore.setState({
+      currentMap: makeMap({ collaborators: [{ id: 'other', username: 'other' }] }),
+    });
     renderNavbar();
-    expect(screen.queryByRole('button', { name: /download session json/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /export session json/i })).not.toBeInTheDocument();
+    });
   });
 
   it('does NOT render the Export button when not on a map page', () => {
     renderNavbar('/lobby');
-    expect(screen.queryByRole('button', { name: /download session json/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /export session json/i })).not.toBeInTheDocument();
   });
 
   it('calls exportMapJson and triggers a download on click', async () => {
@@ -373,7 +381,9 @@ describe('Navbar – admin export button', () => {
     });
 
     renderNavbar();
-    fireEvent.click(screen.getByRole('button', { name: /download session json/i }));
+    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
+    await waitFor(() => screen.getByRole('button', { name: /export session json/i }));
+    fireEvent.click(screen.getByRole('button', { name: /export session json/i }));
 
     await waitFor(() => {
       expect(mapApi.exportMapJson).toHaveBeenCalledWith(MAP_ID);

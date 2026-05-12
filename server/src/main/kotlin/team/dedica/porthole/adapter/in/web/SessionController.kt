@@ -5,12 +5,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import jakarta.validation.Valid
 import team.dedica.porthole.adapter.`in`.web.dto.*
-import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.collaboration.AcceptJoinRequestUseCase
 import team.dedica.porthole.application.session.collaboration.RemoveCollaboratorUseCase
 import team.dedica.porthole.application.lobby.AdminJoinMapUseCase
 import team.dedica.porthole.application.lobby.CreateMapUseCase
+import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.session.metrics.CreateUnpositionedLandmarkUseCase
 import team.dedica.porthole.application.session.collaboration.DeclineJoinRequestUseCase
 import team.dedica.porthole.application.lobby.DeleteMapUseCase
@@ -28,8 +28,8 @@ import team.dedica.porthole.application.session.collaboration.SetCollaborationMo
 import team.dedica.porthole.domain.CollaborationMode
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.LandmarkType
+import team.dedica.porthole.domain.SessionRole
 import org.springframework.http.HttpHeaders
-import org.springframework.security.access.AccessDeniedException
 import java.util.UUID
 
 @RestController
@@ -53,7 +53,7 @@ class SessionController(
     private val acceptJoinRequestUseCase: AcceptJoinRequestUseCase,
     private val declineJoinRequestUseCase: DeclineJoinRequestUseCase,
     private val removeCollaboratorUseCase: RemoveCollaboratorUseCase,
-    private val adminService: AdminService,
+    private val authorizationPort: AuthorizationPort,
 ) {
     @PostMapping
     fun createMap(
@@ -89,8 +89,8 @@ class SessionController(
         @PathVariable id: String,
         @AuthenticationPrincipal user: PortholePrincipal,
     ): ResponseEntity<Any> {
-        if (!adminService.isAdmin(user.userId)) throw AccessDeniedException("Only admins can export sessions")
-        val state = getMapUseCase.execute(UUID.fromString(id), user.userId)
+        val sessionId = UUID.fromString(id)
+        val state = authorizationPort.accessSession(user.userId, sessionId, SessionRole.COLLABORATOR)
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"session-$id.json\"")
             .body(state)
