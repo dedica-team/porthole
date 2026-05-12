@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import QualityLevelButtonGroup from '@/components/ui/QualityLevelButtonGroup';
+import QualityLevelButtonGroup, { getQualityLevelButtonStyle } from '@/components/ui/QualityLevelButtonGroup';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import type {LandmarkGroup} from "@/types/landmark";
@@ -913,6 +913,17 @@ export default function MetricsView({
                                             style={QUALITY_LEVEL_BADGE_STYLE[entry.level]}
                                           >
                                             {entry.value ?? QUALITY_LEVEL_SIGN[entry.level]}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {entry.level === 'NONE' && entry.value && (
+                                        <div className="flex min-w-0 items-center gap-1.5">
+                                          <span
+                                            className="metrics-value-badge inline-block max-w-full truncate rounded border px-2 py-1 text-[10px] font-semibold italic"
+                                            style={getQualityLevelButtonStyle('NONE', true)}
+                                            title={entry.value}
+                                          >
+                                            {entry.value}
                                           </span>
                                         </div>
                                       )}

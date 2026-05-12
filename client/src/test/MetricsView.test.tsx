@@ -378,6 +378,27 @@ describe('MetricsView', () => {
     expect(metricLink.textContent).toBe('Open availability report');
   });
 
+  it('renders an existing value for level NONE in the table using the same appearance as in the edit dialog', () => {
+    const lmWithNoneValue = {
+      ...LM_IN_A,
+      metrics: {
+        m1: {
+          metricId: 'm1',
+          value: 'Manual note',
+          level: 'NONE',
+        },
+      },
+    };
+    setup({ m1: METRIC_AVAIL }, { lm1: lmWithNoneValue }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+
+    const valueEl = screen.getByText('Manual note');
+    expect(valueEl).toBeInTheDocument();
+    expect(valueEl.className).toContain('italic');
+    expect(valueEl.className).toContain('rounded');
+    expect(valueEl.className).toContain('border');
+  });
+
   it('does not render extra badge label text next to badge images in the metric cell', () => {
     const lmWithBadges = {
       ...LM_IN_A,

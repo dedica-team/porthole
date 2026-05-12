@@ -15,6 +15,32 @@ const QUALITY_LEVEL_SHORT_LABEL: Record<QualityLevel, string> = {
   ERROR: 'Error',
 };
 
+export function getQualityLevelButtonStyle(level: QualityLevel, active: boolean): React.CSSProperties {
+  const isNone = level === 'NONE';
+  if (isNone) {
+    return active
+      ? {
+        ...QUALITY_LEVEL_BADGE_STYLE[level],
+        color: 'hsl(var(--muted-foreground))',
+        background: 'rgba(107,114,128,0.08)',
+        border: '1px solid rgba(107,114,128,0.24)',
+      }
+      : {
+        ...QUALITY_LEVEL_BADGE_STYLE[level],
+        color: 'hsl(var(--muted-foreground))',
+        background: 'transparent',
+        border: '1px solid rgba(107,114,128,0.18)',
+      };
+  }
+
+  return active
+    ? QUALITY_LEVEL_BADGE_STYLE[level]
+    : {
+      ...QUALITY_LEVEL_BADGE_STYLE[level],
+      background: 'transparent',
+    };
+}
+
 export default function QualityLevelButtonGroup({ value, onChange, className = '', buttonClassName = '' }: Props) {
   return (
     <div className={`flex flex-wrap gap-1 ${className}`.trim()}>
@@ -31,26 +57,7 @@ export default function QualityLevelButtonGroup({ value, onChange, className = '
               active ? '' : 'opacity-75 hover:opacity-100',
               buttonClassName,
             ].filter(Boolean).join(' ')}
-            style={isNone
-              ? active
-                ? {
-                  ...QUALITY_LEVEL_BADGE_STYLE[level],
-                  color: 'hsl(var(--muted-foreground))',
-                  background: 'rgba(107,114,128,0.08)',
-                  border: '1px solid rgba(107,114,128,0.24)',
-                }
-                : {
-                  ...QUALITY_LEVEL_BADGE_STYLE[level],
-                  color: 'hsl(var(--muted-foreground))',
-                  background: 'transparent',
-                  border: '1px solid rgba(107,114,128,0.18)',
-                }
-              : active
-                ? QUALITY_LEVEL_BADGE_STYLE[level]
-                : {
-                  ...QUALITY_LEVEL_BADGE_STYLE[level],
-                  background: 'transparent',
-                }}
+            style={getQualityLevelButtonStyle(level, active)}
             onClick={() => onChange(level)}
             aria-pressed={active}
             aria-label={`Set quality level to ${QUALITY_LEVEL_SHORT_LABEL[level]}`}
