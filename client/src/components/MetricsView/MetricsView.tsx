@@ -14,11 +14,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import QualityLevelButtonGroup from '@/components/ui/QualityLevelButtonGroup';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import type {LandmarkGroup} from "@/types/landmark";
 import type { QualityLevel, QualityMetric, LandmarkType, Landmark } from '@/types/landmark';
-import { QUALITY_LEVEL_BADGE_STYLE, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_ORDER, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel, ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS } from '@/types/landmark';
+import { QUALITY_LEVEL_BADGE_STYLE, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel, ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS } from '@/types/landmark';
 import MetricTemplateSelector from './MetricTemplateSelector';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 import CreateLandmarkDialog from './CreateLandmarkDialog';
@@ -203,17 +204,11 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
               maxLength={60}
               placeholder={state.level !== 'NONE' ? `Leave empty to use "${QUALITY_LEVEL_SIGN[state.level]}"` : 'Value (e.g. 99.9 %)'}
             />
-            <select
+            <QualityLevelButtonGroup
               value={state.level}
-              onChange={(e) => onChange({ ...state, level: e.target.value as QualityLevel })}
-              className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
-            >
-              {QUALITY_LEVEL_ORDER.map((l) => (
-                <option key={l} value={l}>
-                  {l !== 'NONE' ? `${QUALITY_LEVEL_SIGN[l]}  ` : ''}{QUALITY_LEVEL_LABEL[l]}
-                </option>
-              ))}
-            </select>
+              onChange={(level) => onChange({ ...state, level })}
+              buttonClassName="h-7 min-w-12"
+            />
             <div className="flex flex-col gap-0.5">
               <Input
                 value={state.link}

@@ -221,6 +221,19 @@ describe('LandmarkPanel – metric value editing (collaborator)', () => {
     expect(screen.getByPlaceholderText('Value (e.g. 99.9 %)')).toBeInTheDocument();
   });
 
+  it('shows four level buttons instead of a dropdown in the metric edit form', () => {
+    setupWithMetric('player-1', true);
+    render(<LandmarkPanel {...defaultProps} />);
+    fireEvent.click(screen.getByTitle(`${METRIC.name}: ${METRIC.description}`));
+
+    const noneButton = screen.getByRole('button', { name: 'Set quality level to None' });
+    expect(noneButton).toBeInTheDocument();
+    expect(noneButton.className).toContain('italic');
+    expect(screen.getByRole('button', { name: 'Set quality level to OK' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Set quality level to Warn' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Set quality level to Error' })).toBeInTheDocument();
+  });
+
   it('calls onSetLandmarkMetric when the edit form is submitted', () => {
     setupWithMetric('player-1', true);
     const onSet = vi.fn();
@@ -229,6 +242,17 @@ describe('LandmarkPanel – metric value editing (collaborator)', () => {
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
     expect(onSet).toHaveBeenCalledWith('tower-abc123', 'met-1', '99.9%', 'NONE', undefined, undefined, undefined);
+  });
+
+  it('lets collaborators choose the metric level via the level buttons', () => {
+    setupWithMetric('player-1', true);
+    const onSet = vi.fn();
+    render(<LandmarkPanel {...defaultProps} onSetLandmarkMetric={onSet} />);
+    fireEvent.click(screen.getByTitle(`${METRIC.name}: ${METRIC.description}`));
+    fireEvent.click(screen.getByRole('button', { name: 'Set quality level to Error' }));
+    fireEvent.submit(screen.getByPlaceholderText(/Leave empty to use "✘"/).closest('form')!);
+
+    expect(onSet).toHaveBeenCalledWith('tower-abc123', 'met-1', '✘', 'ERROR', undefined, undefined, undefined);
   });
 
   it('shows the Clear (trash) button when an entry exists', () => {

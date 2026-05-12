@@ -210,6 +210,20 @@ describe('MetricsView', () => {
     expect(screen.getByPlaceholderText('Value (e.g. 99.9 %)')).toBeInTheDocument();
   });
 
+  it('shows four level buttons instead of a dropdown in the cell edit form', () => {
+    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+    fireEvent.click(screen.getByTitle('Click to set value'));
+
+    const noneButton = screen.getByRole('button', { name: 'Set quality level to None' });
+    expect(noneButton).toBeInTheDocument();
+    expect(noneButton.className).toContain('italic');
+    expect(screen.getByRole('button', { name: 'Set quality level to OK' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Set quality level to Warn' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Set quality level to Error' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
   it('submitting a cell edit calls onSetLandmarkMetric', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
     const onSet = vi.fn();
@@ -218,6 +232,17 @@ describe('MetricsView', () => {
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
     expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, undefined);
+  });
+
+  it('lets users choose the metric level via the level buttons', () => {
+    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
+    const onSet = vi.fn();
+    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    fireEvent.click(screen.getByTitle('Click to set value'));
+    fireEvent.click(screen.getByRole('button', { name: 'Set quality level to Error' }));
+    fireEvent.submit(screen.getByPlaceholderText(/Leave empty to use "✘"/).closest('form')!);
+
+    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '✘', 'ERROR', undefined, undefined, undefined);
   });
 
   it('adding a badge row and submitting passes the badges map to onSetLandmarkMetric', () => {

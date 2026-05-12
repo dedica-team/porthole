@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import QualityLevelButtonGroup from '@/components/ui/QualityLevelButtonGroup';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import type { LandmarkType, QualityLevel } from '@/types/landmark';
 import type { ConnectionType } from '@/types/connection';
 import type { MatrixLevel } from '@/types/matrix';
 import { CHORE_ENTRY_STATE_LABEL, CHORE_ENTRY_STATE_BADGE_STYLE } from '@/types/chores';
-import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_COLOR, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_ORDER, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel } from '@/types/landmark';
+import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_COLOR, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel } from '@/types/landmark';
 import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
 import { MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
 import { changeLandmarkOwner } from '@/api/mapApi';
@@ -415,11 +416,11 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                         <span className="text-[10px] font-semibold text-foreground">{metric.name}</span>
                         <Input autoFocus value={metricValue} onChange={(e) => setMetricValue(e.target.value)} className="h-7 text-xs" maxLength={60}
                           placeholder={metricLevel !== 'NONE' ? `Leave empty to use "${QUALITY_LEVEL_SIGN[metricLevel]}"` : 'Value (e.g. 99.9 %)'} />
-                        <select value={metricLevel} onChange={(e) => setMetricLevel(e.target.value as QualityLevel)} className="h-7 text-xs rounded-md border border-input bg-background px-2 text-foreground">
-                          {QUALITY_LEVEL_ORDER.map((l) => (
-                            <option key={l} value={l}>{l !== 'NONE' ? `${QUALITY_LEVEL_SIGN[l]}  ` : ''}{QUALITY_LEVEL_LABEL[l]}</option>
-                          ))}
-                        </select>
+                        <QualityLevelButtonGroup
+                          value={metricLevel}
+                          onChange={setMetricLevel}
+                          buttonClassName="h-7 min-w-12"
+                        />
                         <div className="flex flex-col gap-0.5">
                           <Input value={metricLink} onChange={(e) => { setMetricLink(e.target.value); setMetricLinkError(''); }}
                             className={`h-7 text-xs${metricLinkError ? ' border-red-500' : ''}`} placeholder="Link (optional, https://…)" type="url" />
