@@ -68,10 +68,10 @@ describe('ProcessPanel – Process List View', () => {
     expect(screen.getByText('Beta Flow')).toBeInTheDocument();
   });
 
-  it('shows inline create form when New button is clicked', () => {
+  it('shows inline create form when Create Process button is clicked', () => {
     setup(PROCESS_LIST);
     render(<ProcessPanel />);
-    fireEvent.click(screen.getByRole('button', { name: /new/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create process/i }));
     expect(screen.getByPlaceholderText(/process name/i)).toBeInTheDocument();
   });
 
@@ -80,7 +80,7 @@ describe('ProcessPanel – Process List View', () => {
     vi.spyOn(mapApi, 'createProcess').mockResolvedValue(updated);
     setup(PROCESS_LIST);
     render(<ProcessPanel />);
-    fireEvent.click(screen.getByRole('button', { name: /new/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create process/i }));
     fireEvent.change(screen.getByPlaceholderText(/process name/i), { target: { value: 'Gamma' } });
     fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
     await waitFor(() => expect(mapApi.createProcess).toHaveBeenCalledWith('map-1', 'Gamma'));

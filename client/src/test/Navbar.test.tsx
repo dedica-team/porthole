@@ -423,6 +423,7 @@ describe('Navbar – deeplinks', () => {
 
   it('updates the URL query param when a tab is clicked', () => {
     // Capture location changes via a helper route that reads search params.
+    // @ts-ignore
     let capturedSearch = '';
     const SearchCapture = () => {
       capturedSearch = window.location.search;
