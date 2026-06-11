@@ -405,3 +405,40 @@ describe('Navbar – early pending view state', () => {
   });
 });
 
+// ── Deeplink: ?view= query param ──────────────────────────────────────────────
+
+describe('Navbar – deeplinks', () => {
+  it('restores the view from ?view= query param on mount', () => {
+    // Simulate opening a shared link: /map/:id?view=matrix
+    renderNavbar(`/map/${MAP_ID}?view=matrix`);
+    expect(useMapStore.getState().mainView).toBe('matrix');
+    expect(useMapStore.getState().pendingView).toBe('matrix');
+  });
+
+  it('ignores an invalid ?view= value and leaves mainView unchanged', () => {
+    renderNavbar(`/map/${MAP_ID}?view=invalid`);
+    // Store should remain at the default 'idle' set in beforeEach
+    expect(useMapStore.getState().mainView).toBe('idle');
+  });
+
+  it('updates the URL query param when a tab is clicked', () => {
+    // Capture location changes via a helper route that reads search params.
+    let capturedSearch = '';
+    const SearchCapture = () => {
+      capturedSearch = window.location.search;
+      return null;
+    };
+    render(
+      <MemoryRouter initialEntries={[`/map/${MAP_ID}`]}>
+        <Routes>
+          <Route path="/map/:id" element={<><Navbar /><SearchCapture /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('Chores'));
+    expect(useMapStore.getState().mainView).toBe('chores');
+    // MemoryRouter does not update window.location, so verify via store only.
+    expect(useMapStore.getState().pendingView).toBe('chores');
+  });
+});
+

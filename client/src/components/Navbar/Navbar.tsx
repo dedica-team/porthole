@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -51,7 +51,32 @@ export default function Navbar() {
   const setProcessMode = useMapStore((s) => s.setProcessMode);
   const rendererQualityProfile = useMapStore((s) => s.rendererQualityProfile);
   const setRendererQualityProfile = useMapStore((s) => s.setRendererQualityProfile);
+  const [searchParams, setSearchParams] = useSearchParams();
   const isOnMap = location.pathname.startsWith('/map/');
+
+  // ── Deeplink: sync ?view= query param ↔ Zustand mainView ────────────────
+  // On mount (or when the URL changes externally), restore the view from the
+  // query param so shared links open the correct panel.
+  useEffect(() => {
+    if (!isOnMap) return;
+    const viewParam = searchParams.get('view');
+    const VALID_VIEWS = ['metrics', 'matrix', 'chores', 'greenkeeping', 'editor', 'idle'] as const;
+    type ValidView = typeof VALID_VIEWS[number];
+    const isValid = (v: string | null): v is ValidView => VALID_VIEWS.includes(v as ValidView);
+    if (isValid(viewParam) && viewParam !== mainView) {
+      setPendingView(viewParam);
+      setMainView(viewParam);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnMap]);
+
+  // Helper: navigate to a view and update the URL query param.
+  const activateView = (view: string) => {
+    setPendingView(view as Parameters<typeof setPendingView>[0]);
+    setMainView(view as Parameters<typeof setMainView>[0]);
+    // Persist the active view in the URL so the link is shareable.
+    setSearchParams((prev) => { prev.set('view', view); return prev; }, { replace: true });
+  };
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editName, setEditName] = useState('');
@@ -190,7 +215,7 @@ export default function Navbar() {
       tooltip: 'Manage quality metrics and goals',
       icon: <BarChart2 className="h-3.5 w-3.5" />,
       isActive: isMetricsActive,
-      onClick: () => { setPendingView('metrics'); setMainView('metrics'); },
+      onClick: () => activateView('metrics'),
     },
     {
       id: 'matrix',
@@ -198,7 +223,7 @@ export default function Navbar() {
       tooltip: 'Who knows what',
       icon: <Bus className="h-3.5 w-3.5" />,
       isActive: isMatrixActive,
-      onClick: () => { setPendingView('matrix'); setMainView('matrix'); },
+      onClick: () => activateView('matrix'),
     },
     {
       id: 'chores',
@@ -206,7 +231,7 @@ export default function Navbar() {
       tooltip: 'Chore todo lists per landmark',
       icon: <CheckSquare className="h-3.5 w-3.5" />,
       isActive: isChoresActive,
-      onClick: () => { setPendingView('chores'); setMainView('chores'); },
+      onClick: () => activateView('chores'),
     },
     {
       id: 'greenkeeping',
@@ -214,7 +239,7 @@ export default function Navbar() {
       tooltip: 'Recurring group stewardship rotations',
       icon: <RefreshCw className="h-3.5 w-3.5" />,
       isActive: isGreenkeepingActive,
-      onClick: () => { setPendingView('greenkeeping'); setMainView('greenkeeping'); },
+      onClick: () => activateView('greenkeeping'),
     },
     {
       id: 'flight',
@@ -226,7 +251,7 @@ export default function Navbar() {
         </svg>
       ),
       isActive: isFlightActive,
-      onClick: () => { setPendingView('idle'); setProcessMode(false); setMainView('idle'); },
+      onClick: () => { setProcessMode(false); activateView('idle'); },
     },
     {
       id: 'xray',
@@ -234,7 +259,7 @@ export default function Navbar() {
       tooltip: 'Processes as sequences of connections',
       icon: <Radiation className="h-3.5 w-3.5" />,
       isActive: isXRayActive,
-      onClick: () => { setPendingView(processMode ? 'idle' : 'process'); setProcessMode(!processMode); },
+      onClick: () => { const next = processMode ? 'idle' : 'process'; setProcessMode(!processMode); activateView(next); },
     },
     {
       id: 'landscape',
@@ -242,7 +267,7 @@ export default function Navbar() {
       tooltip: 'Landscape editor',
       icon: <Trees className="h-3.5 w-3.5" />,
       isActive: isEditorActive,
-      onClick: () => { const nextView = isEditorActive ? 'idle' : 'editor'; setPendingView(nextView); setMainView(nextView); },
+      onClick: () => activateView(isEditorActive ? 'idle' : 'editor'),
       visible: isCollaborator,
     },
   ];
