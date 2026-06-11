@@ -85,6 +85,7 @@ interface Props {
   onSetEntry: (landmarkId: string, collaboratorId: string, level: MatrixLevel) => void;
   onClearEntry: (landmarkId: string, collaboratorId: string) => void;
   onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean) => void;
+  onRemoveLandmark: (landmarkId: string) => void;
   loading: boolean;
   error?: string;
   onClearError?: () => void;
@@ -95,6 +96,7 @@ const EMPTY_LANDMARKS: Record<string, never> = {};
 export default function CollaboratorMatrixView({
   onSetEntry,
   onEditLandmark,
+  onRemoveLandmark,
   loading,
   error,
   onClearError,
@@ -290,6 +292,7 @@ export default function CollaboratorMatrixView({
                             <LandmarkInfoPopover
                               landmark={landmark}
                               onEditLandmark={onEditLandmark}
+                              onRemoveLandmark={onRemoveLandmark}
                               loading={loading}
                             >
                               <span

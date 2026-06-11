@@ -150,6 +150,7 @@ export default function MapPage() {
             onClearLandmarkMetric={actions.handleClearLandmarkMetric}
             onEditLandmarkGroup={actions.handleEditLandmarkGroup}
             onEditLandmark={actions.handleEditLandmark}
+            onRemoveLandmark={actions.handleRemoveLandmark}
             onCreateGroup={actions.handleCreateGroup}
             onEditGroup={actions.handleEditGroup}
             onRemoveGroup={actions.handleRemoveGroup}
@@ -163,6 +164,7 @@ export default function MapPage() {
             onSetEntry={actions.handleSetMatrixEntry}
             onClearEntry={actions.handleClearMatrixEntry}
             onEditLandmark={actions.handleEditLandmark}
+            onRemoveLandmark={actions.handleRemoveLandmark}
             loading={actions.actionLoading}
             error={actions.error}
             onClearError={() => actions.setError('')}

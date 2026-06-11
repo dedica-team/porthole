@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MetricsView from '../components/MetricsView/MetricsView';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
-import type { LandmarkGroup, QualityMetric } from '../types/landmark';
+import type {Landmark, LandmarkGroup, QualityMetric} from '../types/landmark';
 // ── shared fixtures ────────────────────────────────────────────────────────
 
 const METRIC_AVAIL = { id: 'm1', name: 'Availability', description: 'Uptime %' };
@@ -36,6 +36,7 @@ const DEFAULT_PROPS = {
   onCreateGroup: vi.fn(),
   onEditGroup: vi.fn(),
   onRemoveGroup: vi.fn(),
+  onRemoveLandmark: vi.fn(),
   loading: false,
 };
 
@@ -648,6 +649,76 @@ describe('MetricsView', () => {
     );
     expect(screen.getByText(/quality dimensions you define/i)).toBeInTheDocument();
     expect(screen.getByText(/things being measured/i)).toBeInTheDocument();
+  });
+
+  // ── landmark removal ───────────────────────────────────────────────────────
+
+  it('clicking "Remove" for an unpositioned landmark shows confirmation and calls onRemoveLandmark', async () => {
+    const unpositionedLm: Landmark = { id: 'up1', name: 'Ghost', type: 'KEEP', ownerId: null};
+    setup({ m1: METRIC_AVAIL }, { up1: unpositionedLm }, { g1: GROUP_A });
+    const onRemove = vi.fn();
+    render(<MetricsView {...DEFAULT_PROPS} onRemoveLandmark={onRemove} />);
+
+    // Click on unpositioned landmark name to open the LandmarkInfoPopover
+    fireEvent.click(screen.getByText('Ghost'));
+
+    // Click the "Edit Landmark" pencil button in the popover
+    fireEvent.click(screen.getByTitle('Edit Landmark'));
+
+    // Click "Remove" button
+    fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
+
+    // Verify confirmation is shown
+    expect(screen.getByText(/remove «Ghost»\?/i)).toBeInTheDocument();
+
+    // Click "Yes, remove"
+    fireEvent.click(screen.getByRole('button', { name: /yes, remove/i }));
+
+    expect(onRemove).toHaveBeenCalledWith('up1');
+  });
+
+  it('clicking "Remove Landmark" in the LandmarkInfoPopover shows confirmation and calls onRemoveLandmark', async () => {
+    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
+    const onRemove = vi.fn();
+    render(<MetricsView {...DEFAULT_PROPS} onRemoveLandmark={onRemove} />);
+
+    // Click on landmark name to open info popover
+    fireEvent.click(screen.getByText('Keep'));
+
+    // Click "Edit" icon (pencil) to go to edit state
+    const editBtn = screen.getByTitle('Edit Landmark');
+    fireEvent.click(editBtn);
+
+    // Click "Remove Landmark" button
+    fireEvent.click(screen.getByRole('button', { name: /remove/i }));
+
+    // Verify confirmation is shown
+    expect(screen.getByText(/remove «Keep»\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/this action cannot be undone/i)).toBeInTheDocument();
+
+    // Click "Yes, remove"
+    fireEvent.click(screen.getByRole('button', { name: /yes, remove/i }));
+
+    expect(onRemove).toHaveBeenCalledWith('lm1');
+  });
+
+  it('cancelling landmark removal returns to the edit form', async () => {
+    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
+    render(<MetricsView {...DEFAULT_PROPS} />);
+
+    fireEvent.click(screen.getByText('Keep'));
+    const editBtn = screen.getByTitle('Edit Landmark');
+    fireEvent.click(editBtn);
+
+    fireEvent.click(screen.getByRole('button', { name: /remove/i }));
+    expect(screen.getByText(/remove «Keep»\?/i)).toBeInTheDocument();
+
+    // Click "Cancel" in confirmation
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    // Verify we are back in the edit form (input should be visible)
+    expect(screen.getByPlaceholderText('Name')).toBeInTheDocument();
+    expect(screen.queryByText(/remove «Keep»\?/i)).not.toBeInTheDocument();
   });
 
   it('persists hidden groups to localStorage', () => {
