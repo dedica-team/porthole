@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
@@ -22,11 +22,11 @@ const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   ...overrides,
 });
 
-function renderNavbar(path = `/map/${MAP_ID}`) {
+function renderNavbar(path = `/session/${MAP_ID}`) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/map/:id" element={<Navbar />} />
+        <Route path="/session/:id" element={<Navbar />} />
         <Route path="/lobby"   element={<div data-testid="lobby" />} />
         <Route path="/"        element={<Navbar />} />
       </Routes>
@@ -46,7 +46,6 @@ beforeEach(() => {
     selectedLandmark: null,
     editorMode: false,
     mainView: 'idle',
-    pendingView: null,
   });
   useAuthStore.setState({
     token: 'tok',
@@ -396,12 +395,80 @@ describe('Navbar – session export', () => {
   });
 });
 
-describe('Navbar – early pending view state', () => {
-  it('sets pendingView immediately when switching to metrics', () => {
-    renderNavbar();
+// ── Tab navigation ──────────────────────────────────────────────────────────────────────────────
+// Navigation is now route-based: each tab click calls navigate() to a sub-route.
+// We verify the correct route is rendered by checking which sub-route element
+// is shown after a tab click using MemoryRouter with child routes.
+
+describe('Navbar – tab navigation', () => {
+  function renderWithRoutes(initialPath = `/session/${MAP_ID}`) {
+    return render(
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/session/:id" element={<><Navbar /><Outlet /></>}>
+            <Route index element={<div data-testid="view-overview" />} />
+            <Route path="map" element={<div data-testid="view-map" />} />
+            <Route path="metrics" element={<div data-testid="view-metrics" />} />
+            <Route path="matrix" element={<div data-testid="view-matrix" />} />
+            <Route path="chores" element={<div data-testid="view-chores" />} />
+            <Route path="greenkeeping" element={<div data-testid="view-greenkeeping" />} />
+            <Route path="processes" element={<div data-testid="view-processes" />} />
+            <Route path="editor" element={<div data-testid="view-editor" />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  it('renders overview view at index route', () => {
+    renderWithRoutes(`/session/${MAP_ID}`);
+    expect(screen.getByTestId('view-overview')).toBeInTheDocument();
+  });
+
+  it('navigates to index when Overview tab is clicked', () => {
+    renderWithRoutes(`/session/${MAP_ID}/metrics`);
+    fireEvent.click(screen.getByText('Overview'));
+    expect(screen.getByTestId('view-overview')).toBeInTheDocument();
+  });
+
+  it('navigates to /metrics when Quality Metrics tab is clicked', () => {
+    renderWithRoutes();
     fireEvent.click(screen.getByText('Quality Metrics'));
-    expect(useMapStore.getState().pendingView).toBe('metrics');
-    expect(useMapStore.getState().mainView).toBe('metrics');
+    expect(screen.getByTestId('view-metrics')).toBeInTheDocument();
+  });
+
+  it('navigates to /matrix when Bus Matrix tab is clicked', () => {
+    renderWithRoutes();
+    fireEvent.click(screen.getByText('Bus Matrix'));
+    expect(screen.getByTestId('view-matrix')).toBeInTheDocument();
+  });
+
+  it('navigates to /chores when Chores tab is clicked', () => {
+    renderWithRoutes();
+    fireEvent.click(screen.getByText('Chores'));
+    expect(screen.getByTestId('view-chores')).toBeInTheDocument();
+  });
+
+  it('navigates to /processes when X-Ray tab is clicked', () => {
+    renderWithRoutes();
+    fireEvent.click(screen.getByText('X-Ray'));
+    expect(screen.getByTestId('view-processes')).toBeInTheDocument();
+  });
+
+  it('navigates back to map index when Flight mode tab is clicked from another view', () => {
+    renderWithRoutes(`/session/${MAP_ID}/metrics`);
+    fireEvent.click(screen.getByText('Flight mode'));
+    expect(screen.getByTestId('view-map')).toBeInTheDocument();
+  });
+
+  it('deeplink to /processes sub-route renders process view', () => {
+    renderWithRoutes(`/session/${MAP_ID}/processes`);
+    expect(screen.getByTestId('view-processes')).toBeInTheDocument();
+  });
+
+  it('deeplink to /metrics sub-route renders metrics view', () => {
+    renderWithRoutes(`/session/${MAP_ID}/metrics`);
+    expect(screen.getByTestId('view-metrics')).toBeInTheDocument();
   });
 });
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw } from 'lucide-react';
+import { useNavigate, useLocation, useMatch } from 'react-router-dom';
+import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -44,14 +44,28 @@ export default function Navbar() {
   const tagline = useAuthStore((s) => s.tagline);
   const currentMap = useMapStore((s) => s.currentMap);
   const updateMap = useMapStore((s) => s.updateMap);
-  const mainView = useMapStore((s) => s.mainView);
-  const setPendingView = useMapStore((s) => s.setPendingView);
-  const setMainView = useMapStore((s) => s.setMainView);
-  const processMode = useMapStore((s) => s.processMode);
-  const setProcessMode = useMapStore((s) => s.setProcessMode);
   const rendererQualityProfile = useMapStore((s) => s.rendererQualityProfile);
   const setRendererQualityProfile = useMapStore((s) => s.setRendererQualityProfile);
-  const isOnMap = location.pathname.startsWith('/map/');
+  const isOnMap = location.pathname.startsWith('/session/');
+
+  // ── Active-tab detection via route matching ───────────────────────────────
+  // Each tab corresponds to a sub-route; useMatch drives the active highlight.
+  const mapId = currentMap?.id;
+  const matchMetrics      = useMatch('/session/:id/metrics');
+  const matchMatrix       = useMatch('/session/:id/matrix');
+  const matchChores       = useMatch('/session/:id/chores');
+  const matchGreenkeeping = useMatch('/session/:id/greenkeeping');
+  const matchProcesses    = useMatch('/session/:id/processes');
+  const matchEditor       = useMatch('/session/:id/editor');
+  const matchMapIndex     = useMatch('/session/:id/map');
+  const matchOverview     = useMatch({ path: '/session/:id', end: true });
+
+  // Helper: navigate to a sub-route under the current map.
+  const goTo = (sub: string | null) => {
+    if (!mapId) return;
+    navigate(`/session/${mapId}/${sub ?? 'map'}`);
+  };
+
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editName, setEditName] = useState('');
@@ -171,26 +185,35 @@ export default function Navbar() {
     }
   };
 
-  // ── Active-state predicates (one named constant per tab) ─────────────────
-  const isMetricsActive  = mainView === 'metrics';
-  const isMatrixActive   = mainView === 'matrix';
-  const isChoresActive   = mainView === 'chores';
-  const isGreenkeepingActive = mainView === 'greenkeeping';
-  const isEditorActive   = mainView === 'editor';
-  const isXRayActive     = processMode;
-  const isFlightActive   = !isMetricsActive && !isMatrixActive && !isChoresActive && !isGreenkeepingActive && !isEditorActive && !isXRayActive;
+  // ── Active-state predicates derived from current route ───────────────────
+  const isMetricsActive      = !!matchMetrics;
+  const isMatrixActive       = !!matchMatrix;
+  const isChoresActive       = !!matchChores;
+  const isGreenkeepingActive = !!matchGreenkeeping;
+  const isEditorActive       = !!matchEditor;
+  const isXRayActive         = !!matchProcesses;
+  const isFlightActive       = !!matchMapIndex;
+  const isOverviewActive     = !!matchOverview;
 
   // The active-tab bottom border class.
   const activeBorderCls = 'border-amber-400';
 
   const NAV_TABS: NavTab[] = [
     {
+      id: 'overview',
+      label: 'Overview',
+      tooltip: 'Session overview dashboard',
+      icon: <LayoutDashboard className="h-3.5 w-3.5" />,
+      isActive: isOverviewActive,
+      onClick: () => { if (mapId) navigate(`/session/${mapId}`); },
+    },
+    {
       id: 'metrics',
       label: 'Quality Metrics',
       tooltip: 'Manage quality metrics and goals',
       icon: <BarChart2 className="h-3.5 w-3.5" />,
       isActive: isMetricsActive,
-      onClick: () => { setPendingView('metrics'); setMainView('metrics'); },
+      onClick: () => goTo('metrics'),
     },
     {
       id: 'matrix',
@@ -198,7 +221,7 @@ export default function Navbar() {
       tooltip: 'Who knows what',
       icon: <Bus className="h-3.5 w-3.5" />,
       isActive: isMatrixActive,
-      onClick: () => { setPendingView('matrix'); setMainView('matrix'); },
+      onClick: () => goTo('matrix'),
     },
     {
       id: 'chores',
@@ -206,7 +229,7 @@ export default function Navbar() {
       tooltip: 'Chore todo lists per landmark',
       icon: <CheckSquare className="h-3.5 w-3.5" />,
       isActive: isChoresActive,
-      onClick: () => { setPendingView('chores'); setMainView('chores'); },
+      onClick: () => goTo('chores'),
     },
     {
       id: 'greenkeeping',
@@ -214,7 +237,7 @@ export default function Navbar() {
       tooltip: 'Recurring group stewardship rotations',
       icon: <RefreshCw className="h-3.5 w-3.5" />,
       isActive: isGreenkeepingActive,
-      onClick: () => { setPendingView('greenkeeping'); setMainView('greenkeeping'); },
+      onClick: () => goTo('greenkeeping'),
     },
     {
       id: 'flight',
@@ -226,7 +249,7 @@ export default function Navbar() {
         </svg>
       ),
       isActive: isFlightActive,
-      onClick: () => { setPendingView('idle'); setProcessMode(false); setMainView('idle'); },
+      onClick: () => goTo('map'),
     },
     {
       id: 'xray',
@@ -234,7 +257,7 @@ export default function Navbar() {
       tooltip: 'Processes as sequences of connections',
       icon: <Radiation className="h-3.5 w-3.5" />,
       isActive: isXRayActive,
-      onClick: () => { setPendingView(processMode ? 'idle' : 'process'); setProcessMode(!processMode); },
+      onClick: () => goTo(isXRayActive ? 'map' : 'processes'),
     },
     {
       id: 'landscape',
@@ -242,7 +265,7 @@ export default function Navbar() {
       tooltip: 'Landscape editor',
       icon: <Trees className="h-3.5 w-3.5" />,
       isActive: isEditorActive,
-      onClick: () => { const nextView = isEditorActive ? 'idle' : 'editor'; setPendingView(nextView); setMainView(nextView); },
+      onClick: () => goTo(isEditorActive ? 'map' : 'editor'),
       visible: isCollaborator,
     },
   ];

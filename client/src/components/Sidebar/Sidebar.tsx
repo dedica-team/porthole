@@ -1,8 +1,10 @@
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, HelpCircle, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useMatch } from 'react-router-dom';
 import { useMapStore } from '@/store/mapStore';
 import TilePanel from './panels/TilePanel';
 import LandmarkPanel from './panels/LandmarkPanel';
@@ -114,7 +116,7 @@ function ProcessLandmarkView({
   const selectedLandmark = useMapStore((s) => s.selectedLandmark);
   const currentMap = useMapStore((s) => s.currentMap);
   const processes = useMapStore((s) => s.processes);
-  const processMode = useMapStore((s) => s.processMode);
+  const processMode = !!useMatch('/session/:id/processes');
   const setActiveProcessId = useMapStore((s) => s.setActiveProcessId);
   const setActiveStageId = useMapStore((s) => s.setActiveStageId);
   const setSelectedLandmark = useMapStore((s) => s.setSelectedLandmark);
@@ -237,13 +239,14 @@ export default function Sidebar({
   const connectingFromLandmarkId = useMapStore((s) => s.connectingFromLandmarkId);
   const relocatingLandmarkId = useMapStore((s) => s.relocatingLandmarkId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
-  const processMode = useMapStore((s) => s.processMode);
   const processSidebarHidden = useMapStore((s) => s.processSidebarHidden);
   const setProcessSidebarHidden = useMapStore((s) => s.setProcessSidebarHidden);
+  // Derive process mode from the route instead of store state.
+  const processMode = !!useMatch('/session/:id/processes');
 
-  // Hide sidebar when nothing is selected and not in editor/process mode
+  // Hide sidebar when nothing is selected and not in process mode
   const isVisible = (processMode && !processSidebarHidden)
-    || (mainView !== 'idle' && mainView !== 'process' && mainView !== 'editor')
+    || (mainView !== 'idle')
     || !!connectingFromLandmarkId
     || !!relocatingLandmarkId;
   if (!isVisible) return null;
@@ -256,8 +259,28 @@ export default function Sidebar({
 
   return (
     <aside className="absolute inset-y-0 right-0 z-20 flex flex-col w-(--sidebar-width) min-w-0 bg-card border-l border-border overflow-hidden md:relative md:shrink-0">
-      {/* Close button – always visible top-right */}
-      <div className="flex items-center justify-end px-2 pt-2 shrink-0">
+      {/* Close button – always visible top-right; show 'Processes' title when process panel list is active */}
+      <div className="flex items-center justify-between px-2 pt-2 shrink-0">
+        {processMode && !selectedLandmark && !selectedConnectionId
+          ? <span className="pl-2 flex items-center gap-1">
+              <span className="text-sm font-semibold text-foreground">Processes</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors">
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="bottom" align="start" className="max-w-72 text-xs space-y-1.5 leading-relaxed">
+                  <p className="font-semibold">Processes</p>
+                  <p>Processes model ordered sequences of map connections — useful for workflows, routes, or data flows.</p>
+                  <p><span className="font-medium">Stages</span> are the steps within a process. Each stage can hold one or more connections.</p>
+                  <p>To add a connection to a stage, open the stage accordion and click <span className="font-medium">Add Connection</span>, then click a connection line on the map. Click it again to remove it.</p>
+                  <p>Each stage connection can have an optional <span className="font-medium">title</span> and a <span className="font-medium">direction</span> (Forward, Reverse, or Bidirectional) that represents how the connection is traversed in that step.</p>
+                  <p>Stages can be reordered with the move-up / move-down actions in the stage menu.</p>
+                </PopoverContent>
+              </Popover>
+            </span>
+          : <span />}
         <Button
           size="icon"
           variant="ghost"

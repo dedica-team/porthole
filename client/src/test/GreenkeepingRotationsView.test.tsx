@@ -68,7 +68,6 @@ describe('GreenkeepingRotationsView', () => {
       mainView: 'greenkeeping',
       pendingView: null,
       confirmPending: false,
-      processMode: false,
       activeProcessId: null,
       activeStageId: null,
       pickingConnection: false,

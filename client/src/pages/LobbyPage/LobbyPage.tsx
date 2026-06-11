@@ -243,7 +243,7 @@ export default function LobbyPage() {
     try {
       const map = await adminJoinMap(mapId);
       setCurrentMap(map);
-      navigate(`/map/${map.id}`);
+      navigate(`/session/${map.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to join session');
     } finally {
@@ -283,7 +283,7 @@ export default function LobbyPage() {
     try {
       const map = await createMap(mapType, mapSize, collaborationMode);
       setCurrentMap(map);
-      navigate(`/map/${map.id}`);
+      navigate(`/session/${map.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create session');
     } finally {
@@ -297,7 +297,7 @@ export default function LobbyPage() {
     try {
       const map = await joinMap(mapId);
       setCurrentMap(map);
-      navigate(`/map/${map.id}`);
+      navigate(`/session/${map.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to join session');
     } finally {
@@ -452,7 +452,7 @@ export default function LobbyPage() {
                       disabled={loading}
                       onClick={() => {
                         setCurrentMap(map);
-                        navigate(`/map/${map.id}`);
+                        navigate(`/session/${map.id}`);
                       }}
                     >
                       <Eye className="h-3.5 w-3.5" />

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useMapStore } from '../store/mapStore';
 import type { SessionState } from '../types/session';
+
 const makeMap = (): SessionState => ({
   id: 'map-1',
   createdAt: new Date().toISOString(),
@@ -15,7 +16,6 @@ const makeMap = (): SessionState => ({
 beforeEach(() => {
   useMapStore.setState({
     currentMap: null,
-    processMode: false,
     activeProcessId: null,
     activeStageId: null,
     processes: [],
@@ -24,63 +24,21 @@ beforeEach(() => {
     processesError: null,
     editorMode: false,
     mainView: 'idle',
-    pendingView: null,
   });
 });
 
-// ── setProcessMode ────────────────────────────────────────────────────────────
+// ── setEditorMode ─────────────────────────────────────────────────────────────
 
-describe('mapStore – setProcessMode', () => {
-  it('activates process mode and sets mainView to process', () => {
-    useMapStore.getState().setProcessMode(true);
-    const s = useMapStore.getState();
-    expect(s.processMode).toBe(true);
-    expect(s.mainView).toBe('process');
-  });
-
-  it('deactivates process mode without changing mainView', () => {
-    useMapStore.getState().setProcessMode(true);
-    useMapStore.getState().setProcessMode(false);
-    expect(useMapStore.getState().processMode).toBe(false);
-  });
-
-  it('enabling process mode disables editorMode', () => {
-    useMapStore.setState({ editorMode: true });
-    useMapStore.getState().setProcessMode(true);
-    expect(useMapStore.getState().editorMode).toBe(false);
-  });
-});
-
-// ── setEditorMode mutual exclusion ─────────────────────────────────────────────
-
-describe('mapStore – setEditorMode mutual exclusion with processMode', () => {
-  it('enabling editorMode disables processMode', () => {
-    useMapStore.getState().setProcessMode(true);
+describe('mapStore – setEditorMode', () => {
+  it('enables editor mode', () => {
     useMapStore.getState().setEditorMode(true);
-    expect(useMapStore.getState().processMode).toBe(false);
     expect(useMapStore.getState().editorMode).toBe(true);
   });
-});
 
-// ── setMainView mutual exclusion ──────────────────────────────────────────────
-
-describe('mapStore – setMainView clears processMode for non-process views', () => {
-  it('switching to metrics clears processMode', () => {
-    useMapStore.getState().setProcessMode(true);
-    useMapStore.getState().setMainView('metrics');
-    expect(useMapStore.getState().processMode).toBe(false);
-  });
-
-  it('switching to idle clears processMode', () => {
-    useMapStore.getState().setProcessMode(true);
-    useMapStore.getState().setMainView('idle');
-    expect(useMapStore.getState().processMode).toBe(false);
-  });
-
-  it('switching to process view preserves processMode', () => {
-    useMapStore.getState().setProcessMode(true);
-    useMapStore.getState().setMainView('process');
-    expect(useMapStore.getState().processMode).toBe(true);
+  it('disables editor mode', () => {
+    useMapStore.getState().setEditorMode(true);
+    useMapStore.getState().setEditorMode(false);
+    expect(useMapStore.getState().editorMode).toBe(false);
   });
 });
 
@@ -92,15 +50,13 @@ describe('mapStore – setCurrentMap resets process state', () => {
       currentMap: makeMap(),
       processes: [{ id: 'p1', name: 'Old', stages: [] }],
       processesFetched: true,
-      processMode: true,
-      mainView: 'metrics',
+      mainView: 'idle',
     });
     useMapStore.getState().setCurrentMap({ ...makeMap(), id: 'map-2' });
     const s = useMapStore.getState();
     expect(s.processes).toHaveLength(0);
     expect(s.processesFetched).toBe(false);
-    expect(s.processMode).toBe(false);
-    expect(s.mainView).toBe('metrics');
+    expect(s.mainView).toBe('idle');
   });
 
   it('always resets processesFetched when setCurrentMap is called (forces re-fetch)', () => {
@@ -145,4 +101,3 @@ describe('mapStore – process setters', () => {
     expect(useMapStore.getState().processesError).toBe('Network error');
   });
 });
-

@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import MapPage from '../pages/MapPage/MapPage';
+import RegularMapView from '../pages/MapPage/RegularMapView';
+import ProcessMapView from '../pages/MapPage/ProcessMapView';
+import SessionOverviewView from '../pages/MapPage/SessionOverviewView';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import { LOADING_COPY } from '../components/ui/loadingCopy';
@@ -10,6 +13,7 @@ import type { SessionState } from '../types/session';
 
 vi.mock('../api/mapApi');
 vi.mock('../hooks/useMapWebSocket', () => ({ useMapWebSocket: vi.fn() }));
+vi.mock('../pages/MapPage/SessionOverviewView', () => ({ default: () => <div data-testid="session-overview" /> }));
 
 vi.mock('../components/HexGrid/HexGrid', () => ({
   default: ({
@@ -82,11 +86,15 @@ const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   ...overrides,
 });
 
-function renderMapPage() {
+function renderMapPage(initialPath = `/session/${MAP_ID}/map`) {
   return render(
-    <MemoryRouter initialEntries={[`/map/${MAP_ID}`]}>
+    <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
-        <Route path="/map/:id" element={<MapPage />} />
+        <Route path="/session/:id" element={<MapPage />}>
+          <Route index element={<SessionOverviewView />} />
+          <Route path="map" element={<RegularMapView />} />
+          <Route path="processes" element={<ProcessMapView />} />
+        </Route>
         <Route path="/lobby" element={<div data-testid="lobby" />} />
       </Routes>
     </MemoryRouter>,
@@ -257,7 +265,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('RAISE tool calls editTile with elevation + 1', async () => {
-    useMapStore.setState({ editorMode: true, editorTool: 'RAISE', mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, editorTool: 'RAISE', mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
@@ -265,7 +273,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('LOWER tool calls editTile with elevation - 1', async () => {
-    useMapStore.setState({ editorMode: true, editorTool: 'LOWER', mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, editorTool: 'LOWER', mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
@@ -273,7 +281,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('TERRAIN tool calls editTile with editorTerrain', async () => {
-    useMapStore.setState({ editorMode: true, editorTool: 'TERRAIN', editorTerrain: 'FOREST', mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, editorTool: 'TERRAIN', editorTerrain: 'FOREST', mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
@@ -288,7 +296,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('shows floating editor controls without rendering the sidebar', async () => {
-    useMapStore.setState({ editorMode: true, mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     expect(screen.getByRole('button', { name: '▲ Raise' })).toBeInTheDocument();
@@ -304,7 +312,7 @@ describe('MapPage – regression: no loading screen during tile edits', () => {
     useMapStore.setState({
       currentMap: makeMap(), maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: true, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'editor', confirmPending: false,
+      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
     });
     vi.mocked(mapApi.getMap).mockResolvedValue(makeMap());
     vi.mocked(mapApi.editTile).mockResolvedValue(makeMap());
@@ -519,7 +527,7 @@ describe('MapPage – brush mode', () => {
     useMapStore.setState({
       currentMap: makeMap(), maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: true, editorTool: 'TERRAIN',
-      editorTerrain: 'FOREST', mainView: 'editor', confirmPending: false,
+      editorTerrain: 'FOREST', mainView: 'idle', confirmPending: false,
     });
     vi.mocked(mapApi.getMap).mockResolvedValue(makeMap());
     vi.mocked(mapApi.editTile).mockResolvedValue(makeMap());
@@ -613,49 +621,40 @@ describe('MapPage – process mode: processRenderMode', () => {
     vi.clearAllMocks();
     useAuthStore.setState({ token: 'tok', userId: COLLABORATOR_ID, username: 'test', isAuthenticated: true });
     vi.mocked(mapApi.getMap).mockResolvedValue(MAP_WITH_CONNECTION);
+    vi.mocked(mapApi.fetchProcesses).mockResolvedValue([]);
   });
 
-  it('passes processRenderMode=true to HexGrid when processMode is active', async () => {
+  it('passes processRenderMode=true to HexGrid when on /processes route', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
     });
-    renderMapPage();
-    await waitFor(() => screen.getByTestId('hex-grid'));
-    // Set processMode after initial load (getMap/setCurrentMap may reset it)
-    await setMapState({ processMode: true, processesFetched: true });
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() =>
       expect(screen.getByTestId('hex-grid').dataset.processRenderMode).toBe('true'),
     );
   });
 
-  it('passes processRenderMode=false to HexGrid when processMode is inactive', async () => {
+  it('passes processRenderMode=false to HexGrid when on regular map route', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     expect(screen.getByTestId('hex-grid').dataset.processRenderMode).toBe('false');
   });
 
-  it('tile clicks do nothing (no sidebar panel) when processMode is active', async () => {
+  it('tile clicks do nothing (no sidebar panel) when on /processes route', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
     });
-    renderMapPage();
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('hex-grid'));
-    await setMapState({ processMode: true, processesFetched: true });
-    await waitFor(() =>
-      expect(screen.getByTestId('hex-grid').dataset.processRenderMode).toBe('true'),
-    );
     fireEvent.click(screen.getByTestId('tile-empty'));
     expect(screen.queryByText('Create Landmark')).not.toBeInTheDocument();
   });
@@ -670,13 +669,11 @@ describe('MapPage – process mode: processRenderMode', () => {
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
     });
-    renderMapPage();
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('hex-grid'));
-    // Activate process mode with stage and pick mode after initial load
+    // Set stage and pick mode after initial load
     await setMapState({
-      processMode: true,
       activeProcessId: 'proc-1',
       activeStageId: 'stage-1',
       pickingConnection: true,
@@ -695,11 +692,8 @@ describe('MapPage – process mode: processRenderMode', () => {
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
     });
-    renderMapPage();
-    await waitFor(() => screen.getByTestId('hex-grid'));
-    await setMapState({ processMode: true, processesFetched: true });
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => expect(screen.getByText('New Connection')).toBeInTheDocument());
   });
 
@@ -708,29 +702,23 @@ describe('MapPage – process mode: processRenderMode', () => {
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     expect(screen.queryByText('New Connection')).not.toBeInTheDocument();
   });
 
-  it('clicking a landmark tile in process mode sets selectedLandmark without disabling processMode', async () => {
+  it('clicking a landmark tile in process mode sets selectedLandmark', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
-    renderMapPage();
-    await waitFor(() => screen.getByTestId('hex-grid'));
-    await setMapState({ processMode: true, processesFetched: true });
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('tile-tower'));
     fireEvent.click(screen.getByTestId('tile-tower'));
     await waitFor(() => {
-      const state = useMapStore.getState();
-      expect(state.processMode).toBe(true);
-      expect(state.selectedLandmark?.id).toBe('tower-1');
+      expect(useMapStore.getState().selectedLandmark?.id).toBe('tower-1');
     });
   });
 
@@ -738,18 +726,13 @@ describe('MapPage – process mode: processRenderMode', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
-    renderMapPage();
-    await waitFor(() => screen.getByTestId('hex-grid'));
-    await setMapState({ processMode: true, processesFetched: true });
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('tile-empty'));
     fireEvent.click(screen.getByTestId('tile-empty'));
     await waitFor(() => {
-      const state = useMapStore.getState();
-      expect(state.processMode).toBe(true);
-      expect(state.selectedLandmark).toBeNull();
+      expect(useMapStore.getState().selectedLandmark).toBeNull();
     });
   });
 
@@ -758,12 +741,10 @@ describe('MapPage – process mode: processRenderMode', () => {
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
-      processMode: false,
     });
-    renderMapPage();
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('hex-grid'));
     await setMapState({
-      processMode: true,
       pickingConnection: false,
       activeProcessId: null,
       activeStageId: null,
@@ -773,7 +754,6 @@ describe('MapPage – process mode: processRenderMode', () => {
     fireEvent.click(screen.getByTestId('conn-click'));
     await waitFor(() => {
       expect(useMapStore.getState().selectedConnectionId).toBe('conn-1');
-      expect(useMapStore.getState().processMode).toBe(true);
     });
     expect(mapApi.addConnectionToStage).not.toHaveBeenCalled();
   });
@@ -795,13 +775,14 @@ describe('MapPage – landmark search field', () => {
     vi.clearAllMocks();
     useAuthStore.setState({ token: 'tok', userId: COLLABORATOR_ID, username: 'test', isAuthenticated: true });
     vi.mocked(mapApi.getMap).mockResolvedValue(MAP_WITH_CONNECTION);
+    vi.mocked(mapApi.fetchProcesses).mockResolvedValue([]);
   });
 
   it('search input is visible in normal mode', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false, processMode: false,
+      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
@@ -812,11 +793,9 @@ describe('MapPage – landmark search field', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false, processMode: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
-    renderMapPage();
-    await waitFor(() => screen.getByTestId('hex-grid'));
-    await setMapState({ processMode: true, processesFetched: true });
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument());
   });
 
@@ -824,7 +803,7 @@ describe('MapPage – landmark search field', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false, processMode: false,
+      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
@@ -836,7 +815,7 @@ describe('MapPage – landmark search field', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false, processMode: false,
+      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
@@ -855,12 +834,9 @@ describe('MapPage – landmark search field', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false, processMode: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
-    renderMapPage();
-    await waitFor(() => screen.getByTestId('hex-grid'));
-    // Activate process mode after initial load (same pattern as other process-mode tests)
-    await setMapState({ processMode: true, processesFetched: true });
+    renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByPlaceholderText('Search…'));
     fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'tower one' } });
     const result = await screen.findAllByText('Tower One').then((els) => els[0]);
@@ -868,7 +844,7 @@ describe('MapPage – landmark search field', () => {
     await waitFor(() => {
       const state = useMapStore.getState();
       expect(state.selectedTile).toEqual({ q: 0, r: 0 });
-      expect(state.mainView).toBe('idle'); // stays in process/idle view
+      expect(state.mainView).toBe('idle'); // stays in idle (process route handles view)
     });
   });
 });

@@ -15,10 +15,10 @@ import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { MATRIX_LEVEL_ORDER, MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
 import type { MatrixLevel } from '@/types/matrix';
 import { isDecorative } from '@/types/landmark';
-import type { LandmarkType } from '@/types/landmark';
 import type { Collaborator } from '@/types/session';
 import {GroupFilterPopover, useGroupFilter} from "@/components/ui/GroupFilterPopover.tsx";
 import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPopover.tsx";
+import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 
 
 // ── Cell-edit dialog ──────────────────────────────────────────────────────────
@@ -80,25 +80,18 @@ function MatrixCellEditDialog({ state, loading, onSelect, onClose }: CellEditDia
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface Props {
-  onEditMatrix: (name: string) => void;
-  onSetEntry: (landmarkId: string, collaboratorId: string, level: MatrixLevel) => void;
-  onClearEntry: (landmarkId: string, collaboratorId: string) => void;
-  onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean) => void;
-  loading: boolean;
-  error?: string;
-  onClearError?: () => void;
-}
-
 const EMPTY_LANDMARKS: Record<string, never> = {};
 
-export default function CollaboratorMatrixView({
-  onSetEntry,
-  onEditLandmark,
-  loading,
-  error,
-  onClearError,
-}: Props) {
+export default function CollaboratorMatrixView() {
+  const {
+    handleSetMatrixEntry: onSetEntry,
+    handleEditLandmark: onEditLandmark,
+    handleRemoveLandmark: onRemoveLandmark,
+    actionLoading: loading,
+    error,
+    setError,
+  } = useMapActions();
+  const onClearError = () => setError('');
   const { currentMap, landmarksMap, collaboratorMatrix } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     landmarksMap: s.currentMap?.landmarks ?? EMPTY_LANDMARKS,
@@ -200,7 +193,7 @@ export default function CollaboratorMatrixView({
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
             <table className="data-display-table w-full text-xs border-separate border-spacing-0">
-              <thead>
+              <thead className="sticky top-0 z-30">
                 <tr>
                   {/* colour-stripe placeholder */}
                   <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
@@ -268,7 +261,7 @@ export default function CollaboratorMatrixView({
                                 style={{ height: `${sectionLandmarks.length * 2.25}rem`, minHeight: '2rem' }}
                               >
                                 <span
-                                  className="text-[9px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                                  className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
                                   style={{
                                     writingMode: 'vertical-rl',
                                     transform: 'rotate(180deg)',
@@ -290,6 +283,7 @@ export default function CollaboratorMatrixView({
                             <LandmarkInfoPopover
                               landmark={landmark}
                               onEditLandmark={onEditLandmark}
+                              onRemoveLandmark={onRemoveLandmark}
                               loading={loading}
                             >
                               <span

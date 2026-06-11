@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Plus, Trash2, Loader2, RefreshCw, HelpCircle, Pencil, ChevronDown, ChevronUp, MousePointer2, MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, Loader2, RefreshCw, Pencil, ChevronDown, ChevronUp, MousePointer2, MoreHorizontal } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -590,31 +590,6 @@ export default function ProcessPanel() {
   return (
     <TooltipProvider>
     <div className="flex flex-col gap-3 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span className="text-sm font-semibold text-foreground">Processes</span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <HelpCircle className="h-3.5 w-3.5" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="center" className="max-w-72 text-xs space-y-1.5 leading-relaxed">
-              <p className="font-semibold">Processes</p>
-              <p>Processes model ordered sequences of map connections — useful for workflows, routes, or data flows.</p>
-              <p><span className="font-medium">Stages</span> are the steps within a process. Each stage can hold one or more connections.</p>
-              <p>To add a connection to a stage, open the stage accordion and click <span className="font-medium">Add Connection</span>, then click a connection line on the map. Click it again to remove it.</p>
-              <p>Each stage connection can have an optional <span className="font-medium">title</span> and a <span className="font-medium">direction</span> (Forward, Reverse, or Bidirectional) that represents how the connection is traversed in that step.</p>
-              <p>Stages can be reordered with the move-up / move-down actions in the stage menu.</p>
-            </PopoverContent>
-          </Popover>
-        </div>
-        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1"
-          onClick={() => setCreatingProcess(true)}>
-          <Plus className="h-3.5 w-3.5" /> New
-        </Button>
-      </div>
-
       {creatingProcess && (
         <div className="flex gap-1.5">
           <Input value={newProcessName}
@@ -656,7 +631,7 @@ export default function ProcessPanel() {
               )}
               onClick={() => handleOpenProcess(p)}>
               <span className={cn(
-                'text-xs truncate flex-1',
+                'text-sm truncate flex-1',
                 p.id === activeProcessId ? 'text-sky-300 font-medium' : 'text-foreground',
               )}>
                 {p.name}
@@ -670,6 +645,11 @@ export default function ProcessPanel() {
           ))}
         </div>
       )}
+
+      <Button variant="ghost" size="sm" className="w-full h-7 text-xs gap-1 mt-1"
+        onClick={() => setCreatingProcess(true)}>
+        <Plus className="h-3.5 w-3.5" /> Create Process
+      </Button>
     </div>
     </TooltipProvider>
   );

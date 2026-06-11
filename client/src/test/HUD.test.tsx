@@ -39,7 +39,7 @@ describe('Navbar (HUD replacement)', () => {
         map: { tiles: [] },
       },
     });
-    renderNavbar('/map/map-abcd1234');
+    renderNavbar('/session/map-abcd1234');
     expect(screen.getByText('#map-abcd')).toBeInTheDocument();
   });
 
@@ -59,7 +59,7 @@ describe('Navbar (HUD replacement)', () => {
         map: { tiles: [] },
       },
     });
-    renderNavbar('/map/map-abcd1234');
+    renderNavbar('/session/map-abcd1234');
     // The map name is shown as the popover trigger in the navbar bar.
     // Collaborator details are inside the popover (opened on click).
     expect(screen.getByText('#map-abcd')).toBeInTheDocument();

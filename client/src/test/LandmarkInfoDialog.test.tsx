@@ -112,7 +112,7 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
     expect(onEditLandmark).toHaveBeenCalledWith('tower-abc123', 'Iron Keep', 'KEEP', undefined, undefined, false, undefined, false);
   });
 
-  it('calls onRemoveLandmark when Remove is clicked', () => {
+  it('calls onRemoveLandmark when Remove Landmark is clicked', () => {
     setup();
     const onRemove = vi.fn();
     render(<LandmarkPanel {...defaultProps} onRemoveLandmark={onRemove} />);

@@ -69,7 +69,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSessionLoading: (loading) => set({ sessionLoading: loading }),
 }));
 
-export type MainView = 'idle' | 'tile' | 'landmark' | 'editor' | 'groups' | 'metrics' | 'matrix' | 'process' | 'chores' | 'greenkeeping';
+// MainView only tracks intra-map UI panel state; top-level view routing is
+// handled by React Router sub-routes under /session/:id/...
+export type MainView = 'idle' | 'tile' | 'landmark' | 'groups' | 'metrics' | 'greenkeeping' | 'processes';
 export type PendingView = MainView | null;
 
 interface MapStore {
@@ -92,7 +94,8 @@ interface MapStore {
   pendingView: PendingView;
   confirmPending: boolean;
   // ── Process mode ──────────────────────────────────────────────────────────
-  processMode: boolean;
+  // processMode is derived from the route (/session/:id/processes) rather than
+  // stored here; processSidebarHidden is still needed for the sidebar toggle.
   processSidebarHidden: boolean;
   activeProcessId: string | null;
   activeStageId: string | null;
@@ -122,7 +125,6 @@ interface MapStore {
   setMainView: (view: MainView) => void;
   setPendingView: (view: PendingView) => void;
   setConfirmPending: (pending: boolean) => void;
-  setProcessMode: (on: boolean) => void;
   setProcessSidebarHidden: (hidden: boolean) => void;
   setActiveProcessId: (id: string | null) => void;
   setActiveStageId: (id: string | null) => void;
@@ -176,7 +178,6 @@ export const useMapStore = create<MapStore>((set) => ({
   mainView: 'idle',
   pendingView: null,
   confirmPending: false,
-  processMode: false,
   processSidebarHidden: false,
   activeProcessId: null,
   activeStageId: null,
@@ -199,18 +200,17 @@ export const useMapStore = create<MapStore>((set) => ({
   collaboratorMatrix: null,
   setCollaboratorMatrix: (matrix) => set({ collaboratorMatrix: matrix }),
   setMaps: (maps) => set({ maps }),
-  setCurrentMap: (map) => set((state) => ({
+  setCurrentMap: (map) => set(() => ({
     currentMap: map,
     selectedTile: null,
     selectedLandmark: null,
     selectedConnectionId: null,
-    mainView: (map == null || state.currentMap == null || state.currentMap.id !== map.id) ? 'metrics' : state.mainView,
+    mainView: 'idle',
     pendingView: null,
     confirmPending: false,
     // Reset process state when switching maps
     processesFetched: false,
     processes: [],
-    processMode: false,
     activeProcessId: null,
     activeStageId: null,
     pickingConnection: false,
@@ -297,7 +297,7 @@ export const useMapStore = create<MapStore>((set) => ({
   setConnectingFromLandmark: (id) => set({ connectingFromLandmarkId: id }),
   setRelocatingLandmark: (id) => set({ relocatingLandmarkId: id }),
   setPendingConnectionMeta: (meta) => set({ pendingConnectionMeta: meta }),
-  setEditorMode: (on) => set({ editorMode: on, mainView: on ? 'editor' : 'idle', processMode: false }),
+  setEditorMode: (on) => set({ editorMode: on }),
   setEditorTool: (tool) => set({ editorTool: tool }),
   setEditorTerrain: (terrain) => set({ editorTerrain: terrain }),
   setRendererQualityProfile: (profile) => {
@@ -306,23 +306,9 @@ export const useMapStore = create<MapStore>((set) => ({
     }
     set({ rendererQualityProfile: profile });
   },
-  setMainView: (view) => set((state) => ({
-    mainView: view,
-    editorMode: view === 'editor',
-    processMode: view === 'process' ? state.processMode : false,
-  })),
+  setMainView: (view) => set({ mainView: view }),
   setPendingView: (view) => set({ pendingView: view }),
   setConfirmPending: (pending) => set({ confirmPending: pending }),
-  setProcessMode: (on) => set((state) => ({
-    processMode: on,
-    processSidebarHidden: false,
-    mainView: on ? 'process' : state.mainView,
-    editorMode: on ? false : state.editorMode,
-    pickingConnection: on ? state.pickingConnection : false,
-    selectedLandmark: on ? null : state.selectedLandmark,
-    selectedTile: on ? null : state.selectedTile,
-    selectedConnectionId: on ? null : state.selectedConnectionId,
-  })),
   setProcessSidebarHidden: (hidden) => set({ processSidebarHidden: hidden }),
   setActiveProcessId: (id) => set({ activeProcessId: id }),
   setActiveStageId: (id) => set({ activeStageId: id, pickingConnection: false }),

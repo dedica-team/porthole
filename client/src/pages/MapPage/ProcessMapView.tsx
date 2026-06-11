@@ -20,13 +20,10 @@ import { Label } from '@/components/ui/label';
 import type { Connection } from '@/types/connection';
 import type { StageConnection } from '@/types/process';
 import { QUALITY_LEVEL_COLOR, QUALITY_LEVEL_SIGN } from '@/types/landmark';
-import type { useMapPageActions } from './useMapPageActions';
+import { useMapActions } from './MapActionsContext';
 
-interface Props {
-  actions: ReturnType<typeof useMapPageActions>;
-}
-
-export default function ProcessMapView({ actions }: Props) {
+export default function ProcessMapView() {
+  const actions = useMapActions();
   const { positionedLandmarks, setError, landmarkByCoord } = actions;
 
   const [selectedMetricId, setSelectedMetricId] = useState<string | null>(null);
@@ -37,6 +34,7 @@ export default function ProcessMapView({ actions }: Props) {
     setSelectedLandmark,
     setSelectedTile,
     setSelectedConnectionId,
+    setMainView,
     activeProcessId, activeStageId,
     processes, setProcesses,
     pickingConnection,
@@ -51,6 +49,7 @@ export default function ProcessMapView({ actions }: Props) {
     selectedLandmark: s.selectedLandmark, setSelectedLandmark: s.setSelectedLandmark,
     setSelectedTile: s.setSelectedTile,
     setSelectedConnectionId: s.setSelectedConnectionId,
+    setMainView: s.setMainView,
     activeProcessId: s.activeProcessId, activeStageId: s.activeStageId,
     processes: s.processes, setProcesses: s.setProcesses,
     pickingConnection: s.pickingConnection,
@@ -249,8 +248,9 @@ export default function ProcessMapView({ actions }: Props) {
   const handleLandmarkSearch = useCallback((landmark: Parameters<typeof setSelectedLandmark>[0]) => {
     if (!landmark?.coordinate) return;
     setSelectedTile(landmark.coordinate);
-    // Do NOT open landmark panel / change mainView in process mode
-  }, [setSelectedTile]);
+    // Reset mainView to idle so no sidebar panel opens; process routing is handled by the route
+    setMainView('idle');
+  }, [setSelectedTile, setMainView]);
 
   if (!currentMap) return null;
 

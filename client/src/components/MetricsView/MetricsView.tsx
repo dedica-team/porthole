@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import {
-  BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle,
+  BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,23 +27,7 @@ import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPo
 import {
   useGroupFilter,
 } from '@/components/ui/GroupFilterPopover';
-
-interface Props {
-  onCreateMetric: (name: string, description: string) => void;
-  onCreateUnpositionedLandmark: (name: string, type: LandmarkType, description?: string, groupId?: string, link?: string) => void;
-  onEditMetric: (metricId: string, name?: string, description?: string) => void;
-  onRemoveMetric: (metricId: string) => void;
-  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
-  onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;
-  onEditLandmarkGroup: (landmarkId: string, groupId: string | null) => void;
-  onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean) => void;
-  onCreateGroup: (name: string, color: string, description?: string, link?: string) => void;
-  onEditGroup: (groupId: string, name?: string, color?: string, description?: string, clearDescription?: boolean, link?: string, clearLink?: boolean) => void;
-  onRemoveGroup: (groupId: string) => void;
-  loading: boolean;
-  error?: string;
-  onClearError?: () => void;
-}
+import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 
 interface BadgeRow { key: string; url: string; error: string; }
 
@@ -335,16 +319,23 @@ interface LandmarkEditDialogProps {
   groups: Record<string, LandmarkGroup>;
   loading: boolean;
   onSave: (landmarkId: string, name: string, type: LandmarkType, description: string, link: string, groupId: string | null) => void;
+  onRemove: (landmarkId: string) => void;
   onClose: () => void;
 }
 
-function LandmarkEditDialog({ landmark, groups, loading, onSave, onClose }: LandmarkEditDialogProps) {
+function LandmarkEditDialog({ landmark, groups, loading, onSave, onRemove, onClose }: LandmarkEditDialogProps) {
   const [name, setName] = useState(landmark?.name ?? '');
   const [type, setType] = useState<LandmarkType>(landmark?.type ?? 'KEEP');
   const [description, setDescription] = useState(landmark?.description ?? '');
   const [link, setLink] = useState(landmark?.link ?? '');
   const [linkError, setLinkError] = useState('');
   const [groupId, setGroupId] = useState<string>(landmark?.groupId ?? '');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleClose = () => {
+    setConfirmDelete(false);
+    onClose();
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -359,89 +350,134 @@ function LandmarkEditDialog({ landmark, groups, loading, onSave, onClose }: Land
   const sortedGroups = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <Dialog open={!!landmark} onOpenChange={(v) => { if (!v) onClose(); }}>
+    <Dialog open={!!landmark} onOpenChange={(v) => { if (!v) handleClose(); }}>
       <DialogContent className="max-w-sm flex flex-col gap-0 p-0 overflow-hidden" aria-describedby={undefined}>
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-sm">Edit Landmark</DialogTitle>
         </DialogHeader>
         {landmark && (
-          <form onSubmit={handleSave} className="flex flex-col gap-3 px-6 pb-6">
-            <Input
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-8 text-sm"
-              maxLength={60}
-              placeholder="Name"
-            />
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as LandmarkType)}
-              className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
-            >
-              {ALL_LANDMARK_TYPES.map((t) => (
-                <option key={t} value={t}>{LANDMARK_TYPE_LABELS[t]}</option>
-              ))}
-            </select>
-            <select
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-              className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
-            >
-              <option value="">— No group —</option>
-              {sortedGroups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="text-sm min-h-16 resize-none"
-              maxLength={200}
-              placeholder="Description (optional)"
-            />
-            <div className="flex flex-col gap-0.5">
-              <Input
-                value={link}
-                onChange={(e) => { setLink(e.target.value); setLinkError(''); }}
-                className={`h-8 text-sm${linkError ? ' border-red-500' : ''}`}
-                placeholder="Link (optional, https://…)"
-                type="url"
-              />
-              {linkError && <span className="text-[10px] text-red-400 px-1">{linkError}</span>}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <Button type="submit" size="sm" className="flex-1 gap-1.5 h-8" disabled={!name.trim() || loading}>
-                {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                Save
-              </Button>
-              <Button type="button" size="sm" variant="ghost" className="h-8 px-3" onClick={onClose}>
-                Cancel
-              </Button>
-            </div>
-          </form>
+          <div className="px-6 pb-6">
+            {!confirmDelete ? (
+              <form onSubmit={handleSave} className="flex flex-col gap-3">
+                <Input
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-8 text-sm"
+                  maxLength={60}
+                  placeholder="Name"
+                />
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value as LandmarkType)}
+                  className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
+                >
+                  {ALL_LANDMARK_TYPES.map((t) => (
+                    <option key={t} value={t}>{LANDMARK_TYPE_LABELS[t]}</option>
+                  ))}
+                </select>
+                <select
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value)}
+                  className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
+                >
+                  <option value="">— No group —</option>
+                  {sortedGroups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="text-sm min-h-16 resize-none"
+                  maxLength={200}
+                  placeholder="Description (optional)"
+                />
+                <div className="flex flex-col gap-0.5">
+                  <Input
+                    value={link}
+                    onChange={(e) => { setLink(e.target.value); setLinkError(''); }}
+                    className={`h-8 text-sm${linkError ? ' border-red-500' : ''}`}
+                    placeholder="Link (optional, https://…)"
+                    type="url"
+                  />
+                  {linkError && <span className="text-[10px] text-red-400 px-1">{linkError}</span>}
+                </div>
+                <div className="flex flex-col gap-2 pt-1">
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" className="flex-1 gap-1.5 h-8" disabled={!name.trim() || loading}>
+                      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                      Save
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" className="h-8 px-3" onClick={handleClose}>
+                      Cancel
+                    </Button>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="w-full gap-2 h-8 text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                    disabled={loading}
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex flex-col gap-3 rounded-md border border-red-500/20 bg-red-500/5 p-4">
+                <div className="flex flex-col gap-1 text-center">
+                  <span className="text-sm font-medium text-red-400">Remove «{landmark.name}»?</span>
+                  <span className="text-xs text-muted-foreground">This action cannot be undone.</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
+                    disabled={loading}
+                    onClick={() => onRemove(landmark.id)}
+                  >
+                    {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, remove'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="flex-1 h-8 text-xs"
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </DialogContent>
     </Dialog>
   );
 }
 
-export default function MetricsView({
-  onCreateMetric,
-  onCreateUnpositionedLandmark,
-  onEditMetric,
-  onRemoveMetric,
-  onSetLandmarkMetric,
-  onClearLandmarkMetric,
-  onEditLandmarkGroup,
-  onEditLandmark,
-  onCreateGroup,
-  onEditGroup,
-  onRemoveGroup,
-  loading,
-  error,
-  onClearError,
-}: Props) {
+export default function MetricsView() {
+  const {
+    handleCreateMetric: onCreateMetric,
+    handleCreateUnpositionedLandmark: onCreateUnpositionedLandmark,
+    handleEditMetric: onEditMetric,
+    handleRemoveMetric: onRemoveMetric,
+    handleSetLandmarkMetric: onSetLandmarkMetric,
+    handleClearLandmarkMetric: onClearLandmarkMetric,
+    handleEditLandmarkGroup: onEditLandmarkGroup,
+    handleEditLandmark: onEditLandmark,
+    handleCreateGroup: onCreateGroup,
+    handleEditGroup: onEditGroup,
+    handleRemoveGroup: onRemoveGroup,
+    handleRemoveLandmark: onRemoveLandmark,
+    actionLoading: loading,
+    error,
+    setError,
+  } = useMapActions();
+  const onClearError = () => setError('');
   const { currentMap, metricsMap, landmarksMap } = useMapStore(useShallow((s) => ({
     currentMap:   s.currentMap,
     metricsMap:   s.metrics,
@@ -754,6 +790,10 @@ export default function MetricsView({
           );
           setEditingLandmark(null);
         }}
+        onRemove={(landmarkId) => {
+          onRemoveLandmark(landmarkId);
+          setEditingLandmark(null);
+        }}
         onClose={() => setEditingLandmark(null)}
       />
 
@@ -762,7 +802,7 @@ export default function MetricsView({
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
             <table className="data-display-table w-full text-xs border-separate border-spacing-0">
-              <thead>
+              <thead className="sticky top-0 z-30">
                 <tr>
                   <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
                   <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 data-sticky-header"
@@ -828,7 +868,7 @@ export default function MetricsView({
                                   style={{ height: `${sectionLandmarks.length * 2.25}rem`, minHeight: '2rem' }}
                                 >
                                   <span
-                                    className="metrics-group-label text-[9px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                                    className="metrics-group-label text-[11px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
                                     style={{
                                     writingMode: 'vertical-rl',
                                     transform: 'rotate(180deg)',
@@ -884,6 +924,7 @@ export default function MetricsView({
                                       <LandmarkInfoPopover
                                         landmark={landmark}
                                         onEditLandmark={onEditLandmark}
+                                        onRemoveLandmark={onRemoveLandmark}
                                         loading={loading}
                                       >
                                         {nameEl}

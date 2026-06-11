@@ -1,5 +1,5 @@
-import { Suspense, lazy, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { Suspense, useEffect, useRef } from 'react';
+import { Outlet, useParams, useMatch } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import { fetchProcesses } from '@/api/mapApi';
@@ -10,32 +10,23 @@ import Sidebar from '@/components/Sidebar/Sidebar';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import { LOADING_COPY } from '@/components/ui/loadingCopy';
 import { useMapPageActions } from './useMapPageActions';
+import { MapActionsContext } from './MapActionsContext';
 
-const MetricsView = lazy(() => import('@/components/MetricsView/MetricsView'));
-const CollaboratorMatrixView = lazy(() => import('@/components/CollaboratorMatrixView/CollaboratorMatrixView'));
-const RegularMapView = lazy(() => import('./RegularMapView'));
-const ProcessMapView = lazy(() => import('./ProcessMapView'));
-const ChoreListsView = lazy(() => import('@/components/ChoreListsView/ChoreListsView'));
-const GreenkeepingRotationsView = lazy(() => import('@/components/GreenkeepingRotationsView/GreenkeepingRotationsView'));
 
 export default function MapPage() {
   const { id } = useParams<{ id: string }>();
 
   const {
     currentMap,
-    mainView,
     pendingView,
-    processMode,
-    processes, setProcesses, setProcessesFetched, setProcessesLoading, setPendingView,
+    processes, setProcesses, setProcessesFetched, setProcessesLoading,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
-    mainView: s.mainView,
     pendingView: s.pendingView,
-    processMode: s.processMode,
     processes: s.processes,
-    setProcesses: s.setProcesses, setProcessesFetched: s.setProcessesFetched,
+    setProcesses: s.setProcesses,
+    setProcessesFetched: s.setProcessesFetched,
     setProcessesLoading: s.setProcessesLoading,
-    setPendingView: s.setPendingView,
   })));
 
   const userId = useAuthStore((s) => s.userId);
@@ -86,25 +77,31 @@ export default function MapPage() {
       if (e.key === 'Escape') {
         cancelConnecting();
         setConfirmPending(false);
-        if (mainView !== 'editor') {
-          setSelectedLandmark(null);
-          setSelectedTile(null);
-          setMainView('idle');
-        }
+        setSelectedLandmark(null);
+        setSelectedTile(null);
+        setMainView('idle');
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [cancelConnecting, setConfirmPending, mainView, setSelectedLandmark, setSelectedTile, setMainView]);
+  }, [cancelConnecting, setConfirmPending, setSelectedLandmark, setSelectedTile, setMainView]);
 
-  useEffect(() => {
-    if (!pendingView) return;
-    const frameId = window.requestAnimationFrame(() => setPendingView(null));
-    return () => window.cancelAnimationFrame(frameId);
-  }, [pendingView, setPendingView]);
+  // ── Sidebar visibility: hide on full-panel routes ─────────────────────────
+  // useMatch must be called unconditionally so we call it for each panel route.
+  const matchMetrics     = useMatch('/session/:id/metrics');
+  const matchMatrix      = useMatch('/session/:id/matrix');
+  const matchChores      = useMatch('/session/:id/chores');
+  const matchGreenkeeping = useMatch('/session/:id/greenkeeping');
+  const matchEditor      = useMatch('/session/:id/editor');
+  const isPanelRoute = !!(matchMetrics || matchMatrix || matchChores || matchGreenkeeping || matchEditor);
 
   if (!currentMap) {
     return <LoadingOverlay label={LOADING_COPY.session} />;
+  }
+
+  // Show a loading overlay while a lazy route chunk is being fetched
+  if (pendingView) {
+    return <LoadingOverlay label={LOADING_COPY.view} />;
   }
 
   const sidebar = (
@@ -128,56 +125,13 @@ export default function MapPage() {
     />
   );
 
-  const fallbackLabel = pendingView === 'idle' || pendingView === 'editor' || pendingView === 'process'
-    ? LOADING_COPY.map
-    : processMode
-      ? LOADING_COPY.map
-      : LOADING_COPY.view;
-
   return (
-    <AppShell sidebar={pendingView ? undefined : mainView !== 'metrics' && mainView !== 'matrix' && mainView !== 'chores' && mainView !== 'greenkeeping' && mainView !== 'editor' ? sidebar : undefined}>
-      {pendingView ? (
-        <LoadingOverlay label={fallbackLabel} />
-      ) : (
-      <Suspense fallback={<LoadingOverlay label={processMode ? LOADING_COPY.map : LOADING_COPY.view} />}>
-        {mainView === 'metrics' ? (
-          <MetricsView
-            onCreateMetric={actions.handleCreateMetric}
-            onCreateUnpositionedLandmark={actions.handleCreateUnpositionedLandmark}
-            onEditMetric={actions.handleEditMetric}
-            onRemoveMetric={actions.handleRemoveMetric}
-            onSetLandmarkMetric={actions.handleSetLandmarkMetric}
-            onClearLandmarkMetric={actions.handleClearLandmarkMetric}
-            onEditLandmarkGroup={actions.handleEditLandmarkGroup}
-            onEditLandmark={actions.handleEditLandmark}
-            onCreateGroup={actions.handleCreateGroup}
-            onEditGroup={actions.handleEditGroup}
-            onRemoveGroup={actions.handleRemoveGroup}
-            loading={actions.actionLoading}
-            error={actions.error}
-            onClearError={() => actions.setError('')}
-          />
-        ) : mainView === 'matrix' ? (
-          <CollaboratorMatrixView
-            onEditMatrix={actions.handleEditCollaboratorMatrix}
-            onSetEntry={actions.handleSetMatrixEntry}
-            onClearEntry={actions.handleClearMatrixEntry}
-            onEditLandmark={actions.handleEditLandmark}
-            loading={actions.actionLoading}
-            error={actions.error}
-            onClearError={() => actions.setError('')}
-          />
-        ) : mainView === 'chores' ? (
-          <ChoreListsView />
-        ) : mainView === 'greenkeeping' ? (
-          <GreenkeepingRotationsView />
-        ) : processMode ? (
-          <ProcessMapView actions={actions} />
-        ) : (
-          <RegularMapView actions={actions} />
-        )}
-      </Suspense>
-      )}
-    </AppShell>
+    <MapActionsContext.Provider value={actions}>
+      <AppShell sidebar={isPanelRoute ? undefined : sidebar}>
+        <Suspense fallback={<LoadingOverlay label={LOADING_COPY.view} />}>
+          <Outlet />
+        </Suspense>
+      </AppShell>
+    </MapActionsContext.Provider>
   );
 }

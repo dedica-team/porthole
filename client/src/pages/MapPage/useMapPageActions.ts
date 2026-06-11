@@ -146,13 +146,15 @@ export function useMapPageActions() {
     withAction(() => positionLandmark(currentMap!.id, landmarkId, q, r));
   }, [currentMap, withAction]);
 
-  const handleRemoveLandmark = useCallback(() => {
-    if (!selectedLandmark) return;
-    const landmarkId = selectedLandmark.id;
-    withAction(() => removeLandmark(currentMap!.id, landmarkId));
-    setSelectedLandmark(null);
-    setSelectedTile(null);
-    setMainView('idle');
+  const handleRemoveLandmark = useCallback((landmarkId?: string) => {
+    const idToRemove = typeof landmarkId === 'string' ? landmarkId : selectedLandmark?.id;
+    if (!idToRemove) return;
+    withAction(() => removeLandmark(currentMap!.id, idToRemove));
+    if (idToRemove === selectedLandmark?.id) {
+      setSelectedLandmark(null);
+      setSelectedTile(null);
+      setMainView('idle');
+    }
   }, [selectedLandmark, currentMap, withAction, setSelectedLandmark, setSelectedTile, setMainView]);
 
   const handleEditLandmark = useCallback((
