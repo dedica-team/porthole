@@ -4,6 +4,7 @@ import MetricsView from '../components/MetricsView/MetricsView';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
 import type {Landmark, LandmarkGroup, QualityMetric} from '../types/landmark';
+import * as MapActionsContext from '../pages/MapPage/MapActionsContext';
 // ── shared fixtures ────────────────────────────────────────────────────────
 
 const METRIC_AVAIL = { id: 'm1', name: 'Availability', description: 'Uptime %' };
@@ -24,20 +25,38 @@ const MAP_BASE = {
   map: { tiles: [] },
 };
 
-const DEFAULT_PROPS = {
-  onCreateMetric: vi.fn(),
-  onCreateUnpositionedLandmark: vi.fn(),
-  onEditMetric: vi.fn(),
-  onRemoveMetric: vi.fn(),
-  onSetLandmarkMetric: vi.fn(),
-  onClearLandmarkMetric: vi.fn(),
-  onEditLandmarkGroup: vi.fn(),
-  onEditLandmark: vi.fn(),
-  onCreateGroup: vi.fn(),
-  onEditGroup: vi.fn(),
-  onRemoveGroup: vi.fn(),
-  onRemoveLandmark: vi.fn(),
-  loading: false,
+// mockActions is mutated per-test for handler overrides
+const mockActions = {
+  handleCreateMetric: vi.fn(),
+  handleCreateUnpositionedLandmark: vi.fn(),
+  handleEditMetric: vi.fn(),
+  handleRemoveMetric: vi.fn(),
+  handleSetLandmarkMetric: vi.fn(),
+  handleClearLandmarkMetric: vi.fn(),
+  handleEditLandmarkGroup: vi.fn(),
+  handleEditLandmark: vi.fn(),
+  handleCreateGroup: vi.fn(),
+  handleEditGroup: vi.fn(),
+  handleRemoveGroup: vi.fn(),
+  handleRemoveLandmark: vi.fn(),
+  actionLoading: false,
+  error: '',
+  setError: vi.fn(),
+  withAction: vi.fn(),
+  cancelConnecting: vi.fn(),
+  fireEditTile: vi.fn(),
+  landmarkByCoord: vi.fn(),
+  tileByCoord: vi.fn(),
+  positionedLandmarks: [],
+  handlePlaceLandmark: vi.fn(),
+  handlePositionLandmark: vi.fn(),
+  handleStartConnection: vi.fn(),
+  handleEditConnection: vi.fn(),
+  handleRemoveConnection: vi.fn(),
+  handleCreateConnection: vi.fn(),
+  handleEditCollaboratorMatrix: vi.fn(),
+  handleSetMatrixEntry: vi.fn(),
+  handleClearMatrixEntry: vi.fn(),
 };
 
 function setup(
@@ -53,20 +72,30 @@ function setup(
 // ── tests ──────────────────────────────────────────────────────────────────
 
 describe('MetricsView', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset all mock action fns
+    Object.keys(mockActions).forEach((k) => {
+      const v = (mockActions as Record<string, unknown>)[k];
+      if (typeof v === 'function') (v as ReturnType<typeof vi.fn>).mockReset();
+    });
+    mockActions.actionLoading = false;
+    mockActions.error = '';
+    vi.spyOn(MapActionsContext, 'useMapActions').mockReturnValue(mockActions as unknown as ReturnType<typeof MapActionsContext.useMapActions>);
+  });
   afterEach(() => vi.restoreAllMocks());
 
   // ── empty state ───────────────────────────────────────────────────────────
 
   it('shows empty state when no metrics and no landmarks exist', () => {
     setup();
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getByText(/no metrics defined yet/i)).toBeInTheDocument();
   });
 
   it('shows the table when metrics exist', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getByText('Availability')).toBeInTheDocument();
   });
 
@@ -78,7 +107,7 @@ describe('MetricsView', () => {
       { id: 'codebase', name: 'Codebase', description: 'One codebase.' },
     ]);
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Add metric'));
     // Dialog opens – title and form become visible
     await waitFor(() => expect(screen.getByRole('heading', { name: /add metric/i })).toBeInTheDocument());
@@ -89,7 +118,7 @@ describe('MetricsView', () => {
       { id: 'codebase', name: 'Codebase', description: 'One codebase.' },
     ]);
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Add metric'));
     await waitFor(() => screen.getByText('Codebase'));
     fireEvent.click(screen.getByText('Codebase'));
@@ -104,15 +133,15 @@ describe('MetricsView', () => {
       { id: 'codebase', name: 'Codebase', description: 'One codebase.' },
     ]);
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A });
-    const onCreate = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onCreateMetric={onCreate} />);
+    mockActions.handleCreateMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Add metric'));
     await waitFor(() => screen.getByText('Codebase'));
     fireEvent.click(screen.getByText('Codebase'));
     const nameInput = screen.getByPlaceholderText(/name.*availability/i);
     fireEvent.change(nameInput, { target: { value: 'My Custom Name' } });
     fireEvent.submit(nameInput.closest('form')!);
-    expect(onCreate).toHaveBeenCalledWith('My Custom Name', 'One codebase.');
+    expect(mockActions.handleCreateMetric).toHaveBeenCalledWith('My Custom Name', 'One codebase.');
   });
 
   it('manual entry in form calls onCreateMetric', async () => {
@@ -120,13 +149,13 @@ describe('MetricsView', () => {
       { id: 'codebase', name: 'Codebase', description: 'One codebase.' },
     ]);
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A });
-    const onCreate = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onCreateMetric={onCreate} />);
+    mockActions.handleCreateMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Add metric'));
     await waitFor(() => screen.getByText('Codebase'));
     fireEvent.change(screen.getByPlaceholderText(/name.*availability/i), { target: { value: 'SLA' } });
     fireEvent.submit(screen.getByPlaceholderText(/name.*availability/i).closest('form')!);
-    expect(onCreate).toHaveBeenCalledWith('SLA', '');
+    expect(mockActions.handleCreateMetric).toHaveBeenCalledWith('SLA', '');
   });
 
   it('cancel button hides the dialog', async () => {
@@ -134,7 +163,7 @@ describe('MetricsView', () => {
       { id: 'codebase', name: 'Codebase', description: 'One codebase.' },
     ]);
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Add metric'));
     await waitFor(() => screen.getByText('Codebase'));
     const form = screen.getByPlaceholderText(/name.*availability/i).closest('form')!;
@@ -152,7 +181,7 @@ describe('MetricsView', () => {
       { lm1: LM_IN_A, lm2: LM_IN_B },
       { g1: GROUP_A, g2: GROUP_B },
     );
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getAllByText('Alpha').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Beta').length).toBeGreaterThan(0);
   });
@@ -164,7 +193,7 @@ describe('MetricsView', () => {
       { lm1: LM_IN_A },
       { g1: GROUP_A, g2: GROUP_B },
     );
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getAllByText('Alpha').length).toBeGreaterThan(0);
     expect(screen.queryByText('Beta')).not.toBeInTheDocument();
   });
@@ -175,7 +204,7 @@ describe('MetricsView', () => {
       { lm1: LM_IN_A, lm3: LM_NONE },
       { g1: GROUP_A },
     );
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getByText(/ungrouped/i)).toBeInTheDocument();
   });
 
@@ -185,7 +214,7 @@ describe('MetricsView', () => {
       { lm1: LM_IN_A },
       { g1: GROUP_A },
     );
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.queryByText(/ungrouped/i)).not.toBeInTheDocument();
   });
 
@@ -195,7 +224,7 @@ describe('MetricsView', () => {
       { lm1: LM_IN_A, lm2: LM_IN_B },
       { g1: GROUP_A, g2: GROUP_B },
     );
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     // Both landmark names should appear
     expect(screen.getByText('Keep')).toBeInTheDocument();
     expect(screen.getByText('Lighthouse')).toBeInTheDocument();
@@ -205,7 +234,7 @@ describe('MetricsView', () => {
 
   it('clicking a cell opens the edit form', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     const cell = screen.getByTitle('Click to set value');
     fireEvent.click(cell);
     expect(screen.getByPlaceholderText('Value (e.g. 99.9 %)')).toBeInTheDocument();
@@ -213,7 +242,7 @@ describe('MetricsView', () => {
 
   it('shows four level buttons instead of a dropdown in the cell edit form', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
 
     const noneButton = screen.getByRole('button', { name: 'Set quality level to None' });
@@ -227,29 +256,29 @@ describe('MetricsView', () => {
 
   it('submitting a cell edit calls onSetLandmarkMetric', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    const onSet = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    mockActions.handleSetLandmarkMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, undefined);
   });
 
   it('lets users choose the metric level via the level buttons', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    const onSet = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    mockActions.handleSetLandmarkMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.click(screen.getByRole('button', { name: 'Set quality level to Error' }));
     fireEvent.submit(screen.getByPlaceholderText(/Leave empty to use "✘"/).closest('form')!);
 
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '✘', 'ERROR', undefined, undefined, undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '✘', 'ERROR', undefined, undefined, undefined);
   });
 
   it('adding a badge row and submitting passes the badges map to onSetLandmarkMetric', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    const onSet = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    mockActions.handleSetLandmarkMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     // click "Add badge" to get a row
@@ -259,15 +288,15 @@ describe('MetricsView', () => {
       target: { value: 'https://img.shields.io/badge/build-passing-green' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, {
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, {
       build: 'https://img.shields.io/badge/build-passing-green',
     });
   });
 
   it('submitting with only a badge row (no value) passes undefined value', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    const onSet = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    mockActions.handleSetLandmarkMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.click(screen.getByText('+ Add badge'));
     fireEvent.change(screen.getByPlaceholderText('Label'), { target: { value: 'coverage' } });
@@ -275,27 +304,27 @@ describe('MetricsView', () => {
       target: { value: 'https://img.shields.io/badge/coverage-80%25-yellow' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', undefined, undefined, {
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', undefined, undefined, {
       coverage: 'https://img.shields.io/badge/coverage-80%25-yellow',
     });
   });
 
   it('submitting with only a link passes an undefined value and preserves the link', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    const onSet = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    mockActions.handleSetLandmarkMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.change(screen.getByPlaceholderText('Link (optional, https://…)'), {
       target: { value: 'https://example.com/report' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', undefined, undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', undefined, undefined);
   });
 
   it('submitting with a link text passes it alongside the link', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    const onSet = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onSetLandmarkMetric={onSet} />);
+    mockActions.handleSetLandmarkMetric = vi.fn();
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.change(screen.getByPlaceholderText('Link (optional, https://…)'), {
       target: { value: 'https://example.com/report' },
@@ -304,7 +333,7 @@ describe('MetricsView', () => {
       target: { value: 'Availability report' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(onSet).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', 'Availability report', undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', 'Availability report', undefined);
   });
 
   it('displays each badge in the badges map as an img tag', () => {
@@ -323,7 +352,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithBadges }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     const buildImg = screen.getByRole('img', { name: 'build' }) as HTMLImageElement;
     expect(buildImg).toBeInTheDocument();
     expect(buildImg.src).toBe('https://img.shields.io/badge/build-passing-green');
@@ -346,7 +375,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithLink }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
 
     const metricLink = screen.getByRole('link', { name: link });
     expect(metricLink).toBeInTheDocument();
@@ -370,7 +399,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithLink }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
 
     const metricLink = screen.getByRole('link', { name: 'Open availability report' });
     expect(metricLink).toBeInTheDocument();
@@ -391,7 +420,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithNoneValue }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
 
     const valueEl = screen.getByText('Manual note');
     expect(valueEl).toBeInTheDocument();
@@ -414,7 +443,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithBadges }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getByRole('img', { name: 'build' })).toBeInTheDocument();
     expect(screen.queryByText('build')).not.toBeInTheDocument();
   });
@@ -431,7 +460,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmBadgeOnly }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     const img = screen.getByRole('img', { name: 'status' }) as HTMLImageElement;
     expect(img).toBeInTheDocument();
     expect(img.src).toBe('https://img.shields.io/badge/status-ok-green');
@@ -440,7 +469,7 @@ describe('MetricsView', () => {
 
   it('cancelling a cell edit hides the form', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     expect(screen.getByPlaceholderText('Value (e.g. 99.9 %)')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
@@ -451,20 +480,22 @@ describe('MetricsView', () => {
 
   it('shows the error alert when error prop is set', () => {
     setup();
-    render(<MetricsView {...DEFAULT_PROPS} error="Something went wrong" />);
+    mockActions.error = 'Something went wrong';
+    render(<MetricsView />);
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 
   it('calls onClearError when the dismiss button is clicked', () => {
     setup();
-    const onClear = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} error="Oops" onClearError={onClear} />);
+    mockActions.error = 'Oops';
+    mockActions.setError = vi.fn();
+    render(<MetricsView />);
     // The X button inside the alert
     const dismissBtn = screen.getAllByRole('button').find(
       (b) => b.closest('[role="alert"]'),
     );
     if (dismissBtn) fireEvent.click(dismissBtn);
-    expect(onClear).toHaveBeenCalled();
+    expect(mockActions.setError).toHaveBeenCalled();
   });
 
   // ── existing metric entry display ─────────────────────────────────────────
@@ -475,7 +506,7 @@ describe('MetricsView', () => {
       metrics: { m1: { metricId: 'm1', value: '99.9%', level: 'OK' } },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithMetric }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getByText('99.9%')).toBeInTheDocument();
   });
 
@@ -485,7 +516,7 @@ describe('MetricsView', () => {
       metrics: { m1: { metricId: 'm1', value: '50%', level: 'ERROR' } },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithMetric }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     // Overall badge now shows the sign symbol (✘ for ERROR) rather than the word
     expect(screen.getAllByText('✘').length).toBeGreaterThanOrEqual(1);
   });
@@ -499,7 +530,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: lmWithMetrics }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
 
     expect(screen.getAllByText('✘').length).toBeGreaterThanOrEqual(1);
 
@@ -524,13 +555,13 @@ describe('MetricsView', () => {
 
   it('renders the filter icon button in the table header', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getByTitle('Filter table')).toBeInTheDocument();
   });
 
   it('clicking the filter button opens the combined filter popover', () => {
     setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Filter table'));
     expect(screen.getByText(/filter table/i)).toBeInTheDocument();
     expect(screen.getByText(/show groups/i)).toBeInTheDocument();
@@ -543,7 +574,7 @@ describe('MetricsView', () => {
 
   it('toggling a group off hides its landmark rows', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     // open popover
     fireEvent.click(screen.getByTitle('Filter table'));
     // click the "Alpha" row to hide it
@@ -559,7 +590,7 @@ describe('MetricsView', () => {
 
   it('re-toggling a hidden group makes its rows reappear', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     const filterBtn = () =>
       screen.queryByTitle('Filter table') ?? screen.getByTitle(/filters active/i);
     fireEvent.click(filterBtn());
@@ -576,7 +607,7 @@ describe('MetricsView', () => {
 
   it('"Show all" button restores all hidden groups', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     const filterBtn = () =>
       screen.queryByTitle('Filter table') ?? screen.getByTitle(/filters active/i);
     fireEvent.click(filterBtn());
@@ -596,7 +627,7 @@ describe('MetricsView', () => {
 
   it('filter icon title changes to active state when a group is hidden', () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A, lm2: LM_IN_B }, { g1: GROUP_A, g2: GROUP_B });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Filter table'));
     const alphaBtn = screen.getAllByText('Alpha').find(
       (el) => el.closest('button') !== null,
@@ -614,7 +645,7 @@ describe('MetricsView', () => {
       },
     };
     setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: lmWithMetrics }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
 
     expect(screen.getByText('Availability')).toBeInTheDocument();
     expect(screen.getByText('Coverage')).toBeInTheDocument();
@@ -636,13 +667,13 @@ describe('MetricsView', () => {
 
   it('renders the help button in the header', () => {
     setup();
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     expect(screen.getByTitle('Help')).toBeInTheDocument();
   });
 
   it('clicking the help button opens the usage popover', async () => {
     setup();
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Help'));
     await waitFor(() =>
       expect(screen.getByText(/how to use metrics/i)).toBeInTheDocument(),
@@ -656,8 +687,8 @@ describe('MetricsView', () => {
   it('clicking "Remove" for an unpositioned landmark shows confirmation and calls onRemoveLandmark', async () => {
     const unpositionedLm: Landmark = { id: 'up1', name: 'Ghost', type: 'KEEP', ownerId: null};
     setup({ m1: METRIC_AVAIL }, { up1: unpositionedLm }, { g1: GROUP_A });
-    const onRemove = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onRemoveLandmark={onRemove} />);
+    mockActions.handleRemoveLandmark = vi.fn();
+    render(<MetricsView />);
 
     // Click on unpositioned landmark name to open the LandmarkInfoPopover
     fireEvent.click(screen.getByText('Ghost'));
@@ -674,13 +705,13 @@ describe('MetricsView', () => {
     // Click "Yes, remove"
     fireEvent.click(screen.getByRole('button', { name: /yes, remove/i }));
 
-    expect(onRemove).toHaveBeenCalledWith('up1');
+    expect(mockActions.handleRemoveLandmark).toHaveBeenCalledWith('up1');
   });
 
   it('clicking "Remove Landmark" in the LandmarkInfoPopover shows confirmation and calls onRemoveLandmark', async () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    const onRemove = vi.fn();
-    render(<MetricsView {...DEFAULT_PROPS} onRemoveLandmark={onRemove} />);
+    mockActions.handleRemoveLandmark = vi.fn();
+    render(<MetricsView />);
 
     // Click on landmark name to open info popover
     fireEvent.click(screen.getByText('Keep'));
@@ -699,12 +730,12 @@ describe('MetricsView', () => {
     // Click "Yes, remove"
     fireEvent.click(screen.getByRole('button', { name: /yes, remove/i }));
 
-    expect(onRemove).toHaveBeenCalledWith('lm1');
+    expect(mockActions.handleRemoveLandmark).toHaveBeenCalledWith('lm1');
   });
 
   it('cancelling landmark removal returns to the edit form', async () => {
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
 
     fireEvent.click(screen.getByText('Keep'));
     const editBtn = screen.getByTitle('Edit Landmark');
@@ -725,7 +756,7 @@ describe('MetricsView', () => {
     localStorage.removeItem('landmarks.metrics.hiddenGroups');
     localStorage.removeItem('landmarks.metrics.hiddenMetrics');
     setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Filter table'));
     const alphaBtn = screen.getAllByText('Alpha').find(
       (el) => el.closest('button') !== null,
@@ -741,7 +772,7 @@ describe('MetricsView', () => {
     localStorage.removeItem('landmarks.metrics.hiddenGroups');
     localStorage.removeItem('landmarks.metrics.hiddenMetrics');
     setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: LM_IN_A }, { g1: GROUP_A });
-    render(<MetricsView {...DEFAULT_PROPS} />);
+    render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Filter table'));
     const coverageBtn = screen.getAllByText('Coverage')
       .filter((el) => el.closest('button') !== null)

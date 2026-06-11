@@ -20,6 +20,7 @@ const CollaboratorMatrixView = lazy(() => import('./components/CollaboratorMatri
 const ChoreListsView = lazy(() => import('./components/ChoreListsView/ChoreListsView'));
 const GreenkeepingRotationsView = lazy(() => import('./components/GreenkeepingRotationsView/GreenkeepingRotationsView'));
 const EditorMapView = lazy(() => import('./pages/MapPage/EditorMapView'));
+const SessionOverviewView = lazy(() => import('./pages/MapPage/SessionOverviewView'));
 
 function App() {
   const setSession = useAuthStore((s) => s.setSession);
@@ -55,7 +56,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/lobby" element={<LobbyPage />} />
               <Route path="/session/:id" element={<MapPage />}>
-                <Route index element={<Navigate to="map" replace />} />
+                <Route index element={<SessionOverviewView />} />
                 <Route path="map" element={<RegularMapView />} />
                 <Route path="processes" element={<ProcessMapView />} />
                 <Route path="editor" element={<EditorMapView />} />

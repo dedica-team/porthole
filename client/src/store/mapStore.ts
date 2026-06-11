@@ -71,7 +71,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 // MainView only tracks intra-map UI panel state; top-level view routing is
 // handled by React Router sub-routes under /session/:id/...
-export type MainView = 'idle' | 'tile' | 'landmark' | 'groups';
+export type MainView = 'idle' | 'tile' | 'landmark' | 'groups' | 'metrics' | 'greenkeeping' | 'processes';
 export type PendingView = MainView | null;
 
 interface MapStore {
@@ -200,7 +200,7 @@ export const useMapStore = create<MapStore>((set) => ({
   collaboratorMatrix: null,
   setCollaboratorMatrix: (matrix) => set({ collaboratorMatrix: matrix }),
   setMaps: (maps) => set({ maps }),
-  setCurrentMap: (map) => set((state) => ({
+  setCurrentMap: (map) => set(() => ({
     currentMap: map,
     selectedTile: null,
     selectedLandmark: null,

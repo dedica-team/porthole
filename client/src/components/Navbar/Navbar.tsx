@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
-import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw } from 'lucide-react';
+import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -58,6 +58,7 @@ export default function Navbar() {
   const matchProcesses    = useMatch('/session/:id/processes');
   const matchEditor       = useMatch('/session/:id/editor');
   const matchMapIndex     = useMatch('/session/:id/map');
+  const matchOverview     = useMatch({ path: '/session/:id', end: true });
 
   // Helper: navigate to a sub-route under the current map.
   const goTo = (sub: string | null) => {
@@ -192,11 +193,20 @@ export default function Navbar() {
   const isEditorActive       = !!matchEditor;
   const isXRayActive         = !!matchProcesses;
   const isFlightActive       = !!matchMapIndex;
+  const isOverviewActive     = !!matchOverview;
 
   // The active-tab bottom border class.
   const activeBorderCls = 'border-amber-400';
 
   const NAV_TABS: NavTab[] = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      tooltip: 'Session overview dashboard',
+      icon: <LayoutDashboard className="h-3.5 w-3.5" />,
+      isActive: isOverviewActive,
+      onClick: () => { if (mapId) navigate(`/session/${mapId}`); },
+    },
     {
       id: 'metrics',
       label: 'Quality Metrics',

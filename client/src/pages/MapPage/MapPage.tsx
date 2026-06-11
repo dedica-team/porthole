@@ -18,9 +18,11 @@ export default function MapPage() {
 
   const {
     currentMap,
+    pendingView,
     processes, setProcesses, setProcessesFetched, setProcessesLoading,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
+    pendingView: s.pendingView,
     processes: s.processes,
     setProcesses: s.setProcesses,
     setProcessesFetched: s.setProcessesFetched,
@@ -95,6 +97,11 @@ export default function MapPage() {
 
   if (!currentMap) {
     return <LoadingOverlay label={LOADING_COPY.session} />;
+  }
+
+  // Show a loading overlay while a lazy route chunk is being fetched
+  if (pendingView) {
+    return <LoadingOverlay label={LOADING_COPY.view} />;
   }
 
   const sidebar = (

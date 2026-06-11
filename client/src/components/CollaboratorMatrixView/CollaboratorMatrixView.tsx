@@ -15,7 +15,6 @@ import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { MATRIX_LEVEL_ORDER, MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
 import type { MatrixLevel } from '@/types/matrix';
 import { isDecorative } from '@/types/landmark';
-import type { LandmarkType } from '@/types/landmark';
 import type { Collaborator } from '@/types/session';
 import {GroupFilterPopover, useGroupFilter} from "@/components/ui/GroupFilterPopover.tsx";
 import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPopover.tsx";

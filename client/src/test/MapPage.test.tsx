@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import MapPage from '../pages/MapPage/MapPage';
 import RegularMapView from '../pages/MapPage/RegularMapView';
 import ProcessMapView from '../pages/MapPage/ProcessMapView';
+import SessionOverviewView from '../pages/MapPage/SessionOverviewView';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import { LOADING_COPY } from '../components/ui/loadingCopy';
@@ -12,6 +13,7 @@ import type { SessionState } from '../types/session';
 
 vi.mock('../api/mapApi');
 vi.mock('../hooks/useMapWebSocket', () => ({ useMapWebSocket: vi.fn() }));
+vi.mock('../pages/MapPage/SessionOverviewView', () => ({ default: () => <div data-testid="session-overview" /> }));
 
 vi.mock('../components/HexGrid/HexGrid', () => ({
   default: ({
@@ -84,12 +86,13 @@ const makeMap = (overrides: Partial<SessionState> = {}): SessionState => ({
   ...overrides,
 });
 
-function renderMapPage(initialPath = `/session/${MAP_ID}`) {
+function renderMapPage(initialPath = `/session/${MAP_ID}/map`) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         <Route path="/session/:id" element={<MapPage />}>
-          <Route index element={<RegularMapView />} />
+          <Route index element={<SessionOverviewView />} />
+          <Route path="map" element={<RegularMapView />} />
           <Route path="processes" element={<ProcessMapView />} />
         </Route>
         <Route path="/lobby" element={<div data-testid="lobby" />} />
@@ -262,7 +265,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('RAISE tool calls editTile with elevation + 1', async () => {
-    useMapStore.setState({ editorMode: true, editorTool: 'RAISE', mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, editorTool: 'RAISE', mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
@@ -270,7 +273,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('LOWER tool calls editTile with elevation - 1', async () => {
-    useMapStore.setState({ editorMode: true, editorTool: 'LOWER', mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, editorTool: 'LOWER', mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
@@ -278,7 +281,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('TERRAIN tool calls editTile with editorTerrain', async () => {
-    useMapStore.setState({ editorMode: true, editorTool: 'TERRAIN', editorTerrain: 'FOREST', mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, editorTool: 'TERRAIN', editorTerrain: 'FOREST', mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
@@ -293,7 +296,7 @@ describe('MapPage – landscape editor', () => {
   });
 
   it('shows floating editor controls without rendering the sidebar', async () => {
-    useMapStore.setState({ editorMode: true, mainView: 'editor' });
+    useMapStore.setState({ editorMode: true, mainView: 'idle' });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     expect(screen.getByRole('button', { name: '▲ Raise' })).toBeInTheDocument();
@@ -309,7 +312,7 @@ describe('MapPage – regression: no loading screen during tile edits', () => {
     useMapStore.setState({
       currentMap: makeMap(), maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: true, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'editor', confirmPending: false,
+      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
     });
     vi.mocked(mapApi.getMap).mockResolvedValue(makeMap());
     vi.mocked(mapApi.editTile).mockResolvedValue(makeMap());
@@ -524,7 +527,7 @@ describe('MapPage – brush mode', () => {
     useMapStore.setState({
       currentMap: makeMap(), maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: true, editorTool: 'TERRAIN',
-      editorTerrain: 'FOREST', mainView: 'editor', confirmPending: false,
+      editorTerrain: 'FOREST', mainView: 'idle', confirmPending: false,
     });
     vi.mocked(mapApi.getMap).mockResolvedValue(makeMap());
     vi.mocked(mapApi.editTile).mockResolvedValue(makeMap());
@@ -618,6 +621,7 @@ describe('MapPage – process mode: processRenderMode', () => {
     vi.clearAllMocks();
     useAuthStore.setState({ token: 'tok', userId: COLLABORATOR_ID, username: 'test', isAuthenticated: true });
     vi.mocked(mapApi.getMap).mockResolvedValue(MAP_WITH_CONNECTION);
+    vi.mocked(mapApi.fetchProcesses).mockResolvedValue([]);
   });
 
   it('passes processRenderMode=true to HexGrid when on /processes route', async () => {
@@ -708,7 +712,7 @@ describe('MapPage – process mode: processRenderMode', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('tile-tower'));
@@ -722,7 +726,7 @@ describe('MapPage – process mode: processRenderMode', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('tile-empty'));
@@ -771,6 +775,7 @@ describe('MapPage – landmark search field', () => {
     vi.clearAllMocks();
     useAuthStore.setState({ token: 'tok', userId: COLLABORATOR_ID, username: 'test', isAuthenticated: true });
     vi.mocked(mapApi.getMap).mockResolvedValue(MAP_WITH_CONNECTION);
+    vi.mocked(mapApi.fetchProcesses).mockResolvedValue([]);
   });
 
   it('search input is visible in normal mode', async () => {
@@ -788,7 +793,7 @@ describe('MapPage – landmark search field', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument());
@@ -829,7 +834,7 @@ describe('MapPage – landmark search field', () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
-      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
+      editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByPlaceholderText('Search…'));

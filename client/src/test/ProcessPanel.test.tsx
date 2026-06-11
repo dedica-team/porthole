@@ -33,7 +33,6 @@ function setup(processes: Process[] = [], loading = false, error: string | null 
     processesError: error,
     // Always mark as fetched so the useEffect doesn't trigger an automatic fetch in tests
     processesFetched: true,
-    processMode: true,
     activeProcessId: null,
     activeStageId: null,
   });
@@ -177,7 +176,6 @@ describe('ProcessPanel – Stage Detail View', () => {
     useMapStore.setState({
       currentMap: MAP_BASE,
       processes: processWithStage,
-      processMode: true,
       activeProcessId: 'proc-1',
       activeStageId: 's1',
       processesFetched: true,

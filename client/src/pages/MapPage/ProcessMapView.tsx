@@ -34,6 +34,7 @@ export default function ProcessMapView() {
     setSelectedLandmark,
     setSelectedTile,
     setSelectedConnectionId,
+    setMainView,
     activeProcessId, activeStageId,
     processes, setProcesses,
     pickingConnection,
@@ -48,6 +49,7 @@ export default function ProcessMapView() {
     selectedLandmark: s.selectedLandmark, setSelectedLandmark: s.setSelectedLandmark,
     setSelectedTile: s.setSelectedTile,
     setSelectedConnectionId: s.setSelectedConnectionId,
+    setMainView: s.setMainView,
     activeProcessId: s.activeProcessId, activeStageId: s.activeStageId,
     processes: s.processes, setProcesses: s.setProcesses,
     pickingConnection: s.pickingConnection,
@@ -246,8 +248,9 @@ export default function ProcessMapView() {
   const handleLandmarkSearch = useCallback((landmark: Parameters<typeof setSelectedLandmark>[0]) => {
     if (!landmark?.coordinate) return;
     setSelectedTile(landmark.coordinate);
-    // Do NOT open landmark panel / change mainView in process mode
-  }, [setSelectedTile]);
+    // Reset mainView to idle so no sidebar panel opens; process routing is handled by the route
+    setMainView('idle');
+  }, [setSelectedTile, setMainView]);
 
   if (!currentMap) return null;
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import * as mapApi from '../api/mapApi';
 import { useMapStore, useAuthStore } from '../store/mapStore';
@@ -405,8 +405,8 @@ describe('Navbar – tab navigation', () => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route path="/session/:id" element={<Navbar />}>
-            <Route index element={<Navigate to="map" replace />} />
+          <Route path="/session/:id" element={<><Navbar /><Outlet /></>}>
+            <Route index element={<div data-testid="view-overview" />} />
             <Route path="map" element={<div data-testid="view-map" />} />
             <Route path="metrics" element={<div data-testid="view-metrics" />} />
             <Route path="matrix" element={<div data-testid="view-matrix" />} />
@@ -419,6 +419,17 @@ describe('Navbar – tab navigation', () => {
       </MemoryRouter>,
     );
   }
+
+  it('renders overview view at index route', () => {
+    renderWithRoutes(`/session/${MAP_ID}`);
+    expect(screen.getByTestId('view-overview')).toBeInTheDocument();
+  });
+
+  it('navigates to index when Overview tab is clicked', () => {
+    renderWithRoutes(`/session/${MAP_ID}/metrics`);
+    fireEvent.click(screen.getByText('Overview'));
+    expect(screen.getByTestId('view-overview')).toBeInTheDocument();
+  });
 
   it('navigates to /metrics when Quality Metrics tab is clicked', () => {
     renderWithRoutes();
