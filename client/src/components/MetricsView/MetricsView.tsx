@@ -817,7 +817,7 @@ export default function MetricsView({
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
             <table className="data-display-table w-full text-xs border-separate border-spacing-0">
-              <thead>
+              <thead className="sticky top-0 z-30">
                 <tr>
                   <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
                   <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 data-sticky-header"
@@ -883,7 +883,7 @@ export default function MetricsView({
                                   style={{ height: `${sectionLandmarks.length * 2.25}rem`, minHeight: '2rem' }}
                                 >
                                   <span
-                                    className="metrics-group-label text-[9px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                                    className="metrics-group-label text-[11px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
                                     style={{
                                     writingMode: 'vertical-rl',
                                     transform: 'rotate(180deg)',

@@ -202,7 +202,7 @@ export default function CollaboratorMatrixView({
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
             <table className="data-display-table w-full text-xs border-separate border-spacing-0">
-              <thead>
+              <thead className="sticky top-0 z-30">
                 <tr>
                   {/* colour-stripe placeholder */}
                   <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
@@ -270,7 +270,7 @@ export default function CollaboratorMatrixView({
                                 style={{ height: `${sectionLandmarks.length * 2.25}rem`, minHeight: '2rem' }}
                               >
                                 <span
-                                  className="text-[9px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                                  className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
                                   style={{
                                     writingMode: 'vertical-rl',
                                     transform: 'rotate(180deg)',
