@@ -19,6 +19,7 @@ import type { LandmarkType } from '@/types/landmark';
 import type { Collaborator } from '@/types/session';
 import {GroupFilterPopover, useGroupFilter} from "@/components/ui/GroupFilterPopover.tsx";
 import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPopover.tsx";
+import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 
 
 // ── Cell-edit dialog ──────────────────────────────────────────────────────────
@@ -80,27 +81,18 @@ function MatrixCellEditDialog({ state, loading, onSelect, onClose }: CellEditDia
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface Props {
-  onEditMatrix: (name: string) => void;
-  onSetEntry: (landmarkId: string, collaboratorId: string, level: MatrixLevel) => void;
-  onClearEntry: (landmarkId: string, collaboratorId: string) => void;
-  onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean) => void;
-  onRemoveLandmark: (landmarkId: string) => void;
-  loading: boolean;
-  error?: string;
-  onClearError?: () => void;
-}
-
 const EMPTY_LANDMARKS: Record<string, never> = {};
 
-export default function CollaboratorMatrixView({
-  onSetEntry,
-  onEditLandmark,
-  onRemoveLandmark,
-  loading,
-  error,
-  onClearError,
-}: Props) {
+export default function CollaboratorMatrixView() {
+  const {
+    handleSetMatrixEntry: onSetEntry,
+    handleEditLandmark: onEditLandmark,
+    handleRemoveLandmark: onRemoveLandmark,
+    actionLoading: loading,
+    error,
+    setError,
+  } = useMapActions();
+  const onClearError = () => setError('');
   const { currentMap, landmarksMap, collaboratorMatrix } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     landmarksMap: s.currentMap?.landmarks ?? EMPTY_LANDMARKS,

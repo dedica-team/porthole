@@ -20,13 +20,10 @@ import { Label } from '@/components/ui/label';
 import type { Connection } from '@/types/connection';
 import type { StageConnection } from '@/types/process';
 import { QUALITY_LEVEL_COLOR, QUALITY_LEVEL_SIGN } from '@/types/landmark';
-import type { useMapPageActions } from './useMapPageActions';
+import { useMapActions } from './MapActionsContext';
 
-interface Props {
-  actions: ReturnType<typeof useMapPageActions>;
-}
-
-export default function ProcessMapView({ actions }: Props) {
+export default function ProcessMapView() {
+  const actions = useMapActions();
   const { positionedLandmarks, setError, landmarkByCoord } = actions;
 
   const [selectedMetricId, setSelectedMetricId] = useState<string | null>(null);

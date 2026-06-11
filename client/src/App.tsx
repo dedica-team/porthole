@@ -13,6 +13,13 @@ const GitHubCallbackPage = lazy(() => import('./pages/AuthPage/GitHubCallbackPag
 const KeycloakCallbackPage = lazy(() => import('./pages/AuthPage/KeycloakCallbackPage'));
 const LobbyPage = lazy(() => import('./pages/LobbyPage/LobbyPage'));
 const MapPage = lazy(() => import('./pages/MapPage/MapPage'));
+const RegularMapView = lazy(() => import('./pages/MapPage/RegularMapView'));
+const ProcessMapView = lazy(() => import('./pages/MapPage/ProcessMapView'));
+const MetricsView = lazy(() => import('./components/MetricsView/MetricsView'));
+const CollaboratorMatrixView = lazy(() => import('./components/CollaboratorMatrixView/CollaboratorMatrixView'));
+const ChoreListsView = lazy(() => import('./components/ChoreListsView/ChoreListsView'));
+const GreenkeepingRotationsView = lazy(() => import('./components/GreenkeepingRotationsView/GreenkeepingRotationsView'));
+const EditorMapView = lazy(() => import('./pages/MapPage/EditorMapView'));
 
 function App() {
   const setSession = useAuthStore((s) => s.setSession);
@@ -47,7 +54,16 @@ function App() {
             <Route path="/auth/keycloak/callback" element={<KeycloakCallbackPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/lobby" element={<LobbyPage />} />
-              <Route path="/map/:id" element={<MapPage />} />
+              <Route path="/session/:id" element={<MapPage />}>
+                <Route index element={<Navigate to="map" replace />} />
+                <Route path="map" element={<RegularMapView />} />
+                <Route path="processes" element={<ProcessMapView />} />
+                <Route path="editor" element={<EditorMapView />} />
+                <Route path="metrics" element={<MetricsView />} />
+                <Route path="matrix" element={<CollaboratorMatrixView />} />
+                <Route path="chores" element={<ChoreListsView />} />
+                <Route path="greenkeeping" element={<GreenkeepingRotationsView />} />
+              </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -15,13 +15,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { positionLandmark, createConnection } from '@/api/mapApi';
 import type { Terrain } from '@/types/hex';
 import type { Landmark } from '@/types/landmark';
-import type { useMapPageActions } from './useMapPageActions';
+import { useMapActions } from './MapActionsContext';
 
-interface Props {
-  actions: ReturnType<typeof useMapPageActions>;
-}
-
-export default function RegularMapView({ actions }: Props) {
+export default function RegularMapView() {
+  const actions = useMapActions();
   const { cancelConnecting, fireEditTile, landmarkByCoord, tileByCoord, positionedLandmarks, withAction } = actions;
 
   const {

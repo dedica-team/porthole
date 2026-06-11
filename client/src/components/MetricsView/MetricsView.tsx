@@ -27,24 +27,7 @@ import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPo
 import {
   useGroupFilter,
 } from '@/components/ui/GroupFilterPopover';
-
-interface Props {
-  onCreateMetric: (name: string, description: string) => void;
-  onCreateUnpositionedLandmark: (name: string, type: LandmarkType, description?: string, groupId?: string, link?: string) => void;
-  onEditMetric: (metricId: string, name?: string, description?: string) => void;
-  onRemoveMetric: (metricId: string) => void;
-  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
-  onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;
-  onEditLandmarkGroup: (landmarkId: string, groupId: string | null) => void;
-  onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean) => void;
-  onCreateGroup: (name: string, color: string, description?: string, link?: string) => void;
-  onEditGroup: (groupId: string, name?: string, color?: string, description?: string, clearDescription?: boolean, link?: string, clearLink?: boolean) => void;
-  onRemoveGroup: (groupId: string) => void;
-  onRemoveLandmark: (landmarkId: string) => void;
-  loading: boolean;
-  error?: string;
-  onClearError?: () => void;
-}
+import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 
 interface BadgeRow { key: string; url: string; error: string; }
 
@@ -476,23 +459,25 @@ function LandmarkEditDialog({ landmark, groups, loading, onSave, onRemove, onClo
   );
 }
 
-export default function MetricsView({
-  onCreateMetric,
-  onCreateUnpositionedLandmark,
-  onEditMetric,
-  onRemoveMetric,
-  onSetLandmarkMetric,
-  onClearLandmarkMetric,
-  onEditLandmarkGroup,
-  onEditLandmark,
-  onCreateGroup,
-  onEditGroup,
-  onRemoveGroup,
-  onRemoveLandmark,
-  loading,
-  error,
-  onClearError,
-}: Props) {
+export default function MetricsView() {
+  const {
+    handleCreateMetric: onCreateMetric,
+    handleCreateUnpositionedLandmark: onCreateUnpositionedLandmark,
+    handleEditMetric: onEditMetric,
+    handleRemoveMetric: onRemoveMetric,
+    handleSetLandmarkMetric: onSetLandmarkMetric,
+    handleClearLandmarkMetric: onClearLandmarkMetric,
+    handleEditLandmarkGroup: onEditLandmarkGroup,
+    handleEditLandmark: onEditLandmark,
+    handleCreateGroup: onCreateGroup,
+    handleEditGroup: onEditGroup,
+    handleRemoveGroup: onRemoveGroup,
+    handleRemoveLandmark: onRemoveLandmark,
+    actionLoading: loading,
+    error,
+    setError,
+  } = useMapActions();
+  const onClearError = () => setError('');
   const { currentMap, metricsMap, landmarksMap } = useMapStore(useShallow((s) => ({
     currentMap:   s.currentMap,
     metricsMap:   s.metrics,

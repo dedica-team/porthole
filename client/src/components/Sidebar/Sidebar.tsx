@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useMatch } from 'react-router-dom';
 import { useMapStore } from '@/store/mapStore';
 import TilePanel from './panels/TilePanel';
 import LandmarkPanel from './panels/LandmarkPanel';
@@ -115,7 +116,7 @@ function ProcessLandmarkView({
   const selectedLandmark = useMapStore((s) => s.selectedLandmark);
   const currentMap = useMapStore((s) => s.currentMap);
   const processes = useMapStore((s) => s.processes);
-  const processMode = useMapStore((s) => s.processMode);
+  const processMode = !!useMatch('/session/:id/processes');
   const setActiveProcessId = useMapStore((s) => s.setActiveProcessId);
   const setActiveStageId = useMapStore((s) => s.setActiveStageId);
   const setSelectedLandmark = useMapStore((s) => s.setSelectedLandmark);
@@ -238,13 +239,14 @@ export default function Sidebar({
   const connectingFromLandmarkId = useMapStore((s) => s.connectingFromLandmarkId);
   const relocatingLandmarkId = useMapStore((s) => s.relocatingLandmarkId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
-  const processMode = useMapStore((s) => s.processMode);
   const processSidebarHidden = useMapStore((s) => s.processSidebarHidden);
   const setProcessSidebarHidden = useMapStore((s) => s.setProcessSidebarHidden);
+  // Derive process mode from the route instead of store state.
+  const processMode = !!useMatch('/session/:id/processes');
 
-  // Hide sidebar when nothing is selected and not in editor/process mode
+  // Hide sidebar when nothing is selected and not in process mode
   const isVisible = (processMode && !processSidebarHidden)
-    || (mainView !== 'idle' && mainView !== 'process' && mainView !== 'editor')
+    || (mainView !== 'idle')
     || !!connectingFromLandmarkId
     || !!relocatingLandmarkId;
   if (!isVisible) return null;

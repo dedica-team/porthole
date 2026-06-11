@@ -110,7 +110,7 @@ describe('LobbyPage – all buttons have cursor-pointer', () => {
       <MemoryRouter initialEntries={['/lobby']}>
         <Routes>
           <Route path="/lobby" element={<LobbyPage />} />
-          <Route path="/map/:id" element={<div />} />
+          <Route path="/session/:id" element={<div />} />
         </Routes>
       </MemoryRouter>,
     );
@@ -166,9 +166,9 @@ describe('Navbar – all buttons have cursor-pointer', () => {
 
   function renderNavbar() {
     return render(
-      <MemoryRouter initialEntries={[`/map/${MAP_ID}`]}>
+      <MemoryRouter initialEntries={[`/session/${MAP_ID}`]}>
         <Routes>
-          <Route path="/map/:id" element={<Navbar />} />
+          <Route path="/session/:id" element={<Navbar />} />
           <Route path="/lobby" element={<div />} />
         </Routes>
       </MemoryRouter>,

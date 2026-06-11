@@ -34,7 +34,7 @@ function renderLobbyPage() {
     <MemoryRouter initialEntries={['/lobby']}>
       <Routes>
         <Route path="/lobby"    element={<LobbyPage />} />
-        <Route path="/map/:id"  element={<div data-testid="map-page" />} />
+        <Route path="/session/:id"  element={<div data-testid="map-page" />} />
       </Routes>
     </MemoryRouter>,
   );
