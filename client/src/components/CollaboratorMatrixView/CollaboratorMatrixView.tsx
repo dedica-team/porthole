@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { StatusBadge, matrixLevelToStatus } from '@/components/ui/status-badge';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
@@ -217,23 +217,8 @@ export default function CollaboratorMatrixView() {
                     </Button>
                   </th>
                   {collaborators.map((c) => (
-                    <th key={c.id} className="text-center px-3 py-2 font-medium min-w-28 bg-transparent">
-                      <div className="flex flex-col items-center gap-1">
-                        <Avatar className="h-6 w-6">
-                          {c.avatarUrl && <AvatarImage src={c.avatarUrl} alt={c.username} />}
-                          <AvatarFallback
-                              className="text-sm font-bold text-white bg-secondary"
-                            >
-                            {c.username.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span
-                          className="text-sm font-semibold"
-                          style={{ color: 'hsl(185,100%,54%)' }}
-                        >
-                          {c.username}
-                        </span>
-                      </div>
+                    <th key={c.id} className="text-center px-3 py-2 min-w-28 bg-transparent">
+                      <UserAvatar username={c.username} avatarUrl={c.avatarUrl} />
                     </th>
                   ))}
                 </tr>

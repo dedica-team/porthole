@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { ExternalLink, Check, Pencil } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -186,13 +186,7 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
       {/* Assignee (read-only display) */}
       <td className={tdClass}>
         {assignee ? (
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Avatar className="h-4 w-4 shrink-0">
-              {assignee.avatarUrl && <AvatarImage src={assignee.avatarUrl} alt={assignee.username} />}
-              <AvatarFallback className="text-sm bg-secondary">{assignee.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <span className="truncate text-sm text-foreground">{assignee.username}</span>
-          </div>
+          <UserAvatar inline size="xs" username={assignee.username} avatarUrl={assignee.avatarUrl} />
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}

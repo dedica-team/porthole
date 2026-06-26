@@ -2,7 +2,7 @@ import {useEffect} from 'react';
 import type React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {LayoutDashboard, BarChart2, Bus, CheckSquare, Sprout, ArrowRight} from 'lucide-react';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import {StatusBadge, qualityLevelToStatus, matrixLevelToStatus} from '@/components/ui/status-badge';
 import { StatusIndicator } from '@/components/ui/status-badge';
 import {QUALITY_LEVEL_SIGN, worstLevel} from '@/types/landmark';
@@ -246,21 +246,15 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
                 const active = getActiveGreenkeepingEntry(r);
                 const keeper = active ? (collaboratorsById[active.collaboratorId] ?? null) : null;
                 const keeperName = keeper?.username ?? (active ? active.collaboratorId : null);
-                const initials = keeperName ? keeperName.slice(0, 2).toUpperCase() : '–';
                 return (
-                    <div key={r.id} className="flex flex-col items-center gap-1 min-w-14">
-                        {/* Avatar with image or initials fallback */}
-                        <Avatar className="w-10 h-10" title={keeperName ?? 'none'}>
-                            {keeper?.avatarUrl && <AvatarImage src={keeper.avatarUrl} alt={keeperName ?? ''}/>}
-                            <AvatarFallback className="text-sm font-semibold">{initials}</AvatarFallback>
-                        </Avatar>
-                        {/* Keeper name */}
-                        <span className="text-sm text-foreground text-center truncate max-w-20">
-              {keeperName ?? <span className="italic text-muted-foreground">none</span>}
-            </span>
-                        {/* Rotation name */}
-                        <span className="text-sm text-muted-foreground text-center max-w-20">{r.name}</span>
-                    </div>
+                    <UserAvatar
+                        key={r.id}
+                        username={keeperName ?? '—'}
+                        avatarUrl={keeper?.avatarUrl}
+                        subtitle={r.name}
+                        className="min-w-14"
+                        title={keeperName ?? 'none'}
+                    />
                 );
             })}
         </div>

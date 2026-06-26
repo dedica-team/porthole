@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ChevronRight, FastForward, Plus } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { Button } from '@/components/ui/button';
 import {
   advanceGreenkeepingRotation,
@@ -195,25 +194,13 @@ export default function GreenkeepingRotationsView() {
                                         <ChevronRight className="mt-4 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" aria-hidden="true" />
                                       )
                                     )}
-                                    <div className="flex w-16 flex-col items-center text-center">
-                                      <Avatar
-                                        className={`h-10 w-10 rounded-full border ${isActive ? 'border-[hsl(185,100%,54%)] ring-2 ring-[hsl(185,100%,54%,0.18)]' : 'border-border'}`}
-                                        title={username}
-                                      >
-                                        {collaborator?.avatarUrl && <AvatarImage src={collaborator.avatarUrl} alt={username} />}
-                                        <AvatarFallback className={`rounded-full text-sm ${isActive ? 'bg-[hsl(185,100%,54%,0.15)] text-[hsl(185,100%,54%)]' : 'bg-secondary text-secondary-foreground'}`}>
-                                          {username.slice(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <span className={`mt-1 line-clamp-2 text-sm ${isActive ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-                                        {username}
-                                      </span>
-                                      {isActive && (
-                                        <StatusBadge status="NONE" className="mt-1 px-1.5 py-0 text-sm leading-4">
-                                          Active
-                                        </StatusBadge>
-                                      )}
-                                    </div>
+                                    <UserAvatar
+                                      username={username}
+                                      avatarUrl={collaborator?.avatarUrl}
+                                      active={isActive}
+                                      title={username}
+                                      className="w-16"
+                                    />
                                     {showTrailingAdvance && (
                                       <Button
                                         size="sm"

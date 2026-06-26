@@ -23,6 +23,7 @@ import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_LABEL, QUALITY_
 import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
 import { MATRIX_LEVEL_LABEL } from '@/types/matrix';
 import { changeLandmarkOwner } from '@/api/mapApi';
+import { UserAvatar } from '@/components/ui/user-avatar';
 interface Props {
   onStartConnection: (type: ConnectionType, name?: string, description?: string) => void;
   onRemoveLandmark: () => void;
@@ -522,16 +523,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
               <div className="flex flex-col gap-1">
                 {matrixEntriesForLandmark.map(({ collaborator, level }) => (
                   <div key={collaborator.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded-md border border-border min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {collaborator.avatarUrl ? (
-                        <img src={collaborator.avatarUrl} alt={collaborator.username} className="h-4 w-4 rounded-full shrink-0 object-cover" />
-                      ) : (
-                        <span className="h-4 w-4 rounded-full bg-muted shrink-0 flex items-center justify-center text-sm text-muted-foreground">
-                          {collaborator.username.slice(0, 1).toUpperCase()}
-                        </span>
-                      )}
-                      <span className="text-sm text-foreground truncate">{collaborator.username}</span>
-                    </div>
+                    <UserAvatar inline size="xs" username={collaborator.username} avatarUrl={collaborator.avatarUrl} />
                     <StatusBadge status={matrixLevelToStatus[level]} className="text-sm font-semibold shrink-0">
                       {MATRIX_LEVEL_LABEL[level]}
                     </StatusBadge>
@@ -568,16 +560,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                           </StatusBadge>
                         </div>
                         {assignee && (
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {assignee.avatarUrl ? (
-                              <img src={assignee.avatarUrl} alt={assignee.username} className="h-3.5 w-3.5 rounded-full shrink-0 object-cover" />
-                            ) : (
-                              <span className="h-3.5 w-3.5 rounded-full bg-muted shrink-0 flex items-center justify-center text-sm text-muted-foreground">
-                                {assignee.username.slice(0, 1).toUpperCase()}
-                              </span>
-                            )}
-                            <span className="text-sm text-muted-foreground truncate">{assignee.username}</span>
-                          </div>
+                          <UserAvatar inline size="xs" username={assignee.username} avatarUrl={assignee.avatarUrl} />
                         )}
                         {entry.note && (
                           <span className="text-sm text-muted-foreground/70 leading-relaxed">{entry.note}</span>

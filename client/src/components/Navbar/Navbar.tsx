@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -407,15 +408,9 @@ export default function Navbar() {
                       <div className="flex flex-col gap-1">
                         {currentMap.collaborators.map((c) => (
                           <div key={c.id} className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5 shrink-0">
-                              {c.avatarUrl && <AvatarImage src={c.avatarUrl} alt={c.username} />}
-                              <AvatarFallback className="text-sm font-bold text-white bg-secondary">
-                                {c.username.slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm text-foreground truncate flex-1">{c.username}</span>
+                            <UserAvatar inline size="xs" username={c.username} avatarUrl={c.avatarUrl} className="flex-1 min-w-0" />
                             {c.id === userId && (
-                              <span className="text-sm text-muted-foreground ml-auto">(you)</span>
+                              <span className="text-sm text-muted-foreground shrink-0">(you)</span>
                             )}
                             {isAdmin && c.id !== userId && (
                               <Button
@@ -492,15 +487,7 @@ export default function Navbar() {
                           key={req.id}
                           className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-2"
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Avatar className="h-6 w-6 shrink-0">
-                              {req.avatarUrl && <AvatarImage src={req.avatarUrl} alt={req.username} />}
-                              <AvatarFallback className="text-sm font-bold bg-secondary text-secondary-foreground">
-                                {req.username.slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium text-foreground truncate">{req.username}</span>
-                          </div>
+                          <UserAvatar inline size="sm" username={req.username} avatarUrl={req.avatarUrl} className="min-w-0 flex-1" />
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
                               size="sm"

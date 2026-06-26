@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Plus, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { StatusBadge, choreStateToStatus } from '@/components/ui/status-badge';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { fetchChoreLists } from '@/api/mapApi';
@@ -164,10 +164,7 @@ export default function ChoreListsView() {
                         {assignees.length > 0 ? (
                           <div className="flex items-center -space-x-1.5">
                             {assignees.slice(0, 5).map((c) => (
-                              <Avatar key={c.id} className="h-5 w-5 ring-1 ring-background" title={c.username}>
-                                {c.avatarUrl && <AvatarImage src={c.avatarUrl} alt={c.username} />}
-                                <AvatarFallback className="text-sm bg-secondary">{c.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-                              </Avatar>
+                              <UserAvatar key={c.id}  username={c.username} avatarUrl={c.avatarUrl} title={c.username} className="ring-1 ring-background" />
                             ))}
                             {assignees.length > 5 && (
                               <span className="text-sm text-muted-foreground pl-2">+{assignees.length - 5}</span>
