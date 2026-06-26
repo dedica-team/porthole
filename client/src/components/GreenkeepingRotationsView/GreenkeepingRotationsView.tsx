@@ -69,7 +69,7 @@ export default function GreenkeepingRotationsView() {
       <div className="flex items-center justify-between border-b border-border px-6 py-3 shrink-0">
         <h2 className="text-sm font-semibold text-foreground">Greenkeeping Rotations</h2>
         {isCollaborator && (
-          <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => setCreateOpen(true)}>
+          <Button size="sm" variant="default" className="h-7 gap-1.5 text-sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
             Rotation
           </Button>
@@ -77,7 +77,7 @@ export default function GreenkeepingRotationsView() {
       </div>
 
       {(greenkeepingRotationsError || actionError) && (
-        <p className="px-6 py-2 text-xs text-destructive shrink-0">{greenkeepingRotationsError || actionError}</p>
+        <p className="px-6 py-2 text-sm text-destructive shrink-0">{greenkeepingRotationsError || actionError}</p>
       )}
 
       {greenkeepingRotationsLoading ? (
@@ -89,7 +89,7 @@ export default function GreenkeepingRotationsView() {
       ) : (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
-            <table className="data-display-table w-full border-separate border-spacing-0 text-xs">
+            <table className="data-display-table w-full border-separate border-spacing-0 text-sm">
               <thead>
                 <tr>
                   <th className="data-sticky-header min-w-72 border-b border-border bg-card px-6 py-2 text-left font-medium text-muted-foreground sticky top-0 z-10">
@@ -134,14 +134,14 @@ export default function GreenkeepingRotationsView() {
                             )}
                           </div>
                           {rotation.description && (
-                            <p className="mt-1 text-[11px] text-muted-foreground break-words whitespace-normal w-full">{rotation.description}</p>
+                            <p className="mt-1 text-sm text-muted-foreground break-words whitespace-normal w-full">{rotation.description}</p>
                           )}
                           {rotation.link && (
                             <a
                               href={rotation.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="mt-1 block break-all text-[11px] text-[hsl(185,100%,54%)] hover:underline"
+                              className="mt-1 block break-all text-sm text-[hsl(185,100%,54%)] hover:underline"
                               title={rotation.link}
                               onClick={(event) => event.stopPropagation()}
                             >
@@ -154,7 +154,7 @@ export default function GreenkeepingRotationsView() {
                         {groups.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
                             {groups.map((group) => (
-                              <span key={group.id} className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-1 text-[10px] text-foreground">
+                              <span key={group.id} className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-1 text-sm text-foreground">
                                 <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
                                 {group.name}
                               </span>
@@ -201,15 +201,15 @@ export default function GreenkeepingRotationsView() {
                                         title={username}
                                       >
                                         {collaborator?.avatarUrl && <AvatarImage src={collaborator.avatarUrl} alt={username} />}
-                                        <AvatarFallback className={`rounded-full text-[10px] ${isActive ? 'bg-[hsl(185,100%,54%,0.15)] text-[hsl(185,100%,54%)]' : 'bg-secondary text-secondary-foreground'}`}>
+                                        <AvatarFallback className={`rounded-full text-sm ${isActive ? 'bg-[hsl(185,100%,54%,0.15)] text-[hsl(185,100%,54%)]' : 'bg-secondary text-secondary-foreground'}`}>
                                           {username.slice(0, 2).toUpperCase()}
                                         </AvatarFallback>
                                       </Avatar>
-                                      <span className={`mt-1 line-clamp-2 text-[10px] ${isActive ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                                      <span className={`mt-1 line-clamp-2 text-sm ${isActive ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
                                         {username}
                                       </span>
                                       {isActive && (
-                                        <Badge variant="secondary" className="mt-1 px-1.5 py-0 text-[9px] leading-4">
+                                        <Badge variant="secondary" className="mt-1 px-1.5 py-0 text-sm leading-4">
                                           Active
                                         </Badge>
                                       )}

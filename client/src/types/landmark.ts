@@ -1,5 +1,4 @@
 // Quality metrics & landmark types
-import type React from 'react';
 
 export type QualityLevel = 'NONE' | 'OK' | 'WARNING' | 'ERROR';
 
@@ -10,13 +9,6 @@ export const QUALITY_LEVEL_COLOR: Record<QualityLevel, string> = {
   OK:      '#22c55e',
   WARNING: '#f59e0b',
   ERROR:   '#ef4444',
-};
-
-export const QUALITY_LEVEL_BADGE_STYLE: Record<QualityLevel, React.CSSProperties> = {
-  NONE:    { background: 'rgba(107,114,128,0.15)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.4)' },
-  OK:      { background: 'rgba(34,197,94,0.15)',   color: '#86efac', border: '1px solid rgba(34,197,94,0.4)' },
-  WARNING: { background: 'rgba(245,158,11,0.15)',  color: '#fcd34d', border: '1px solid rgba(245,158,11,0.4)' },
-  ERROR:   { background: 'rgba(239,68,68,0.15)',   color: '#fca5a5', border: '1px solid rgba(239,68,68,0.4)' },
 };
 
 export const QUALITY_LEVEL_LABEL: Record<QualityLevel, string> = {

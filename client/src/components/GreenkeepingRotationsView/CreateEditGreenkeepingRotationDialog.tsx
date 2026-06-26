@@ -176,25 +176,25 @@ export default function CreateEditGreenkeepingRotationDialog({ open, onOpenChang
         </DialogHeader>
         <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rotation-name" className="text-xs">Name</Label>
+            <Label htmlFor="rotation-name" className="text-sm">Name</Label>
             <Input id="rotation-name" value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-sm" autoFocus />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rotation-description" className="text-xs">Description <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="rotation-description" className="text-sm">Description <span className="text-muted-foreground">(optional)</span></Label>
             <Textarea id="rotation-description" value={description} onChange={(e) => setDescription(e.target.value)} className="text-sm min-h-20 resize-none" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rotation-link" className="text-xs">Link <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="rotation-link" className="text-sm">Link <span className="text-muted-foreground">(optional)</span></Label>
             <Input id="rotation-link" value={link} onChange={(e) => setLink(e.target.value)} className="h-8 text-sm" placeholder="https://…" type="url" />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs">Groups</Label>
+            <Label className="text-sm">Groups</Label>
             <div className="flex flex-col gap-1 max-h-40 overflow-y-auto rounded-md border border-input bg-background p-2">
               {sortedGroups.length === 0 ? (
-                <p className="text-xs text-muted-foreground px-1">No groups exist yet.</p>
+                <p className="text-sm text-muted-foreground px-1">No groups exist yet.</p>
               ) : sortedGroups.map((group) => (
-                <label key={group.id} className="flex items-center gap-2 cursor-pointer rounded px-1 py-0.5 hover:bg-muted text-xs">
+                <label key={group.id} className="flex items-center gap-2 cursor-pointer rounded px-1 py-0.5 hover:bg-muted text-sm">
                   <input
                     type="checkbox"
                     checked={selectedGroupIds.has(group.id)}
@@ -210,12 +210,12 @@ export default function CreateEditGreenkeepingRotationDialog({ open, onOpenChang
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs">Collaborators</Label>
+              <Label className="text-sm">Collaborators</Label>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-7 px-2 text-xs gap-1"
+                className="h-7 px-2 text-sm gap-1"
                 onClick={() => setCollaboratorRows((rows) => [...rows, { collaboratorId: '' }])}
               >
                 <Plus className="h-3 w-3" />
@@ -224,12 +224,12 @@ export default function CreateEditGreenkeepingRotationDialog({ open, onOpenChang
             </div>
             <div className="flex flex-col gap-2 rounded-md border border-input bg-background p-2">
               {collaboratorRows.length === 0 ? (
-                <p className="text-xs text-muted-foreground px-1">No collaborators added yet.</p>
+                <p className="text-sm text-muted-foreground px-1">No collaborators added yet.</p>
               ) : collaboratorRows.map((row, index) => {
                 const selectedIds = collaboratorRows.map((item, itemIndex) => itemIndex === index ? null : item.collaboratorId).filter(Boolean);
                 return (
                   <div key={row.id ?? `new-${index}`} className="flex items-center gap-1.5 rounded border border-border p-2">
-                    <span className="text-[10px] text-muted-foreground w-5 text-center">{index + 1}</span>
+                    <span className="text-sm text-muted-foreground w-5 text-center">{index + 1}</span>
                     <select
                       value={row.collaboratorId}
                       onChange={(e) => updateRow(index, e.target.value)}
@@ -261,18 +261,18 @@ export default function CreateEditGreenkeepingRotationDialog({ open, onOpenChang
             </div>
           </div>
 
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter className="pt-2 flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
           <div className="flex items-center gap-1">
             {rotation && (
               confirmDelete ? (
                 <>
-                  <Button size="sm" variant="destructive" className="h-8 text-xs gap-1" onClick={handleDelete} disabled={saving}>
+                  <Button size="sm" variant="destructive" className="h-8 text-sm gap-1" onClick={handleDelete} disabled={saving}>
                     <Trash2 className="h-3 w-3" />
                     Confirm delete
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setConfirmDelete(false)} disabled={saving}>
+                  <Button size="sm" variant="ghost" className="h-8 text-sm" onClick={() => setConfirmDelete(false)} disabled={saving}>
                     Cancel
                   </Button>
                 </>
@@ -280,7 +280,7 @@ export default function CreateEditGreenkeepingRotationDialog({ open, onOpenChang
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 text-xs gap-1 text-destructive hover:text-destructive"
+                  className="h-8 text-sm gap-1 text-destructive hover:text-destructive"
                   onClick={() => {
                     setError('');
                     setConfirmDelete(true);
@@ -294,8 +294,8 @@ export default function CreateEditGreenkeepingRotationDialog({ open, onOpenChang
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button size="sm" className="h-8 text-xs" onClick={handleSave} disabled={saving}>
+            <Button variant="flat" size="sm" className="h-8 text-sm" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+            <Button size="sm" className="h-8 text-sm" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving…' : rotation ? 'Save' : 'Create'}
             </Button>
           </div>

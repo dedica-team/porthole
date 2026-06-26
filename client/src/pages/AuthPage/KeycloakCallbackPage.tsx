@@ -56,7 +56,7 @@ export default function KeycloakCallbackPage() {
           <p className="text-sm text-destructive text-center">{error}</p>
           <a
             href="/"
-            className="inline-flex items-center justify-center h-11 px-4 w-full text-center uppercase tracking-widest text-xs"
+            className="inline-flex items-center justify-center h-11 px-4 w-full text-center uppercase tracking-widest text-sm"
             style={{
               background: 'transparent',
               border: '1px solid hsl(185,100%,54%)',

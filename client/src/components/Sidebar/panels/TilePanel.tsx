@@ -105,27 +105,27 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
     <div className="flex flex-col gap-4 p-5">
       <div className="flex items-center gap-2 text-muted-foreground">
         <MapPin className="h-4 w-4" />
-        <span className="text-xs font-medium uppercase tracking-wider">Selected Tile</span>
+        <span className="text-sm font-medium uppercase tracking-wider">Selected Tile</span>
       </div>
 
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">Coordinates</span>
-          <span className="text-xs font-mono text-foreground">
+          <span className="text-sm text-muted-foreground">Coordinates</span>
+          <span className="text-sm font-mono text-foreground">
             ({selectedTile.q}, {selectedTile.r})
           </span>
         </div>
         {tile && (
           <>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Terrain</span>
-              <span className="text-xs text-foreground">
+              <span className="text-sm text-muted-foreground">Terrain</span>
+              <span className="text-sm text-foreground">
                 {TERRAIN_ICONS[tile.terrain]} {tile.terrain.charAt(0) + tile.terrain.slice(1).toLowerCase()}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Elevation</span>
-              <Badge variant="secondary" className="text-[10px] h-5">{tile.elevation}</Badge>
+              <span className="text-sm text-muted-foreground">Elevation</span>
+              <Badge variant="secondary" className="text-sm h-5">{tile.elevation}</Badge>
             </div>
           </>
         )}
@@ -136,14 +136,14 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
            <Separator className="bg-border" />
            <div className="flex flex-col gap-2">
              <div className="flex justify-between items-center">
-               <span className="text-xs text-muted-foreground">Landmark</span>
-               <span className="text-xs text-foreground">
+               <span className="text-sm text-muted-foreground">Landmark</span>
+               <span className="text-sm text-foreground">
                  {LANDMARK_TYPE_LABELS[landmarkOnTile.type]} · {landmarkOnTile.name}
                </span>
              </div>
              <div className="flex justify-between items-center">
-               <span className="text-xs text-muted-foreground">Owner</span>
-               <span className="text-xs text-foreground">
+               <span className="text-sm text-muted-foreground">Owner</span>
+               <span className="text-sm text-foreground">
                  {landmarkOwner?.username ?? 'Unknown'}
                  {landmarkOnTile.ownerId === userId && <span className="text-muted-foreground"> (you)</span>}
                </span>
@@ -158,7 +158,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
            <div className="flex flex-col gap-2">
              {currentMap.landmarks && currentMap.landmarks[relocatingLandmarkId] && (
                <>
-                 <p className="text-[11px] text-muted-foreground">
+                 <p className="text-sm text-muted-foreground">
                    Click an empty tile to relocate <strong>{currentMap.landmarks[relocatingLandmarkId].name}</strong>
                  </p>
                  {!landmarkOnTile && canPlace && (
@@ -180,7 +180,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
              <Button
                size="sm"
                variant="ghost"
-               className="w-full h-8 text-xs text-muted-foreground"
+               className="w-full h-8 text-sm text-muted-foreground"
                disabled={loading}
                onClick={() => setRelocatingLandmark(null)}
              >
@@ -194,10 +194,10 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
         <>
           <Separator className="bg-border" />
           {!isCollaborator ? (
-            <p className="text-[11px] text-muted-foreground">Join as collaborator to place landmarks.</p>
+            <p className="text-sm text-muted-foreground">Join as collaborator to place landmarks.</p>
           ) : showNameForm ? (
             <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Choose a name and type for your landmark.
               </p>
               <Input
@@ -206,7 +206,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                 maxLength={40}
                 value={name}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                className="h-8 text-xs"
+                className="h-8 text-sm"
               />
               {isDecorativeLandmark ? (
                 <div className="flex flex-col gap-0.5">
@@ -216,16 +216,16 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setWallId(e.target.value as `${string}-${string}-${string}-${string}-${string}`)
                     }
-                    className={`h-8 text-[10px] font-mono ${wallIdTaken ? 'border-destructive' : ''}`}
+                    className={`h-8 text-sm font-mono ${wallIdTaken ? 'border-destructive' : ''}`}
                     spellCheck={false}
                   />
                   {wallIdTaken && (
-                    <p className="text-[10px] text-destructive">id already taken</p>
+                    <p className="text-sm text-destructive">id already taken</p>
                   )}
                 </div>
               ) : (
                 slug.length > 0 && (
-                  <p className={`text-[10px] font-mono ${slugTaken ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  <p className={`text-sm font-mono ${slugTaken ? 'text-destructive' : 'text-muted-foreground'}`}>
                     id: {slug}{slugTaken ? ' · already taken' : ''}
                   </p>
                 )
@@ -233,7 +233,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value as LandmarkType)}
-                className="h-8 text-xs rounded-md border border-input bg-background px-2 text-foreground"
+                className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground"
               >
                 {ALL_LANDMARK_TYPES.map((t) => (
                   <option key={t} value={t}>{LANDMARK_TYPE_LABELS[t]}</option>
@@ -243,7 +243,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                 <Button
                   type="submit"
                   size="sm"
-                  className="flex-1 h-8 py-1 text-xs gap-1.5"
+                  className="flex-1 h-8 py-1 text-sm gap-1.5"
                   disabled={!canSubmit}
                 >
                   {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <span>{LANDMARK_TYPE_LABELS[selectedType].split(' ')[0]}</span>}
@@ -253,7 +253,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                   type="button"
                   size="sm"
                   variant="ghost"
-                  className="h-8 px-3 text-xs text-muted-foreground"
+                  className="h-8 px-3 text-sm text-muted-foreground"
                   onClick={handleCancel}
                 >
                   Cancel
@@ -274,11 +274,11 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
 
               {canPlace && unpositionedLandmarks.length > 0 && (
                 <div className="rounded-md border border-border/60 p-2.5 flex flex-col gap-2">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Position existing landmark</p>
+                  <p className="text-sm uppercase tracking-wider text-muted-foreground">Position existing landmark</p>
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-8 text-xs"
+                    className="h-8 text-sm"
                     placeholder="Search landmarks..."
                   />
                   <div className="max-h-40 overflow-y-auto flex flex-col gap-1">
@@ -288,8 +288,8 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                         <Button
                           key={lm.id}
                           size="sm"
-                          variant="outline"
-                          className="justify-start h-auto min-h-7 py-1.5 text-[11px]"
+                          variant="default"
+                          className="justify-start h-auto min-h-7 py-1.5 text-sm"
                           disabled={loading}
                           onClick={() => onPositionLandmark(lm.id, selectedTile.q, selectedTile.r)}
                           title={`Place ${lm.name} at (${selectedTile.q}, ${selectedTile.r})`}
@@ -297,7 +297,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                           <span className="truncate flex items-center gap-1.5">
                             <span>{LANDMARK_TYPE_LABELS[lm.type]} · {lm.name}</span>
                             {group && (
-                              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+                              <span className="inline-flex items-center gap-1 text-sm text-muted-foreground shrink-0">
                                 <span
                                   className="inline-block w-2 h-2 rounded-full border border-white/20"
                                   style={{ backgroundColor: group.color }}
@@ -311,7 +311,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                       );
                     })}
                     {filteredUnpositionedLandmarks.length === 0 && (
-                      <p className="text-[11px] text-muted-foreground py-1 px-1">No matching landmarks found.</p>
+                      <p className="text-sm text-muted-foreground py-1 px-1">No matching landmarks found.</p>
                     )}
                   </div>
                 </div>
@@ -323,4 +323,3 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
     </div>
   );
 }
-

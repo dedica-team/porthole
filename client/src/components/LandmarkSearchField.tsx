@@ -59,7 +59,7 @@ export default function LandmarkSearchField({ landmarks, onSelect }: Props) {
         onFocus={() => { if (query.trim() && filtered.length > 0) setOpen(true); }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search…"
-        className="h-9 pl-8 pr-3 w-48 rounded-lg shadow-lg border border-border bg-card/80 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-1"
+        className="h-9 pl-8 pr-3 w-48 rounded-lg shadow-lg border border-border bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-1"
       />
       {showDropdown && (
         <div className="absolute top-full left-0 mt-1 w-56 rounded-lg border border-border bg-card shadow-lg z-50 overflow-hidden">
@@ -75,7 +75,7 @@ export default function LandmarkSearchField({ landmarks, onSelect }: Props) {
                 className="w-full flex flex-col px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground cursor-pointer"
               >
                 <span className="text-sm font-medium truncate">{l.name}</span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {l.type.replace(/_/g, ' ')} · ({l.coordinate!.q}, {l.coordinate!.r})
                 </span>
               </button>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Users, Plus, Pencil, Trash2, Loader2, Check, X, ExternalLink } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Loader2, Check, ExternalLink } from 'lucide-react';
+import { CloseButton } from '@/components/ui/close-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -82,12 +83,12 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
     <div className="flex flex-col gap-4 p-5">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Users className="h-4 w-4" />
-        <span className="text-xs font-medium uppercase tracking-wider">Groups</span>
+        <span className="text-sm font-medium uppercase tracking-wider">Groups</span>
       </div>
 
       {/* Existing groups */}
       {groups.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground">No groups yet. Create one below.</p>
+        <p className="text-sm text-muted-foreground">No groups yet. Create one below.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {groups.map((group) => {
@@ -107,7 +108,7 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
                       autoFocus
                       value={editState.name}
                       onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
-                      className="h-8 text-xs flex-1"
+                      className="h-8 text-sm flex-1"
                       maxLength={40}
                       placeholder="Group name"
                     />
@@ -115,27 +116,25 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
                   <Input
                     value={editState.description}
                     onChange={(e) => setEditState((s) => ({ ...s, description: e.target.value }))}
-                    className="h-8 text-xs"
+                    className="h-8 text-sm"
                     placeholder="Description (optional)"
                     maxLength={200}
                   />
                   <Input
                     value={editState.link}
                     onChange={(e) => setEditState((s) => ({ ...s, link: e.target.value }))}
-                    className="h-8 text-xs"
+                    className="h-8 text-sm"
                     placeholder="https://… (optional)"
                     type="url"
                   />
                   <div className="flex gap-1.5">
-                    <Button size="sm" className="flex-1 h-7 text-xs gap-1"
+                    <Button size="sm" className="flex-1 h-7 text-sm gap-1"
                       disabled={!editState.name.trim() || loading}
                       onClick={() => saveEdit(group)}>
                       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                       Save
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={cancelEdit}>
-                      <X className="h-3 w-3" />
-                    </Button>
+                    <CloseButton className="h-7 w-7" onClick={cancelEdit} />
                   </div>
                 </div>
               );
@@ -144,18 +143,18 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
             if (removeConfirmId === group.id) {
               return (
                 <div key={group.id} className="flex flex-col gap-1.5 rounded-md border border-destructive/40 p-2">
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Remove <strong>{group.name}</strong>?
                     {count > 0 && (
-                      <span className="text-amber-400"> {count} landmark{count > 1 ? 's' : ''} will lose their group.</span>
+                      <span className="text-warning"> {count} landmark{count > 1 ? 's' : ''} will lose their group.</span>
                     )}
                   </p>
                   <div className="flex gap-1.5">
-                    <Button size="sm" variant="destructive" className="flex-1 h-7 text-xs" disabled={loading}
+                    <Button size="sm" variant="destructive" className="flex-1 h-7 text-sm" disabled={loading}
                       onClick={() => confirmRemove(group.id)}>
                       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Remove'}
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-sm"
                       onClick={() => setRemoveConfirmId(null)}>
                       Cancel
                     </Button>
@@ -171,9 +170,9 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
                     className="inline-block w-3 h-3 rounded-full shrink-0 border border-white/20"
                     style={{ backgroundColor: group.color }}
                   />
-                  <span className="text-xs text-foreground flex-1 truncate">{group.name}</span>
+                  <span className="text-sm text-foreground flex-1 truncate">{group.name}</span>
                   {count > 0 && (
-                    <span className="text-[10px] text-muted-foreground shrink-0">{count}</span>
+                    <span className="text-sm text-muted-foreground shrink-0">{count}</span>
                   )}
                   {group.link && (
                     <a href={group.link} target="_blank" rel="noopener noreferrer"
@@ -196,7 +195,7 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
                   )}
                 </div>
                 {group.description && (
-                  <p className="text-[11px] text-muted-foreground pl-5 leading-snug">{group.description}</p>
+                  <p className="text-sm text-muted-foreground pl-5 leading-snug">{group.description}</p>
                 )}
               </div>
             );
@@ -209,7 +208,7 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
       {/* Add group form – collaborators only */}
       {isCollaborator && (
         <form onSubmit={handleAdd} className="flex flex-col gap-2">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Add Group</span>
+        <span className="text-sm text-muted-foreground uppercase tracking-wider">Add Group</span>
         <div className="flex gap-1.5">
           <input
             type="color"
@@ -220,7 +219,7 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
           <Input
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            className="h-8 text-xs flex-1"
+            className="h-8 text-sm flex-1"
             placeholder="Group name"
             maxLength={40}
           />
@@ -228,18 +227,18 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
         <Input
           value={addDescription}
           onChange={(e) => setAddDescription(e.target.value)}
-          className="h-8 text-xs"
+          className="h-8 text-sm"
           placeholder="Description (optional)"
           maxLength={200}
         />
         <Input
           value={addLink}
           onChange={(e) => setAddLink(e.target.value)}
-          className="h-8 text-xs"
+          className="h-8 text-sm"
           placeholder="https://… (optional)"
           type="url"
         />
-        <Button type="submit" size="sm" className="h-8 text-xs gap-1.5 w-full" disabled={!addName.trim() || loading}>
+        <Button type="submit" size="sm" className="h-8 text-sm gap-1.5 w-full" disabled={!addName.trim() || loading}>
           {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
           Add Group
         </Button>

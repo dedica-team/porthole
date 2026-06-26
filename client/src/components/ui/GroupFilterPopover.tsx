@@ -108,9 +108,9 @@ export function GroupFilterPopover({
       style={{ top: btnRect.bottom + 4, left: btnRect.left }}
     >
       <div className="px-3 py-1 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Show groups</span>
+        <span className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Show groups</span>
         {hiddenGroups.size > 0 && (
-          <button className="text-[10px] text-primary hover:underline" onClick={onShowAll}>
+          <button className="text-sm text-primary hover:underline" onClick={onShowAll}>
             Show all
           </button>
         )}
@@ -120,7 +120,7 @@ export function GroupFilterPopover({
         return (
           <button
             key={groupId ?? 'ungrouped'}
-            className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-accent transition-colors flex items-center gap-2"
+            className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
             onClick={() => onToggle(groupId)}
           >
             <span

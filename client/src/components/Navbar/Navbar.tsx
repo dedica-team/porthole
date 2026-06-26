@@ -196,7 +196,7 @@ export default function Navbar() {
   const isOverviewActive     = !!matchOverview;
 
   // The active-tab bottom border class.
-  const activeBorderCls = 'border-amber-400';
+  const activeBorderCls = 'border-warning';
 
   const NAV_TABS: NavTab[] = [
     {
@@ -328,12 +328,12 @@ export default function Navbar() {
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1">
                     <h4 className="text-sm font-semibold text-foreground">Map Settings</h4>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {isCollaborator ? 'Edit name and description of this map.' : 'Map details (read-only for viewers).'}
                     </p>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-name" className="text-xs">Name</Label>
+                    <Label htmlFor="map-name" className="text-sm">Name</Label>
                     <Input
                       id="map-name"
                       value={editName}
@@ -345,7 +345,7 @@ export default function Navbar() {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-description" className="text-xs">Description</Label>
+                    <Label htmlFor="map-description" className="text-sm">Description</Label>
                     <Textarea
                       id="map-description"
                       value={editDescription}
@@ -358,12 +358,12 @@ export default function Navbar() {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-collaboration-mode" className="text-xs">Collaboration mode</Label>
+                    <Label htmlFor="map-collaboration-mode" className="text-sm">Collaboration mode</Label>
                     <select
                       id="map-collaboration-mode"
                       value={editCollaborationMode}
                       onChange={(e) => setEditCollaborationMode(e.target.value as CollaborationMode)}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={!isCollaborator}
                     >
                       {(Object.keys(COLLABORATION_MODE_LABELS) as CollaborationMode[]).map((m) => (
@@ -374,9 +374,9 @@ export default function Navbar() {
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs">Map ID</Label>
+                    <Label className="text-sm">Map ID</Label>
                     <div className="flex items-center gap-1.5">
-                      <code className="flex-1 text-xs font-mono bg-muted rounded px-2 py-1.5 text-muted-foreground select-all truncate">
+                      <code className="flex-1 text-sm font-mono bg-muted rounded px-2 py-1.5 text-muted-foreground select-all truncate">
                         {currentMap.id}
                       </code>
                       <Button
@@ -385,7 +385,7 @@ export default function Navbar() {
                         className="h-7 w-7 shrink-0"
                         onClick={handleCopyId}
                       >
-                        {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
                   </div>
@@ -393,7 +393,7 @@ export default function Navbar() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 justify-start gap-2 px-2 text-xs"
+                      className="h-8 justify-start gap-2 px-2 text-sm"
                       onClick={handleExport}
                     >
                       <Download className="h-3.5 w-3.5" />
@@ -403,19 +403,19 @@ export default function Navbar() {
                   {/* Collaborators */}
                   {currentMap.collaborators.length > 0 && (
                     <div className="flex flex-col gap-1.5">
-                      <Label className="text-xs">Collaborators</Label>
+                      <Label className="text-sm">Collaborators</Label>
                       <div className="flex flex-col gap-1">
                         {currentMap.collaborators.map((c) => (
                           <div key={c.id} className="flex items-center gap-2">
                             <Avatar className="h-5 w-5 shrink-0">
                               {c.avatarUrl && <AvatarImage src={c.avatarUrl} alt={c.username} />}
-                              <AvatarFallback className="text-[9px] font-bold text-white bg-secondary">
+                              <AvatarFallback className="text-sm font-bold text-white bg-secondary">
                                 {c.username.slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-xs text-foreground truncate flex-1">{c.username}</span>
+                            <span className="text-sm text-foreground truncate flex-1">{c.username}</span>
                             {c.id === userId && (
-                              <span className="text-[10px] text-muted-foreground ml-auto">(you)</span>
+                              <span className="text-sm text-muted-foreground ml-auto">(you)</span>
                             )}
                             {isAdmin && c.id !== userId && (
                               <Button
@@ -433,18 +433,18 @@ export default function Navbar() {
                         ))}
                       </div>
                       {removeCollabError && (
-                        <p className="text-xs text-destructive">{removeCollabError}</p>
+                        <p className="text-sm text-destructive">{removeCollabError}</p>
                       )}
                     </div>
                   )}
                   {saveError && (
-                    <p className="text-xs text-destructive">{saveError}</p>
+                    <p className="text-sm text-destructive">{saveError}</p>
                   )}
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 text-xs"
+                      className="h-8 text-sm"
                       onClick={() => setPopoverOpen(false)}
                       disabled={saving}
                     >
@@ -453,7 +453,7 @@ export default function Navbar() {
                     {isCollaborator && (
                       <Button
                         size="sm"
-                        className="h-8 text-xs"
+                        className="h-8 text-sm"
                         onClick={handleSave}
                         disabled={saving}
                       >
@@ -471,11 +471,11 @@ export default function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="relative h-8 w-8 p-0 text-amber-400 hover:text-amber-300"
+                    className="relative h-8 w-8 p-0 text-warning hover:text-warning/80"
                     aria-label={`${pendingRequests.length} pending join request${pendingRequests.length !== 1 ? 's' : ''}`}
                   >
                     <Bell className="h-4 w-4" />
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-sm font-bold text-white">
                       {pendingRequests.length}
                     </span>
                   </Button>
@@ -484,7 +484,7 @@ export default function Navbar() {
                   <div className="flex flex-col gap-3">
                     <h4 className="text-sm font-semibold text-foreground">Join Requests</h4>
                     {joinReqError && (
-                      <p className="text-xs text-destructive">{joinReqError}</p>
+                      <p className="text-sm text-destructive">{joinReqError}</p>
                     )}
                     <div className="flex flex-col gap-2">
                       {pendingRequests.map((req) => (
@@ -495,17 +495,17 @@ export default function Navbar() {
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar className="h-6 w-6 shrink-0">
                               {req.avatarUrl && <AvatarImage src={req.avatarUrl} alt={req.username} />}
-                              <AvatarFallback className="text-[10px] font-bold bg-secondary text-secondary-foreground">
+                              <AvatarFallback className="text-sm font-bold bg-secondary text-secondary-foreground">
                                 {req.username.slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-xs font-medium text-foreground truncate">{req.username}</span>
+                            <span className="text-sm font-medium text-foreground truncate">{req.username}</span>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-7 px-2 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                              className="h-7 px-2 text-sm text-success hover:text-success/80 hover:bg-success/10"
                               disabled={joinReqLoading === req.id}
                               onClick={() => handleAcceptRequest(req.id)}
                             >
@@ -514,7 +514,7 @@ export default function Navbar() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-7 px-2 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                              className="h-7 px-2 text-sm text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                               disabled={joinReqLoading === req.id}
                               onClick={() => handleDeclineRequest(req.id)}
                             >
@@ -533,9 +533,9 @@ export default function Navbar() {
               <Tooltip key={tab.id}>
                 <TooltipTrigger asChild>
                   <button
-                    className={`inline-flex items-center gap-1.5 h-12 px-3 text-xs font-medium border-b-3 transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 h-12 px-3 text-sm font-medium border-b-3 transition-colors cursor-pointer ${
                       tab.isActive
-                        ? `${activeBorderCls} text-amber-400`
+                        ? `${activeBorderCls} text-warning`
                         : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                     onClick={tab.onClick}
@@ -545,7 +545,7 @@ export default function Navbar() {
                     <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">{tab.tooltip}</TooltipContent>
+                <TooltipContent side="bottom" className="text-sm">{tab.tooltip}</TooltipContent>
               </Tooltip>
             ))}
           </>
@@ -559,7 +559,7 @@ export default function Navbar() {
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0" aria-label="User menu">
                   <Avatar className="h-7 w-7">
                     {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
-                    <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
+                    <AvatarFallback className="text-sm bg-secondary text-secondary-foreground">
                       {username.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -568,19 +568,19 @@ export default function Navbar() {
               <PopoverContent className="w-56 p-4" align="end">
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-0.5">
-                    <p className="text-xs font-semibold text-foreground truncate">{username}</p>
-                    <p className="text-xs text-muted-foreground">Signed in</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{username}</p>
+                    <p className="text-sm text-muted-foreground">Signed in</p>
                     {userId && (
-                      <p className="text-[10px] text-muted-foreground font-mono truncate select-all mt-0.5" title={userId}>{userId}</p>
+                      <p className="text-sm text-muted-foreground font-mono truncate select-all mt-0.5" title={userId}>{userId}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="renderer-quality-profile" className="text-xs">Rendering quality</Label>
+                    <Label htmlFor="renderer-quality-profile" className="text-sm">Rendering quality</Label>
                     <select
                       id="renderer-quality-profile"
                       value={rendererQualityProfile}
                       onChange={(e) => setRendererQualityProfile(e.target.value as RendererQualityProfile)}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     >
                       {(Object.keys(RENDERER_QUALITY_LABELS) as RendererQualityProfile[]).map((profile) => (
                         <option key={profile} value={profile}>
@@ -593,7 +593,7 @@ export default function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 text-xs justify-start gap-2 px-2"
+                    className="h-8 text-sm justify-start gap-2 px-2"
                     onClick={handleLogout}
                   >
                     <LogOut className="h-3.5 w-3.5" />

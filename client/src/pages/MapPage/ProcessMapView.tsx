@@ -291,7 +291,7 @@ export default function ProcessMapView() {
             onClick={() => setCreateConnOpen(true)}
           >
             <Plus className="h-4 w-4 shrink-0" />
-            <span className="text-xs">New Connection</span>
+            <span className="text-sm">New Connection</span>
           </Button>
           <Popover open={newProcPopoverOpen} onOpenChange={(o) => { setNewProcPopoverOpen(o); if (!o) { setNewProcName(''); setNewProcDesc(''); setNewProcError(''); } }}>
             <PopoverTrigger asChild>
@@ -300,39 +300,39 @@ export default function ProcessMapView() {
                 variant="ghost"
               >
                 <GitBranch className="h-4 w-4 shrink-0" />
-                <span className="text-xs">New Process</span>
+                <span className="text-sm">New Process</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72 p-4" side="bottom" align="start">
               <p className="text-sm font-semibold mb-3">Create Process</p>
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="new-proc-name" className="text-xs">Name <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="new-proc-name" className="text-sm">Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="new-proc-name"
                     value={newProcName}
                     onChange={(e) => setNewProcName(e.target.value)}
                     placeholder="Process name"
-                    className="h-8 text-xs"
+                    className="h-8 text-sm"
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateProcess()}
                     autoFocus
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="new-proc-desc" className="text-xs">Description</Label>
+                  <Label htmlFor="new-proc-desc" className="text-sm">Description</Label>
                   <Textarea
                     id="new-proc-desc"
                     value={newProcDesc}
                     onChange={(e) => setNewProcDesc(e.target.value)}
                     placeholder="Optional description…"
-                    className="text-xs resize-none"
+                    className="text-sm resize-none"
                     rows={3}
                   />
                 </div>
-                {newProcError && <p className="text-xs text-destructive">{newProcError}</p>}
+                {newProcError && <p className="text-sm text-destructive">{newProcError}</p>}
                 <Button
                   size="sm"
-                  className="w-full text-xs"
+                  className="w-full text-sm"
                   onClick={handleCreateProcess}
                   disabled={newProcSaving || !newProcName.trim()}
                 >
@@ -352,7 +352,7 @@ export default function ProcessMapView() {
         </div>
       )}
 
-      <div ref={fpsRef} className="absolute bottom-2 left-2 text-[10px] text-white/40 pointer-events-none font-mono" />
+      <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
 
       {/* Floating Processes sidebar toggle */}
       <div className="absolute bottom-4 right-4 z-10">
@@ -361,13 +361,13 @@ export default function ProcessMapView() {
           variant="ghost"
           className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${
             !processSidebarHidden
-              ? 'bg-sky-950 text-sky-300 border-sky-700 hover:bg-sky-900'
+              ? 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/15'
               : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
           }`}
           onClick={() => setProcessSidebarHidden(!processSidebarHidden)}
         >
           <GitBranch className="h-4 w-4 shrink-0" />
-          <span className="text-xs">Processes</span>
+          <span className="text-sm">Processes</span>
         </Button>
       </div>
 
@@ -383,18 +383,18 @@ export default function ProcessMapView() {
                   size="sm"
                   className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${
                     selectedMetricId
-                      ? 'bg-sky-950 text-sky-300 border-sky-700 hover:bg-sky-900'
+                      ? 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/15'
                       : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
                   }`}
                   variant="ghost"
                 >
                   <Layers className="h-4 w-4 shrink-0" />
-                  <span className="text-xs">{selectedMetric ? selectedMetric.name : 'Layers'}</span>
+                  <span className="text-sm">{selectedMetric ? selectedMetric.name : 'Layers'}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-52 p-1" side="bottom" align="end">
                 <button
-                  className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs transition-colors ${
+                  className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm transition-colors ${
                     !selectedMetricId ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
                   }`}
                   onClick={() => setSelectedMetricId(null)}
@@ -405,13 +405,13 @@ export default function ProcessMapView() {
                 {allMetrics.map((m) => (
                   <button
                     key={m.id}
-                    className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs transition-colors ${
+                    className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm transition-colors ${
                       selectedMetricId === m.id ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
                     }`}
                     onClick={() => setSelectedMetricId(m.id)}
                     title={m.description}
                   >
-                    <span className="h-2 w-2 rounded-full shrink-0 border border-sky-400" />
+                    <span className="h-2 w-2 rounded-full shrink-0 border border-primary/60" />
                     {m.name}
                   </button>
                 ))}

@@ -56,8 +56,11 @@ export default function ProcessPanel() {
   const [newStageName, setNewStageName] = useState('');
   const [addingStage, setAddingStage] = useState(false);
 
-  // Confirm-delete state: null = idle, 'process' = process confirm, stageId = stage confirm
-  const [confirmDelete, setConfirmDelete] = useState<null | 'process' | string>(null);
+  // Confirm-delete state for process: null = idle, 'process' = confirm
+  const [confirmDelete, setConfirmDelete] = useState<null | 'process'>(null);
+
+  // Delete-stage dialog
+  const [deleteStageDialogStageId, setDeleteStageDialogStageId] = useState<string | null>(null);
 
   // Edit-stage dialog
   const [editStageDialogOpen, setEditStageDialogOpen] = useState(false);
@@ -267,23 +270,22 @@ export default function ProcessPanel() {
           </div>
 
           {activeProcess.description && (
-            <p className="text-xs text-muted-foreground">{activeProcess.description}</p>
+            <p className="text-sm text-muted-foreground">{activeProcess.description}</p>
           )}
 
-          {actionError && <p className="text-xs text-destructive">{actionError}</p>}
+          {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
           <Separator />
 
           {/* Stages */}
-          <Label className="text-xs text-muted-foreground">Stages</Label>
+          <Label className="text-sm text-muted-foreground">Stages</Label>
 
           {activeProcess.stages.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No stages yet.</p>
+            <p className="text-sm text-muted-foreground">No stages yet.</p>
           ) : (
             <div className="flex flex-col gap-1">
               {[...activeProcess.stages].sort((a, b) => a.order - b.order).map((stage, idx, sortedStages) => {
                 const isOpen = stage.id === activeStageId;
-                const isConfirmingDelete = confirmDelete === stage.id;
                 const connections = currentMap?.connections ?? {};
                 return (
                   <div key={stage.id} className="flex flex-col rounded-md overflow-hidden border border-border">
@@ -291,13 +293,13 @@ export default function ProcessPanel() {
                     <div
                       className={cn(
                         'flex items-center gap-1.5 px-2 py-1.5 transition-colors cursor-pointer select-none',
-                        isOpen ? 'bg-sky-950 text-sky-300' : 'bg-muted hover:bg-muted/70 text-foreground',
+                        isOpen ? 'bg-primary/10 text-primary' : 'bg-muted hover:bg-muted/70 text-foreground',
                       )}
-                      onClick={() => !isConfirmingDelete && setActiveStageId(isOpen ? null : stage.id)}>
+                      onClick={() => setActiveStageId(isOpen ? null : stage.id)}>
                       <ChevronDown className={cn('h-3.5 w-3.5 shrink-0 transition-transform', isOpen && 'rotate-180')} />
-                      <span className="text-xs truncate flex-1">
+                      <span className="text-sm truncate flex-1">
                         {stage.name ?? `Stage ${idx + 1}`}
-                        <span className="opacity-50 ml-1.5 text-[11px]">({stage.connections.length})</span>
+                        <span className="opacity-50 ml-1.5 text-sm">({stage.connections.length})</span>
                       </span>
                       {/* Stage actions popover */}
                       <Popover>
@@ -314,44 +316,28 @@ export default function ProcessPanel() {
                         <PopoverContent className="w-40 p-1" side="right" align="start"
                           onClick={(e) => e.stopPropagation()}>
                           <button
-                            className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs hover:bg-muted transition-colors"
+                            className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm hover:bg-muted transition-colors"
                             onClick={() => openEditStageDialog(stage)}>
                             <Pencil className="h-3.5 w-3.5" /> Edit name
                           </button>
                           <button
-                            className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs hover:bg-muted transition-colors disabled:opacity-40"
+                            className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm hover:bg-muted transition-colors disabled:opacity-40"
                             disabled={idx === 0}
                             onClick={() => handleMoveStage(stage.id, 'up')}>
                             <ChevronUp className="h-3.5 w-3.5" /> Move up
                           </button>
                           <button
-                            className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs hover:bg-muted transition-colors disabled:opacity-40"
+                            className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm hover:bg-muted transition-colors disabled:opacity-40"
                             disabled={idx === sortedStages.length - 1}
                             onClick={() => handleMoveStage(stage.id, 'down')}>
                             <ChevronDown className="h-3.5 w-3.5" /> Move down
                           </button>
                           <div className="my-1 border-t border-border" />
-                          {isConfirmingDelete ? (
-                            <div className="flex flex-col gap-1 px-1 pb-1">
-                              <span className="text-[11px] text-destructive px-1">Delete stage?</span>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="destructive" className="h-6 px-2 text-[10px] flex-1"
-                                  onClick={() => handleDeleteStage(stage.id)}>
-                                  Delete
-                                </Button>
-                                <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] flex-1"
-                                  onClick={() => setConfirmDelete(null)}>
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <button
-                              className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs text-destructive hover:bg-muted transition-colors"
-                              onClick={() => setConfirmDelete(stage.id)}>
-                              <Trash2 className="h-3.5 w-3.5" /> Delete
-                            </button>
-                          )}
+                          <button
+                            className="flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm text-destructive hover:bg-muted transition-colors"
+                            onClick={() => setDeleteStageDialogStageId(stage.id)}>
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </button>
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -360,7 +346,7 @@ export default function ProcessPanel() {
                     {isOpen && (
                       <div className="flex flex-col gap-1 px-2 py-2 bg-muted/30 border-t border-border">
                         {stage.connections.length === 0 ? (
-                          <p className="text-[11px] text-muted-foreground">No connections yet.</p>
+                          <p className="text-sm text-muted-foreground">No connections yet.</p>
                         ) : (
                           stage.connections.map((sc) => {
                             const conn = connections[sc.connectionId];
@@ -375,7 +361,7 @@ export default function ProcessPanel() {
                                 className="flex items-center gap-2 rounded bg-muted px-2 py-1 w-full text-left hover:bg-muted/70 transition-colors cursor-pointer"
                                 onClick={() => openEditScDialog(sc.id, sc.title, sc.direction, sc.connectionId)}
                               >
-                                <span className="text-[11px] text-foreground truncate flex-1">
+                                <span className="text-sm text-foreground truncate flex-1">
                                   {sc.title ?? conn.name ?? conn.type} · {fromLm?.name ?? '?'} {dirLabel} {toLm?.name ?? '?'}
                                 </span>
                                 <Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -390,9 +376,9 @@ export default function ProcessPanel() {
                               variant="ghost"
                               size="sm"
                               className={cn(
-                                'mt-1 h-7 w-full gap-1.5 text-xs justify-center',
+                                'mt-1 h-7 w-full gap-1.5 text-sm justify-center',
                                 pickingConnection
-                                  ? 'text-sky-400 bg-sky-950 hover:bg-sky-900 hover:text-sky-300'
+                                  ? 'text-primary bg-primary/10 hover:bg-primary/15 hover:text-primary'
                                   : 'text-muted-foreground hover:text-foreground',
                               )}
                               onClick={() => setPickingConnection(!pickingConnection)}>
@@ -400,7 +386,7 @@ export default function ProcessPanel() {
                               {pickingConnection ? 'Exit pick mode' : 'Add Connection'}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-55 text-xs">
+                          <TooltipContent side="bottom" className="max-w-55 text-sm">
                             Click a connection line on the map to add or remove it from this stage.
                           </TooltipContent>
                         </Tooltip>
@@ -418,20 +404,43 @@ export default function ProcessPanel() {
               <Input value={newStageName}
                 onChange={(e) => setNewStageName(e.target.value)}
                 placeholder="Stage name (optional)"
-                className="h-7 text-xs flex-1"
+                className="h-7 text-sm flex-1"
                 onKeyDown={(e) => e.key === 'Enter' && handleAddStage()}
                 autoFocus />
-              <Button size="sm" className="h-7 px-2 text-xs" onClick={handleAddStage}>Add</Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
+              <Button size="sm" className="h-7 px-2 text-sm" onClick={handleAddStage}>Add</Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-sm"
                 onClick={() => setAddingStage(false)}>✕</Button>
             </div>
           ) : (
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 self-start"
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-sm gap-1 self-start"
               onClick={() => setAddingStage(true)}>
               <Plus className="h-3.5 w-3.5" /> Add Stage
             </Button>
           )}
         </div>
+
+        {/* Delete stage confirmation dialog */}
+        <Dialog open={!!deleteStageDialogStageId} onOpenChange={(open) => { if (!open) setDeleteStageDialogStageId(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Delete stage?</DialogTitle>
+              <DialogDescription>This will remove the stage and all its connections from the process. This action cannot be undone.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="flex-1 text-sm"
+                onClick={() => { if (deleteStageDialogStageId) handleDeleteStage(deleteStageDialogStageId); setDeleteStageDialogStageId(null); }}
+              >
+                Delete
+              </Button>
+              <Button size="sm" variant="ghost" className="flex-1 text-sm" onClick={() => setDeleteStageDialogStageId(null)}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Edit stage dialog */}
         <Dialog open={editStageDialogOpen} onOpenChange={setEditStageDialogOpen}>
@@ -443,7 +452,7 @@ export default function ProcessPanel() {
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-1.5 py-2">
-              <Label htmlFor="dlg-stage-name" className="text-xs">Name</Label>
+              <Label htmlFor="dlg-stage-name" className="text-sm">Name</Label>
               <Input id="dlg-stage-name" value={editStageName}
                 onChange={(e) => setEditStageName(e.target.value)}
                 placeholder="Stage name (optional)"
@@ -451,7 +460,7 @@ export default function ProcessPanel() {
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveStage()} />
             </div>
             <DialogFooter>
-              <Button size="sm" className="text-xs"
+              <Button size="sm" className="text-sm"
                 onClick={handleSaveStage} disabled={editStageSaving}>
                 {editStageSaving ? 'Saving…' : 'Save'}
               </Button>
@@ -472,25 +481,25 @@ export default function ProcessPanel() {
               {/* Connection info – read-only */}
               <div className="flex flex-col gap-1 rounded-md bg-muted px-3 py-2">
 
-                <div className="flex items-center gap-1.5 text-[11px] text-foreground mt-0.5">
+                <div className="flex items-center gap-1.5 text-sm text-foreground mt-0.5">
                   <span className="truncate max-w-25">{editScFromName}</span>
                   <span>→</span>
                   <span className="truncate max-w-25">{editScToName}</span>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">{editScConnName}</span>
+                <span className="text-sm font-medium text-muted-foreground">{editScConnName}</span>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dlg-sc-title" className="text-xs">Title (optional)</Label>
+                <Label htmlFor="dlg-sc-title" className="text-sm">Title (optional)</Label>
                 <Input id="dlg-sc-title" value={editScTitle}
                   onChange={(e) => setEditScTitle(e.target.value)}
                   placeholder="e.g. Send report"
                   className="h-8 text-sm" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dlg-sc-dir" className="text-xs">Direction</Label>
+                <Label htmlFor="dlg-sc-dir" className="text-sm">Direction</Label>
                 <select id="dlg-sc-dir" value={editScDirection}
                   onChange={(e) => setEditScDirection(e.target.value as StageConnectionDirection)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
                   <option value="FORWARD">Forward (→)</option>
                   <option value="REVERSE">Reverse (←)</option>
                   <option value="BIDIRECTIONAL">Bidirectional (↔)</option>
@@ -502,18 +511,18 @@ export default function ProcessPanel() {
               <div className="flex items-center gap-1">
                 {editScConfirmDelete ? (
                   <>
-                    <Button size="sm" variant="destructive" className="text-xs h-7 px-2"
+                    <Button size="sm" variant="destructive" className="text-sm h-7 px-2"
                       onClick={handleDeleteScFromDialog} disabled={editScSaving}>
                       Confirm delete
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-xs h-7 px-2"
+                    <Button size="sm" variant="ghost" className="text-sm h-7 px-2"
                       onClick={() => setEditScConfirmDelete(false)} disabled={editScSaving}>
                       Cancel
                     </Button>
                   </>
                 ) : (
                   <Button size="sm" variant="ghost"
-                    className="text-xs h-7 px-2 text-destructive hover:text-destructive/80 gap-1"
+                    className="text-sm h-7 px-2 text-destructive hover:text-destructive/80 gap-1"
                     onClick={() => setEditScConfirmDelete(true)} disabled={editScSaving}>
                     <Trash2 className="h-3 w-3" /> Delete
                   </Button>
@@ -521,7 +530,7 @@ export default function ProcessPanel() {
               </div>
               {/* Save – right-aligned */}
               <div className="flex items-center gap-1">
-                <Button size="sm" className="text-xs"
+                <Button size="sm" className="text-sm"
                   onClick={handleSaveSc} disabled={editScSaving}>
                   {editScSaving ? 'Saving…' : 'Save'}
                 </Button>
@@ -541,14 +550,14 @@ export default function ProcessPanel() {
             </DialogHeader>
             <div className="flex flex-col gap-3 py-2">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dlg-proc-name" className="text-xs">Name</Label>
+                <Label htmlFor="dlg-proc-name" className="text-sm">Name</Label>
                 <Input id="dlg-proc-name" value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="h-8 text-sm"
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveProcess()} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dlg-proc-desc" className="text-xs">Description</Label>
+                <Label htmlFor="dlg-proc-desc" className="text-sm">Description</Label>
                 <Textarea id="dlg-proc-desc" value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
                   className="text-sm resize-none" rows={3} />
@@ -558,24 +567,24 @@ export default function ProcessPanel() {
               <div className="flex items-center gap-1">
                 {confirmDelete === 'process' ? (
                   <>
-                    <Button size="sm" variant="destructive" className="text-xs h-7 px-2"
+                    <Button size="sm" variant="destructive" className="text-sm h-7 px-2"
                       onClick={async () => { setEditDialogOpen(false); setConfirmDelete(null); await handleDeleteProcess(); }} disabled={editSaving}>
                       Confirm delete
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-xs h-7 px-2"
+                    <Button size="sm" variant="ghost" className="text-sm h-7 px-2"
                       onClick={() => setConfirmDelete(null)} disabled={editSaving}>
                       Cancel
                     </Button>
                   </>
                 ) : (
                   <Button size="sm" variant="ghost"
-                    className="text-xs h-7 px-2 text-destructive hover:text-destructive/80 gap-1"
+                    className="text-sm h-7 px-2 text-destructive hover:text-destructive/80 gap-1"
                     onClick={() => setConfirmDelete('process')} disabled={editSaving}>
                     <Trash2 className="h-3 w-3" /> Delete
                   </Button>
                 )}
               </div>
-              <Button size="sm" className="text-xs"
+              <Button size="sm" className="text-sm"
                 onClick={handleSaveProcess} disabled={editSaving}>
                 {editSaving ? 'Saving…' : 'Save'}
               </Button>
@@ -595,30 +604,30 @@ export default function ProcessPanel() {
           <Input value={newProcessName}
             onChange={(e) => setNewProcessName(e.target.value)}
             placeholder="Process name"
-            className="h-7 text-xs flex-1"
+            className="h-7 text-sm flex-1"
             onKeyDown={(e) => e.key === 'Enter' && handleCreateProcess()}
             autoFocus />
-          <Button size="sm" className="h-7 px-2 text-xs" onClick={handleCreateProcess}>Create</Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
+          <Button size="sm" className="h-7 px-2 text-sm" onClick={handleCreateProcess}>Create</Button>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-sm"
             onClick={() => { setCreatingProcess(false); setNewProcessName(''); }}>✕</Button>
         </div>
       )}
 
-      {actionError && <p className="text-xs text-destructive">{actionError}</p>}
+      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
       {processesLoading ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading processes…
         </div>
       ) : processesError ? (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-destructive">{processesError}</p>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 self-start" onClick={handleRetry}>
+          <p className="text-sm text-destructive">{processesError}</p>
+          <Button variant="ghost" size="sm" className="h-7 text-sm gap-1 self-start" onClick={handleRetry}>
             <RefreshCw className="h-3.5 w-3.5" /> Retry
           </Button>
         </div>
       ) : processes.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No processes yet.</p>
+        <p className="text-sm text-muted-foreground">No processes yet.</p>
       ) : (
         <div className="flex flex-col gap-1">
           {processes.map((p) => (
@@ -626,18 +635,18 @@ export default function ProcessPanel() {
               className={cn(
                 'flex items-center gap-2 rounded-md px-3 py-2 cursor-pointer transition-colors select-none',
                 p.id === activeProcessId
-                  ? 'bg-sky-950 border border-sky-800'
+                  ? 'bg-primary/10 border border-primary/30'
                   : 'bg-muted hover:bg-muted/70',
               )}
               onClick={() => handleOpenProcess(p)}>
               <span className={cn(
                 'text-sm truncate flex-1',
-                p.id === activeProcessId ? 'text-sky-300 font-medium' : 'text-foreground',
+                p.id === activeProcessId ? 'text-primary font-medium' : 'text-foreground',
               )}>
                 {p.name}
               </span>
               {p.stages.length > 0 && (
-                <span className="text-[10px] text-muted-foreground shrink-0">
+                <span className="text-sm text-muted-foreground shrink-0">
                   {p.stages.length} stage{p.stages.length !== 1 ? 's' : ''}
                 </span>
               )}
@@ -646,7 +655,7 @@ export default function ProcessPanel() {
         </div>
       )}
 
-      <Button variant="ghost" size="sm" className="w-full h-7 text-xs gap-1 mt-1"
+      <Button variant="ghost" size="sm" className="w-full h-7 text-sm gap-1 mt-1"
         onClick={() => setCreatingProcess(true)}>
         <Plus className="h-3.5 w-3.5" /> Create Process
       </Button>

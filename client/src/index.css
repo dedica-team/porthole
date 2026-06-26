@@ -34,6 +34,10 @@
     --accent-foreground: var(--tron-ink);
     --destructive:         0 90% 55%;
     --destructive-foreground: 0 0% 98%;
+    --success:          142 71% 45%;
+    --warning:           38 92% 50%;
+    --link:             var(--tron-cyan);
+    --link-hover:       185 100% 70%;
     --border:            var(--tron-line);
     --input:             var(--tron-line);
     --ring:              var(--tron-cyan);
@@ -59,6 +63,10 @@
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-link: hsl(var(--link));
+  --color-link-hover: hsl(var(--link-hover));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -332,11 +340,6 @@ tr:hover td:not(.group-stripe) {
     8px 0 18px rgba(0, 0, 0, 0.16);
 }
 
-.metrics-view .metrics-overall-badge,
-.metrics-view .metrics-value-badge {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 12px rgba(0, 0, 0, 0.18);
-}
-
 .metrics-view .metrics-metric-cell {
   position: relative;
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03);
@@ -371,17 +374,6 @@ tr:hover td:not(.group-stripe) {
 .metrics-view .metrics-cell-content {
   position: relative;
   z-index: 1;
-}
-
-.metrics-view .metrics-inline-badge {
-  padding: 0.125rem 0.3rem;
-  border: 1px solid rgba(0, 240, 255, 0.12);
-  background: rgba(255, 255, 255, 0.025);
-  border-radius: 999px;
-}
-
-.metrics-view .metrics-inline-badge img {
-  filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.10));
 }
 
 .metrics-view .metrics-cell-link {

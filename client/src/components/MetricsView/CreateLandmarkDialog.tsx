@@ -1,12 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Loader2, Plus, X } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Loader2, Plus } from 'lucide-react';
+import { CloseButton } from '@/components/ui/close-button';
+import { Popup } from '@/components/ui/popup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -81,76 +76,68 @@ export default function CreateLandmarkDialog({ open, loading, groups, onSubmit, 
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className="max-w-sm flex flex-col gap-0 p-0 overflow-hidden" aria-describedby={undefined}>
-        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle className="text-sm">Create Landmark</DialogTitle>
-          <DialogDescription className="text-xs">
-            Create a landmark without a position. You can place it later from the tile sidebar.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 px-6 pb-6">
+    <Popup title="Create Landmark" open={open} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
+      <p className="text-sm text-muted-foreground mb-3">
+        Create a landmark without a position. You can place it later from the tile sidebar.
+      </p>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <Input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="h-8 text-sm"
+          maxLength={60}
+          placeholder="Name"
+        />
+
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value as LandmarkType)}
+          className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
+        >
+          {allowedTypes.map((t) => (
+            <option key={t} value={t}>{LANDMARK_TYPE_LABELS[t]}</option>
+          ))}
+        </select>
+
+        <select
+          value={groupId}
+          onChange={(e) => setGroupId(e.target.value)}
+          className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
+        >
+          <option value="">— No group —</option>
+          {sortedGroups.map((g) => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="text-sm min-h-[4rem] resize-none"
+          maxLength={200}
+          placeholder="Description (optional)"
+        />
+
+        <div className="flex flex-col gap-0.5">
           <Input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-8 text-sm"
-            maxLength={60}
-            placeholder="Name"
+            value={link}
+            onChange={(e) => { setLink(e.target.value); setLinkError(''); }}
+            className={`h-8 text-sm${linkError ? ' border-destructive' : ''}`}
+            placeholder="Link (optional, https://...)"
+            type="url"
           />
+          {linkError && <span className="text-sm text-destructive px-1">{linkError}</span>}
+        </div>
 
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as LandmarkType)}
-            className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
-          >
-            {allowedTypes.map((t) => (
-              <option key={t} value={t}>{LANDMARK_TYPE_LABELS[t]}</option>
-            ))}
-          </select>
-
-          <select
-            value={groupId}
-            onChange={(e) => setGroupId(e.target.value)}
-            className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground"
-          >
-            <option value="">— No group —</option>
-            {sortedGroups.map((g) => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="text-sm min-h-[4rem] resize-none"
-            maxLength={200}
-            placeholder="Description (optional)"
-          />
-
-          <div className="flex flex-col gap-0.5">
-            <Input
-              value={link}
-              onChange={(e) => { setLink(e.target.value); setLinkError(''); }}
-              className={`h-8 text-sm${linkError ? ' border-red-500' : ''}`}
-              placeholder="Link (optional, https://...)"
-              type="url"
-            />
-            {linkError && <span className="text-[10px] text-red-400 px-1">{linkError}</span>}
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <Button type="submit" size="sm" className="flex-1 gap-1.5 h-8" disabled={!name.trim() || isDecorative(type) || loading}>
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-              Create Landmark
-            </Button>
-            <Button type="button" size="sm" variant="ghost" className="h-8 px-3" onClick={handleClose}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <div className="flex gap-2 pt-1">
+          <Button type="submit" size="sm" className="flex-1 gap-1.5 h-8" disabled={!name.trim() || isDecorative(type) || loading}>
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+            Create Landmark
+          </Button>
+          <CloseButton onClick={handleClose} />
+        </div>
+      </form>
+    </Popup>
   );
 }
-

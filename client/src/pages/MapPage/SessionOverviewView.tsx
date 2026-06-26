@@ -3,12 +3,13 @@ import type React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {LayoutDashboard, BarChart2, Bus, CheckSquare, Sprout, ArrowRight} from 'lucide-react';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {useMapStore} from '@/store/mapStore';
-import {QUALITY_LEVEL_BADGE_STYLE, QUALITY_LEVEL_SIGN, worstLevel} from '@/types/landmark';
-import {MATRIX_LEVEL_BADGE_STYLE, MATRIX_LEVEL_LABEL, MATRIX_LEVEL_ORDER} from '@/types/matrix';
+import {StatusBadge, qualityLevelToStatus, matrixLevelToStatus} from '@/components/ui/status-badge';
+import {QUALITY_LEVEL_SIGN, worstLevel} from '@/types/landmark';
+import {MATRIX_LEVEL_LABEL, MATRIX_LEVEL_ORDER} from '@/types/matrix';
 import type {MatrixLevel} from '@/types/matrix';
 import type {LandmarkMetricEntry} from '@/types/landmark';
 import {fetchChoreLists, fetchGreenkeepingRotations, fetchCollaboratorMatrix} from '@/api/mapApi';
+import {useMapStore} from '@/store/mapStore';
 import type {GreenkeepingRotation} from '@/types/greenkeeping';
 import {getActiveGreenkeepingEntry} from '@/types/greenkeeping';
 
@@ -32,7 +33,7 @@ function OverviewCard({title, icon, linkLabel, linkTo, children}: OverviewCardPr
                     {title}
                 </div>
                 <button
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     onClick={() => navigate(linkTo)}
                 >
                     {linkLabel}
@@ -52,10 +53,10 @@ function QualityMetricsSummary({}: { sessionId: string }) {
     const currentMap = useMapStore((s) => s.currentMap);
     const metrics = useMapStore((s) => s.metrics);
 
-    if (!currentMap) return <p className="text-xs text-muted-foreground">No data.</p>;
+    if (!currentMap) return <p className="text-sm text-muted-foreground">No data.</p>;
 
     const metricList = Object.values(metrics).sort((a, b) => a.name.localeCompare(b.name));
-    if (metricList.length === 0) return <p className="text-xs text-muted-foreground">No metrics defined.</p>;
+    if (metricList.length === 0) return <p className="text-sm text-muted-foreground">No metrics defined.</p>;
 
     const landmarks = Object.values(currentMap.landmarks);
 
@@ -70,7 +71,7 @@ function QualityMetricsSummary({}: { sessionId: string }) {
     });
 
     return (
-        <table className="w-full text-xs border-separate border-spacing-0">
+        <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
             <tr>
                 <th className="text-left pb-1 font-medium text-muted-foreground">Metric</th>
@@ -83,12 +84,9 @@ function QualityMetricsSummary({}: { sessionId: string }) {
                 <tr key={metric.id}>
                     <td className="py-0.5 pr-2 text-foreground truncate max-w-32">{metric.name}</td>
                     <td className="py-0.5 text-center">
-              <span
-                  style={QUALITY_LEVEL_BADGE_STYLE[worst]}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-medium"
-              >
+              <StatusBadge status={qualityLevelToStatus[worst]} className="text-sm font-mono">
                 {QUALITY_LEVEL_SIGN[worst]}
-              </span>
+              </StatusBadge>
                     </td>
                     <td className="py-0.5 text-right text-muted-foreground">{filled}/{total}</td>
                 </tr>
@@ -114,20 +112,20 @@ function BusMatrixSummary({}: { sessionId: string }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentMap?.id, collaboratorMatrix]);
 
-    if (!currentMap) return <p className="text-xs text-muted-foreground">No data.</p>;
+    if (!currentMap) return <p className="text-sm text-muted-foreground">No data.</p>;
 
     const collaborators = [...currentMap.collaborators].sort((a, b) => a.username.localeCompare(b.username));
     const landmarks = Object.values(currentMap.landmarks).sort((a, b) => a.name.localeCompare(b.name));
 
-    if (collaborators.length === 0) return <p className="text-xs text-muted-foreground">No collaborators.</p>;
-    if (landmarks.length === 0) return <p className="text-xs text-muted-foreground">No landmarks.</p>;
-    if (!collaboratorMatrix) return <p className="text-xs text-muted-foreground">Loading…</p>;
+    if (collaborators.length === 0) return <p className="text-sm text-muted-foreground">No collaborators.</p>;
+    if (landmarks.length === 0) return <p className="text-sm text-muted-foreground">No landmarks.</p>;
+    if (!collaboratorMatrix) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
     return (
         <div className="flex flex-col gap-1">
             {landmarks.map((l) => (
                 <div key={l.id} className="flex items-center gap-2">
-                    <span className="text-xs text-foreground truncate max-w-32 shrink-0">{l.name}</span>
+                    <span className="text-sm text-foreground truncate max-w-32 shrink-0">{l.name}</span>
                     <div className="flex items-center gap-0.5">
                         {[...collaborators]
                             .map((c) => ({
@@ -136,23 +134,23 @@ function BusMatrixSummary({}: { sessionId: string }) {
                             }))
                             .filter(({level}) => level !== 'NONE')
                             .sort((a, b) => MATRIX_LEVEL_ORDER.indexOf(b.level) - MATRIX_LEVEL_ORDER.indexOf(a.level))
-                            .map(({c, level}) => (
-                                <span
-                                    key={c.id}
-                                    className="inline-block"
-                                    style={{
-                                        width: '0.55rem',
-                                        height: '0.55rem',
-                                        background: (MATRIX_LEVEL_BADGE_STYLE[level] as React.CSSProperties & {
-                                            background: string
-                                        }).background,
-                                        border: (MATRIX_LEVEL_BADGE_STYLE[level] as React.CSSProperties & {
-                                            border: string
-                                        }).border,
-                                    }}
-                                    title={`${c.username}: ${MATRIX_LEVEL_LABEL[level]}`}
-                                />
-                            ))}
+                            .map(({c, level}) => {
+                                const status = matrixLevelToStatus[level];
+                                const colorMap: Record<string, string> = {
+                                    GOOD: 'rgb(34 197 94 / 0.8)',
+                                    PARTIAL: 'rgb(245 158 11 / 0.8)',
+                                    BAD: 'rgb(239 68 68 / 0.8)',
+                                    NONE: 'rgb(156 163 175 / 0.3)',
+                                };
+                                return (
+                                    <span
+                                        key={c.id}
+                                        className="inline-block w-2 h-2 rounded-full"
+                                        style={{ background: colorMap[status] }}
+                                        title={`${c.username}: ${MATRIX_LEVEL_LABEL[level]}`}
+                                    />
+                                );
+                            })}
                     </div>
                 </div>
             ))}
@@ -185,8 +183,8 @@ function ChoreProgressSummary({}: { sessionId: string }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentMap?.id, choreListsFetched]);
 
-    if (choreListsLoading) return <p className="text-xs text-muted-foreground">Loading…</p>;
-    if (choreLists.length === 0) return <p className="text-xs text-muted-foreground">No chore lists.</p>;
+    if (choreListsLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+    if (choreLists.length === 0) return <p className="text-sm text-muted-foreground">No chore lists.</p>;
 
     return (
         <div className="flex flex-col gap-2">
@@ -197,13 +195,13 @@ function ChoreProgressSummary({}: { sessionId: string }) {
                 const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                 return (
                     <div key={list.id} className="flex flex-col gap-0.5">
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-sm">
                             <span className="text-foreground truncate max-w-40">{list.title}</span>
                             <span className="text-muted-foreground shrink-0 ml-2">{done}/{total}</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                             <div
-                                className="h-full rounded-full bg-emerald-500 transition-all"
+                                className="h-full rounded-full bg-success transition-all"
                                 style={{width: `${pct}%`}}
                             />
                         </div>
@@ -239,10 +237,10 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentMap?.id, rotationsFetched]);
 
-    if (!currentMap) return <p className="text-xs text-muted-foreground">No data.</p>;
-    if (rotationsLoading) return <p className="text-xs text-muted-foreground">Loading…</p>;
+    if (!currentMap) return <p className="text-sm text-muted-foreground">No data.</p>;
+    if (rotationsLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
     if (rotations.length === 0)
-        return <p className="text-xs text-muted-foreground">No rotations defined.</p>;
+        return <p className="text-sm text-muted-foreground">No rotations defined.</p>;
 
     const collaboratorsById = Object.fromEntries(
         currentMap.collaborators.map((c) => [c.id, c])
@@ -263,11 +261,11 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
                             <AvatarFallback className="text-sm font-semibold">{initials}</AvatarFallback>
                         </Avatar>
                         {/* Keeper name */}
-                        <span className="text-xs text-foreground text-center truncate max-w-20">
+                        <span className="text-sm text-foreground text-center truncate max-w-20">
               {keeperName ?? <span className="italic text-muted-foreground">none</span>}
             </span>
                         {/* Rotation name */}
-                        <span className="text-[12px] text-muted-foreground text-center max-w-20">{r.name}</span>
+                        <span className="text-sm text-muted-foreground text-center max-w-20">{r.name}</span>
                     </div>
                 );
             })}

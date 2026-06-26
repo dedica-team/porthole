@@ -84,7 +84,7 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setActiveChoreListId(null)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className={`text-sm font-semibold flex-1 truncate ${choreList.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+        <h2 className={`text-lg font-semibold flex-1 truncate ${choreList.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
           {choreList.title}
         </h2>
         {choreList.link && (
@@ -118,7 +118,7 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
         )}
       </div>
 
-      {error && <p className="px-6 py-1 text-xs text-destructive shrink-0">{error}</p>}
+      {error && <p className="px-6 py-1 text-sm text-destructive shrink-0">{error}</p>}
 
       {totalEntries === 0 && (
         <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
@@ -129,7 +129,7 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
       {totalEntries > 0 && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
-            <table className="data-display-table w-full text-xs border-separate border-spacing-0">
+            <table className="data-display-table w-full text-sm border-separate border-spacing-0">
               <thead>
                 <tr>
                   {/* colour stripe col */}

@@ -6,9 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
+import { StatusBadge, choreStateToStatus } from '@/components/ui/status-badge';
 import type {ChoreEntry, ChoreEntryState, ChoreList} from '@/types/chores';
 import type { Collaborator } from '@/types/session';
-import { CHORE_ENTRY_STATE_BADGE_STYLE, CHORE_ENTRY_STATE_LABEL, CHORE_ENTRY_STATES } from '@/types/chores';
+import { CHORE_ENTRY_STATE_LABEL, CHORE_ENTRY_STATES } from '@/types/chores';
 import { updateChoreEntry } from '@/api/mapApi';
 
 interface Props {
@@ -78,7 +79,7 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
         >
           <div className="flex items-center justify-center" style={{ height: `${groupStripe.rowSpan * 2.5}rem`, minHeight: '2rem' }}>
             <span
-              className="text-[9px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+              className="text-sm font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
               style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: `color-mix(in srgb, ${groupStripe.color} 25%, #fff)`, maxHeight: '8rem', textOverflow: 'ellipsis' }}
             >
               {groupStripe.label}
@@ -90,7 +91,7 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
       {/* Landmark name + saved flash + edit trigger */}
       <td className={`${tdClass} font-medium text-foreground`}>
         <div className="flex items-center gap-1.5">
-          {saved && <Check className="h-3 w-3 text-green-400 shrink-0" />}
+          {saved && <Check className="h-3 w-3 text-success shrink-0" />}
           {isCollaborator && (
             <Popover open={open} onOpenChange={handleOpenChange}>
               <PopoverTrigger asChild>
@@ -101,20 +102,21 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
               </PopoverTrigger>
               <PopoverContent className="w-72 p-4" align="start" side="right">
                 <div className="flex flex-col gap-3">
-                  <p className="text-xs font-semibold text-foreground truncate">{landmarkName}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{landmarkName}</p>
 
                   {/* State */}
                   <div className="flex flex-col gap-1">
-                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">State</Label>
+                    <Label className="text-sm text-muted-foreground uppercase tracking-wide">State</Label>
                     <div className="flex flex-wrap gap-1.5">
                       {CHORE_ENTRY_STATES.map((s) => (
                         <button
                           key={s}
                           onClick={() => setDraftState(s)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-opacity cursor-pointer ${draftState === s ? '' : 'opacity-40 hover:opacity-70'}`}
-                          style={CHORE_ENTRY_STATE_BADGE_STYLE[s]}
+                          className={`transition-opacity cursor-pointer ${draftState === s ? '' : 'opacity-40 hover:opacity-70'}`}
                         >
-                          {CHORE_ENTRY_STATE_LABEL[s]}
+                          <StatusBadge status={choreStateToStatus[s]} className="text-sm font-medium">
+                            {CHORE_ENTRY_STATE_LABEL[s]}
+                          </StatusBadge>
                         </button>
                       ))}
                     </div>
@@ -122,11 +124,11 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
 
                   {/* Assignee */}
                   <div className="flex flex-col gap-1">
-                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Assignee</Label>
+                    <Label className="text-sm text-muted-foreground uppercase tracking-wide">Assignee</Label>
                     <select
                       value={draftAssigneeId}
                       onChange={(e) => setDraftAssigneeId(e.target.value)}
-                      className="h-7 text-xs px-2 rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      className="h-7 text-sm px-2 rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     >
                       <option value="">Unassigned</option>
                       {collaborators.map((c) => (
@@ -137,32 +139,32 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
 
                   {/* Link */}
                   <div className="flex flex-col gap-1">
-                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Link</Label>
+                    <Label className="text-sm text-muted-foreground uppercase tracking-wide">Link</Label>
                     <Input
                       value={draftLink}
                       onChange={(e) => setDraftLink(e.target.value)}
                       placeholder="https://…"
-                      className="h-7 text-xs px-2"
+                      className="h-7 text-sm px-2"
                       type="url"
                     />
                   </div>
 
                   {/* Note */}
                   <div className="flex flex-col gap-1">
-                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Note</Label>
+                    <Label className="text-sm text-muted-foreground uppercase tracking-wide">Note</Label>
                     <Textarea
                       value={draftNote}
                       onChange={(e) => setDraftNote(e.target.value)}
                       placeholder="Note…"
-                      className="text-xs resize-none"
+                      className="text-sm resize-none"
                       maxLength={280}
                       rows={2}
                     />
                   </div>
 
                   <div className="flex justify-end gap-2 pt-1">
-                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
-                    <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={saving}>
+                    <Button variant="flat" size="sm" className="h-7 text-sm" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
+                    <Button size="sm" className="h-7 text-sm" onClick={handleSave} disabled={saving}>
                       {saving ? 'Saving…' : 'Save'}
                     </Button>
                   </div>
@@ -176,9 +178,9 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
 
       {/* State badge (read-only display) */}
       <td className={tdClass}>
-        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={CHORE_ENTRY_STATE_BADGE_STYLE[entry.state]}>
+        <StatusBadge status={choreStateToStatus[entry.state]} className="text-sm font-medium">
           {CHORE_ENTRY_STATE_LABEL[entry.state]}
-        </span>
+        </StatusBadge>
       </td>
 
       {/* Assignee (read-only display) */}
@@ -187,9 +189,9 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
           <div className="flex items-center gap-1.5 min-w-0">
             <Avatar className="h-4 w-4 shrink-0">
               {assignee.avatarUrl && <AvatarImage src={assignee.avatarUrl} alt={assignee.username} />}
-              <AvatarFallback className="text-[8px] bg-secondary">{assignee.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-sm bg-secondary">{assignee.username.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <span className="truncate text-[10px] text-foreground">{assignee.username}</span>
+            <span className="truncate text-sm text-foreground">{assignee.username}</span>
           </div>
         ) : (
           <span className="text-muted-foreground/40">—</span>
@@ -200,13 +202,13 @@ export default function ChoreEntryRow({ mapId, listId, entry, landmarkName, coll
       <td className={tdClass}>
         <div className="flex flex-col gap-1 min-w-0">
           {entry.link && (
-            <a href={entry.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-[hsl(185,100%,54%)] hover:underline truncate">
+            <a href={entry.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-[hsl(185,100%,54%)] hover:underline truncate">
               <ExternalLink className="h-3 w-3 shrink-0" />
               <span className="truncate">{entry.link}</span>
             </a>
           )}
           {entry.note && (
-            <span className="text-[10px] text-muted-foreground">{entry.note}</span>
+            <span className="text-sm text-muted-foreground">{entry.note}</span>
           )}
           {!entry.link && !entry.note && <span className="text-muted-foreground/40">—</span>}
         </div>

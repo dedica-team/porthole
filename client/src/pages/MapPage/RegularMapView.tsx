@@ -149,10 +149,10 @@ export default function RegularMapView() {
 
       {editorMode && <EditorPanel floating error={actions.error} onClearError={() => actions.setError('')} />}
 
-      <div ref={fpsRef} className="absolute bottom-2 left-2 text-[10px] text-white/40 pointer-events-none font-mono" />
+      <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
 
       {(mainView === 'tile' || mainView === 'landmark') && selectedTile && !editorMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card/90 border border-border text-[11px] text-muted-foreground pointer-events-none z-10">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card/90 border border-border text-sm text-muted-foreground pointer-events-none z-10">
           ({selectedTile.q}, {selectedTile.r})
           {selectedLandmark && <> · {selectedLandmark.type.replace('_', ' ')}</>}
         </div>

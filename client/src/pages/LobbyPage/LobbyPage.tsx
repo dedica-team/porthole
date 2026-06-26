@@ -77,7 +77,7 @@ function NewSessionDialog({
 
         <div>
           <h2 className="text-base font-semibold text-foreground tron-logo">New Session</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Choose a map type and size to initialise</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Choose a map type and size to initialise</p>
         </div>
 
         {/* type cards */}
@@ -96,15 +96,15 @@ function NewSessionDialog({
               <span className={selected === opt.type ? 'text-primary' : 'text-muted-foreground'}>
                 {opt.icon}
               </span>
-              <span className="text-xs font-semibold">{opt.label}</span>
-              <span className="text-[10px] leading-tight">{opt.description}</span>
+              <span className="text-sm font-semibold">{opt.label}</span>
+              <span className="text-sm leading-tight">{opt.description}</span>
             </button>
           ))}
         </div>
 
         {/* size picker */}
         <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium text-foreground">Map size</p>
+          <p className="text-sm font-medium text-foreground">Map size</p>
           <div className="grid grid-cols-3 gap-2">
             {MAP_SIZE_OPTIONS.map((opt) => (
               <button
@@ -117,8 +117,8 @@ function NewSessionDialog({
                     : 'border-border bg-muted/30 text-muted-foreground hover:border-border/70 hover:bg-muted/50',
                 ].join(' ')}
               >
-                <span className="text-xs font-semibold">{opt.label}</span>
-                <span className="text-[10px] opacity-70">{opt.detail}</span>
+                <span className="text-sm font-semibold">{opt.label}</span>
+                <span className="text-sm opacity-70">{opt.detail}</span>
               </button>
             ))}
           </div>
@@ -126,11 +126,11 @@ function NewSessionDialog({
 
         {/* collaboration mode */}
         <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium text-foreground">Collaboration mode</p>
+          <p className="text-sm font-medium text-foreground">Collaboration mode</p>
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as CollaborationMode)}
-            className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
             {(Object.keys(COLLABORATION_MODE_LABELS) as CollaborationMode[]).map((m) => (
               <option key={m} value={m}>
@@ -182,7 +182,7 @@ function JoinRequestDialog({
 
         <div>
           <h2 className="text-base font-semibold text-foreground">Request to Join</h2>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             <strong className="text-foreground">{mapName}</strong> requires approval from a collaborator.
             Send a join request to the map owner?
           </p>
@@ -352,7 +352,7 @@ export default function LobbyPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground tron-logo">Sessions</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               Connect to an active session or initialise a new one.
             </p>
           </div>
@@ -360,7 +360,7 @@ export default function LobbyPage() {
             size="sm"
             onClick={() => setShowDialog(true)}
             disabled={loading}
-            className="gap-1.5 uppercase tracking-widest text-[10px]"
+            className="gap-1.5 uppercase tracking-widest text-sm"
           >
             <Plus className="h-4 w-4" />
             New Session
@@ -392,7 +392,7 @@ export default function LobbyPage() {
               height={48}
               style={{ filter: 'drop-shadow(0 0 8px hsl(185,100%,54%))' }}
             />
-            <p className="tron-logo text-xs">No sessions initialised. Create one to enter the grid.</p>
+            <p className="tron-logo text-sm">No sessions initialised. Create one to enter the grid.</p>
           </div>
         ) : (
           <ScrollArea className="flex-1">
@@ -417,13 +417,13 @@ export default function LobbyPage() {
                         {map.name ?? 'Unnamed Map'}
                       </span>
                       {map.description && (
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-sm text-muted-foreground">
                           {map.description}
                         </span>
                       )}
                       <div className="flex items-center gap-1 mt-0.5">
                         <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-sm text-muted-foreground">
                           {map.collaborators.length} collaborator
                           {map.collaborators.length !== 1 ? 's' : ''}
                         </span>
@@ -435,9 +435,9 @@ export default function LobbyPage() {
                     {isAdmin && (
                       deleteConfirmMapId === map.id ? (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-destructive">Delete?</span>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive hover:text-destructive/80" disabled={loading} onClick={() => handleDelete(map.id)}>Yes</Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setDeleteConfirmMapId(null)}>No</Button>
+                          <span className="text-sm text-destructive">Delete?</span>
+                          <Button size="sm" variant="destructive" className="h-7 px-2 text-sm" disabled={loading} onClick={() => handleDelete(map.id)}>Yes</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-sm" onClick={() => setDeleteConfirmMapId(null)}>No</Button>
                         </div>
                       ) : (
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" disabled={loading} title="Delete session" onClick={() => setDeleteConfirmMapId(map.id)}>
@@ -448,7 +448,7 @@ export default function LobbyPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 gap-1.5 text-xs text-muted-foreground"
+                      className="h-8 gap-1.5 text-sm text-muted-foreground"
                       disabled={loading}
                       onClick={() => {
                         setCurrentMap(map);
@@ -460,7 +460,7 @@ export default function LobbyPage() {
                     </Button>
                     {/* Admin join bypasses collaboration mode */}
                     {isAdmin && !map.collaborators.some((c) => c.id === userId) && (
-                      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={loading} onClick={() => handleAdminJoin(map.id)}>
+                      <Button size="sm" variant="default" className="h-8 gap-1.5 text-sm" disabled={loading} onClick={() => handleAdminJoin(map.id)}>
                         <LogIn className="h-3.5 w-3.5" />
                         Join as Collaborator
                       </Button>
@@ -471,14 +471,14 @@ export default function LobbyPage() {
                         (userId != null && map.joinRequests?.some((r) => r.userId === userId));
                       if (hasPending) {
                         return (
-                          <span className="text-xs text-muted-foreground px-2">Request pending ⏳</span>
+                          <span className="text-sm text-muted-foreground px-2">Request pending ⏳</span>
                         );
                       }
                       return (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-8 gap-1.5 text-xs"
+                          variant="default"
+                          className="h-8 gap-1.5 text-sm"
                           disabled={loading}
                           onClick={() => handleJoinClick(map)}
                         >

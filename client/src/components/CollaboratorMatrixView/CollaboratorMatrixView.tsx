@@ -10,9 +10,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { StatusBadge, matrixLevelToStatus } from '@/components/ui/status-badge';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
-import { MATRIX_LEVEL_ORDER, MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
+import { MATRIX_LEVEL_ORDER, MATRIX_LEVEL_LABEL } from '@/types/matrix';
 import type { MatrixLevel } from '@/types/matrix';
 import { isDecorative } from '@/types/landmark';
 import type { Collaborator } from '@/types/session';
@@ -46,7 +47,7 @@ function MatrixCellEditDialog({ state, loading, onSelect, onClose }: CellEditDia
           <DialogTitle className="text-sm">
             {state?.collaboratorName}
             {state && (
-              <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
                 — {state.landmarkName}
               </span>
             )}
@@ -62,10 +63,11 @@ function MatrixCellEditDialog({ state, loading, onSelect, onClose }: CellEditDia
                   'w-full text-left px-3 py-2 rounded text-sm font-medium transition-opacity flex items-center',
                   state.currentLevel === level ? 'ring-1 ring-inset ring-white/30' : 'opacity-60 hover:opacity-100',
                 ].join(' ')}
-                style={MATRIX_LEVEL_BADGE_STYLE[level]}
                 onClick={() => { onSelect(state.landmarkId, state.collaboratorId, level); onClose(); }}
               >
-                {MATRIX_LEVEL_LABEL[level]}
+                <StatusBadge status={matrixLevelToStatus[level]} className="text-sm">
+                  {MATRIX_LEVEL_LABEL[level]}
+                </StatusBadge>
                 {state.currentLevel === level && (
                   <Check className="h-3.5 w-3.5 ml-auto" />
                 )}
@@ -150,7 +152,7 @@ export default function CollaboratorMatrixView() {
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-4 text-xs" align="start">
+          <PopoverContent className="w-80 p-4 text-sm" align="start">
             <div className="flex flex-col gap-3">
               <h4 className="text-sm font-semibold text-foreground">How to use the Bus Matrix</h4>
               <div className="flex flex-col gap-2 text-muted-foreground leading-relaxed">
@@ -168,7 +170,7 @@ export default function CollaboratorMatrixView() {
         <div className="px-6 pt-3 shrink-0">
           <Alert variant="destructive" className="py-2 pr-2 relative">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <AlertDescription className="text-[11px] pr-6">{error}</AlertDescription>
+            <AlertDescription className="text-sm pr-6">{error}</AlertDescription>
             {onClearError && (
               <button
                 className="absolute top-2 right-2 text-destructive-foreground/70 hover:text-destructive-foreground"
@@ -192,7 +194,7 @@ export default function CollaboratorMatrixView() {
       {landmarks.length > 0 && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
-            <table className="data-display-table w-full text-xs border-separate border-spacing-0">
+            <table className="data-display-table w-full text-sm border-separate border-spacing-0">
               <thead className="sticky top-0 z-30">
                 <tr>
                   {/* colour-stripe placeholder */}
@@ -202,8 +204,8 @@ export default function CollaboratorMatrixView() {
                     <Button
                       ref={filterBtnRef}
                       size="sm"
-                      variant="outline"
-                      className={`h-7 gap-1.5 text-xs${hiddenGroups.size > 0 ? ' border-primary text-primary' : ''}`}
+                      variant="default"
+                      className={`h-7 gap-1.5 text-sm${hiddenGroups.size > 0 ? ' border-primary text-primary' : ''}`}
                       title={hiddenGroups.size > 0 ? 'Groups filtered — click to change' : 'Filter groups'}
                       onClick={() => setFilterOpen((v) => !v)}
                     >
@@ -219,13 +221,13 @@ export default function CollaboratorMatrixView() {
                         <Avatar className="h-6 w-6">
                           {c.avatarUrl && <AvatarImage src={c.avatarUrl} alt={c.username} />}
                           <AvatarFallback
-                              className="text-[9px] font-bold text-white bg-secondary"
+                              className="text-sm font-bold text-white bg-secondary"
                             >
                             {c.username.slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <span
-                          className="text-[11px] font-semibold"
+                          className="text-sm font-semibold"
                           style={{ color: 'hsl(185,100%,54%)' }}
                         >
                           {c.username}
@@ -261,7 +263,7 @@ export default function CollaboratorMatrixView() {
                                 style={{ height: `${sectionLandmarks.length * 2.25}rem`, minHeight: '2rem' }}
                               >
                                 <span
-                                  className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                                  className="text-sm font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
                                   style={{
                                     writingMode: 'vertical-rl',
                                     transform: 'rotate(180deg)',
@@ -298,19 +300,23 @@ export default function CollaboratorMatrixView() {
                                 .map((c) => ({ c, lvl: getLevel(landmark.id, c.id) }))
                                 .filter(({ lvl }) => lvl !== 'NONE')
                                 .sort((a, b) => MATRIX_LEVEL_ORDER.indexOf(a.lvl) - MATRIX_LEVEL_ORDER.indexOf(b.lvl))
-                              ).map(({ c, lvl }) => (
-                                <span
-                                  key={c.id}
-                                  title={`${c.username}: ${MATRIX_LEVEL_LABEL[lvl]}`}
-                                  className="inline-block"
-                                  style={{
-                                    width: '0.55rem',
-                                    height: '0.55rem',
-                                    background: (MATRIX_LEVEL_BADGE_STYLE[lvl] as React.CSSProperties & { background: string }).background,
-                                    border: (MATRIX_LEVEL_BADGE_STYLE[lvl] as React.CSSProperties & { border: string }).border,
-                                  }}
-                                />
-                              ))}
+                              ).map(({ c, lvl }) => {
+                                const status = matrixLevelToStatus[lvl];
+                                const colorMap: Record<string, string> = {
+                                  GOOD: 'rgb(34 197 94 / 0.8)',
+                                  PARTIAL: 'rgb(245 158 11 / 0.8)',
+                                  BAD: 'rgb(239 68 68 / 0.8)',
+                                  NONE: 'rgb(156 163 175 / 0.3)',
+                                };
+                                return (
+                                  <span
+                                    key={c.id}
+                                    title={`${c.username}: ${MATRIX_LEVEL_LABEL[lvl]}`}
+                                    className="inline-block w-2 h-2 rounded-full"
+                                    style={{ background: colorMap[status] }}
+                                  />
+                                );
+                              })}
                             </span>
                           </td>
                           {/* One cell per collaborator */}
@@ -326,12 +332,13 @@ export default function CollaboratorMatrixView() {
                                   : undefined}
                                 title={isCollaborator ? 'Click to set level' : MATRIX_LEVEL_LABEL[level]}
                               >
-                                <span
-                                  className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold"
-                                  style={isNone ? { color: 'rgba(156,163,175,0.4)' } : MATRIX_LEVEL_BADGE_STYLE[level]}
-                                >
-                                  {isNone ? '—' : MATRIX_LEVEL_LABEL[level]}
-                                </span>
+                                {isNone ? (
+                                  <span className="text-sm text-muted-foreground/40">—</span>
+                                ) : (
+                                  <StatusBadge status={matrixLevelToStatus[level]} className="text-sm font-semibold">
+                                    {MATRIX_LEVEL_LABEL[level]}
+                                  </StatusBadge>
+                                )}
                               </td>
                             );
                           })}

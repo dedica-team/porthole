@@ -935,17 +935,51 @@ export default function HexGrid({
         }
     };
 
+    // ── Keyboard navigation ────────────────────────────────────────────────────
+    // Arrow keys move the selection to the neighbouring tile; Enter triggers the
+    // tile-click handler.  This makes the map navigable without a mouse.
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (brushMode) return;
+        const dirMap: Record<string, { dq: number; dr: number }> = {
+            ArrowRight: { dq: 1, dr: 0 },
+            ArrowUpRight: { dq: 1, dr: -1 },
+            ArrowUp: { dq: 0, dr: -1 },
+            ArrowLeft: { dq: -1, dr: 0 },
+            ArrowDownLeft: { dq: -1, dr: 1 },
+            ArrowDown: { dq: 0, dr: 1 },
+        };
+        const dir = dirMap[e.key];
+        if (dir) {
+            e.preventDefault();
+            const base = selectedTile ?? { q: 0, r: 0 };
+            const target = { q: base.q + dir.dq, r: base.r + dir.dr };
+            if (tileByCoordRef.current.has(`${target.q},${target.r}`)) {
+                setSelectedTile(target);
+                onTileClickRef.current(target.q, target.r);
+            }
+            return;
+        }
+        if (e.key === 'Enter' && selectedTile) {
+            e.preventDefault();
+            onTileClickRef.current(selectedTile.q, selectedTile.r);
+        }
+    };
+
     return (
         <div className="relative w-full h-full">
             <div
                 ref={mountRef}
-                className="w-full h-full block"
+                className="w-full h-full block outline-none"
                 style={{cursor: (brushMode || crosshairCursor) ? 'crosshair' : 'default'}}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerLeave}
                 onClick={handleClick}
+                onKeyDown={handleKeyDown}
+                tabIndex={0}
+                role="application"
+                aria-label="Hexagonal map grid"
             />
             {loading && (
                 <LoadingOverlay label={LOADING_COPY.render} variant="overlay" />
