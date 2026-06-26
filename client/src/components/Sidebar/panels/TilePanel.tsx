@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge, StatusIndicator } from '@/components/ui/status-badge';
+
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
@@ -125,7 +126,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Elevation</span>
-              <Badge variant="secondary" className="text-sm h-5">{tile.elevation}</Badge>
+              <StatusBadge status="NONE" className="text-sm h-5">{tile.elevation}</StatusBadge>
             </div>
           </>
         )}
@@ -298,9 +299,10 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                             <span>{LANDMARK_TYPE_LABELS[lm.type]} · {lm.name}</span>
                             {group && (
                               <span className="inline-flex items-center gap-1 text-sm text-muted-foreground shrink-0">
-                                <span
-                                  className="inline-block w-2 h-2 rounded-full border border-white/20"
+                                <StatusIndicator
+                                  status="NONE"
                                   style={{ backgroundColor: group.color }}
+                                  className="border border-white/20"
                                   aria-label={`Group ${group.name}`}
                                 />
                                 {group.name}

@@ -121,12 +121,12 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
                 </div>
                 {isCollaborator && (
                   <div className="flex gap-1 shrink-0">
-                    <button className="text-muted-foreground hover:text-foreground transition-colors p-0.5" onClick={() => startEdit(metric)} title="Edit metric">
+                    <Button className="text-muted-foreground hover:text-foreground transition-colors p-0.5" onClick={() => startEdit(metric)} title="Edit metric">
                       <Pencil className="h-3 w-3" />
-                    </button>
-                    <button className="text-muted-foreground hover:text-destructive transition-colors p-0.5" onClick={() => requestRemove(metric.id)} title="Remove metric">
+                    </Button>
+                    <Button variant={"destructive"} className="text-muted-foreground hover:text-destructive transition-colors p-0.5" onClick={() => requestRemove(metric.id)} title="Remove metric">
                       <Trash2 className="h-3 w-3" />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -143,7 +143,7 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
           onClick={() => setShowTemplateSelector(true)}
         >
           <Plus className="h-3.5 w-3.5" />
-          Add Metric
+          Save
         </Button>
       )}
       <MetricTemplateSelector

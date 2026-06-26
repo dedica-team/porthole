@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronRight, FastForward, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import {
   advanceGreenkeepingRotation,
@@ -209,9 +209,9 @@ export default function GreenkeepingRotationsView() {
                                         {username}
                                       </span>
                                       {isActive && (
-                                        <Badge variant="secondary" className="mt-1 px-1.5 py-0 text-sm leading-4">
+                                        <StatusBadge status="NONE" className="mt-1 px-1.5 py-0 text-sm leading-4">
                                           Active
-                                        </Badge>
+                                        </StatusBadge>
                                       )}
                                     </div>
                                     {showTrailingAdvance && (

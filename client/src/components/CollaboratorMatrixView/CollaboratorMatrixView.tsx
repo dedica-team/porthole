@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { StatusIndicator } from '@/components/ui/status-badge';
 import { LayoutGrid, Check, X, AlertTriangle, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -302,18 +303,11 @@ export default function CollaboratorMatrixView() {
                                 .sort((a, b) => MATRIX_LEVEL_ORDER.indexOf(a.lvl) - MATRIX_LEVEL_ORDER.indexOf(b.lvl))
                               ).map(({ c, lvl }) => {
                                 const status = matrixLevelToStatus[lvl];
-                                const colorMap: Record<string, string> = {
-                                  GOOD: 'rgb(34 197 94 / 0.8)',
-                                  PARTIAL: 'rgb(245 158 11 / 0.8)',
-                                  BAD: 'rgb(239 68 68 / 0.8)',
-                                  NONE: 'rgb(156 163 175 / 0.3)',
-                                };
                                 return (
-                                  <span
+                                  <StatusIndicator
                                     key={c.id}
                                     title={`${c.username}: ${MATRIX_LEVEL_LABEL[lvl]}`}
-                                    className="inline-block w-2 h-2 rounded-full"
-                                    style={{ background: colorMap[status] }}
+                                    status={status}
                                   />
                                 );
                               })}

@@ -36,6 +36,7 @@
     --destructive-foreground: 0 0% 98%;
     --success:          142 71% 45%;
     --warning:           38 92% 50%;
+    --info:             var(--tron-blue);
     --link:             var(--tron-cyan);
     --link-hover:       185 100% 70%;
     --border:            var(--tron-line);
@@ -65,6 +66,7 @@
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-success: hsl(var(--success));
   --color-warning: hsl(var(--warning));
+  --color-info: hsl(var(--info));
   --color-link: hsl(var(--link));
   --color-link-hover: hsl(var(--link-hover));
   --color-border: hsl(var(--border));
@@ -249,7 +251,6 @@ tr:hover td:not(.group-stripe) {
 
 .data-display-table thead th {
   background: color-mix(in srgb, hsl(var(--tron-surface)) 92%, black) !important;
-  box-shadow: inset 0 -1px 0 rgba(0, 240, 255, 0.18);
 }
 
 .data-display-table tbody td:not(.group-stripe) {
@@ -268,7 +269,6 @@ tr:hover td:not(.group-stripe) {
 .data-display-table .data-sticky-cell,
 .data-display-table .data-sticky-header {
   background: color-mix(in srgb, hsl(var(--card)) 94%, black) !important;
-  box-shadow: inset -1px 0 0 rgba(0, 240, 255, 0.10), inset 0 -1px 0 rgba(0, 240, 255, 0.08);
 }
 
 .data-display-table .data-subtle {
@@ -282,9 +282,7 @@ tr:hover td:not(.group-stripe) {
 /* MetricsView second-pass contrast tuning */
 .metrics-view .metrics-header {
   position: relative;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.16);
   background: linear-gradient(180deg, rgba(0, 240, 255, 0.06), rgba(0, 240, 255, 0.02));
-  box-shadow: inset 0 -1px 0 rgba(0, 240, 255, 0.08);
 }
 
 .metrics-view .metrics-help-trigger,
@@ -308,7 +306,6 @@ tr:hover td:not(.group-stripe) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.14);
 }
 
 .metrics-view .metrics-metric-description {
@@ -321,12 +318,7 @@ tr:hover td:not(.group-stripe) {
   min-height: 2rem;
 }
 
-.metrics-view .metrics-row-group-start td:not(.group-stripe) {
-  border-top: 1px solid rgba(0, 240, 255, 0.24);
-}
-
 .metrics-view .metrics-group-stripe {
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.08), 0 0 16px rgba(0, 240, 255, 0.08);
 }
 
 .metrics-view .metrics-group-label {
@@ -334,15 +326,10 @@ tr:hover td:not(.group-stripe) {
 }
 
 .metrics-view .metrics-landmark-cell {
-  box-shadow:
-    inset -1px 0 0 rgba(0, 240, 255, 0.16),
-    inset 0 -1px 0 rgba(0, 240, 255, 0.08),
-    8px 0 18px rgba(0, 0, 0, 0.16);
 }
 
 .metrics-view .metrics-metric-cell {
   position: relative;
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .metrics-view .metrics-metric-cell::after {
@@ -355,8 +342,7 @@ tr:hover td:not(.group-stripe) {
 }
 
 .metrics-view .metrics-metric-cell:hover::after {
-  border-color: rgba(0, 240, 255, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.08), 0 0 12px rgba(0, 240, 255, 0.06);
+  border-color: hsl(var(--border));
 }
 
 .metrics-view .metrics-metric-cell[data-level="GOOD"]::after {
@@ -378,7 +364,6 @@ tr:hover td:not(.group-stripe) {
 
 .metrics-view .metrics-cell-link {
   padding-left: 0.35rem;
-  border-left: 1px solid rgba(0, 240, 255, 0.12);
 }
 
 /* Alert destructive */

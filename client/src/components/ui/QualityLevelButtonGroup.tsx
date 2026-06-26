@@ -22,16 +22,18 @@ const QUALITY_LEVEL_SHORT_LABEL: Record<QualityLevel, string> = {
  */
 const STATUS_BUTTON_CLASSES: Record<BadgeStatus, string> = {
   GOOD: 'bg-success/20 text-foreground border-success/50',
-  PARTIAL: 'bg-warning/20 text-foreground border-warning/50',
+  WARNING: 'bg-warning/20 text-foreground border-warning/50',
   BAD: 'bg-destructive/20 text-foreground border-destructive/50',
   NONE: 'bg-muted text-muted-foreground border-border',
+  ONGOING: 'bg-info/20 text-foreground border-info/50',
 };
 
 const STATUS_BUTTON_INACTIVE_CLASSES: Record<BadgeStatus, string> = {
   GOOD: 'bg-transparent text-foreground/70 border-success/30',
-  PARTIAL: 'bg-transparent text-foreground/70 border-warning/30',
+  WARNING: 'bg-transparent text-foreground/70 border-warning/30',
   BAD: 'bg-transparent text-foreground/70 border-destructive/30',
   NONE: 'bg-transparent text-muted-foreground border-border',
+  ONGOING: 'bg-transparent text-foreground/70 border-info/30',
 };
 
 export default function QualityLevelButtonGroup({ value, onChange, className = '', buttonClassName = '' }: Props) {

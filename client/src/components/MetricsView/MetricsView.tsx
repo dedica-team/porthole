@@ -15,8 +15,8 @@ import { useMapStore, useAuthStore } from '@/store/mapStore';
 import type {LandmarkGroup} from "@/types/landmark";
 import type { QualityLevel, QualityMetric, LandmarkType, Landmark } from '@/types/landmark';
 import { QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel, ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS } from '@/types/landmark';
-import { Badge } from '@/components/ui/badge';
-import { StatusBadge, qualityLevelToStatus } from '@/components/ui/status-badge';
+import { StatusBadge, StatusIndicator, qualityLevelToStatus } from '@/components/ui/status-badge';
+
 import MetricTemplateSelector from './MetricTemplateSelector';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 import CreateLandmarkDialog from './CreateLandmarkDialog';
@@ -96,20 +96,18 @@ function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose
               placeholder="Description (optional)"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" size="sm" variant="flat" onClick={handleClose}>Cancel</Button>
-              <Button type="submit" size="sm" disabled={!name.trim() || loading}>Save</Button>
+              <Button type="submit" fullWidth={true} disabled={!name.trim() || loading}>Save</Button>
             </div>
 
             {/* Delete section */}
             <div className="border-t border-border pt-3 mt-1">
               {!confirmDelete ? (
-                <button
-                  type="button"
-                  className="text-sm text-muted-foreground hover:text-destructive transition-colors"
+                <Button
+                  variant="destructive" fullWidth={true}
                   onClick={() => setConfirmDelete(true)}
                 >
                   Remove metric…
-                </button>
+                </Button>
               ) : (
                 <div className="flex flex-col gap-2">
                   <span className="text-sm text-destructive">Remove «{metric.name}»? This clears all landmark values.</span>
@@ -184,7 +182,10 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
 
             {/* Badges */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-sm text-muted-foreground uppercase tracking-wider">Badges</span>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm text-muted-foreground uppercase tracking-wider">Badges</h2>
+                <Button size="sm" variant="ghost"  onClick={() => onChange({ ...state, badges: [...state.badges, { key: '', url: '', error: '' }] })}>+ Add</Button>
+              </div>
               {state.badges.map((row, idx) => (
                 <div key={idx} className="flex flex-col gap-0.5">
                   <div className="flex gap-1.5">
@@ -217,26 +218,17 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
                   {row.error && <span className="text-sm text-destructive px-1">{row.error}</span>}
                 </div>
               ))}
-              <Button
-                onClick={() => onChange({ ...state, badges: [...state.badges, { key: '', url: '', error: '' }] })}
-              >
-                + Add badge
-              </Button>
             </div>
 
             <div className="flex gap-2 pt-1">
               <Button
-                type="submit"
-                size="sm"
-                className="flex-1 gap-1.5 h-8"
+                type="submit" fullWidth={true}
                 disabled={(state.level === 'NONE' && !state.value.trim() && !state.link.trim() && state.badges.length === 0) || loading}
               >
                 {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                 Save
               </Button>
-              <Button type="button" size="sm" variant="flat" className="h-8 px-3" onClick={handleClose}>
-                Cancel
-              </Button>
+
             </div>
 
             {/* Clear section */}
@@ -365,17 +357,14 @@ function LandmarkEditDialog({ landmark, groups, loading, onSave, onRemove, onClo
                 </div>
                 <div className="flex flex-col gap-2 pt-1">
                   <div className="flex gap-2">
-                    <Button type="submit" size="sm" className="flex-1 gap-1.5 h-8" disabled={!name.trim() || loading}>
+                    <Button type="submit" fullWidth={true} disabled={!name.trim() || loading}>
                       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                       Save
-                    </Button>
-                    <Button type="button" size="sm" variant="flat" className="h-8 px-3" onClick={handleClose}>
-                      Cancel
                     </Button>
                   </div>
                   <Button
                     type="button"
-                    size="sm"
+                    fullWidth={true}
                     variant="destructive"
                     className="w-full gap-2 h-8 text-sm"
                     disabled={loading}
@@ -394,9 +383,7 @@ function LandmarkEditDialog({ landmark, groups, loading, onSave, onRemove, onClo
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    size="sm"
                     variant="destructive"
-                    className="flex-1 h-8 text-sm"
                     disabled={loading}
                     onClick={() => onRemove(landmark.id)}
                   >
@@ -759,7 +746,7 @@ export default function MetricsView() {
                     style={{ left: '1rem', background: 'hsl(var(--card))' }}>
                     <Button
                       size="sm"
-                      variant="link"
+                      variant="flat" fullWidth={true}
                       className={`h-7 gap-1.5 text-sm p-0 no-underline cursor-pointer${totalHiddenFilters > 0 ? ' text-primary' : ' text-muted-foreground hover:text-foreground'}`}
                       title={totalHiddenFilters > 0 ? 'Filters active — click to change' : 'Filter table'}
                       onClick={() => setFilterOpen((v) => !v)}
@@ -829,43 +816,18 @@ export default function MetricsView() {
                               </td>
                             )}
                             {/* Landmark name + overall badge */}
-                            <td className="metrics-landmark-cell px-4 py-2 sticky z-20 data-sticky-cell" style={{ left: '1rem', background: 'hsl(var(--card))' }}>
-                              <div className="flex items-center gap-2 min-w-0">
-                                {/* Overall badge */}
-                                <div className="shrink-0">
-                                  {lmWorst !== 'NONE' ? (
-                                    <StatusBadge
-                                      status={qualityLevelToStatus[lmWorst]}
-                                      className="text-sm font-mono"
-                                    >
-                                      {QUALITY_LEVEL_SIGN[lmWorst]}
-                                    </StatusBadge>
-                                  ) : (
-                                    <StatusBadge
-                                      status="NONE"
-                                      className="text-sm font-mono"
-                                    >
-                                      —
-                                    </StatusBadge>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                  {/* Landmark name – opens info popover */}
+                            <td className="metrics-landmark-cell px-2 py-2 sticky z-20 data-sticky-cell" style={{ left: '1rem', background: 'hsl(var(--card))' }}>
+
                                   {(() => {
-                                    const group = landmark.groupId ? groups[landmark.groupId] : null;
-                                    const nameTitle = [landmark.name, landmark.description, landmark.link].filter(Boolean).join(' – ');
-                                    const nameEl = isCollaborator ? (
-                                      <button
-                                        className="text-sm font-semibold text-foreground truncate text-left max-w-44 cursor-pointer hover:opacity-70 transition-opacity"
-                                        title={`In group ${group?.name ?? 'n/a'} – click for details`}
+                                    const nameEl =
+                                      <Button
+                                        variant="ghost" size="lg"
+                                        fullWidth={true}
+                                        title={landmark.description}
                                       >
-                                        {landmark.name}
-                                      </button>
-                                    ) : (
-                                      <span className="text-sm font-semibold text-foreground truncate max-w-44" title={nameTitle}>
-                                        {landmark.name}
-                                      </span>
-                                    );
+                                        <StatusIndicator status={qualityLevelToStatus[lmWorst]} ></StatusIndicator> {landmark.name}
+                                      </Button>
+
                                     return (
                                       <LandmarkInfoPopover
                                         landmark={landmark}
@@ -877,8 +839,6 @@ export default function MetricsView() {
                                       </LandmarkInfoPopover>
                                     );
                                   })()}
-                                </div>
-                              </div>
                             </td>
                             {/* One cell per metric */}
                             {visibleMetrics.map((m) => {
@@ -895,23 +855,16 @@ export default function MetricsView() {
                                     <div className="metrics-cell-content flex min-w-0 flex-col gap-1.5">
                                       {entry.level !== 'NONE' && (
                                         <div className="flex min-w-0 items-center gap-1.5">
-                                          <StatusBadge
-                                            status={qualityLevelToStatus[entry.level]}
-                                            className="text-sm font-mono w-fit"
-                                          >
+                                          <StatusBadge status={qualityLevelToStatus[entry.level]}>
                                             {entry.value ?? QUALITY_LEVEL_SIGN[entry.level]}
                                           </StatusBadge>
                                         </div>
                                       )}
                                       {entry.level === 'NONE' && entry.value && (
                                         <div className="flex min-w-0 items-center gap-1.5">
-                                          <Badge
-                                            status="NONE"
-                                            className="text-sm italic max-w-full truncate w-fit"
-                                            title={entry.value}
-                                          >
+                                          <StatusBadge status="NONE" title={entry.value}>
                                             {entry.value}
-                                          </Badge>
+                                          </StatusBadge>
                                         </div>
                                       )}
                                       {entry.link && (
@@ -927,15 +880,12 @@ export default function MetricsView() {
                                         </a>
                                       )}
                                       {entry.badges && Object.entries(entry.badges).length > 0 && (
-                                        <div className="flex w-full min-w-0 flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex flex-col gap-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                                           {Object.entries(entry.badges).map(([key, url]) => (
-                                            <img
-                                              key={key}
-                                              src={url}
-                                              alt={key}
-                                              title={key}
-                                              className="block h-auto max-h-8 w-full max-w-full object-contain object-left"
-                                            />
+                                            <div key={key} className="flex items-center gap-1.5 min-w-0">
+                                              <span className="text-sm text-muted-foreground shrink-0">{key}</span>
+                                              <img src={url} alt={key} title={key} className="h-4 max-w-32 object-contain" />
+                                            </div>
                                           ))}
                                         </div>
                                       )}
@@ -996,7 +946,7 @@ export default function MetricsView() {
                   return next;
                 })}
               >
-                <span className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20" style={{ backgroundColor: color }} />
+                <StatusIndicator status="NONE" style={{ backgroundColor: color }} className="border border-white/20" />
                 <span className={`flex-1 truncate${visible ? '' : ' line-through text-muted-foreground'}`}>{label}</span>
                 {visible && <Check className="h-3 w-3 text-primary shrink-0" />}
               </button>
@@ -1016,7 +966,7 @@ export default function MetricsView() {
                   return next;
                 })}
               >
-                <span className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20 bg-primary" />
+                <StatusIndicator status="NONE" className="border border-white/20 bg-primary" />
                 <span className={`flex-1 truncate${visible ? '' : ' line-through text-muted-foreground'}`}>{metric.name}</span>
                 {visible && <Check className="h-3 w-3 text-primary shrink-0" />}
               </button>
@@ -1041,7 +991,7 @@ export default function MetricsView() {
               setGroupPickerPos(null);
             }}
           >
-            <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground/40 shrink-0" />
+            <StatusIndicator status="NONE" />
             <span className="text-muted-foreground">No group</span>
             {!landmarksMap[groupPickerLandmarkId]?.groupId && <Check className="h-3 w-3 ml-auto text-primary" />}
           </button>
@@ -1056,8 +1006,7 @@ export default function MetricsView() {
                 setGroupPickerPos(null);
               }}
             >
-              <span className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20"
-                style={{ backgroundColor: g.color }} />
+              <StatusIndicator status="NONE" style={{ backgroundColor: g.color }} className="border border-white/20" />
               <span className="truncate">{g.name}</span>
               {landmarksMap[groupPickerLandmarkId]?.groupId === g.id && <Check className="h-3 w-3 ml-auto text-primary" />}
             </button>

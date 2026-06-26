@@ -4,6 +4,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {LayoutDashboard, BarChart2, Bus, CheckSquare, Sprout, ArrowRight} from 'lucide-react';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {StatusBadge, qualityLevelToStatus, matrixLevelToStatus} from '@/components/ui/status-badge';
+import { StatusIndicator } from '@/components/ui/status-badge';
 import {QUALITY_LEVEL_SIGN, worstLevel} from '@/types/landmark';
 import {MATRIX_LEVEL_LABEL, MATRIX_LEVEL_ORDER} from '@/types/matrix';
 import type {MatrixLevel} from '@/types/matrix';
@@ -136,17 +137,10 @@ function BusMatrixSummary({}: { sessionId: string }) {
                             .sort((a, b) => MATRIX_LEVEL_ORDER.indexOf(b.level) - MATRIX_LEVEL_ORDER.indexOf(a.level))
                             .map(({c, level}) => {
                                 const status = matrixLevelToStatus[level];
-                                const colorMap: Record<string, string> = {
-                                    GOOD: 'rgb(34 197 94 / 0.8)',
-                                    PARTIAL: 'rgb(245 158 11 / 0.8)',
-                                    BAD: 'rgb(239 68 68 / 0.8)',
-                                    NONE: 'rgb(156 163 175 / 0.3)',
-                                };
                                 return (
-                                    <span
+                                    <StatusIndicator
                                         key={c.id}
-                                        className="inline-block w-2 h-2 rounded-full"
-                                        style={{ background: colorMap[status] }}
+                                        status={status}
                                         title={`${c.username}: ${MATRIX_LEVEL_LABEL[level]}`}
                                     />
                                 );

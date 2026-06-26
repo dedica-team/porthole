@@ -1,6 +1,8 @@
 import { useState } from 'react';
+
 import { Pencil, ExternalLink, Check, Trash2 } from 'lucide-react';
 import { Popup } from '@/components/ui/popup';
+import { StatusIndicator } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -136,10 +138,7 @@ export default function LandmarkInfoPopover({ landmark, onEditLandmark, onRemove
               <>
                 <span className="text-muted-foreground">Group</span>
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span
-                    className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20"
-                    style={{ backgroundColor: group.color }}
-                  />
+                  <StatusIndicator status="NONE" style={{ backgroundColor: group.color }} className="border border-white/20" />
                   <span className="text-foreground truncate">{group.name}</span>
                 </div>
               </>
@@ -153,7 +152,7 @@ export default function LandmarkInfoPopover({ landmark, onEditLandmark, onRemove
 
           {isCollaborator && (
             <div className="pt-1">
-              <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-sm" onClick={startEdit}>
+              <Button variant="ghost" fullWidth={true}  onClick={startEdit}>
                 <Pencil className="h-3 w-3" />
                 Edit
               </Button>

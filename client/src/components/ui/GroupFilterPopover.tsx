@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { StatusIndicator } from '@/components/ui/status-badge';
+
 import ReactDOM from 'react-dom';
 import { Check, Filter } from 'lucide-react';
 
@@ -123,10 +125,7 @@ export function GroupFilterPopover({
             className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
             onClick={() => onToggle(groupId)}
           >
-            <span
-              className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20"
-              style={{ backgroundColor: color }}
-            />
+            <StatusIndicator status="NONE" style={{ backgroundColor: color }} className="border border-white/20" />
             <span className={`flex-1 truncate${visible ? '' : ' line-through text-muted-foreground'}`}>{label}</span>
             {visible && <Check className="h-3 w-3 text-primary shrink-0" />}
           </button>

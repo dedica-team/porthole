@@ -1,6 +1,6 @@
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { useMapStore } from '@/store/mapStore';
 import type { Terrain } from '@/types/hex';
@@ -207,7 +207,7 @@ export default function EditorPanel({ floating = false, error = '', onClearError
               </div>
               <div className="flex justify-between items-center gap-2">
                 <span className="text-sm text-muted-foreground">Elevation</span>
-                <Badge variant="secondary" className="text-sm h-5">{currentTileInfo.elevation}</Badge>
+                <StatusBadge status="NONE" className="text-sm h-5">{currentTileInfo.elevation}</StatusBadge>
               </div>
               <div className="flex justify-between items-center gap-2">
                 <span className="text-sm text-muted-foreground">Terrain</span>
