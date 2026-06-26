@@ -143,7 +143,7 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
           onClick={() => setShowTemplateSelector(true)}
         >
           <Plus className="h-3.5 w-3.5" />
-          Save
+          Add Metric
         </Button>
       )}
       <MetricTemplateSelector

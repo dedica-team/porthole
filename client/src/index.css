@@ -241,7 +241,7 @@ thead th {
   font-size: 0.65rem;
 }
 tr:hover td:not(.group-stripe) {
-  background: rgba(0, 240, 255, 0.04) !important;
+  background: rgba(0, 240, 255, 0.06) !important;
 }
 
 /* Dense data areas: preserve Tron chrome, but make values easier to scan */
@@ -250,25 +250,21 @@ tr:hover td:not(.group-stripe) {
 }
 
 .data-display-table thead th {
-  background: color-mix(in srgb, hsl(var(--tron-surface)) 92%, black) !important;
+  background: transparent !important;
 }
 
 .data-display-table tbody td:not(.group-stripe) {
-  background: rgba(8, 16, 20, 0.82);
+  background: transparent;
   color: hsl(var(--foreground));
 }
 
-.data-display-table tbody tr:nth-child(even) td:not(.group-stripe) {
-  background: rgba(12, 20, 25, 0.90);
-}
-
 .data-display-table tbody tr:hover td:not(.group-stripe) {
-  background: rgba(0, 240, 255, 0.08) !important;
+  background: rgba(0, 240, 255, 0.06) !important;
 }
 
 .data-display-table .data-sticky-cell,
 .data-display-table .data-sticky-header {
-  background: color-mix(in srgb, hsl(var(--card)) 94%, black) !important;
+  background: transparent !important;
 }
 
 .data-display-table .data-subtle {
@@ -385,6 +381,12 @@ tr:hover td:not(.group-stripe) {
 [class*="bg-accent"] {
   background: rgba(0, 240, 255, 0.10) !important;
   border-left: 2px solid hsl(var(--tron-cyan));
+}
+button[class*="hover:bg-accent"]:not([class*="border-input"]) {
+  border-left: none;
+}
+button[class*="hover:bg-accent"]:hover {
+  background: rgba(0, 240, 255, 0.22) !important;
 }
 
 /* Code / mono spans */

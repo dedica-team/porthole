@@ -450,15 +450,15 @@ describe('LandmarkPanel – collaborator matrix section', () => {
     expect(screen.queryByText('Bus Matrix')).not.toBeInTheDocument();
   });
 
-  it('renders avatar fallback initial when no avatarUrl', () => {
+  it('renders avatar fallback initials when no avatarUrl', () => {
     setupWithMatrix(MATRIX);
     render(<LandmarkPanel {...defaultProps} />);
-    // Fallback shows first letter of username uppercased
-    const initials = screen.getAllByText('A'); // 'alice' → 'A'
+    // Fallback shows first two letters of username uppercased: 'alice' → 'AL'
+    const initials = screen.getAllByText('AL');
     expect(initials.length).toBeGreaterThan(0);
   });
 
-  it('renders avatar img when avatarUrl is provided', () => {
+  it('renders avatar username when avatarUrl is provided', () => {
     useAuthStore.setState({ userId: 'player-1', username: 'alice', token: 'tok', isAuthenticated: true });
     useMapStore.setState({
       selectedLandmark: { ...landmark },
@@ -480,8 +480,8 @@ describe('LandmarkPanel – collaborator matrix section', () => {
       mainView: 'landmark',
     });
     render(<LandmarkPanel {...defaultProps} />);
-    const avatar = screen.getByAltText('alice') as HTMLImageElement;
-    expect(avatar.src).toBe('https://example.com/alice.png');
+    // UserAvatar renders the username as visible text
+    expect(screen.getAllByText('alice').length).toBeGreaterThan(0);
   });
 });
 

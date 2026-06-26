@@ -199,13 +199,13 @@ export default function CollaboratorMatrixView() {
               <thead className="sticky top-0 z-30">
                 <tr>
                   {/* colour-stripe placeholder */}
-                  <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
+                  <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" />
                   {/* landmark col header + group filter */}
-                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 bg-card data-sticky-header" style={{ left: '1rem' }}>
+                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 data-sticky-header" style={{ left: '1rem' }}>
                     <Button
                       ref={filterBtnRef}
-                      size="sm"
-                      variant="default"
+                      fullWidth={true}
+                      variant="flat"
                       className={`h-7 gap-1.5 text-sm${hiddenGroups.size > 0 ? ' border-primary text-primary' : ''}`}
                       title={hiddenGroups.size > 0 ? 'Groups filtered — click to change' : 'Filter groups'}
                       onClick={() => setFilterOpen((v) => !v)}
@@ -266,7 +266,7 @@ export default function CollaboratorMatrixView() {
                           {/* Landmark name + mini summary squares */}
                           <td
                             className="px-4 py-2 sticky z-10 data-sticky-cell"
-                            style={{ left: '1rem', background: 'hsl(var(--card))' }}
+                            style={{ left: '1rem' }}
                           >
                             <LandmarkInfoPopover
                               landmark={landmark}
@@ -274,29 +274,27 @@ export default function CollaboratorMatrixView() {
                               onRemoveLandmark={onRemoveLandmark}
                               loading={loading}
                             >
-                              <span
-                                className="text-sm font-semibold text-foreground truncate max-w-44 block cursor-pointer hover:opacity-70 transition-opacity"
-                                title={landmark.name}
-                              >
+                              <Button variant="ghost" fullWidth={true} title={landmark.name}>
                                 {landmark.name}
-                              </span>
-                            </LandmarkInfoPopover>
-                            <span className="flex gap-0.5 mt-1">
+                                <span className="flex gap-0.5 mt-1">
                               {([...collaborators]
-                                .map((c) => ({ c, lvl: getLevel(landmark.id, c.id) }))
-                                .filter(({ lvl }) => lvl !== 'NONE')
-                                .sort((a, b) => MATRIX_LEVEL_ORDER.indexOf(a.lvl) - MATRIX_LEVEL_ORDER.indexOf(b.lvl))
+                                      .map((c) => ({ c, lvl: getLevel(landmark.id, c.id) }))
+                                      .filter(({ lvl }) => lvl !== 'NONE')
+                                      .sort((a, b) => MATRIX_LEVEL_ORDER.indexOf(a.lvl) - MATRIX_LEVEL_ORDER.indexOf(b.lvl))
                               ).map(({ c, lvl }) => {
                                 const status = matrixLevelToStatus[lvl];
                                 return (
-                                  <StatusIndicator
-                                    key={c.id}
-                                    title={`${c.username}: ${MATRIX_LEVEL_LABEL[lvl]}`}
-                                    status={status}
-                                  />
+                                    <StatusIndicator
+                                        key={c.id}
+                                        title={`${c.username}: ${MATRIX_LEVEL_LABEL[lvl]}`}
+                                        status={status}
+                                    />
                                 );
                               })}
                             </span>
+                              </Button>
+                            </LandmarkInfoPopover>
+
                           </td>
                           {/* One cell per collaborator */}
                           {collaborators.map((c) => {

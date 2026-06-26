@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, Pencil, CheckSquare, Square, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMapStore } from '@/store/mapStore';
@@ -100,18 +100,16 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
         )}
         {isCollaborator && (
           <>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Edit list" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-3.5 w-3.5" />
+            <Button title="Edit list" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-3.5 w-3.5" /> Edit list
             </Button>
             <Button
-              variant="ghost" size="icon"
-              className={`h-7 w-7 ${choreList.completed ? 'text-[hsl(185,100%,54%)]' : 'text-muted-foreground hover:text-[hsl(185,100%,54%)]'}`}
-              title={choreList.completed ? 'Reopen list' : 'Mark as complete'}
+              className={`${choreList.completed ? 'text-[hsl(185,100%,54%)]' : 'text-muted-foreground hover:text-[hsl(185,100%,54%)]'}`}
               disabled={toggling} onClick={handleToggleCompleted}
             >
-              {choreList.completed ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+              {choreList.completed ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />} {choreList.completed ? 'Reopen list' : 'Mark as complete'}
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Delete list" disabled={deleting} onClick={handleDelete}>
+            <Button variant="destructive" size="icon" title="Delete list" disabled={deleting} onClick={handleDelete}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </>
@@ -127,43 +125,34 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
       )}
 
       {totalEntries > 0 && (
-        <div className="flex-1 overflow-auto">
-          <div className="min-w-max">
-            <table className="data-display-table w-full text-sm border-separate border-spacing-0">
-              <thead>
-                <tr>
-                  {/* colour stripe col */}
-                  <th className="w-4 p-0 sticky top-0 left-0 z-20 bg-card border-b border-border data-sticky-header" />
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-48 data-sticky-header">Landmark</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-28 data-sticky-header">State</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-36 data-sticky-header">Assignee</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground bg-card sticky top-0 z-10 border-b border-border min-w-64 data-sticky-header">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groupedSections.map(({ groupId, label, color }) => {
-                  const sectionEntries = entriesByGroup(groupId);
-                  if (sectionEntries.length === 0) return null;
-                  return (
-                    <React.Fragment key={groupId ?? 'ungrouped'}>
-                      {sectionEntries.map((entry, rowIdx) => (
-                        <ChoreEntryRow
-                          key={entry.landmarkId}
-                          mapId={currentMap.id}
-                          listId={choreList.id}
-                          entry={entry}
-                          landmarkName={currentMap.landmarks[entry.landmarkId]?.name ?? entry.landmarkId}
-                          collaborators={currentMap.collaborators}
-                          isCollaborator={isCollaborator}
-                          onUpdated={handleEntryUpdated}
-                          groupStripe={rowIdx === 0 ? { color, label, rowSpan: sectionEntries.length } : undefined}
-                        />
-                      ))}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+        <div className="flex-1 overflow-auto px-6 py-3">
+          <div className="flex flex-col gap-4">
+            {groupedSections.map(({ groupId, label, color }) => {
+              const sectionEntries = entriesByGroup(groupId);
+              if (sectionEntries.length === 0) return null;
+              return (
+                <div key={groupId ?? 'ungrouped'}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {sectionEntries.map((entry) => (
+                      <ChoreEntryRow
+                        key={entry.landmarkId}
+                        mapId={currentMap.id}
+                        listId={choreList.id}
+                        entry={entry}
+                        landmark={currentMap.landmarks[entry.landmarkId]}
+                        collaborators={currentMap.collaborators}
+                        isCollaborator={isCollaborator}
+                        onUpdated={handleEntryUpdated}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

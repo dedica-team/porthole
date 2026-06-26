@@ -184,7 +184,7 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm text-muted-foreground uppercase tracking-wider">Badges</h2>
-                <Button size="sm" variant="ghost"  onClick={() => onChange({ ...state, badges: [...state.badges, { key: '', url: '', error: '' }] })}>+ Add</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => onChange({ ...state, badges: [...state.badges, { key: '', url: '', error: '' }] })}>+ Add</Button>
               </div>
               {state.badges.map((row, idx) => (
                 <div key={idx} className="flex flex-col gap-0.5">
@@ -602,7 +602,6 @@ export default function MetricsView() {
 
         <div className="flex items-center gap-2 ml-auto flex-wrap">
           <Button
-            size="sm"
             className="metrics-toolbar-button h-7 gap-1.5 text-sm"
             onClick={() => setShowGroupsDialog(true)}
             title="Manage groups"
@@ -613,7 +612,6 @@ export default function MetricsView() {
           {isCollaborator && (
             <>
               <Button
-                size="sm"
                 className="metrics-toolbar-button h-7 gap-1.5 text-sm"
                 onClick={() => setShowCreateLandmarkDialog(true)}
                 title="Create a new landmark without position"
@@ -621,7 +619,6 @@ export default function MetricsView() {
                 <Plus className="h-3.5 w-3.5" /> Landmark
               </Button>
               <Button
-                size="sm"
                 className="metrics-toolbar-button h-7 gap-1.5 text-sm"
                 onClick={() => setShowTemplateSelector(true)}
                 title="Add metric"
@@ -741,9 +738,9 @@ export default function MetricsView() {
             <table className="data-display-table w-full text-sm border-separate border-spacing-0">
               <thead className="sticky top-0 z-30">
                 <tr>
-                  <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" style={{ background: 'hsl(var(--card))' }} />
+                  <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" />
                   <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 data-sticky-header"
-                    style={{ left: '1rem', background: 'hsl(var(--card))' }}>
+                    style={{ left: '1rem' }}>
                     <Button
                       size="sm"
                       variant="flat" fullWidth={true}
@@ -816,7 +813,7 @@ export default function MetricsView() {
                               </td>
                             )}
                             {/* Landmark name + overall badge */}
-                            <td className="metrics-landmark-cell px-2 py-2 sticky z-20 data-sticky-cell" style={{ left: '1rem', background: 'hsl(var(--card))' }}>
+                            <td className="metrics-landmark-cell px-2 py-2 sticky z-20 data-sticky-cell" style={{ left: '1rem' }}>
 
                                   {(() => {
                                     const nameEl =
@@ -862,7 +859,7 @@ export default function MetricsView() {
                                       )}
                                       {entry.level === 'NONE' && entry.value && (
                                         <div className="flex min-w-0 items-center gap-1.5">
-                                          <StatusBadge status="NONE" title={entry.value}>
+                                          <StatusBadge status="NONE" title={entry.value} className="italic rounded">
                                             {entry.value}
                                           </StatusBadge>
                                         </div>
@@ -883,7 +880,6 @@ export default function MetricsView() {
                                         <div className="flex flex-col gap-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                                           {Object.entries(entry.badges).map(([key, url]) => (
                                             <div key={key} className="flex items-center gap-1.5 min-w-0">
-                                              <span className="text-sm text-muted-foreground shrink-0">{key}</span>
                                               <img src={url} alt={key} title={key} className="h-4 max-w-32 object-contain" />
                                             </div>
                                           ))}

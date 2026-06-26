@@ -282,7 +282,7 @@ describe('MetricsView', () => {
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     // click "Add badge" to get a row
-    fireEvent.click(screen.getByText('+ Add badge'));
+    fireEvent.click(screen.getByText('+ Add'));
     fireEvent.change(screen.getByPlaceholderText('Label'), { target: { value: 'build' } });
     fireEvent.change(screen.getByPlaceholderText('Badge URL (https://…)'), {
       target: { value: 'https://img.shields.io/badge/build-passing-green' },
@@ -298,7 +298,7 @@ describe('MetricsView', () => {
     mockActions.handleSetLandmarkMetric = vi.fn();
     render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
-    fireEvent.click(screen.getByText('+ Add badge'));
+    fireEvent.click(screen.getByText('+ Add'));
     fireEvent.change(screen.getByPlaceholderText('Label'), { target: { value: 'coverage' } });
     fireEvent.change(screen.getByPlaceholderText('Badge URL (https://…)'), {
       target: { value: 'https://img.shields.io/badge/coverage-80%25-yellow' },
@@ -472,7 +472,7 @@ describe('MetricsView', () => {
     render(<MetricsView />);
     fireEvent.click(screen.getByTitle('Click to set value'));
     expect(screen.getByPlaceholderText('Value (e.g. 99.9 %)')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    fireEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(screen.queryByPlaceholderText('Value (e.g. 99.9 %)')).not.toBeInTheDocument();
   });
 
@@ -513,11 +513,11 @@ describe('MetricsView', () => {
   it('shows the Overall badge for a landmark with a non-NONE metric level', () => {
     const lmWithMetric = {
       ...LM_IN_A,
-      metrics: { m1: { metricId: 'm1', value: '50%', level: 'ERROR' } },
+      metrics: { m1: { metricId: 'm1', level: 'ERROR' } },
     };
     setup({ m1: METRIC_AVAIL }, { lm1: lmWithMetric }, { g1: GROUP_A });
     render(<MetricsView />);
-    // Overall badge now shows the sign symbol (✘ for ERROR) rather than the word
+    // Cell shows the sign symbol (✘ for ERROR) when no value is set
     expect(screen.getAllByText('✘').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -525,8 +525,8 @@ describe('MetricsView', () => {
     const lmWithMetrics = {
       ...LM_IN_A,
       metrics: {
-        m1: { metricId: 'm1', value: '50%', level: 'ERROR' },
-        m2: { metricId: 'm2', value: '95%', level: 'OK' },
+        m1: { metricId: 'm1', level: 'ERROR' },
+        m2: { metricId: 'm2', level: 'OK' },
       },
     };
     setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: lmWithMetrics }, { g1: GROUP_A });

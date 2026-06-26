@@ -152,7 +152,7 @@ export default function LandmarkInfoPopover({ landmark, onEditLandmark, onRemove
 
           {isCollaborator && (
             <div className="pt-1">
-              <Button variant="ghost" fullWidth={true}  onClick={startEdit}>
+              <Button variant="ghost" fullWidth={true} title="Edit Landmark" onClick={startEdit}>
                 <Pencil className="h-3 w-3" />
                 Edit
               </Button>

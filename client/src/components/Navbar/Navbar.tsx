@@ -1,6 +1,20 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
-import { LogOut, Copy, Check, BarChart2, Bell, Bus, Radiation, Download, Trash2, CheckSquare, Trees, RefreshCw, LayoutDashboard } from 'lucide-react';
+import {
+  LogOut,
+  Copy,
+  Check,
+  BarChart2,
+  Bell,
+  Bus,
+  Radiation,
+  Download,
+  Trash2,
+  CheckSquare,
+  Trees,
+  LayoutDashboard,
+  Sprout
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -236,7 +250,7 @@ export default function Navbar() {
       id: 'greenkeeping',
       label: 'Greenkeeping',
       tooltip: 'Recurring group stewardship rotations',
-      icon: <RefreshCw className="h-3.5 w-3.5" />,
+      icon: <Sprout className="h-3.5 w-3.5"/>,
       isActive: isGreenkeepingActive,
       onClick: () => goTo('greenkeeping'),
     },

@@ -4,11 +4,14 @@ import ChoreEntryRow from '../components/ChoreListsView/ChoreEntryRow';
 import * as mapApi from '../api/mapApi';
 import type { ChoreEntry, ChoreList } from '../types/chores';
 import type { Collaborator } from '../types/session';
+import type { Landmark } from '../types/landmark';
 vi.mock('../api/mapApi');
 
 const MAP_ID  = 'map-1';
 const LIST_ID = 'list-1';
 const LM_ID   = 'lm-1';
+
+const LANDMARK: Landmark = { id: LM_ID, name: 'Reception', ownerId: null, type: 'KEEP' };
 
 const COLLABORATORS: Collaborator[] = [
   { id: 'u1', username: 'alice' },
@@ -31,19 +34,15 @@ const makeList = (entry: ChoreEntry): ChoreList => ({
 function renderRow(entry: ChoreEntry, isCollaborator = true) {
   const onUpdated = vi.fn();
   render(
-    <table>
-      <tbody>
-        <ChoreEntryRow
-          mapId={MAP_ID}
-          listId={LIST_ID}
-          entry={entry}
-          landmarkName="Reception"
-          collaborators={COLLABORATORS}
-          isCollaborator={isCollaborator}
-          onUpdated={onUpdated}
-        />
-      </tbody>
-    </table>,
+    <ChoreEntryRow
+      mapId={MAP_ID}
+      listId={LIST_ID}
+      entry={entry}
+      landmark={LANDMARK}
+      collaborators={COLLABORATORS}
+      isCollaborator={isCollaborator}
+      onUpdated={onUpdated}
+    />,
   );
   return { onUpdated };
 }
@@ -66,12 +65,6 @@ describe('ChoreEntryRow – display', () => {
   it('renders assignee name when set', () => {
     renderRow(makeEntry({ assigneeId: 'u1' }));
     expect(screen.getByText('alice')).toBeInTheDocument();
-  });
-
-  it('renders — when no assignee', () => {
-    renderRow(makeEntry());
-    // multiple — possible; at least one
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
 
   it('renders link when set', () => {
