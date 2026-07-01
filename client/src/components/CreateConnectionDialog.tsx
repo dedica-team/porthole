@@ -59,7 +59,7 @@ function LandmarkCombobox({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Label className="text-sm text-muted-foreground">{label}</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -80,13 +80,13 @@ function LandmarkCombobox({
               placeholder="Search…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="h-7 text-xs"
+              className="h-7 text-sm"
               autoFocus
             />
           </div>
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-muted-foreground">No results.</p>
+              <p className="px-3 py-2 text-sm text-muted-foreground">No results.</p>
             ) : (
               filtered.map((l) => (
                 <button
@@ -185,7 +185,7 @@ export default function CreateConnectionDialog({
         <div className="flex flex-col gap-4 py-2">
           {/* Title */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="conn-name" className="text-xs text-muted-foreground">
+            <Label htmlFor="conn-name" className="text-sm text-muted-foreground">
               Title <span className="text-muted-foreground/60">(optional)</span>
             </Label>
             <Input
@@ -199,7 +199,7 @@ export default function CreateConnectionDialog({
 
           {/* Type */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs text-muted-foreground">Type</Label>
+            <Label className="text-sm text-muted-foreground">Type</Label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as ConnectionType)}
@@ -232,7 +232,7 @@ export default function CreateConnectionDialog({
           />
 
           {error && (
-            <p className="text-xs text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
         </div>
 

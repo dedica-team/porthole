@@ -1,5 +1,4 @@
-import { AlertTriangle, HelpCircle, X } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AlertTriangle, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -56,24 +55,24 @@ function ProcessConnectionView({ onClose }: { onClose: () => void }) {
       </div>
       <div className="flex flex-col gap-3 px-5 pb-5">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-foreground">{conn.name ?? '—'}</span>
-          {conn.description && <span className="text-[11px] text-muted-foreground leading-relaxed">{conn.description}</span>}
-          <span className="text-[10px] text-muted-foreground mt-0.5">{CONNECTION_TYPE_LABELS[conn.type ?? 'PIPE']}</span>
+          <span className="text-sm font-medium text-foreground">{conn.name ?? '—'}</span>
+          {conn.description && <span className="text-sm text-muted-foreground leading-relaxed">{conn.description}</span>}
+          <span className="text-sm text-muted-foreground mt-0.5">{CONNECTION_TYPE_LABELS[conn.type ?? 'PIPE']}</span>
         </div>
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground shrink-0">From</span>
-            <span className="text-xs text-foreground truncate">{originLandmark?.name ?? conn.originId}</span>
+            <span className="text-sm text-muted-foreground shrink-0">From</span>
+            <span className="text-sm text-foreground truncate">{originLandmark?.name ?? conn.originId}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground shrink-0">To</span>
-            <span className="text-xs text-foreground truncate">{targetLandmark?.name ?? conn.targetId}</span>
+            <span className="text-sm text-muted-foreground shrink-0">To</span>
+            <span className="text-sm text-foreground truncate">{targetLandmark?.name ?? conn.targetId}</span>
           </div>
         </div>
         {relatedStages.length > 0 && (
           <>
             <Separator className="bg-border" />
-            <span className="text-xs text-muted-foreground">Used in processes</span>
+            <span className="text-sm text-muted-foreground">Used in processes</span>
             <div className="flex flex-col gap-1">
               {relatedStages.map((rs, i) => (
                 <button
@@ -81,15 +80,15 @@ function ProcessConnectionView({ onClose }: { onClose: () => void }) {
                   className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5 hover:bg-accent/40 transition-colors cursor-pointer text-left w-full"
                   onClick={() => handleNavigate(rs.processId, rs.stageId)}
                 >
-                  <span className="text-xs font-medium text-foreground truncate">{rs.processName}</span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">Stage {rs.stageIndex}: {rs.stageName}</span>
+                  <span className="text-sm font-medium text-foreground truncate">{rs.processName}</span>
+                  <span className="text-sm text-muted-foreground shrink-0">Stage {rs.stageIndex}: {rs.stageName}</span>
                 </button>
               ))}
             </div>
           </>
         )}
         {relatedStages.length === 0 && (
-          <span className="text-[11px] text-muted-foreground italic">Not used in any process stage</span>
+          <span className="text-sm text-muted-foreground italic">Not used in any process stage</span>
         )}
       </div>
     </div>
@@ -103,7 +102,7 @@ interface ProcessLandmarkViewProps {
   onRemoveLandmark: () => void;
   onEditConnection: Props['onEditConnection'];
   onRemoveConnection: (id: string) => void;
-  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
+  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>, description?: string) => void;
   onClearLandmarkMetric: Props['onClearLandmarkMetric'];
   loading: boolean;
   onClose: () => void;
@@ -172,7 +171,7 @@ function ProcessLandmarkView({
       {processMode && relatedStages.length > 0 && (
         <div className="flex flex-col gap-2 px-5 pb-5">
           <Separator className="bg-border" />
-          <span className="text-xs text-muted-foreground">Used in processes</span>
+          <span className="text-sm text-muted-foreground">Used in processes</span>
           <div className="flex flex-col gap-1">
             {relatedStages.map((rs, i) => (
               <button
@@ -180,8 +179,8 @@ function ProcessLandmarkView({
                 className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5 hover:bg-accent/40 transition-colors cursor-pointer text-left w-full"
                 onClick={() => handleNavigateToProcess(rs.processId, rs.stageId)}
               >
-                <span className="text-xs font-medium text-foreground truncate">{rs.processName}</span>
-                <span className="text-[10px] text-muted-foreground shrink-0">Stage {rs.stageIndex}: {rs.stageName}</span>
+                <span className="text-sm font-medium text-foreground truncate">{rs.processName}</span>
+                <span className="text-sm text-muted-foreground shrink-0">Stage {rs.stageIndex}: {rs.stageName}</span>
               </button>
             ))}
           </div>
@@ -202,9 +201,9 @@ interface Props {
   onEditConnection: (connectionId: string, type?: ConnectionType, name?: string, description?: string, clearName?: boolean, clearDescription?: boolean) => void;
   onRemoveConnection: (connectionId: string) => void;
   onCreateMetric: (name: string, description: string) => void;
-  onEditMetric: (metricId: string, name?: string, description?: string) => void;
+  onEditMetric: (metricId: string, name?: string, description?: string, link?: string, clearLink?: boolean) => void;
   onRemoveMetric: (metricId: string) => void;
-  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
+  onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>, description?: string) => void;
   onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;
   loading: boolean;
   error: string;
@@ -240,7 +239,6 @@ export default function Sidebar({
   const relocatingLandmarkId = useMapStore((s) => s.relocatingLandmarkId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
   const processSidebarHidden = useMapStore((s) => s.processSidebarHidden);
-  const setProcessSidebarHidden = useMapStore((s) => s.setProcessSidebarHidden);
   // Derive process mode from the route instead of store state.
   const processMode = !!useMatch('/session/:id/processes');
 
@@ -259,47 +257,29 @@ export default function Sidebar({
 
   return (
     <aside className="absolute inset-y-0 right-0 z-20 flex flex-col w-(--sidebar-width) min-w-0 bg-card border-l border-border overflow-hidden md:relative md:shrink-0">
-      {/* Close button – always visible top-right; show 'Processes' title when process panel list is active */}
-      <div className="flex items-center justify-between px-2 pt-2 shrink-0">
-        {processMode && !selectedLandmark && !selectedConnectionId
-          ? <span className="pl-2 flex items-center gap-1">
-              <span className="text-sm font-semibold text-foreground">Processes</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="text-muted-foreground hover:text-foreground transition-colors">
-                    <HelpCircle className="h-3.5 w-3.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="bottom" align="start" className="max-w-72 text-xs space-y-1.5 leading-relaxed">
-                  <p className="font-semibold">Processes</p>
-                  <p>Processes model ordered sequences of map connections — useful for workflows, routes, or data flows.</p>
-                  <p><span className="font-medium">Stages</span> are the steps within a process. Each stage can hold one or more connections.</p>
-                  <p>To add a connection to a stage, open the stage accordion and click <span className="font-medium">Add Connection</span>, then click a connection line on the map. Click it again to remove it.</p>
-                  <p>Each stage connection can have an optional <span className="font-medium">title</span> and a <span className="font-medium">direction</span> (Forward, Reverse, or Bidirectional) that represents how the connection is traversed in that step.</p>
-                  <p>Stages can be reordered with the move-up / move-down actions in the stage menu.</p>
-                </PopoverContent>
-              </Popover>
-            </span>
-          : <span />}
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-          onClick={processMode ? () => { setSelectedTile(null); setSelectedLandmark(null); setSelectedConnectionId(null); setProcessSidebarHidden(true); } : handleClose}
-          aria-label="Close panel"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Close button – hidden in process mode (panel closed via map buttons) */}
+      {!processMode && (
+        <div className="flex items-center justify-end px-2 pt-2 shrink-0">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={handleClose}
+            aria-label="Close panel"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Connecting-Banner – hide in process mode */}
       {connectingFromLandmarkId && !processMode && (
-        <div className="flex items-center justify-between px-4 py-2.5 bg-sky-950 border-b border-sky-800 shrink-0">
-          <span className="text-[11px] text-sky-300">Click a target landmark to connect</span>
+        <div className="flex items-center justify-between px-4 py-2.5 bg-primary/10 border-b border-primary/30 shrink-0">
+          <span className="text-sm text-primary">Click a target landmark to connect</span>
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-3 text-[10px] text-sky-400 hover:text-sky-200"
+            className="h-7 px-3 text-sm text-primary hover:text-primary/80"
             onClick={onCancelConnection}
           >
             Cancel
@@ -309,12 +289,12 @@ export default function Sidebar({
 
       {/* Relocating-Banner */}
       {relocatingLandmarkId && (
-        <div className="flex items-center justify-between px-4 py-2.5 bg-amber-950 border-b border-amber-800 shrink-0">
-          <span className="text-[11px] text-amber-300">Click an empty tile to relocate</span>
+        <div className="flex items-center justify-between px-4 py-2.5 bg-warning/10 border-b border-warning/30 shrink-0">
+          <span className="text-sm text-warning">Click an empty tile to relocate</span>
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-3 text-[10px] text-amber-400 hover:text-amber-200"
+            className="h-7 px-3 text-sm text-warning hover:text-warning/80"
             onClick={() => setRelocatingLandmark(null)}
           >
             Cancel
@@ -327,7 +307,7 @@ export default function Sidebar({
         <div className="px-4 pt-4 shrink-0">
           <Alert variant="destructive" className="py-2 pr-2">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <AlertDescription className="text-[11px] pr-4">{error}</AlertDescription>
+            <AlertDescription className="text-sm pr-4">{error}</AlertDescription>
             <button
               className="absolute top-2 right-2 text-destructive-foreground/70 hover:text-destructive-foreground"
               onClick={onClearError}

@@ -5,7 +5,7 @@
  * for the active process / stage.  Owns all process-specific memos,
  * connection-click handler, and the "New Connection" overlay.
  */
-import { useRef, useCallback, useMemo, useState } from 'react';import { Plus, Layers, GitBranch } from 'lucide-react';import { Button } from '@/components/ui/button';
+import { useRef, useCallback, useMemo, useState } from 'react';import { Layers, GitBranch, HelpCircle } from 'lucide-react';import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
@@ -34,13 +34,13 @@ export default function ProcessMapView() {
     setSelectedLandmark,
     setSelectedTile,
     setSelectedConnectionId,
-    setMainView,
+
     activeProcessId, activeStageId,
     processes, setProcesses,
     pickingConnection,
     setActiveProcessId,
+    setActiveStageId,
     rendererQualityProfile,
-    processSidebarHidden,
     setProcessSidebarHidden,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
@@ -49,13 +49,13 @@ export default function ProcessMapView() {
     selectedLandmark: s.selectedLandmark, setSelectedLandmark: s.setSelectedLandmark,
     setSelectedTile: s.setSelectedTile,
     setSelectedConnectionId: s.setSelectedConnectionId,
-    setMainView: s.setMainView,
+
     activeProcessId: s.activeProcessId, activeStageId: s.activeStageId,
     processes: s.processes, setProcesses: s.setProcesses,
     pickingConnection: s.pickingConnection,
     setActiveProcessId: s.setActiveProcessId,
+    setActiveStageId: s.setActiveStageId,
     rendererQualityProfile: s.rendererQualityProfile,
-    processSidebarHidden: s.processSidebarHidden,
     setProcessSidebarHidden: s.setProcessSidebarHidden,
   })));
 
@@ -90,6 +90,11 @@ export default function ProcessMapView() {
   };
 
   // ── Process-specific memos ───────────────────────────────────────────────────
+
+  const activeStage = useMemo(() => {
+    if (!activeProcessId || !activeStageId) return undefined;
+    return processes.find((p) => p.id === activeProcessId)?.stages.find((s) => s.id === activeStageId);
+  }, [activeProcessId, activeStageId, processes]);
 
   /** All connection IDs across every stage of the active process (for dimming). */
   const activeProcessConnectionIds = useMemo<Set<string> | undefined>(() => {
@@ -248,9 +253,9 @@ export default function ProcessMapView() {
   const handleLandmarkSearch = useCallback((landmark: Parameters<typeof setSelectedLandmark>[0]) => {
     if (!landmark?.coordinate) return;
     setSelectedTile(landmark.coordinate);
-    // Reset mainView to idle so no sidebar panel opens; process routing is handled by the route
-    setMainView('idle');
-  }, [setSelectedTile, setMainView]);
+    setSelectedLandmark(landmark);
+    setProcessSidebarHidden(false);
+  }, [setSelectedTile, setSelectedLandmark, setProcessSidebarHidden]);
 
   if (!currentMap) return null;
 
@@ -272,6 +277,7 @@ export default function ProcessMapView() {
             rendererQualityProfile={rendererQualityProfile}
             highlightConnectionIds={activeProcessConnectionIds}
             activeStageConnectionIds={activeStageConnectionIds}
+            activeStageName={activeStage?.name}
             processStageConnections={processStageConnections}
             landmarkHighlightColors={landmarkHighlightColors}
             stageHighlightTiles={stageHighlightTiles}
@@ -282,57 +288,78 @@ export default function ProcessMapView() {
       </div>
 
 
-      {/* Collaborator overlay: new connection + new process + search */}
-      {isCollaborator && (
-        <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
-          <Button
-            className="h-9 px-3 rounded-lg shadow-lg border gap-2 bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card"
-            variant="ghost"
-            onClick={() => setCreateConnOpen(true)}
-          >
-            <Plus className="h-4 w-4 shrink-0" />
-            <span className="text-xs">New Connection</span>
-          </Button>
+      {/* Left toolbar */}
+      <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
+        <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 rounded-lg shadow-lg border bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card shrink-0"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" align="start" className="max-w-72 text-sm space-y-1.5 leading-relaxed">
+            <p className="font-semibold">Processes</p>
+            <p>Processes model ordered sequences of map connections — useful for workflows, routes, or data flows.</p>
+            <p><span className="font-medium">Stages</span> are the steps within a process. Each stage can hold one or more connections.</p>
+            <p>To add a connection to a stage, open the stage accordion and click <span className="font-medium">Add Connection</span>, then click a connection line on the map. Click it again to remove it.</p>
+            <p>Each stage connection can have an optional <span className="font-medium">title</span> and a <span className="font-medium">direction</span> (Forward, Reverse, or Bidirectional) that represents how the connection is traversed in that step.</p>
+            <p>Stages can be reordered with the move-up / move-down actions in the stage menu.</p>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
+
+      {/* Right-side column: Layers → process buttons → New Process */}
+      {(() => {
+        const allMetrics = Object.values(metrics);
+        const selectedMetric = selectedMetricId ? metrics[selectedMetricId] : null;
+        const newProcPopover = (
           <Popover open={newProcPopoverOpen} onOpenChange={(o) => { setNewProcPopoverOpen(o); if (!o) { setNewProcName(''); setNewProcDesc(''); setNewProcError(''); } }}>
             <PopoverTrigger asChild>
               <Button
-                className="h-9 px-3 rounded-lg shadow-lg border gap-2 bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card"
+                size="sm"
                 variant="ghost"
+                className="h-8 px-3 rounded-lg shadow-lg border gap-2 bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card"
               >
-                <GitBranch className="h-4 w-4 shrink-0" />
-                <span className="text-xs">New Process</span>
+                <GitBranch className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-sm">New Process</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-4" side="bottom" align="start">
+            <PopoverContent className="w-72 p-4" side="bottom" align="end">
               <p className="text-sm font-semibold mb-3">Create Process</p>
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="new-proc-name" className="text-xs">Name <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="new-proc-name" className="text-sm">Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="new-proc-name"
                     value={newProcName}
                     onChange={(e) => setNewProcName(e.target.value)}
                     placeholder="Process name"
-                    className="h-8 text-xs"
+                    className="h-8 text-sm"
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateProcess()}
                     autoFocus
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="new-proc-desc" className="text-xs">Description</Label>
+                  <Label htmlFor="new-proc-desc" className="text-sm">Description</Label>
                   <Textarea
                     id="new-proc-desc"
                     value={newProcDesc}
                     onChange={(e) => setNewProcDesc(e.target.value)}
                     placeholder="Optional description…"
-                    className="text-xs resize-none"
+                    className="text-sm resize-none"
                     rows={3}
                   />
                 </div>
-                {newProcError && <p className="text-xs text-destructive">{newProcError}</p>}
+                {newProcError && <p className="text-sm text-destructive">{newProcError}</p>}
                 <Button
                   size="sm"
-                  className="w-full text-xs"
+                  className="w-full text-sm"
                   onClick={handleCreateProcess}
                   disabled={newProcSaving || !newProcName.trim()}
                 >
@@ -341,82 +368,80 @@ export default function ProcessMapView() {
               </div>
             </PopoverContent>
           </Popover>
-          <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} />
-        </div>
-      )}
-
-      {/* Viewer overlay: search only */}
-      {!isCollaborator && (
-        <div className="absolute top-2 left-2 z-10">
-          <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} />
-        </div>
-      )}
-
-      <div ref={fpsRef} className="absolute bottom-2 left-2 text-[10px] text-white/40 pointer-events-none font-mono" />
-
-      {/* Floating Processes sidebar toggle */}
-      <div className="absolute bottom-4 right-4 z-10">
-        <Button
-          size="sm"
-          variant="ghost"
-          className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${
-            !processSidebarHidden
-              ? 'bg-sky-950 text-sky-300 border-sky-700 hover:bg-sky-900'
-              : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
-          }`}
-          onClick={() => setProcessSidebarHidden(!processSidebarHidden)}
-        >
-          <GitBranch className="h-4 w-4 shrink-0" />
-          <span className="text-xs">Processes</span>
-        </Button>
-      </div>
-
-      {/* Metric layer selector – top-right, always visible in process mode */}
-      {Object.keys(metrics).length > 0 && (() => {
-        const allMetrics = Object.values(metrics);
-        const selectedMetric = selectedMetricId ? (metrics)[selectedMetricId] : null;
+        );
         return (
-          <div className="absolute top-2 right-2 z-10">
-            <Popover>
-              <PopoverTrigger asChild>
+          <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
+            {allMetrics.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${
+                      selectedMetricId
+                        ? 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/15'
+                        : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
+                    }`}
+                    variant="ghost"
+                  >
+                    <Layers className="h-4 w-4 shrink-0" />
+                    <span className="text-sm">{selectedMetric ? selectedMetric.name : 'Layers'}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-52 p-1" side="bottom" align="end">
+                  <button
+                    className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm transition-colors ${
+                      !selectedMetricId ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
+                    }`}
+                    onClick={() => setSelectedMetricId(null)}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
+                    None
+                  </button>
+                  {allMetrics.map((m) => (
+                    <button
+                      key={m.id}
+                      className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm transition-colors ${
+                        selectedMetricId === m.id ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
+                      }`}
+                      onClick={() => setSelectedMetricId(m.id)}
+                      title={m.description}
+                    >
+                      <span className="h-2 w-2 rounded-full shrink-0 border border-primary/60" />
+                      {m.name}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            )}
+            {processes.map((p) => {
+              const isActive = p.id === activeProcessId;
+              return (
                 <Button
+                  key={p.id}
                   size="sm"
-                  className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${
-                    selectedMetricId
-                      ? 'bg-sky-950 text-sky-300 border-sky-700 hover:bg-sky-900'
+                  variant="ghost"
+                  className={`h-8 px-3 rounded-lg shadow-lg border gap-2 ${
+                    isActive
+                      ? 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/15'
                       : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
                   }`}
-                  variant="ghost"
+                  onClick={() => {
+                    if (isActive) {
+                      setActiveProcessId(null);
+                      setProcessSidebarHidden(true);
+                    } else {
+                      setActiveProcessId(p.id);
+                      setActiveStageId(null);
+                      setProcessSidebarHidden(false);
+                    }
+                  }}
                 >
-                  <Layers className="h-4 w-4 shrink-0" />
-                  <span className="text-xs">{selectedMetric ? selectedMetric.name : 'Layers'}</span>
+                  <GitBranch className="h-3.5 w-3.5 shrink-0" />
+                  <span className="text-sm">{p.name}</span>
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-52 p-1" side="bottom" align="end">
-                <button
-                  className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs transition-colors ${
-                    !selectedMetricId ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
-                  }`}
-                  onClick={() => setSelectedMetricId(null)}
-                >
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
-                  None
-                </button>
-                {allMetrics.map((m) => (
-                  <button
-                    key={m.id}
-                    className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-xs transition-colors ${
-                      selectedMetricId === m.id ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
-                    }`}
-                    onClick={() => setSelectedMetricId(m.id)}
-                    title={m.description}
-                  >
-                    <span className="h-2 w-2 rounded-full shrink-0 border border-sky-400" />
-                    {m.name}
-                  </button>
-                ))}
-              </PopoverContent>
-            </Popover>
+              );
+            })}
+            {isCollaborator && newProcPopover}
           </div>
         );
       })()}

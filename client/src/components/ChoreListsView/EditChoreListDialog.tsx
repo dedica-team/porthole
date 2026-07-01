@@ -73,7 +73,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
         </DialogHeader>
         <div className="flex flex-col gap-3 overflow-y-auto flex-1 py-1">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-chore-title" className="text-xs">Title</Label>
+            <Label htmlFor="edit-chore-title" className="text-sm">Title</Label>
             <Input
               id="edit-chore-title"
               value={title}
@@ -82,7 +82,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-chore-link" className="text-xs">Link <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="edit-chore-link" className="text-sm">Link <span className="text-muted-foreground">(optional)</span></Label>
             <Input
               id="edit-chore-link"
               value={link}
@@ -94,9 +94,9 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-xs">Landmarks</Label>
+              <Label className="text-sm">Landmarks</Label>
               <button
-                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 onClick={toggleAll}
               >
                 {selected.size === landmarks.length ? 'Clear' : 'Select all'}
@@ -104,7 +104,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
             </div>
             <div className="flex flex-col gap-1 max-h-52 overflow-y-auto rounded-md border border-input bg-background p-2">
               {landmarks.map((l) => (
-                <label key={l.id} className="flex items-center gap-2 cursor-pointer rounded px-1 py-0.5 hover:bg-muted text-xs">
+                <label key={l.id} className="flex items-center gap-2 cursor-pointer rounded px-1 py-0.5 hover:bg-muted text-sm">
                   <input
                     type="checkbox"
                     checked={selected.has(l.id)}
@@ -116,11 +116,11 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
               ))}
             </div>
           </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter className="pt-2">
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button size="sm" className="h-8 text-xs" onClick={handleSave} disabled={saving || !title.trim()}>
+          <Button variant="flat" size="sm" className="h-8 text-sm" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button size="sm" className="h-8 text-sm" onClick={handleSave} disabled={saving || !title.trim()}>
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </DialogFooter>

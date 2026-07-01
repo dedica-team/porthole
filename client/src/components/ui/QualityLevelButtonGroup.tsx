@@ -1,5 +1,6 @@
 import type { QualityLevel } from '@/types/landmark';
-import { QUALITY_LEVEL_BADGE_STYLE, QUALITY_LEVEL_ORDER } from '@/types/landmark';
+import { QUALITY_LEVEL_ORDER } from '@/types/landmark';
+import { qualityLevelToStatus, type BadgeStatus } from '@/components/ui/status-badge';
 
 interface Props {
   value: QualityLevel;
@@ -15,31 +16,25 @@ const QUALITY_LEVEL_SHORT_LABEL: Record<QualityLevel, string> = {
   ERROR: 'Error',
 };
 
-export function getQualityLevelButtonStyle(level: QualityLevel, active: boolean): React.CSSProperties {
-  const isNone = level === 'NONE';
-  if (isNone) {
-    return active
-      ? {
-        ...QUALITY_LEVEL_BADGE_STYLE[level],
-        color: 'hsl(var(--muted-foreground))',
-        background: 'rgba(107,114,128,0.08)',
-        border: '1px solid rgba(107,114,128,0.24)',
-      }
-      : {
-        ...QUALITY_LEVEL_BADGE_STYLE[level],
-        color: 'hsl(var(--muted-foreground))',
-        background: 'transparent',
-        border: '1px solid rgba(107,114,128,0.18)',
-      };
-  }
+/**
+ * Status-based colour classes mirroring the Badge status variants so that
+ * quality-level buttons share the same visual language as StatusBadge.
+ */
+const STATUS_BUTTON_CLASSES: Record<BadgeStatus, string> = {
+  GOOD: 'bg-success/20 text-foreground border-success/50',
+  WARNING: 'bg-warning/20 text-foreground border-warning/50',
+  BAD: 'bg-destructive/20 text-foreground border-destructive/50',
+  NONE: 'bg-muted text-muted-foreground border-border',
+  ONGOING: 'bg-info/20 text-foreground border-info/50',
+};
 
-  return active
-    ? QUALITY_LEVEL_BADGE_STYLE[level]
-    : {
-      ...QUALITY_LEVEL_BADGE_STYLE[level],
-      background: 'transparent',
-    };
-}
+const STATUS_BUTTON_INACTIVE_CLASSES: Record<BadgeStatus, string> = {
+  GOOD: 'bg-transparent text-foreground/70 border-success/30',
+  WARNING: 'bg-transparent text-foreground/70 border-warning/30',
+  BAD: 'bg-transparent text-foreground/70 border-destructive/30',
+  NONE: 'bg-transparent text-muted-foreground border-border',
+  ONGOING: 'bg-transparent text-foreground/70 border-info/30',
+};
 
 export default function QualityLevelButtonGroup({ value, onChange, className = '', buttonClassName = '' }: Props) {
   return (
@@ -47,17 +42,21 @@ export default function QualityLevelButtonGroup({ value, onChange, className = '
       {QUALITY_LEVEL_ORDER.map((level) => {
         const active = value === level;
         const isNone = level === 'NONE';
+        const status = qualityLevelToStatus[level];
+        const colorClass = active
+          ? STATUS_BUTTON_CLASSES[status]
+          : STATUS_BUTTON_INACTIVE_CLASSES[status];
         return (
           <button
             key={level}
             type="button"
             className={[
-              'rounded border px-2 py-1 text-[10px] font-semibold transition-colors cursor-pointer',
+              'rounded-full border px-2.5 py-0.5 text-sm font-semibold transition-colors cursor-pointer',
               isNone ? 'italic' : '',
               active ? '' : 'opacity-75 hover:opacity-100',
+              colorClass,
               buttonClassName,
             ].filter(Boolean).join(' ')}
-            style={getQualityLevelButtonStyle(level, active)}
             onClick={() => onChange(level)}
             aria-pressed={active}
             aria-label={`Set quality level to ${QUALITY_LEVEL_SHORT_LABEL[level]}`}
@@ -70,4 +69,3 @@ export default function QualityLevelButtonGroup({ value, onChange, className = '
     </div>
   );
 }
-

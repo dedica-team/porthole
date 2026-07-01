@@ -219,8 +219,8 @@ export function useMapPageActions() {
     withAction(() => createMetric(currentMap!.id, name, description));
   }, [currentMap, withAction]);
 
-  const handleEditMetric = useCallback((metricId: string, name?: string, description?: string) => {
-    withAction(() => editMetric(currentMap!.id, metricId, name, description));
+  const handleEditMetric = useCallback((metricId: string, name?: string, description?: string, link?: string, clearLink?: boolean) => {
+    withAction(() => editMetric(currentMap!.id, metricId, name, description, link, clearLink));
   }, [currentMap, withAction]);
 
   const handleRemoveMetric = useCallback((metricId: string) => {
@@ -229,9 +229,9 @@ export function useMapPageActions() {
 
   const handleSetLandmarkMetric = useCallback((
     landmarkId: string, metricId: string, value: string | undefined,
-    level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>,
+    level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>, description?: string,
   ) => {
-    withAction(() => setLandmarkMetric(currentMap!.id, landmarkId, metricId, value, level, link, linkText, badges));
+    withAction(() => setLandmarkMetric(currentMap!.id, landmarkId, metricId, value, level, link, linkText, badges, description));
   }, [currentMap, withAction]);
 
   const handleClearLandmarkMetric = useCallback((landmarkId: string, metricId: string) => {

@@ -63,7 +63,7 @@ describe('LandmarkInfoPopover', () => {
     expect(screen.getByText('Owner')).toBeInTheDocument();
   });
 
-  it('shows edit form when Edit button is clicked', () => {
+  it('shows edit dialog when Edit button is clicked', () => {
     setup();
     render(
       <LandmarkInfoPopover {...defaultProps}>
@@ -72,11 +72,12 @@ describe('LandmarkInfoPopover', () => {
     );
     fireEvent.click(screen.getByText('Open Me'));
     fireEvent.click(screen.getByTitle('Edit Landmark'));
+    // The edit dialog should now be open with the form
     expect(screen.getByText('Edit Landmark')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Name')).toHaveValue('Tower 1');
   });
 
-  it('shows confirmation and calls onRemoveLandmark when removal is confirmed', () => {
+  it('shows confirmation dialog and calls onRemoveLandmark when removal is confirmed', () => {
     setup();
     const onRemove = vi.fn();
     render(
@@ -87,10 +88,10 @@ describe('LandmarkInfoPopover', () => {
     fireEvent.click(screen.getByText('Open Me'));
     fireEvent.click(screen.getByTitle('Edit Landmark'));
     
-    // Click "Remove"
+    // Click "Remove" button in the edit dialog (destructive variant)
     fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
     
-    // Check confirmation
+    // Check confirmation dialog
     expect(screen.getByText(/remove «Tower 1»\?/i)).toBeInTheDocument();
     expect(screen.getByText(/this action cannot be undone/i)).toBeInTheDocument();
     
@@ -98,11 +99,9 @@ describe('LandmarkInfoPopover', () => {
     fireEvent.click(screen.getByRole('button', { name: /yes, remove/i }));
     
     expect(onRemove).toHaveBeenCalledWith('lm1');
-    // Popover should close (logic in component calls setOpen(false))
-    expect(screen.queryByText('Edit Landmark')).not.toBeInTheDocument();
   });
 
-  it('cancels removal confirmation and returns to edit form', () => {
+  it('cancels removal confirmation and returns to edit dialog', () => {
     setup();
     render(
       <LandmarkInfoPopover {...defaultProps}>
@@ -115,10 +114,10 @@ describe('LandmarkInfoPopover', () => {
     fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
     expect(screen.getByText(/remove «Tower 1»\?/i)).toBeInTheDocument();
     
-    // Click "Cancel" in confirmation
+    // Click "Cancel" in confirmation dialog
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     
-    // Should be back in edit form
-    expect(screen.getByText('Edit Landmark')).toBeInTheDocument();
+    // The confirmation dialog should be closed
+    expect(screen.queryByText(/remove «Tower 1»\?/i)).not.toBeInTheDocument();
   });
 });

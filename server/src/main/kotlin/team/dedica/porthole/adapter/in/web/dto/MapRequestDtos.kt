@@ -82,13 +82,17 @@ data class EditMapRequest(
 data class CreateMetricRequest(
     @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val name: String,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String,
+    @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
 )
 data class EditMetricRequest(
     @field:Size(max = NAME_MAX_LENGTH) val name: String?,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String?,
+    @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
+    val clearLink: Boolean = false,
 )
 data class SetLandmarkMetricRequest(
     @field:Size(max = 500) val value: String? = null,
+    @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
     @field:Size(max = NAME_MAX_LENGTH) val linkText: String? = null,
     val level: String,   // "NONE" | "OK" | "WARNING" | "ERROR"

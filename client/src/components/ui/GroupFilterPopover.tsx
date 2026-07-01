@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { StatusIndicator } from '@/components/ui/status-badge';
+
 import ReactDOM from 'react-dom';
 import { Check, Filter } from 'lucide-react';
 
@@ -108,9 +110,9 @@ export function GroupFilterPopover({
       style={{ top: btnRect.bottom + 4, left: btnRect.left }}
     >
       <div className="px-3 py-1 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Show groups</span>
+        <span className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Show groups</span>
         {hiddenGroups.size > 0 && (
-          <button className="text-[10px] text-primary hover:underline" onClick={onShowAll}>
+          <button className="text-sm text-primary hover:underline" onClick={onShowAll}>
             Show all
           </button>
         )}
@@ -120,13 +122,10 @@ export function GroupFilterPopover({
         return (
           <button
             key={groupId ?? 'ungrouped'}
-            className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-accent transition-colors flex items-center gap-2"
+            className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
             onClick={() => onToggle(groupId)}
           >
-            <span
-              className="inline-block w-2 h-2 rounded-full shrink-0 border border-white/20"
-              style={{ backgroundColor: color }}
-            />
+            <StatusIndicator status="NONE" style={{ backgroundColor: color }} className="border border-white/20" />
             <span className={`flex-1 truncate${visible ? '' : ' line-through text-muted-foreground'}`}>{label}</span>
             {visible && <Check className="h-3 w-3 text-primary shrink-0" />}
           </button>

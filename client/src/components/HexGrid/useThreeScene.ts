@@ -12,13 +12,15 @@ interface UseThreeSceneOptions {
   fpsRef?: React.RefObject<HTMLDivElement | null>;
   onNativePointerMove?: (e: PointerEvent) => void;
   qualityProfile?: RendererQualityProfile;
+  /** When true, use an orthographic camera locked top-down (xray/process mode). */
+  orthographic?: boolean;
   /** Called after the Three.js scene has been (re-)initialised. */
   onSceneReady?: () => void;
 }
 
 export interface ThreeRefs {
   scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
+  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
   renderer: THREE.WebGLRenderer;
   css2dRenderer: CSS2DRenderer;
   controls: OrbitControls;
@@ -39,6 +41,7 @@ export function useThreeScene({
   fpsRef,
   onNativePointerMove,
   qualityProfile,
+  orthographic = false,
   onSceneReady,
 }: UseThreeSceneOptions): React.RefObject<ThreeRefs | null> {
   const threeRef = useRef<ThreeRefs | null>(null);
@@ -64,14 +67,30 @@ export function useThreeScene({
     scene.background = new THREE.Color(TRON_BLACK);
     const rendererQuality = resolveRendererQuality(qualityProfile);
 
-    const camera = new THREE.PerspectiveCamera(
-      55,
-      initialSize.width > 0 && initialSize.height > 0 ? initialSize.width / initialSize.height : 1,
-      0.1,
-      200,
-    );
-    camera.position.set(0, 60, 60);
-    camera.lookAt(0, 0, 0);
+    const ORTHO_HALF = 35;
+    const camera: THREE.PerspectiveCamera | THREE.OrthographicCamera = orthographic
+      ? (() => {
+          const aspect = initialSize.width > 0 && initialSize.height > 0 ? initialSize.width / initialSize.height : 1;
+          const cam = new THREE.OrthographicCamera(
+            -ORTHO_HALF * aspect, ORTHO_HALF * aspect,
+            ORTHO_HALF, -ORTHO_HALF,
+            0.1, 300,
+          );
+          cam.position.set(0, 100, 0);
+          cam.lookAt(0, 0, 0);
+          return cam;
+        })()
+      : (() => {
+          const cam = new THREE.PerspectiveCamera(
+            55,
+            initialSize.width > 0 && initialSize.height > 0 ? initialSize.width / initialSize.height : 1,
+            0.1,
+            200,
+          );
+          cam.position.set(0, 60, 60);
+          cam.lookAt(0, 0, 0);
+          return cam;
+        })();
 
     const renderer = new THREE.WebGLRenderer({ antialias: rendererQuality.antialias });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, rendererQuality.maxPixelRatio));
@@ -121,7 +140,15 @@ export function useThreeScene({
         css2dRenderer.setSize(width, height);
       }
 
-      camera.aspect = width / height;
+      if (camera instanceof THREE.OrthographicCamera) {
+        const aspect = width / height;
+        camera.left   = -ORTHO_HALF * aspect;
+        camera.right  =  ORTHO_HALF * aspect;
+        camera.top    =  ORTHO_HALF;
+        camera.bottom = -ORTHO_HALF;
+      } else {
+        camera.aspect = width / height;
+      }
       camera.updateProjectionMatrix();
       hasValidViewport = true;
       return true;
@@ -147,9 +174,15 @@ export function useThreeScene({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.maxPolarAngle = Math.PI / 2.2;
-    controls.minDistance = 5;
-    controls.maxDistance = 150;
+    if (orthographic) {
+      controls.enableRotate = false;
+      controls.minZoom = 0.3;
+      controls.maxZoom = 8;
+    } else {
+      controls.maxPolarAngle = Math.PI / 2.2;
+      controls.minDistance = 5;
+      controls.maxDistance = 150;
+    }
     controls.addEventListener('change', requestRender);
 
     // Lighting
@@ -281,7 +314,7 @@ export function useThreeScene({
       if (fpsEl) fpsEl.style.display = '';
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qualityProfile]);
+  }, [qualityProfile, orthographic]);
 
   return threeRef;
 }

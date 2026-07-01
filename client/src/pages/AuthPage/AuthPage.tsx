@@ -193,7 +193,7 @@ export default function AuthPage() {
             </button>
             <div>
               <h2 className="text-base font-semibold text-foreground tron-logo">Passkey</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Create a new passkey or verify your username after signing in</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Create a new passkey or verify your username after signing in</p>
             </div>
             <input
               type="text"
@@ -201,27 +201,27 @@ export default function AuthPage() {
               value={passkeyUsername}
               onChange={(e) => setPasskeyUsername(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
-              className="w-full rounded border border-border bg-muted/30 px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full rounded border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               autoFocus
             />
             {passkeyError && (
-              <p className="text-xs text-destructive">{passkeyError}</p>
+              <p className="text-sm text-destructive">{passkeyError}</p>
             )}
             <div className="flex flex-col gap-2">
               <Button
                 size="sm"
                 onClick={handleRegister}
                 disabled={passkeyLoading || !passkeyUsername.trim()}
-                className="w-full gap-1.5 uppercase tracking-widest text-[10px]"
+                className="w-full gap-1.5 uppercase tracking-widest text-sm"
               >
                 🔑 Register new Passkey
               </Button>
               <Button
                 size="sm"
-                variant="outline"
+                variant="default"
                 onClick={handleSignInWithUsername}
                 disabled={passkeyLoading || !passkeyUsername.trim()}
-                className="w-full gap-1.5 uppercase tracking-widest text-[10px]"
+                className="w-full gap-1.5 uppercase tracking-widest text-sm"
               >
                 Sign in and verify username
               </Button>
@@ -247,7 +247,7 @@ export default function AuthPage() {
           />
           <div className="flex flex-col items-center gap-1">
             <h1 className="tron-logo text-2xl">Porthole</h1>
-            <p className="text-xs tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
+            <p className="text-sm tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
               <strong>{tagline}</strong>
             </p>
           </div>
@@ -260,7 +260,7 @@ export default function AuthPage() {
           {githubEnabled && (
             <Button
               onClick={handleGitHubLogin}
-              className="w-full gap-2 uppercase tracking-widest text-xs h-11"
+              className="w-full gap-2 uppercase tracking-widest text-sm h-11"
               size="lg"
               style={{
                 background: 'transparent',
@@ -287,7 +287,7 @@ export default function AuthPage() {
           {keycloakEnabled && (
             <Button
               onClick={handleKeycloakLogin}
-              className="w-full gap-2 uppercase tracking-widest text-xs h-11"
+              className="w-full gap-2 uppercase tracking-widest text-sm h-11"
               size="lg"
               style={{
                 background: 'transparent',
@@ -312,7 +312,7 @@ export default function AuthPage() {
             <Button
               onClick={handlePasskeyClick}
               disabled={passkeyLoading}
-              className="w-full gap-2 uppercase tracking-widest text-xs h-11"
+              className="w-full gap-2 uppercase tracking-widest text-sm h-11"
               size="lg"
               style={{
                 background: 'transparent',
@@ -333,7 +333,7 @@ export default function AuthPage() {
             </Button>
           )}
           {oauthError && (
-            <p className="text-xs text-destructive text-center">{oauthError}</p>
+            <p className="text-sm text-destructive text-center">{oauthError}</p>
           )}
         </div>
       </div>

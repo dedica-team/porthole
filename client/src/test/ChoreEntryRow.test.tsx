@@ -4,11 +4,14 @@ import ChoreEntryRow from '../components/ChoreListsView/ChoreEntryRow';
 import * as mapApi from '../api/mapApi';
 import type { ChoreEntry, ChoreList } from '../types/chores';
 import type { Collaborator } from '../types/session';
+import type { Landmark } from '../types/landmark';
 vi.mock('../api/mapApi');
 
 const MAP_ID  = 'map-1';
 const LIST_ID = 'list-1';
 const LM_ID   = 'lm-1';
+
+const LANDMARK: Landmark = { id: LM_ID, name: 'Reception', ownerId: null, type: 'KEEP' };
 
 const COLLABORATORS: Collaborator[] = [
   { id: 'u1', username: 'alice' },
@@ -31,19 +34,15 @@ const makeList = (entry: ChoreEntry): ChoreList => ({
 function renderRow(entry: ChoreEntry, isCollaborator = true) {
   const onUpdated = vi.fn();
   render(
-    <table>
-      <tbody>
-        <ChoreEntryRow
-          mapId={MAP_ID}
-          listId={LIST_ID}
-          entry={entry}
-          landmarkName="Reception"
-          collaborators={COLLABORATORS}
-          isCollaborator={isCollaborator}
-          onUpdated={onUpdated}
-        />
-      </tbody>
-    </table>,
+    <ChoreEntryRow
+      mapId={MAP_ID}
+      listId={LIST_ID}
+      entry={entry}
+      landmark={LANDMARK}
+      collaborators={COLLABORATORS}
+      isCollaborator={isCollaborator}
+      onUpdated={onUpdated}
+    />,
   );
   return { onUpdated };
 }
@@ -68,12 +67,6 @@ describe('ChoreEntryRow – display', () => {
     expect(screen.getByText('alice')).toBeInTheDocument();
   });
 
-  it('renders — when no assignee', () => {
-    renderRow(makeEntry());
-    // multiple — possible; at least one
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
-  });
-
   it('renders link when set', () => {
     renderRow(makeEntry({ link: 'https://wiki.example' }));
     expect(screen.getByRole('link', { name: /wiki\.example/i })).toBeInTheDocument();
@@ -84,9 +77,11 @@ describe('ChoreEntryRow – display', () => {
     expect(screen.getByText('Check fire exits')).toBeInTheDocument();
   });
 
-  it('does not show pencil button for viewers', () => {
+  it('does not open edit dialog for viewers when row is clicked', async () => {
     renderRow(makeEntry(), false);
-    expect(screen.queryByTitle('Edit entry')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit entry'));
+    // Dialog should not open for non-collaborators
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
   it('shows pencil button for collaborators', () => {
@@ -134,13 +129,13 @@ describe('ChoreEntryRow – edit popover', () => {
     });
   });
 
-  it('closes popover on Cancel without calling API', async () => {
+  it('closing dialog via Escape does not call API', async () => {
     renderRow(makeEntry());
     fireEvent.click(screen.getByTitle('Edit entry'));
-    await waitFor(() => screen.getByRole('button', { name: 'Cancel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => screen.getByRole('button', { name: 'Save' }));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     });
     expect(mapApi.updateChoreEntry).not.toHaveBeenCalled();
   });

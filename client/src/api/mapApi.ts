@@ -448,11 +448,11 @@ export async function editTile(
 
 // ── Quality Metrics ──────────────────────────────────────────────────────────
 
-export async function createMetric(mapId: string, name: string, description: string): Promise<SessionState> {
+export async function createMetric(mapId: string, name: string, description: string, link?: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/metrics`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ name, description }),
+    body: JSON.stringify({ name, description, link: link ?? null }),
   });
   return handleResponse<SessionState>(res);
 }
@@ -462,11 +462,13 @@ export async function editMetric(
   metricId: string,
   name?: string,
   description?: string,
+  link?: string,
+  clearLink?: boolean,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
-    body: JSON.stringify({ name: name ?? null, description: description ?? null }),
+    body: JSON.stringify({ name: name ?? null, description: description ?? null, link: link ?? null, clearLink: clearLink ?? false }),
   });
   return handleResponse<SessionState>(res);
 }
@@ -488,13 +490,14 @@ export async function setLandmarkMetric(
   link?: string,
   linkText?: string,
   badges?: Record<string, string>,
+  description?: string,
 ): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
     {
       method: 'PUT',
       headers: authHeaders(),
-      body: JSON.stringify({ value: value ?? null, level, link: link ?? null, linkText: linkText ?? null, badges: badges ?? {} }),
+      body: JSON.stringify({ value: value ?? null, description: description ?? null, level, link: link ?? null, linkText: linkText ?? null, badges: badges ?? {} }),
     },
   );
   return handleResponse<SessionState>(res);

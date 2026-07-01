@@ -89,27 +89,18 @@ describe('GreenkeepingRotationsView', () => {
     });
   });
 
-  it('renders the rotation overview as a table for collaborators', () => {
+  it('renders the rotation overview as cards for collaborators', () => {
     render(<GreenkeepingRotationsView />);
 
-    expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByText('Weekly Core Duty')).toBeInTheDocument();
     expect(screen.getByText('Shared care of the core systems')).toBeInTheDocument();
     expect(screen.getByText('https://example.com/weekly-core-duty')).toBeInTheDocument();
-    expect(screen.getByText('Active / Rotation Order')).toBeInTheDocument();
-    expect(screen.queryByText('Progress')).not.toBeInTheDocument();
     expect(screen.getAllByText('alice').length).toBeGreaterThan(0);
     expect(screen.getByText('bob')).toBeInTheDocument();
-    expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.queryByText('Actions')).not.toBeInTheDocument();
-    expect(screen.queryByText('Currently active')).not.toBeInTheDocument();
-    expect(screen.queryByText('alice → bob')).not.toBeInTheDocument();
     expect(screen.getAllByTitle('alice').length).toBeGreaterThan(0);
     expect(screen.getByTitle('bob')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^rotation$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /advance to bob in weekly core duty/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /advance active collaborator for weekly core duty/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /open actions for weekly core duty/i })).not.toBeInTheDocument();
   });
 
   it('hides create button for viewers', () => {
@@ -138,7 +129,7 @@ describe('GreenkeepingRotationsView', () => {
   it('opens the edit dialog when the title is clicked', async () => {
     render(<GreenkeepingRotationsView />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Weekly Core Duty' }));
+    fireEvent.click(screen.getByText('Weekly Core Duty'));
 
     expect(await screen.findByText('Edit Rotation')).toBeInTheDocument();
   });
@@ -146,7 +137,7 @@ describe('GreenkeepingRotationsView', () => {
   it('shows delete confirmation inside the edit dialog', async () => {
     render(<GreenkeepingRotationsView />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Weekly Core Duty' }));
+    fireEvent.click(screen.getByText('Weekly Core Duty'));
 
     expect(await screen.findByRole('button', { name: /^delete$/i })).toBeInTheDocument();
 
@@ -170,7 +161,6 @@ describe('GreenkeepingRotationsView', () => {
     await waitFor(() => {
       expect(mapApi.advanceGreenkeepingRotation).toHaveBeenCalledWith(MAP_ID, 'rot-1');
       expect(screen.getByText('bob')).toBeInTheDocument();
-      expect(screen.getByText('Active')).toBeInTheDocument();
     });
   });
 });

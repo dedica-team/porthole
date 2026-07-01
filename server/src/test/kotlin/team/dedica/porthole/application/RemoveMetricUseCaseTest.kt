@@ -32,7 +32,7 @@ class RemoveMetricUseCaseTest {
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
 
         val createMetric = CreateMetricUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        state = createMetric.execute(state.id, collaborator.id, "Availability", "Uptime")
+        state = createMetric.execute(state.id, collaborator.id, "Availability", "Uptime", null)
         metricId = state.metrics.values.first().id
 
         val tile = HexCoordinate(0, 0)
@@ -61,7 +61,7 @@ class RemoveMetricUseCaseTest {
     @Test
     fun `unrelated landmark entries are untouched`() {
         val createMetric = CreateMetricUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        state = createMetric.execute(state.id, collaborator.id, "Latency", "Response time")
+        state = createMetric.execute(state.id, collaborator.id, "Latency", "Response time", null)
         val otherMetricId = state.metrics.values.first { it.name == "Latency" }.id
         val setMetric = SetLandmarkMetricUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
         state = setMetric.execute(

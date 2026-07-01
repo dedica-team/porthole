@@ -141,12 +141,15 @@ class DemoDataLoader(
 
     private fun createUsers() {
         listOf(
-            UserRecord(id = USER_DR_SARAH, username = UN_SARAH, email = "sarah.mueller@petclinic.demo"),
-            UserRecord(id = USER_DR_JAMES, username = UN_JAMES, email = "james.chen@petclinic.demo"),
-            UserRecord(id = USER_NURSE_ANNA, username = UN_ANNA, email = "anna.koch@petclinic.demo"),
-            UserRecord(id = USER_ADMIN_PETRA, username = UN_PETRA, email = "petra.bauer@petclinic.demo"),
-            UserRecord(id = USER_TECH_MARC, username = UN_MARC, email = "marc.richter@petclinic.demo"),
-        ).forEach { if (userPort.findById(it.id) == null) userPort.save(it) }
+            UserRecord(id = USER_DR_SARAH,   username = UN_SARAH, email = "sarah.mueller@petclinic.demo",  avatarUrl = "https://i.pravatar.cc/80?u=sarah-mueller"),
+            UserRecord(id = USER_DR_JAMES,   username = UN_JAMES, email = "james.chen@petclinic.demo",     avatarUrl = "https://i.pravatar.cc/80?u=james-chen"),
+            UserRecord(id = USER_NURSE_ANNA, username = UN_ANNA,  email = "anna.koch@petclinic.demo",      avatarUrl = "https://i.pravatar.cc/80?u=anna-koch"),
+            UserRecord(id = USER_ADMIN_PETRA,username = UN_PETRA, email = "petra.bauer@petclinic.demo",    avatarUrl = "https://i.pravatar.cc/80?u=petra-bauer"),
+            UserRecord(id = USER_TECH_MARC,  username = UN_MARC,  email = "marc.richter@petclinic.demo",   avatarUrl = "https://i.pravatar.cc/80?u=marc-richter"),
+        ).forEach { record ->
+            val existing = userPort.findById(record.id)
+            if (existing == null || existing.avatarUrl != record.avatarUrl) userPort.save(record)
+        }
         log.info("Demo users ready")
     }
 
@@ -173,7 +176,7 @@ class DemoDataLoader(
             createdAt = Instant.parse("2026-01-15T09:00:00Z"),
         )
         // Add admin as first collaborator directly (others join via JoinMapUseCase).
-        sessionState.collaborators.add(Collaborator(id = USER_ADMIN_PETRA, username = UN_PETRA))
+        sessionState.collaborators.add(Collaborator(id = USER_ADMIN_PETRA, username = UN_PETRA, avatarUrl = "https://i.pravatar.cc/80?u=petra-bauer"))
         sessionStatePort.save(sessionState)
     }
 
@@ -221,7 +224,7 @@ class DemoDataLoader(
     }
 
     private fun createMetric(owner: UUID, name: String, desc: String): UUID =
-        createMetricUseCase.execute(DEMO_MAP_ID, owner, name, desc)
+        createMetricUseCase.execute(DEMO_MAP_ID, owner, name, desc, null)
             .metrics.values.first { it.name == name }.id
 
     // ── Landmarks ─────────────────────────────────────────────────────────────

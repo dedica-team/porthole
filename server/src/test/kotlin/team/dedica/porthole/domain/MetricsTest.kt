@@ -97,7 +97,7 @@ class MetricsTest {
         val uc = CreateMetricUseCase(
             port, team.dedica.porthole.application.NoOpBroadcastPort(), authorizationPort
         )
-        val result = uc.execute(state.id, collaborator.id, "Availability", "Uptime %")
+        val result = uc.execute(state.id, collaborator.id, "Availability", "Uptime %", null)
         assertEquals(1, result.metrics.size)
         assertEquals("Availability", result.metrics.values.first().name)
     }

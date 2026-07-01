@@ -29,7 +29,7 @@ export default function LoadingOverlay({
       <div className="h-0.5 w-48 rounded-full bg-muted overflow-hidden">
         <div className="h-full w-full rounded-full bg-cyan-500/50 animate-pulse" />
       </div>
-      <span className="text-[11px] tracking-widest uppercase text-muted-foreground/40">{label}</span>
+      <span className="text-sm tracking-widest uppercase text-muted-foreground/40">{label}</span>
     </div>
   );
 }

@@ -59,14 +59,14 @@ export default function GitHubCallbackPage() {
           {tronEmblem}
           <div className="flex flex-col items-center gap-1">
             <h1 className="tron-logo text-2xl">Porthole</h1>
-            <p className="text-xs tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
+            <p className="text-sm tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
               Logging in...
             </p>
           </div>
           <p className="text-sm text-destructive text-center">{validationError ?? error}</p>
           <a
             href="/"
-            className="inline-flex items-center justify-center h-11 px-4 w-full text-center uppercase tracking-widest text-xs"
+            className="inline-flex items-center justify-center h-11 px-4 w-full text-center uppercase tracking-widest text-sm"
             style={{
               background: 'transparent',
               border: '1px solid hsl(185,100%,54%)',
@@ -98,7 +98,7 @@ export default function GitHubCallbackPage() {
         {tronEmblem}
         <div className="flex flex-col items-center gap-1">
           <h1 className="tron-logo text-2xl">Porthole</h1>
-          <p className="text-xs tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
+          <p className="text-sm tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
             Logging in...
           </p>
         </div>

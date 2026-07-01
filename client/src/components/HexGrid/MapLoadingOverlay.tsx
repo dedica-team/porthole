@@ -50,16 +50,16 @@ export default function MapLoadingOverlay({ ready, tileCount, landmarkCount, mod
 
       {/* Label */}
       <div className="flex flex-col items-center gap-1">
-        <span className="text-xs font-medium text-muted-foreground tracking-widest uppercase">
+        <span className="text-sm font-medium text-muted-foreground tracking-widest uppercase">
           {mode === 'process' ? LOADING_COPY.process : LOADING_COPY.render}
         </span>
         {/* Live stats */}
         <div className="flex items-center gap-4 mt-1">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground/60">
             <Layers className="h-3 w-3" />
             <span>{tileCount.toLocaleString()} tiles</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground/60">
             <Castle className="h-3 w-3" />
             <span>{landmarkCount.toLocaleString()} landmarks</span>
           </div>

@@ -38,60 +38,16 @@ function setup(processes: Process[] = [], loading = false, error: string | null 
   });
 }
 
-describe('ProcessPanel – Process List View', () => {
+// The process list view has been removed – process selection is now done via
+// per-process buttons on the map overlay. ProcessPanel only renders when an
+// active process is set, so tests that required activeProcessId: null are dropped.
+describe('ProcessPanel – no active process', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('shows loading spinner while processes are loading', () => {
-    setup([], true);
-    render(<ProcessPanel />);
-    expect(screen.getByText(/loading processes/i)).toBeInTheDocument();
-  });
-
-  it('shows error message with retry button on error', () => {
-    setup([], false, 'Network error');
-    render(<ProcessPanel />);
-    expect(screen.getByText('Network error')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
-  });
-
-  it('shows empty state when no processes exist', () => {
+  it('renders nothing when no process is active', () => {
     setup([]);
-    render(<ProcessPanel />);
-    expect(screen.getByText(/no processes yet/i)).toBeInTheDocument();
-  });
-
-  it('renders process names', () => {
-    setup(PROCESS_LIST);
-    render(<ProcessPanel />);
-    expect(screen.getByText('Alpha Flow')).toBeInTheDocument();
-    expect(screen.getByText('Beta Flow')).toBeInTheDocument();
-  });
-
-  it('shows inline create form when Create Process button is clicked', () => {
-    setup(PROCESS_LIST);
-    render(<ProcessPanel />);
-    fireEvent.click(screen.getByRole('button', { name: /create process/i }));
-    expect(screen.getByPlaceholderText(/process name/i)).toBeInTheDocument();
-  });
-
-  it('calls createProcess and updates store when form is submitted', async () => {
-    const updated: Process[] = [...PROCESS_LIST, { id: 'proc-3', name: 'Gamma', stages: [] }];
-    vi.spyOn(mapApi, 'createProcess').mockResolvedValue(updated);
-    setup(PROCESS_LIST);
-    render(<ProcessPanel />);
-    fireEvent.click(screen.getByRole('button', { name: /create process/i }));
-    fireEvent.change(screen.getByPlaceholderText(/process name/i), { target: { value: 'Gamma' } });
-    fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
-    await waitFor(() => expect(mapApi.createProcess).toHaveBeenCalledWith('map-1', 'Gamma'));
-    expect(useMapStore.getState().processes).toHaveLength(3);
-  });
-
-  it('retry button calls fetchProcesses', async () => {
-    vi.spyOn(mapApi, 'fetchProcesses').mockResolvedValue(PROCESS_LIST);
-    setup([], false, 'Oops');
-    render(<ProcessPanel />);
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-    await waitFor(() => expect(mapApi.fetchProcesses).toHaveBeenCalledWith('map-1'));
+    const { container } = render(<ProcessPanel />);
+    expect(container.firstChild).toBeNull();
   });
 });
 
@@ -220,12 +176,12 @@ describe('ProcessPanel – Stage Detail View', () => {
     );
   });
 
-  it('back button clears activeStageId', () => {
+  it('clicking open stage header closes it and clears activeStageId', () => {
     render(<ProcessPanel />);
-    const chevron = screen.getAllByRole('button').find(
-      (b) => b.querySelector('svg.lucide-chevron-left'),
-    )!;
-    fireEvent.click(chevron);
+    // Stage header is the clickable row that toggles the accordion.
+    // It shows the stage name; clicking it when open should set activeStageId to null.
+    const stageHeader = screen.getByText('Analysis').closest('[class*="cursor-pointer"]') as HTMLElement;
+    fireEvent.click(stageHeader);
     expect(useMapStore.getState().activeStageId).toBeNull();
   });
 });

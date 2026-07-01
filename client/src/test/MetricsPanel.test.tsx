@@ -122,7 +122,7 @@ describe('MetricsPanel', () => {
     fireEvent.click(screen.getByTitle('Edit metric'));
     fireEvent.change(screen.getByPlaceholderText('Metric name'), { target: { value: 'Uptime' } });
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
-    expect(onEditMetric).toHaveBeenCalledWith('m1', 'Uptime', 'Uptime %');
+    expect(onEditMetric).toHaveBeenCalledWith('m1', 'Uptime', 'Uptime %', undefined, false);
   });
 
   it('remove button shows confirm dialog', () => {

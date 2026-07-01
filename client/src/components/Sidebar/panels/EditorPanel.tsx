@@ -1,6 +1,6 @@
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { useMapStore } from '@/store/mapStore';
 import type { Terrain } from '@/types/hex';
@@ -56,9 +56,9 @@ export default function EditorPanel({ floating = false, error = '', onClearError
   ];
 
   const floatingButtonClass = (active: boolean) => cn(
-    'h-9 px-3 rounded-lg shadow-lg border text-xs bg-card/80 backdrop-blur-sm hover:bg-card',
+    'h-9 px-3 rounded-lg shadow-lg border text-sm bg-card/80 backdrop-blur-sm hover:bg-card',
     active
-      ? 'bg-amber-950 text-amber-300 border-amber-800 hover:bg-amber-950 hover:text-amber-300'
+      ? 'bg-warning/10 text-warning border-warning/30 hover:bg-warning/10 hover:text-warning'
       : 'text-muted-foreground border-border hover:text-foreground',
   );
 
@@ -68,7 +68,7 @@ export default function EditorPanel({ floating = false, error = '', onClearError
         {error && (
           <Alert variant="destructive" className="pointer-events-auto w-full max-w-xl py-2 pr-2 shadow-lg">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <AlertDescription className="text-[11px] pr-4">{error}</AlertDescription>
+            <AlertDescription className="text-sm pr-4">{error}</AlertDescription>
             {onClearError && (
               <button
                 className="absolute top-2 right-2 text-destructive-foreground/70 hover:text-destructive-foreground"
@@ -113,7 +113,7 @@ export default function EditorPanel({ floating = false, error = '', onClearError
         )}
 
         {selectedTile && currentTileInfo && (
-          <div className="pointer-events-none rounded-full border border-border bg-card/90 px-3 py-1 text-[11px] text-muted-foreground shadow-lg backdrop-blur-sm">
+          <div className="pointer-events-none rounded-full border border-border bg-card/90 px-3 py-1 text-sm text-muted-foreground shadow-lg backdrop-blur-sm">
             ({selectedTile.q}, {selectedTile.r}) · {currentTileInfo.elevation} · {TERRAIN_LABELS[currentTileInfo.terrain]}
           </div>
         )}
@@ -131,7 +131,7 @@ export default function EditorPanel({ floating = false, error = '', onClearError
       {error && (
         <Alert variant="destructive" className="py-2 pr-2">
           <AlertTriangle className="h-3.5 w-3.5" />
-          <AlertDescription className="text-[11px] pr-4">{error}</AlertDescription>
+          <AlertDescription className="text-sm pr-4">{error}</AlertDescription>
           {onClearError && (
             <button
               className="absolute top-2 right-2 text-destructive-foreground/70 hover:text-destructive-foreground"
@@ -144,10 +144,10 @@ export default function EditorPanel({ floating = false, error = '', onClearError
         </Alert>
       )}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium uppercase tracking-wider">Landscape</span>
+        <span className="text-sm font-medium uppercase tracking-wider">Landscape</span>
       </div>
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Tool</span>
+        <span className="text-sm text-muted-foreground uppercase tracking-wider">Tool</span>
         <div className="flex gap-1.5">
           {tools.map((t) => (
             <Button
@@ -155,10 +155,10 @@ export default function EditorPanel({ floating = false, error = '', onClearError
               variant="ghost"
               size="sm"
               className={cn(
-                'text-xs h-8',
+                'text-sm h-8',
                 'flex-1',
                 editorTool === t.value
-                  ? 'bg-amber-950 text-amber-300 border border-amber-800 hover:bg-amber-950 hover:text-amber-300'
+                  ? 'bg-warning/10 text-warning border border-warning/30 hover:bg-warning/10 hover:text-warning'
                   : 'text-muted-foreground',
               )}
               onClick={() => setEditorTool(t.value as EditorTool)}
@@ -172,7 +172,7 @@ export default function EditorPanel({ floating = false, error = '', onClearError
         <>
           <Separator className="bg-border" />
           <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Terrain Type</span>
+            <span className="text-sm text-muted-foreground uppercase tracking-wider">Terrain Type</span>
             <div className="flex flex-col gap-1.5">
               {TERRAIN_OPTIONS.map((opt) => (
                 <Button
@@ -180,9 +180,9 @@ export default function EditorPanel({ floating = false, error = '', onClearError
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'text-xs h-8 justify-start w-full',
+                    'text-sm h-8 justify-start w-full',
                     editorTerrain === opt.value
-                      ? 'bg-amber-950 text-amber-300 border hover:bg-amber-950 hover:text-amber-300'
+                      ? 'bg-warning/10 text-warning border hover:bg-warning/10 hover:text-warning'
                       : 'text-muted-foreground',
                   )}
                   style={editorTerrain === opt.value ? { borderColor: opt.color } : {}}
@@ -199,26 +199,26 @@ export default function EditorPanel({ floating = false, error = '', onClearError
         <>
           <Separator className="bg-border" />
           <div className="flex flex-col gap-2">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Current Tile</span>
+            <span className="text-sm text-muted-foreground uppercase tracking-wider">Current Tile</span>
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center gap-2">
-                <span className="text-xs text-muted-foreground">Position</span>
-                <span className="text-xs font-mono">({selectedTile.q}, {selectedTile.r})</span>
+                <span className="text-sm text-muted-foreground">Position</span>
+                <span className="text-sm font-mono">({selectedTile.q}, {selectedTile.r})</span>
               </div>
               <div className="flex justify-between items-center gap-2">
-                <span className="text-xs text-muted-foreground">Elevation</span>
-                <Badge variant="secondary" className="text-[10px] h-5">{currentTileInfo.elevation}</Badge>
+                <span className="text-sm text-muted-foreground">Elevation</span>
+                <StatusBadge status="NONE" className="text-sm h-5">{currentTileInfo.elevation}</StatusBadge>
               </div>
               <div className="flex justify-between items-center gap-2">
-                <span className="text-xs text-muted-foreground">Terrain</span>
-                <span className="text-xs text-right">{TERRAIN_LABELS[currentTileInfo.terrain]}</span>
+                <span className="text-sm text-muted-foreground">Terrain</span>
+                <span className="text-sm text-right">{TERRAIN_LABELS[currentTileInfo.terrain]}</span>
               </div>
             </div>
           </div>
         </>
       )}
       <Separator className="bg-border" />
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
+      <p className="text-sm text-muted-foreground leading-relaxed">
         Click tiles on the map to apply the selected tool.
       </p>
     </div>

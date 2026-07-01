@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import QualityLevelButtonGroup from '@/components/ui/QualityLevelButtonGroup';
+import { StatusBadge, qualityLevelToStatus, matrixLevelToStatus, choreStateToStatus } from '@/components/ui/status-badge';
 import {
   Dialog,
   DialogContent,
@@ -17,11 +18,12 @@ import { useMapStore, useAuthStore } from '@/store/mapStore';
 import type { LandmarkType, QualityLevel } from '@/types/landmark';
 import type { ConnectionType } from '@/types/connection';
 import type { MatrixLevel } from '@/types/matrix';
-import { CHORE_ENTRY_STATE_LABEL, CHORE_ENTRY_STATE_BADGE_STYLE } from '@/types/chores';
-import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_COLOR, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel } from '@/types/landmark';
+import { CHORE_ENTRY_STATE_LABEL } from '@/types/chores';
+import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel } from '@/types/landmark';
 import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
-import { MATRIX_LEVEL_LABEL, MATRIX_LEVEL_BADGE_STYLE } from '@/types/matrix';
+import { MATRIX_LEVEL_LABEL } from '@/types/matrix';
 import { changeLandmarkOwner } from '@/api/mapApi';
+import { UserAvatar } from '@/components/ui/user-avatar';
 interface Props {
   onStartConnection: (type: ConnectionType, name?: string, description?: string) => void;
   onRemoveLandmark: () => void;
@@ -196,46 +198,46 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
           </DialogHeader>
           {!confirmDelete ? (
             <form id="edit-landmark-form" onSubmit={handleSaveEdit} className="flex flex-col gap-2 min-w-0">
-              <Input autoFocus value={editName} maxLength={40} onChange={(e) => setEditName(e.target.value)} className="h-8 text-xs" placeholder={isDecorative(editType) ? 'Name (optional)' : 'Name'} />
-              <select value={editType} onChange={(e) => setEditType(e.target.value as LandmarkType)} className="h-8 text-xs rounded-md border border-input bg-background px-2 text-foreground">
+              <Input autoFocus value={editName} maxLength={40} onChange={(e) => setEditName(e.target.value)} className="h-8 text-sm" placeholder={isDecorative(editType) ? 'Name (optional)' : 'Name'} />
+              <select value={editType} onChange={(e) => setEditType(e.target.value as LandmarkType)} className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground">
                 {ALL_LANDMARK_TYPES.map((t) => <option key={t} value={t}>{LANDMARK_TYPE_LABELS[t]}</option>)}
               </select>
-              <Textarea value={editDescription} maxLength={280} onChange={(e) => setEditDescription(e.target.value)} className="text-xs min-h-16 resize-none" placeholder="Description (optional)" />
-              <select value={editGroupId} onChange={(e) => setEditGroupId(e.target.value)} className="h-8 text-xs rounded-md border border-input bg-background px-2 text-foreground">
+              <Textarea value={editDescription} maxLength={280} onChange={(e) => setEditDescription(e.target.value)} className="text-sm min-h-16 resize-none" placeholder="Description (optional)" />
+              <select value={editGroupId} onChange={(e) => setEditGroupId(e.target.value)} className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground">
                 <option value="">— No group —</option>
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
               <div className="flex flex-col gap-0.5">
-                <Input value={editLink} onChange={(e) => { setEditLink(e.target.value); setLinkError(''); }} className={`h-8 text-xs${linkError ? ' border-red-500' : ''}`} placeholder="Link (optional, https://…)" type="url" />
-                {linkError && <span className="text-[10px] text-red-400 px-1">{linkError}</span>}
+                <Input value={editLink} onChange={(e) => { setEditLink(e.target.value); setLinkError(''); }} className={`h-8 text-sm${linkError ? ' border-destructive' : ''}`} placeholder="Link (optional, https://…)" type="url" />
+                {linkError && <span className="text-sm text-destructive px-1">{linkError}</span>}
               </div>
               <div className="flex items-center gap-1.5 px-1 min-w-0">
-                <span className="text-[10px] text-muted-foreground shrink-0">ID (not editable):</span>
-                <span className="text-[10px] font-mono text-muted-foreground truncate" title={selectedLandmark.id}>{selectedLandmark.id}</span>
+                <span className="text-sm text-muted-foreground shrink-0">ID (not editable):</span>
+                <span className="text-sm font-mono text-muted-foreground truncate" title={selectedLandmark.id}>{selectedLandmark.id}</span>
               </div>
             </form>
           ) : (
-            <div className="flex flex-col gap-2 rounded-md border border-red-900/60 bg-black p-3">
-              <span className="text-sm text-red-400 text-center">Remove «{selectedLandmark.name}»?</span>
-              <span className="text-xs text-muted-foreground text-center">This action cannot be undone.</span>
+            <div className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <span className="text-sm text-destructive text-center">Remove «{selectedLandmark.name}»?</span>
+              <span className="text-sm text-muted-foreground text-center">This action cannot be undone.</span>
               <div className="flex gap-2 mt-1">
-                <Button size="sm" className="flex-1 h-8 text-xs bg-black text-red-500 hover:bg-neutral-900 hover:text-red-400 border border-red-900/60" disabled={loading}
+                <Button size="sm" variant="destructive" className="flex-1 h-8 text-sm" disabled={loading}
                   onClick={() => { setEditDialogOpen(false); setConfirmDelete(false); onRemoveLandmark(); }}>
                   {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, remove'}
                 </Button>
-                <Button size="sm" variant="ghost" className="flex-1 h-8 text-xs" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+                <Button size="sm" variant="flat" className="flex-1 h-8 text-sm" onClick={() => setConfirmDelete(false)}>Cancel</Button>
               </div>
             </div>
           )}
           {!confirmDelete && (
             <DialogFooter className="flex-col gap-2 sm:flex-col">
               <div className="flex gap-2">
-                <Button type="submit" form="edit-landmark-form" size="sm" className="flex-1 h-8 text-xs" disabled={(!isDecorative(editType) && !editName.trim()) || loading}>
+                <Button type="submit" form="edit-landmark-form" size="sm" className="flex-1 h-8 text-sm" disabled={(!isDecorative(editType) && !editName.trim()) || loading}>
                   {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
                 </Button>
-                <Button type="button" size="sm" variant="ghost" className="h-8 px-3 text-xs" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                <Button type="button" size="sm" variant="flat" className="h-8 px-3 text-sm" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
               </div>
-              <Button type="button" size="sm" className="w-full gap-2 h-8 text-xs bg-black text-red-500 hover:bg-neutral-900 hover:text-red-400 border border-neutral-800" disabled={loading} onClick={() => setConfirmDelete(true)}>
+              <Button type="button" size="sm" variant="destructive" className="w-full gap-2 h-8 text-sm" disabled={loading} onClick={() => setConfirmDelete(true)}>
                 <Trash2 className="h-3.5 w-3.5" />Remove Landmark
               </Button>
             </DialogFooter>
@@ -258,39 +260,39 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
             if (!conn) return null;
             if (confirmDeleteConnId === editingConnId) {
               return (
-                <div className="flex flex-col gap-2 rounded-md border border-red-900/60 bg-black p-3">
-                  <span className="text-sm text-red-400 text-center">Remove this connection?</span>
-                  <span className="text-xs text-muted-foreground text-center">This action cannot be undone.</span>
+                <div className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                  <span className="text-sm text-destructive text-center">Remove this connection?</span>
+                  <span className="text-sm text-muted-foreground text-center">This action cannot be undone.</span>
                   <div className="flex gap-2 mt-1">
-                    <Button size="sm" className="flex-1 h-8 text-xs bg-black text-red-500 hover:bg-neutral-900 hover:text-red-400 border border-red-900/60" disabled={loading}
+                    <Button size="sm" variant="destructive" className="flex-1 h-8 text-sm" disabled={loading}
                       onClick={() => { setConnEditDialogOpen(false); setConfirmDeleteConnId(null); setEditingConnId(null); onRemoveConnection(conn.id); }}>
                       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, remove'}
                     </Button>
-                    <Button size="sm" variant="ghost" className="flex-1 h-8 text-xs" onClick={() => setConfirmDeleteConnId(null)}>Cancel</Button>
+                    <Button size="sm" variant="flat" className="flex-1 h-8 text-sm" onClick={() => setConfirmDeleteConnId(null)}>Cancel</Button>
                   </div>
                 </div>
               );
             }
             return (
               <form id="edit-conn-form" onSubmit={handleSaveConnEdit} className="flex flex-col gap-2">
-                <span className="text-[10px] text-muted-foreground">→ {otherLandmark?.name ?? otherId}</span>
-                <select value={editConnType} onChange={(e) => setEditConnType(e.target.value as ConnectionType)} className="h-8 text-xs rounded-md border border-input bg-background px-2 text-foreground">
+                <span className="text-sm text-muted-foreground">→ {otherLandmark?.name ?? otherId}</span>
+                <select value={editConnType} onChange={(e) => setEditConnType(e.target.value as ConnectionType)} className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground">
                   {ALL_CONNECTION_TYPES.map((t) => <option key={t} value={t}>{CONNECTION_TYPE_LABELS[t]}</option>)}
                 </select>
-                <Input autoFocus value={editConnName} maxLength={40} onChange={(e) => setEditConnName(e.target.value)} className="h-8 text-xs" placeholder="Name (optional)" />
-                <Textarea value={editConnDescription} maxLength={280} onChange={(e) => setEditConnDescription(e.target.value)} className="text-xs min-h-16 resize-none" placeholder="Description (optional)" />
+                <Input autoFocus value={editConnName} maxLength={40} onChange={(e) => setEditConnName(e.target.value)} className="h-8 text-sm" placeholder="Name (optional)" />
+                <Textarea value={editConnDescription} maxLength={280} onChange={(e) => setEditConnDescription(e.target.value)} className="text-sm min-h-16 resize-none" placeholder="Description (optional)" />
               </form>
             );
           })()}
           {confirmDeleteConnId !== editingConnId && (
             <DialogFooter className="flex-col gap-2 sm:flex-col">
               <div className="flex gap-2">
-                <Button type="submit" form="edit-conn-form" size="sm" className="flex-1 h-8 text-xs" disabled={loading}>
+                <Button type="submit" form="edit-conn-form" size="sm" className="flex-1 h-8 text-sm" disabled={loading}>
                   {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
                 </Button>
-                <Button type="button" size="sm" variant="ghost" className="h-8 px-3 text-xs" onClick={() => { setConnEditDialogOpen(false); setEditingConnId(null); }}>Cancel</Button>
+                <Button type="button" size="sm" variant="flat" className="h-8 px-3 text-sm" onClick={() => { setConnEditDialogOpen(false); setEditingConnId(null); }}>Cancel</Button>
               </div>
-              <Button type="button" size="sm" className="w-full gap-2 h-8 text-xs bg-black text-red-500 hover:bg-neutral-900 hover:text-red-400 border border-neutral-800" disabled={loading}
+              <Button type="button" size="sm" variant="destructive" className="w-full gap-2 h-8 text-sm" disabled={loading}
                 onClick={() => setConfirmDeleteConnId(editingConnId)}>
                 <Trash2 className="h-3.5 w-3.5" />Remove Connection
               </Button>
@@ -309,45 +311,45 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
         <div className="flex items-center gap-2 text-muted-foreground">
           <Castle className="h-4 w-4" />
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-medium text-foreground uppercase tracking-wider">{selectedLandmark.name.slice(0, 32)}</span>
-            <span className="text-[10px] text-muted-foreground">{LANDMARK_TYPE_LABELS[selectedLandmark.type]}</span>
+            <span className="text-sm font-medium text-foreground uppercase tracking-wider">{selectedLandmark.name.slice(0, 32)}</span>
+            <span className="text-sm text-muted-foreground">{LANDMARK_TYPE_LABELS[selectedLandmark.type]}</span>
           </div>
         </div>
         <div className="flex flex-col gap-2 min-w-0">
           {selectedLandmark.description && (
-            <span className="text-xs text-foreground leading-relaxed">{selectedLandmark.description}</span>
+            <span className="text-sm text-foreground leading-relaxed">{selectedLandmark.description}</span>
           )}
           {selectedLandmark.link && (
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-xs text-muted-foreground">Link</span>
+              <span className="text-sm text-muted-foreground">Link</span>
               <a href={selectedLandmark.link} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:text-blue-300 truncate underline underline-offset-2" title={selectedLandmark.link}>
+                className="text-sm text-link hover:text-link-hover truncate underline underline-offset-2" title={selectedLandmark.link}>
                 {selectedLandmark.link}
               </a>
             </div>
           )}
           {selectedLandmark.groupId && (currentMap.groups ?? {})[selectedLandmark.groupId] && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Group</span>
+              <span className="text-sm text-muted-foreground">Group</span>
               <div className="flex items-center gap-1.5">
                 <span className="inline-block w-2.5 h-2.5 rounded-full border border-white/20"
                   style={{ backgroundColor: (currentMap.groups ?? {})[selectedLandmark.groupId!]?.color }} />
-                <span className="text-xs text-foreground">{(currentMap.groups ?? {})[selectedLandmark.groupId!]?.name}</span>
+                <span className="text-sm text-foreground">{(currentMap.groups ?? {})[selectedLandmark.groupId!]?.name}</span>
               </div>
             </div>
           )}
           <div className="flex justify-between items-center gap-2 min-w-0">
-            <span className="text-xs text-muted-foreground shrink-0">ID</span>
-            <span className="text-xs font-mono text-muted-foreground truncate" title={selectedLandmark.id}>{selectedLandmark.id.slice(0, 12)}</span>
+            <span className="text-sm text-muted-foreground shrink-0">ID</span>
+            <span className="text-sm font-mono text-muted-foreground truncate" title={selectedLandmark.id}>{selectedLandmark.id.slice(0, 12)}</span>
           </div>
           <div className="flex justify-between items-center gap-2 min-w-0">
-            <span className="text-xs text-muted-foreground shrink-0">Owner</span>
+            <span className="text-sm text-muted-foreground shrink-0">Owner</span>
             {isCollaborator && currentMap.collaborators.length > 0 ? (
               <div className="flex flex-col gap-0.5 items-end min-w-0">
                 <select
                   value={selectedLandmark.ownerId ?? ''}
                   disabled={ownerChanging || loading}
-                  className="h-7 text-xs rounded-md border border-input bg-background px-2 text-foreground disabled:opacity-50 disabled:cursor-not-allowed max-w-40 truncate"
+                  className="h-7 text-sm rounded-md border border-input bg-background px-2 text-foreground disabled:opacity-50 disabled:cursor-not-allowed max-w-40 truncate"
                   onChange={async (e) => {
                     const newOwnerId = e.target.value || null;
                     if (newOwnerId === (selectedLandmark.ownerId ?? null)) return;
@@ -368,25 +370,25 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                     <option key={c.id} value={c.id}>{c.username}{c.id === userId ? ' (you)' : ''}</option>
                   ))}
                 </select>
-                {ownerChangeError && <span className="text-[10px] text-red-400">{ownerChangeError}</span>}
+                {ownerChangeError && <span className="text-sm text-destructive">{ownerChangeError}</span>}
               </div>
             ) : (
-              <span className="text-xs text-foreground truncate">
+              <span className="text-sm text-foreground truncate">
                 {owner?.username ?? 'No owner'}
                 {isOwner && <span className="text-muted-foreground"> (you)</span>}
               </span>
             )}
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">Position</span>
+            <span className="text-sm text-muted-foreground">Position</span>
             {isCollaborator && selectedLandmark.coordinate ? (
               <button className="flex items-center gap-1.5 rounded-md border border-border bg-muted/40 hover:bg-muted px-2 py-0.5 transition-colors disabled:opacity-50 cursor-pointer"
                 title="Relocate" disabled={loading} onClick={() => setRelocatingLandmark(selectedLandmark.id)}>
-                <span className="text-xs font-mono text-foreground">({selectedLandmark.coordinate.q}, {selectedLandmark.coordinate.r})</span>
+                <span className="text-sm font-mono text-foreground">({selectedLandmark.coordinate.q}, {selectedLandmark.coordinate.r})</span>
                 <Move className="h-3 w-3 text-muted-foreground" />
               </button>
             ) : (
-              <span className="text-xs font-mono text-foreground">
+              <span className="text-sm font-mono text-foreground">
                 {selectedLandmark.coordinate ? `(${selectedLandmark.coordinate.q}, ${selectedLandmark.coordinate.r})` : 'No position'}
               </span>
             )}
@@ -398,12 +400,11 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
             <Separator className="bg-border" />
             <div className="flex flex-col gap-2 min-w-0">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground">Quality Metrics</span>
+                <span className="text-sm text-foreground">Quality Metrics</span>
                 {lmWorstLevel !== 'NONE' && (
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                    style={{ color: QUALITY_LEVEL_COLOR[lmWorstLevel], border: `1px solid ${QUALITY_LEVEL_COLOR[lmWorstLevel]}` }}>
+                  <StatusBadge status={qualityLevelToStatus[lmWorstLevel]} className="text-sm font-semibold">
                     {QUALITY_LEVEL_LABEL[lmWorstLevel]}
-                  </span>
+                  </StatusBadge>
                 )}
               </div>
               <div className="flex flex-col gap-1">
@@ -413,8 +414,8 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                   if (editingMetricId === metric.id) {
                     return (
                       <form key={metric.id} onSubmit={handleSaveMetric} className="flex flex-col gap-1.5 rounded-md border border-border p-2 min-w-0">
-                        <span className="text-[10px] font-semibold text-foreground">{metric.name}</span>
-                        <Input autoFocus value={metricValue} onChange={(e) => setMetricValue(e.target.value)} className="h-7 text-xs" maxLength={60}
+                        <span className="text-sm font-semibold text-foreground">{metric.name}</span>
+                        <Input autoFocus value={metricValue} onChange={(e) => setMetricValue(e.target.value)} className="h-7 text-sm" maxLength={60}
                           placeholder={metricLevel !== 'NONE' ? `Leave empty to use "${QUALITY_LEVEL_SIGN[metricLevel]}"` : 'Value (e.g. 99.9 %)'} />
                         <QualityLevelButtonGroup
                           value={metricLevel}
@@ -423,46 +424,46 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                         />
                         <div className="flex flex-col gap-0.5">
                           <Input value={metricLink} onChange={(e) => { setMetricLink(e.target.value); setMetricLinkError(''); }}
-                            className={`h-7 text-xs${metricLinkError ? ' border-red-500' : ''}`} placeholder="Link (optional, https://…)" type="url" />
-                          {metricLinkError && <span className="text-[10px] text-red-400 px-1">{metricLinkError}</span>}
+                            className={`h-7 text-sm${metricLinkError ? ' border-destructive' : ''}`} placeholder="Link (optional, https://…)" type="url" />
+                          {metricLinkError && <span className="text-sm text-destructive px-1">{metricLinkError}</span>}
                         </div>
-                        <Input value={metricLinkText} onChange={(e) => setMetricLinkText(e.target.value)} className="h-7 text-xs" maxLength={60}
+                        <Input value={metricLinkText} onChange={(e) => setMetricLinkText(e.target.value)} className="h-7 text-sm" maxLength={60}
                           placeholder="Link text (optional)" />
                         <div className="flex flex-col gap-1.5">
-                          <span className="text-[10px] font-semibold text-foreground">Badges</span>
+                          <span className="text-sm font-semibold text-foreground">Badges</span>
                           {metricBadges.map((badge, index) => (
                             <div key={index} className="flex items-center gap-2">
-                              <Input value={badge.key} onChange={(e) => { const n = [...metricBadges]; n[index].key = e.target.value; setMetricBadges(n); }} className="h-7 text-xs flex-1" placeholder="Badge key" />
+                              <Input value={badge.key} onChange={(e) => { const n = [...metricBadges]; n[index].key = e.target.value; setMetricBadges(n); }} className="h-7 text-sm flex-1" placeholder="Badge key" />
                               <Input value={badge.url} onChange={(e) => { const n = [...metricBadges]; n[index].url = e.target.value; setMetricBadges(n); }}
-                                className={`h-7 text-xs flex-1${badge.error ? ' border-red-500' : ''}`} placeholder="Badge URL (https://…)" type="url" />
+                                className={`h-7 text-sm flex-1${badge.error ? ' border-destructive' : ''}`} placeholder="Badge URL (https://…)" type="url" />
                               <Button type="button" size="icon" variant="ghost" className="h-7 w-7 p-0" onClick={() => setMetricBadges((prev) => prev.filter((_, i) => i !== index))} title="Remove badge">
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
-                          <Button type="button" size="sm" variant="outline" className="w-full h-8 text-xs" onClick={() => setMetricBadges((prev) => [...prev, { key: '', url: '', error: '' }])}>
+                          <Button type="button" size="sm" variant="default" className="w-full h-8 text-sm" onClick={() => setMetricBadges((prev) => [...prev, { key: '', url: '', error: '' }])}>
                             + Add Badge
                           </Button>
                         </div>
                         <div className="flex gap-1.5">
-                          <Button type="submit" size="sm" className="flex-1 h-7 text-xs" disabled={(metricLevel === 'NONE' && !metricValue.trim() && !metricLink.trim() && metricBadges.length === 0) || loading}>
+                          <Button type="submit" size="sm" className="flex-1 h-7 text-sm" disabled={(metricLevel === 'NONE' && !metricValue.trim() && !metricLink.trim() && metricBadges.length === 0) || loading}>
                             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
                           </Button>
-                          <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingMetricId(null)}>Cancel</Button>
+                          <Button type="button" size="sm" variant="flat" className="h-7 px-2 text-sm" onClick={() => setEditingMetricId(null)}>Cancel</Button>
                         </div>
                       </form>
                     );
                   }
                   if (confirmClearMetricId === metric.id) {
                     return (
-                      <div key={metric.id} className="flex flex-col gap-1 rounded-md border border-red-900/60 bg-black p-2">
-                        <span className="text-[11px] text-red-400 text-center">Clear «{metric.name}»?</span>
+                      <div key={metric.id} className="flex flex-col gap-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                        <span className="text-sm text-destructive text-center">Clear «{metric.name}»?</span>
                         <div className="flex gap-2">
-                          <Button size="sm" className="flex-1 h-7 text-xs bg-black text-red-500 hover:bg-neutral-900 hover:text-red-400 border border-red-900/60" disabled={loading}
+                          <Button size="sm" variant="destructive" className="flex-1 h-7 text-sm" disabled={loading}
                             onClick={() => { setConfirmClearMetricId(null); onClearLandmarkMetric(selectedLandmark.id, metric.id); }}>
                             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, clear'}
                           </Button>
-                          <Button size="sm" variant="ghost" className="flex-1 h-7 text-xs" onClick={() => setConfirmClearMetricId(null)}>Cancel</Button>
+                          <Button size="sm" variant="flat" className="flex-1 h-7 text-sm" onClick={() => setConfirmClearMetricId(null)}>Cancel</Button>
                         </div>
                       </div>
                     );
@@ -476,25 +477,24 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                       <div className="flex items-center justify-between gap-1.5 min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
                           {level !== 'NONE' ? (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block shrink-0 font-mono"
-                              style={{ color: QUALITY_LEVEL_COLOR[level], border: `1px solid ${QUALITY_LEVEL_COLOR[level]}` }} title={QUALITY_LEVEL_LABEL[level]}>
+                            <StatusBadge status={qualityLevelToStatus[level]} className="text-sm font-semibold font-mono" title={QUALITY_LEVEL_LABEL[level]}>
                               {entry?.value ?? QUALITY_LEVEL_SIGN[level]}
-                            </span>
+                            </StatusBadge>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground/40 shrink-0">—</span>
+                            <span className="text-sm text-muted-foreground/40 shrink-0">—</span>
                           )}
-                          <span className="text-[11px] text-muted-foreground truncate">{metric.name}</span>
-                          {!entry && <span className="text-[10px] text-muted-foreground/50 italic">not set</span>}
+                          <span className="text-sm text-muted-foreground truncate">{metric.name}</span>
+                          {!entry && <span className="text-sm text-muted-foreground/50 italic">not set</span>}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {entry?.link && (
                             <a href={entry.link} target="_blank" rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-blue-400" onClick={(e) => e.stopPropagation()} title={entry.link}>
+                              className="text-muted-foreground hover:text-link" onClick={(e) => e.stopPropagation()} title={entry.link}>
                               <ExternalLink className="h-3 w-3" />
                             </a>
                           )}
                           {entry && isCollaborator && (
-                            <button className="text-muted-foreground hover:text-red-400 transition-colors" title="Clear metric value"
+                            <button className="text-muted-foreground hover:text-destructive transition-colors" title="Clear metric value"
                               onClick={(e) => { e.stopPropagation(); setConfirmClearMetricId(metric.id); }}>
                               <Trash2 className="h-3 w-3" />
                             </button>
@@ -503,7 +503,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                       </div>
                       {entry?.badges && Object.entries(entry.badges).map(([key, url]) => (
                         <div key={key} className="flex items-center gap-1.5 min-w-0" onClick={(e) => e.stopPropagation()}>
-                          <span className="text-[9px] text-muted-foreground shrink-0">{key}</span>
+                          <span className="text-sm text-muted-foreground shrink-0">{key}</span>
                           <img src={url} alt={key} title={key} className="h-4 max-w-32 object-contain" />
                         </div>
                       ))}
@@ -519,23 +519,14 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
           <>
             <Separator className="bg-border" />
             <div className="flex flex-col gap-2 min-w-0">
-              <span className="text-xs text-foreground">Collaborators</span>
+              <span className="text-sm text-foreground">Collaborators</span>
               <div className="flex flex-col gap-1">
                 {matrixEntriesForLandmark.map(({ collaborator, level }) => (
                   <div key={collaborator.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded-md border border-border min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {collaborator.avatarUrl ? (
-                        <img src={collaborator.avatarUrl} alt={collaborator.username} className="h-4 w-4 rounded-full shrink-0 object-cover" />
-                      ) : (
-                        <span className="h-4 w-4 rounded-full bg-muted shrink-0 flex items-center justify-center text-[8px] text-muted-foreground">
-                          {collaborator.username.slice(0, 1).toUpperCase()}
-                        </span>
-                      )}
-                      <span className="text-xs text-foreground truncate">{collaborator.username}</span>
-                    </div>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={MATRIX_LEVEL_BADGE_STYLE[level]}>
+                    <UserAvatar inline size="xs" username={collaborator.username} avatarUrl={collaborator.avatarUrl} />
+                    <StatusBadge status={matrixLevelToStatus[level]} className="text-sm font-semibold shrink-0">
                       {MATRIX_LEVEL_LABEL[level]}
-                    </span>
+                    </StatusBadge>
                   </div>
                 ))}
               </div>
@@ -552,7 +543,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
               <div className="flex flex-col gap-2 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-foreground">Chore Lists</span>
+                  <span className="text-sm text-foreground">Chore Lists</span>
                 </div>
                 <div className="flex flex-col gap-2">
                   {relevantLists.map((list) => {
@@ -563,30 +554,20 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                     return (
                       <div key={list.id} className="flex flex-col gap-1 rounded-md border border-border px-2 py-1.5 min-w-0">
                         <div className="flex items-center justify-between gap-1.5 min-w-0">
-                          <span className="text-[11px] font-medium text-foreground truncate">{list.title}</span>
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
-                            style={CHORE_ENTRY_STATE_BADGE_STYLE[entry.state]}>
+                          <span className="text-sm font-medium text-foreground truncate">{list.title}</span>
+                          <StatusBadge status={choreStateToStatus[entry.state]} className="text-sm font-semibold shrink-0">
                             {CHORE_ENTRY_STATE_LABEL[entry.state]}
-                          </span>
+                          </StatusBadge>
                         </div>
                         {assignee && (
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {assignee.avatarUrl ? (
-                              <img src={assignee.avatarUrl} alt={assignee.username} className="h-3.5 w-3.5 rounded-full shrink-0 object-cover" />
-                            ) : (
-                              <span className="h-3.5 w-3.5 rounded-full bg-muted shrink-0 flex items-center justify-center text-[8px] text-muted-foreground">
-                                {assignee.username.slice(0, 1).toUpperCase()}
-                              </span>
-                            )}
-                            <span className="text-[10px] text-muted-foreground truncate">{assignee.username}</span>
-                          </div>
+                          <UserAvatar inline size="xs" username={assignee.username} avatarUrl={assignee.avatarUrl} />
                         )}
                         {entry.note && (
-                          <span className="text-[10px] text-muted-foreground/70 leading-relaxed">{entry.note}</span>
+                          <span className="text-sm text-muted-foreground/70 leading-relaxed">{entry.note}</span>
                         )}
                         {entry.link && (
                           <a href={entry.link} target="_blank" rel="noopener noreferrer"
-                            className="text-[10px] text-blue-400 hover:text-blue-300 truncate underline underline-offset-2"
+                            className="text-sm text-link hover:text-link-hover truncate underline underline-offset-2"
                             title={entry.link}>{entry.link}</a>
                         )}
                       </div>
@@ -602,7 +583,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
           <>
             <Separator className="bg-border" />
             <div className="flex flex-col gap-2 min-w-0">
-              <span className="text-xs text-foreground">Connections ({connections.length})</span>
+              <span className="text-sm text-foreground">Connections ({connections.length})</span>
                 <div className="flex flex-col gap-1">
                   {connections.map((c) => {
                     const otherId = c.originId === selectedLandmark.id ? c.targetId : c.originId;
@@ -610,9 +591,9 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                     return (
                       <div key={c.id} className="flex items-start justify-between gap-1 min-w-0 px-2 py-1.5">
                         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                          <span className="text-xs font-medium text-foreground truncate">{c.name ?? otherLandmark?.name ?? otherId}</span>
-                          {c.description && <span className="text-[10px] text-muted-foreground/70 leading-relaxed">{c.description}</span>}
-                          <span className="text-[10px] text-muted-foreground">{CONNECTION_TYPE_LABELS[c.type ?? 'PIPE']} → {otherLandmark?.name ?? otherId}</span>
+                          <span className="text-sm font-medium text-foreground truncate">{c.name ?? otherLandmark?.name ?? otherId}</span>
+                          {c.description && <span className="text-sm text-muted-foreground/70 leading-relaxed">{c.description}</span>}
+                          <span className="text-sm text-muted-foreground">{CONNECTION_TYPE_LABELS[c.type ?? 'PIPE']} → {otherLandmark?.name ?? otherId}</span>
                         </div>
                         {isCollaborator && (
                           <button className="flex items-center justify-center h-5 w-5 rounded-md border border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5 cursor-pointer" title="Edit connection"
@@ -631,22 +612,22 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
         {isCollaborator && (
           <div className="flex flex-col gap-1.5">
             {!showConnForm ? (
-              <Button size="sm" variant="outline" className="w-full gap-2 h-9 py-2" disabled={loading} onClick={() => setShowConnForm(true)}>
+              <Button size="sm" variant="default" className="w-full gap-2 h-9 py-2" disabled={loading} onClick={() => setShowConnForm(true)}>
                 <Link className="h-3.5 w-3.5" />Create Connection
               </Button>
             ) : (
               <>
-                <select value={connType} onChange={(e) => setConnType(e.target.value as ConnectionType)} className="h-8 text-xs rounded-md border border-input bg-background px-2 text-foreground">
+                <select value={connType} onChange={(e) => setConnType(e.target.value as ConnectionType)} className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground">
                   {ALL_CONNECTION_TYPES.map((t) => <option key={t} value={t}>{CONNECTION_TYPE_LABELS[t]}</option>)}
                 </select>
-                <Input value={connName} maxLength={40} onChange={(e) => setConnName(e.target.value)} className="h-8 text-xs" placeholder="Connection name (optional)" />
-                <Textarea value={connDescription} maxLength={280} onChange={(e) => setConnDescription(e.target.value)} className="text-xs min-h-12 resize-none" placeholder="Description (optional)" />
+                <Input value={connName} maxLength={40} onChange={(e) => setConnName(e.target.value)} className="h-8 text-sm" placeholder="Connection name (optional)" />
+                <Textarea value={connDescription} maxLength={280} onChange={(e) => setConnDescription(e.target.value)} className="text-sm min-h-12 resize-none" placeholder="Description (optional)" />
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1 gap-2 h-9 py-2" disabled={loading}
+                  <Button size="sm" variant="default" className="flex-1 gap-2 h-9 py-2" disabled={loading}
                     onClick={() => { onStartConnection(connType, connName.trim() || undefined, connDescription.trim() || undefined); setShowConnForm(false); setConnName(''); setConnDescription(''); }}>
                     <Link className="h-3.5 w-3.5" />Select Target
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-9 px-3 text-xs" onClick={() => { setShowConnForm(false); setConnName(''); setConnDescription(''); }}>Cancel</Button>
+                  <Button size="sm" variant="flat" className="h-9 px-3 text-sm" onClick={() => { setShowConnForm(false); setConnName(''); setConnDescription(''); }}>Cancel</Button>
                 </div>
               </>
             )}
