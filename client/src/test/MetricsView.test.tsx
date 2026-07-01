@@ -261,7 +261,7 @@ describe('MetricsView', () => {
     fireEvent.click(screen.getByTitle('Click to set value'));
     fireEvent.change(screen.getByPlaceholderText('Value (e.g. 99.9 %)'), { target: { value: '99.9%' } });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, undefined, undefined);
   });
 
   it('lets users choose the metric level via the level buttons', () => {
@@ -272,7 +272,7 @@ describe('MetricsView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Set quality level to Error' }));
     fireEvent.submit(screen.getByPlaceholderText(/Leave empty to use "✘"/).closest('form')!);
 
-    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '✘', 'ERROR', undefined, undefined, undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '✘', 'ERROR', undefined, undefined, undefined, undefined);
   });
 
   it('adding a badge row and submitting passes the badges map to onSetLandmarkMetric', () => {
@@ -290,7 +290,7 @@ describe('MetricsView', () => {
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
     expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', '99.9%', 'NONE', undefined, undefined, {
       build: 'https://img.shields.io/badge/build-passing-green',
-    });
+    }, undefined);
   });
 
   it('submitting with only a badge row (no value) passes undefined value', () => {
@@ -306,7 +306,7 @@ describe('MetricsView', () => {
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
     expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', undefined, undefined, {
       coverage: 'https://img.shields.io/badge/coverage-80%25-yellow',
-    });
+    }, undefined);
   });
 
   it('submitting with only a link passes an undefined value and preserves the link', () => {
@@ -318,7 +318,7 @@ describe('MetricsView', () => {
       target: { value: 'https://example.com/report' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', undefined, undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', undefined, undefined, undefined);
   });
 
   it('submitting with a link text passes it alongside the link', () => {
@@ -333,7 +333,7 @@ describe('MetricsView', () => {
       target: { value: 'Availability report' },
     });
     fireEvent.submit(screen.getByPlaceholderText('Value (e.g. 99.9 %)').closest('form')!);
-    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', 'Availability report', undefined);
+    expect(mockActions.handleSetLandmarkMetric).toHaveBeenCalledWith('lm1', 'm1', undefined, 'NONE', 'https://example.com/report', 'Availability report', undefined, undefined);
   });
 
   it('displays each badge in the badges map as an img tag', () => {

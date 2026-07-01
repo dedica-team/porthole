@@ -28,6 +28,7 @@ class SetLandmarkMetricUseCase(
         linkText: String? = null,
         badges: Map<String, String> = emptyMap(),
         callerId: UUID,
+        description: String? = null,
     ): SessionState {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val landmark = state.landmarks[landmarkId]
@@ -35,6 +36,7 @@ class SetLandmarkMetricUseCase(
         require(state.metrics.containsKey(metricId)) { "Metric $metricId not found" }
 
         val trimmedValue = value?.trim()?.ifBlank { null }
+        val trimmedDescription = description?.trim()?.ifBlank { null }
         val cleanedLink = link?.let { cleanLink(it) }
         val cleanedLinkText = linkText?.trim()?.ifBlank { null }
         val validatedBadges = badges.entries.associate { (key, url) ->
@@ -54,12 +56,13 @@ class SetLandmarkMetricUseCase(
         }
 
         val entry = LandmarkMetricEntry(
-            metricId = metricId,
-            value    = trimmedValue,
-            link     = cleanedLink,
-            linkText = cleanedLinkText,
-            level    = level,
-            badges   = validatedBadges,
+            metricId    = metricId,
+            value       = trimmedValue,
+            description = trimmedDescription,
+            link        = cleanedLink,
+            linkText    = cleanedLinkText,
+            level       = level,
+            badges      = validatedBadges,
         )
         state.landmarks[landmarkId] = landmark.copy(metrics = landmark.metrics + (metricId to entry))
         sessionStatePort.save(state)

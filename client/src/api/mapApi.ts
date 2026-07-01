@@ -490,13 +490,14 @@ export async function setLandmarkMetric(
   link?: string,
   linkText?: string,
   badges?: Record<string, string>,
+  description?: string,
 ): Promise<SessionState> {
   const res = await fetch(
     `${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
     {
       method: 'PUT',
       headers: authHeaders(),
-      body: JSON.stringify({ value: value ?? null, level, link: link ?? null, linkText: linkText ?? null, badges: badges ?? {} }),
+      body: JSON.stringify({ value: value ?? null, description: description ?? null, level, link: link ?? null, linkText: linkText ?? null, badges: badges ?? {} }),
     },
   );
   return handleResponse<SessionState>(res);

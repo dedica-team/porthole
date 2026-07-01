@@ -34,6 +34,7 @@ interface CellEditState {
   metricName: string;
   landmarkName: string;
   value: string;
+  description: string;
   level: QualityLevel;
   link: string;
   linkText: string;
@@ -179,6 +180,13 @@ function MetricCellEditDialog({ state, hasExistingEntry, loading, onChange, onSa
               className="h-8 text-sm"
               maxLength={60}
               placeholder={state.level !== 'NONE' ? `Leave empty to use "${QUALITY_LEVEL_SIGN[state.level]}"` : 'Value (e.g. 99.9 %)'}
+            />
+            <Textarea
+              value={state.description}
+              onChange={(e) => onChange({ ...state, description: e.target.value })}
+              className="text-sm min-h-12 resize-none"
+              maxLength={2000}
+              placeholder="Description (optional)"
             />
             <QualityLevelButtonGroup
               value={state.level}
@@ -536,6 +544,7 @@ export default function MetricsView() {
       metricName: metric?.name ?? metricId,
       landmarkName: landmark?.name ?? landmarkId,
       value: entry?.value ?? '',
+      description: entry?.description ?? '',
       level: entry?.level ?? 'NONE',
       link:  entry?.link  ?? '',
       linkText: entry?.linkText ?? '',
@@ -577,6 +586,7 @@ export default function MetricsView() {
 
     const resolvedValue = trimmedValue || defaultValueForLevel(cellEdit.level);
 
+    const trimmedDescription = cellEdit.description.trim();
     onSetLandmarkMetric(
       cellEdit.landmarkId,
       cellEdit.metricId,
@@ -585,6 +595,7 @@ export default function MetricsView() {
       trimmedLink || undefined,
       trimmedLink ? (trimmedLinkText || undefined) : undefined,
       hasBadges ? badgesMap : undefined,
+      trimmedDescription || undefined,
     );
     setCellEdit(null);
   };
@@ -888,6 +899,9 @@ export default function MetricsView() {
                                             {entry.value}
                                           </StatusBadge>
                                         </div>
+                                      )}
+                                      {entry.description && (
+                                        <span className="text-xs text-muted-foreground leading-snug">{entry.description}</span>
                                       )}
                                       {entry.link && (
                                         <a

@@ -93,7 +93,8 @@ class LandmarkMetricController(
                 request.link,
                 request.linkText,
                 request.badges,
-                user.userId
+                user.userId,
+                request.description
             )
         )
     }

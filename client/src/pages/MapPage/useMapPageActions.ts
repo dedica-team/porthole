@@ -229,9 +229,9 @@ export function useMapPageActions() {
 
   const handleSetLandmarkMetric = useCallback((
     landmarkId: string, metricId: string, value: string | undefined,
-    level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>,
+    level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>, description?: string,
   ) => {
-    withAction(() => setLandmarkMetric(currentMap!.id, landmarkId, metricId, value, level, link, linkText, badges));
+    withAction(() => setLandmarkMetric(currentMap!.id, landmarkId, metricId, value, level, link, linkText, badges, description));
   }, [currentMap, withAction]);
 
   const handleClearLandmarkMetric = useCallback((landmarkId: string, metricId: string) => {

@@ -92,6 +92,7 @@ data class EditMetricRequest(
 )
 data class SetLandmarkMetricRequest(
     @field:Size(max = 500) val value: String? = null,
+    @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
     @field:Size(max = NAME_MAX_LENGTH) val linkText: String? = null,
     val level: String,   // "NONE" | "OK" | "WARNING" | "ERROR"

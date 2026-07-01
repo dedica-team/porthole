@@ -55,6 +55,7 @@ export interface MetricTemplate {
 export interface LandmarkMetricEntry {
   metricId: string;
   value?: string;
+  description?: string;
   link?: string;
   linkText?: string;
   level: QualityLevel;
