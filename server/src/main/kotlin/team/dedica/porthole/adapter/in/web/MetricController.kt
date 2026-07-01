@@ -33,7 +33,8 @@ class MetricController(
                 UUID.fromString(id),
                 user.userId,
                 request.name,
-                request.description
+                request.description,
+                request.link
             )
         )
 
@@ -50,7 +51,9 @@ class MetricController(
                 user.userId,
                 UUID.fromString(metricId),
                 request.name,
-                request.description
+                request.description,
+                request.link,
+                request.clearLink
             )
         )
 

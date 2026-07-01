@@ -60,7 +60,7 @@ const EMPTY_LANDMARKS: Record<string, never> = {};
 interface MetricDefEditDialogProps {
   metric: QualityMetric | null;
   loading: boolean;
-  onSave: (metricId: string, name: string, description: string) => void;
+  onSave: (metricId: string, name: string, description: string, link?: string, clearLink?: boolean) => void;
   onDelete: (metricId: string) => void;
   onClose: () => void;
 }
@@ -68,16 +68,23 @@ interface MetricDefEditDialogProps {
 function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose }: MetricDefEditDialogProps) {
   const [name, setName] = useState(metric?.name ?? '');
   const [desc, setDesc] = useState(metric?.description ?? '');
+  const [link, setLink] = useState(metric?.link ?? '');
   const [confirmDelete, setConfirmDelete] = useState(false);
 
 
   const handleClose = () => { setConfirmDelete(false); onClose(); };
+  const handleSave = () => {
+    if (!name.trim()) return;
+    const newLink = link.trim() || undefined;
+    const clearLink = !newLink && !!metric?.link;
+    onSave(metric!.id, name.trim(), desc.trim(), newLink, clearLink);
+  };
 
   return (
     <Popup title="Edit Metric" open={!!metric} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
       {metric && (
         <form
-          onSubmit={(e) => { e.preventDefault(); if (name.trim()) onSave(metric.id, name.trim(), desc.trim()); }}
+          onSubmit={(e) => { e.preventDefault(); handleSave(); }}
           className="flex flex-col gap-3"
         >
             <Input
@@ -94,6 +101,24 @@ function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose
               className="text-sm min-h-20 resize-none"
               maxLength={200}
               placeholder="Description (optional)"
+            />
+            {metric.link && (
+              <a
+                href={metric.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary truncate hover:underline"
+              >
+                {metric.link}
+              </a>
+            )}
+            <Input
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              className="h-8 text-sm"
+              maxLength={2000}
+              placeholder="Link URL (optional)"
+              type="url"
             />
             <div className="flex justify-end gap-2 pt-1">
               <Button type="submit" fullWidth={true} disabled={!name.trim() || loading}>Save</Button>
@@ -678,8 +703,8 @@ export default function MetricsView() {
         key={editingMetricDef?.id}
         metric={editingMetricDef}
         loading={loading}
-        onSave={(id, name, description) => {
-          onEditMetric(id, name, description || undefined);
+        onSave={(id, name, description, link, clearLink) => {
+          onEditMetric(id, name, description || undefined, link, clearLink);
           setEditingMetricDef(null);
         }}
         onDelete={(id) => {

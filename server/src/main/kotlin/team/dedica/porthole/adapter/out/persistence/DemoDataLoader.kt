@@ -224,7 +224,7 @@ class DemoDataLoader(
     }
 
     private fun createMetric(owner: UUID, name: String, desc: String): UUID =
-        createMetricUseCase.execute(DEMO_MAP_ID, owner, name, desc)
+        createMetricUseCase.execute(DEMO_MAP_ID, owner, name, desc, null)
             .metrics.values.first { it.name == name }.id
 
     // ── Landmarks ─────────────────────────────────────────────────────────────

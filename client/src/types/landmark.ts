@@ -43,6 +43,7 @@ export interface QualityMetric {
   id: string;
   name: string;
   description: string;
+  link?: string;
 }
 
 export interface MetricTemplate {

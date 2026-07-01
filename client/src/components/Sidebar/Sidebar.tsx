@@ -201,7 +201,7 @@ interface Props {
   onEditConnection: (connectionId: string, type?: ConnectionType, name?: string, description?: string, clearName?: boolean, clearDescription?: boolean) => void;
   onRemoveConnection: (connectionId: string) => void;
   onCreateMetric: (name: string, description: string) => void;
-  onEditMetric: (metricId: string, name?: string, description?: string) => void;
+  onEditMetric: (metricId: string, name?: string, description?: string, link?: string, clearLink?: boolean) => void;
   onRemoveMetric: (metricId: string) => void;
   onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
   onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;

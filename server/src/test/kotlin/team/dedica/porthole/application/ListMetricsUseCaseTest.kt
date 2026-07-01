@@ -37,8 +37,8 @@ class ListMetricsUseCaseTest {
     @Test
     fun `returns all metrics`() {
         val createUseCase = CreateMetricUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        createUseCase.execute(state.id, collaboratorId, "Uptime", "System uptime")
-        createUseCase.execute(state.id, collaboratorId, "Latency", "Response time")
+        createUseCase.execute(state.id, collaboratorId, "Uptime", "System uptime", null)
+        createUseCase.execute(state.id, collaboratorId, "Latency", "Response time", null)
 
         val result = useCase.execute(state.id, collaboratorId)
         assertEquals(2, result.size)

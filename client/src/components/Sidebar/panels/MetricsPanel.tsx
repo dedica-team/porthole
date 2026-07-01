@@ -10,17 +10,17 @@ import type { QualityMetric } from '@/types/landmark';
 import MetricTemplateSelector from '@/components/MetricsView/MetricTemplateSelector';
 interface Props {
   onCreateMetric: (name: string, description: string) => void;
-  onEditMetric: (metricId: string, name?: string, description?: string) => void;
+  onEditMetric: (metricId: string, name?: string, description?: string, link?: string, clearLink?: boolean) => void;
   onRemoveMetric: (metricId: string) => void;
   loading: boolean;
 }
-interface EditState { name: string; description: string }
+interface EditState { name: string; description: string; link: string }
 export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMetric, loading }: Props) {
   const currentMap = useMapStore((s) => s.currentMap);
   const storeMetrics = useMapStore((s) => s.metrics);
   const userId = useAuthStore((s) => s.userId);
   const [editingId, setEditingId]     = useState<string | null>(null);
-  const [editState, setEditState]     = useState<EditState>({ name: '', description: '' });
+  const [editState, setEditState]     = useState<EditState>({ name: '', description: '', link: '' });
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   if (!currentMap) return null;
@@ -28,12 +28,14 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
   const metrics: QualityMetric[] = Object.values(storeMetrics);
   const startEdit = (metric: QualityMetric) => {
     setEditingId(metric.id);
-    setEditState({ name: metric.name, description: metric.description });
+    setEditState({ name: metric.name, description: metric.description, link: metric.link ?? '' });
     setRemoveConfirmId(null);
   };
-  const saveEdit = (metricId: string) => {
+  const saveEdit = (metricId: string, originalLink: string | undefined) => {
     if (!editState.name.trim()) return;
-    onEditMetric(metricId, editState.name.trim(), editState.description.trim() || undefined);
+    const newLink = editState.link.trim() || undefined;
+    const clearLink = !newLink && !!originalLink;
+    onEditMetric(metricId, editState.name.trim(), editState.description.trim() || undefined, newLink, clearLink);
     setEditingId(null);
   };
   const cancelEdit = () => setEditingId(null);
@@ -74,12 +76,30 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
                     maxLength={200}
                     placeholder="Description (optional)"
                   />
+                  {metric.link && (
+                    <a
+                      href={metric.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary truncate hover:underline"
+                    >
+                      {metric.link}
+                    </a>
+                  )}
+                  <Input
+                    value={editState.link}
+                    onChange={(e) => setEditState((s) => ({ ...s, link: e.target.value }))}
+                    className="h-8 text-sm"
+                    maxLength={2000}
+                    placeholder="Link URL (optional)"
+                    type="url"
+                  />
                   <div className="flex gap-1.5">
                     <Button
                       size="sm"
                       className="flex-1 h-7 text-sm gap-1"
                       disabled={!editState.name.trim() || loading}
-                      onClick={() => saveEdit(metric.id)}
+                      onClick={() => saveEdit(metric.id, metric.link)}
                     >
                       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                       Save
@@ -117,6 +137,16 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
                   <span className="text-sm font-semibold text-foreground truncate">{metric.name}</span>
                   {metric.description && (
                     <span className="text-sm text-muted-foreground leading-relaxed">{metric.description}</span>
+                  )}
+                  {metric.link && (
+                    <a
+                      href={metric.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary truncate hover:underline"
+                    >
+                      {metric.link}
+                    </a>
                   )}
                 </div>
                 {isCollaborator && (
