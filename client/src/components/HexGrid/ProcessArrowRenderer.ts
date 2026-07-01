@@ -40,34 +40,6 @@ function makeMat(opacity: number) {
   });
 }
 
-// ── Label texture cache ───────────────────────────────────────────────────────
-const _labelCache = new Map<string, THREE.CanvasTexture>();
-
-function getOrCreateLabelTexture(title: string, stageConnId: string): THREE.CanvasTexture {
-  const key = `${title}|${stageConnId}`;
-  let tex = _labelCache.get(key);
-  if (!tex) {
-    const W = 512, H = 140;
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 80px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(title, W / 2, H / 2, W - 16);
-    tex = new THREE.CanvasTexture(canvas);
-    _labelCache.set(key, tex);
-  }
-  return tex;
-}
-
-function clearLabelCache() {
-  _labelCache.forEach((t) => t.dispose());
-  _labelCache.clear();
-}
-
 // ── Core ribbon builder ───────────────────────────────────────────────────────
 function buildArrowRibbon(
   pathCoords: Array<{ q: number; r: number }>,
@@ -205,58 +177,6 @@ function buildArrowRibbon(
   return { group, midY };
 }
 
-// ── Label mesh builder ────────────────────────────────────────────────────────
-function buildLabel(
-  title: string,
-  stageConnId: string,
-  pathCoords: Array<{ q: number; r: number }>,
-  tiles: HexTile[],
-  arrowMidY: number,
-): THREE.Mesh {
-  const tileMap = new Map<string, HexTile>();
-  for (const t of tiles) tileMap.set(`${t.coordinate.q},${t.coordinate.r}`, t);
-
-  // Midpoint world position
-  const midIdx = Math.floor(pathCoords.length / 2);
-  const { q: mq, r: mr } = pathCoords[midIdx];
-  const { x: mx, z: mz } = hexToWorld(mq, mr, HEX_SIZE);
-  const tile = tileMap.get(`${mq},${mr}`);
-  void tile; // height comes from arrowMidY
-  const midY = arrowMidY + 0.35;
-
-  // Tangent direction at midpoint
-  let tx = 0, tz = 1;
-  if (pathCoords.length >= 2) {
-    const prev = pathCoords[Math.max(0, midIdx - 1)];
-    const next = pathCoords[Math.min(pathCoords.length - 1, midIdx + 1)];
-    const { x: px, z: pz } = hexToWorld(prev.q, prev.r, HEX_SIZE);
-    const { x: nx, z: nz } = hexToWorld(next.q, next.r, HEX_SIZE);
-    const len = Math.hypot(nx - px, nz - pz) || 1;
-    tx = (nx - px) / len;
-    tz = (nz - pz) / len;
-  }
-
-  const texture = getOrCreateLabelTexture(title, stageConnId);
-  const mat = new THREE.MeshBasicMaterial({
-    map: texture,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-  const geo = new THREE.PlaneGeometry(2.8, 0.55);
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.rotation.x = -Math.PI / 2;
-  // After rotation.x = -π/2 the plane lies flat; rotation.z rotates around world Y,
-  // mapping local X to world direction (cos θ, 0, -sin θ).
-  // To align with tangent (tx, tz): cos θ = tx, -sin θ = tz  →  θ = atan2(-tz, tx).
-  // Flip by π if that would render text upside-down.
-  let angle = Math.atan2(-tz, tx);
-  if (angle > Math.PI / 2)  angle -= Math.PI;
-  if (angle < -Math.PI / 2) angle += Math.PI;
-  mesh.rotation.z = angle;
-  mesh.position.set(mx, midY, mz);
-  return mesh;
-}
 
 // ── ProcessArrowRenderer ──────────────────────────────────────────────────────
 export class ProcessArrowRenderer {
@@ -276,36 +196,19 @@ export class ProcessArrowRenderer {
 
       const { direction } = stageConn;
 
-      let arrowMidY = 0;
       if (direction === 'BIDIRECTIONAL') {
         const fwd = buildArrowRibbon(connection.path, tiles, 0.36);
         const rev = buildArrowRibbon([...connection.path].reverse(), tiles, 0.36);
-        if (fwd) {
-          arrowMidY = fwd.midY;
-          this.collectGeos(fwd.group);
-          this.group.add(fwd.group);
-        }
-        if (rev) {
-          this.collectGeos(rev.group);
-          this.group.add(rev.group);
-        }
+        if (fwd) { this.collectGeos(fwd.group); this.group.add(fwd.group); }
+        if (rev) { this.collectGeos(rev.group); this.group.add(rev.group); }
       } else {
         const path = direction === 'REVERSE'
           ? [...connection.path].reverse()
           : connection.path;
         const arrow = buildArrowRibbon(path, tiles, 0.72);
-        if (arrow) {
-          arrowMidY = arrow.midY;
-          this.collectGeos(arrow.group);
-          this.group.add(arrow.group);
-        }
+        if (arrow) { this.collectGeos(arrow.group); this.group.add(arrow.group); }
       }
 
-      // Title label – floats above the actual arrow ribbon mid-height
-      if (stageConn.title) {
-        const label = buildLabel(stageConn.title, stageConn.id, connection.path, tiles, arrowMidY);
-        this.group.add(label);
-      }
     }
   }
 
@@ -321,7 +224,6 @@ export class ProcessArrowRenderer {
     this.group.clear();
     this.childGeos.forEach((g) => g.dispose());
     this.childGeos.length = 0;
-    clearLabelCache();
   }
 }
 

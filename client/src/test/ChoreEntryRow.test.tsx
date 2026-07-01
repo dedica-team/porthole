@@ -77,9 +77,11 @@ describe('ChoreEntryRow – display', () => {
     expect(screen.getByText('Check fire exits')).toBeInTheDocument();
   });
 
-  it('does not show pencil button for viewers', () => {
+  it('does not open edit dialog for viewers when row is clicked', async () => {
     renderRow(makeEntry(), false);
-    expect(screen.queryByTitle('Edit entry')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit entry'));
+    // Dialog should not open for non-collaborators
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
   it('shows pencil button for collaborators', () => {
@@ -127,13 +129,13 @@ describe('ChoreEntryRow – edit popover', () => {
     });
   });
 
-  it('closes popover on Cancel without calling API', async () => {
+  it('closing dialog via Escape does not call API', async () => {
     renderRow(makeEntry());
     fireEvent.click(screen.getByTitle('Edit entry'));
-    await waitFor(() => screen.getByRole('button', { name: 'Cancel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => screen.getByRole('button', { name: 'Save' }));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     });
     expect(mapApi.updateChoreEntry).not.toHaveBeenCalled();
   });

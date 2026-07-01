@@ -687,14 +687,15 @@ describe('MapPage – process mode: processRenderMode', () => {
     );
   });
 
-  it('shows New Connection button in process mode for collaborator', async () => {
+  it('does NOT show New Connection button in process mode', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
       editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
-    await waitFor(() => expect(screen.getByText('New Connection')).toBeInTheDocument());
+    await waitFor(() => screen.getByTestId('hex-grid'));
+    expect(screen.queryByText('New Connection')).not.toBeInTheDocument();
   });
 
   it('does NOT show New Connection button when not in process mode', async () => {
@@ -844,7 +845,7 @@ describe('MapPage – landmark search field', () => {
     await waitFor(() => {
       const state = useMapStore.getState();
       expect(state.selectedTile).toEqual({ q: 0, r: 0 });
-      expect(state.mainView).toBe('idle'); // stays in idle (process route handles view)
+      expect(state.mainView).toBe('processes'); // handleLandmarkSearch does not call setMainView
     });
   });
 });

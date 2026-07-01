@@ -11,7 +11,7 @@ import {TERRAIN_RENDERER_MAP, tileHeight,} from './terrainRenderers';
 import type {Adjacent} from './landmarks/index';
 import {getLandmarkRenderer} from './landmarks/index';
 import {clearNamePlaneCache} from './landmarks/landmarkUtils';
-import {buildConnectionGroup, buildSimpleConnectionLine} from './connectionRenderers';
+import {buildConnectionGroup, buildXrayLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
 import type {RendererQualityProfile} from './renderQuality';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
@@ -28,14 +28,32 @@ import type {StageConnectionEntry} from './ProcessArrowRenderer';
 import {CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
 
-/** Uniform grey used for all tiles in process mode. */
-const PROCESS_TOP_RGB: [number, number, number] = [0.13, 0.13, 0.13];
-const PROCESS_SIDE_RGB: [number, number, number] = [0.07, 0.07, 0.07];
-const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({color: 0x2a2a2a, transparent: false});
+function makeXrayLabel(text: string): HTMLDivElement {
+    const el = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = [
+        'font-family: ui-monospace, monospace',
+        'font-size: 10px',
+        'font-weight: 700',
+        'color: #000000',
+        'background: rgba(255,255,255,0.92)',
+        'padding: 1px 5px',
+        'border-radius: 3px',
+        'pointer-events: none',
+        'white-space: nowrap',
+        'user-select: none',
+    ].join(';');
+    return el;
+}
 
-/** Lighter grey for tiles belonging to the active stage. */
-const STAGE_TOP_RGB: [number, number, number] = [0.32, 0.32, 0.34];
-const STAGE_SIDE_RGB: [number, number, number] = [0.28, 0.28, 0.30];
+/** Slightly off-white hex surface for process (xray) mode. */
+const PROCESS_TOP_RGB: [number, number, number] = [0.91, 0.91, 0.91];
+const PROCESS_SIDE_RGB: [number, number, number] = [0.78, 0.78, 0.78];
+const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({color: 0x999999, transparent: false});
+
+/** Blue-tinted tiles for the active stage. */
+const STAGE_TOP_RGB: [number, number, number] = [0.86, 0.91, 1.0];
+const STAGE_SIDE_RGB: [number, number, number] = [0.76, 0.81, 0.92];
 
 interface Props {
     map: SessionState;
@@ -78,6 +96,8 @@ interface Props {
      * When set, ProcessArrowRenderer builds an arrow overlay for each entry.
      */
     processStageConnections?: StageConnectionEntry[];
+    /** Name of the currently selected stage, shown as a CSS2D label on the map in xray mode. */
+    activeStageName?: string;
     /** When true, terrain decorations (trees, rocks, vegetation) are not rendered. */
     hideDecorations?: boolean;
     /** Renderer quality profile – passed to useThreeScene to (re-)init the WebGL renderer. */
@@ -111,6 +131,7 @@ export default function HexGrid({
                                     onConnectionClick,
                                     patchTileRef,
                                     processStageConnections,
+                                    activeStageName,
                                     hideDecorations = false,
                                     rendererQualityProfile,
                                 }: Props) {
@@ -135,6 +156,10 @@ export default function HexGrid({
     const highlightEdgesRef = useRef<THREE.Object3D | null>(null);
     const processArrowRendererRef = useRef<ProcessArrowRenderer | null>(null);
     const metricOverlayObjectsRef = useRef<CSS2DObject[]>([]);
+    const connectionLabelMapRef = useRef<Map<string, CSS2DObject>>(new Map());
+    const arrowLabelObjectsRef = useRef<CSS2DObject[]>([]);
+    const stageLabelRef = useRef<CSS2DObject | null>(null);
+    const connectionXrayMatRef = useRef<Map<string, THREE.MeshBasicMaterial>>(new Map());
 
     const optimisticTerrainRef = useRef<Map<string, Terrain>>(new Map());
     const selectionMeshRef = useRef<THREE.Mesh | null>(null);
@@ -201,7 +226,7 @@ export default function HexGrid({
     const stableNativeMove = useRef((e: PointerEvent) => onNativeMoveRef.current(e));
 
     // ── Scene (delegated to useThreeScene) ───────────────────────────────────
-    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, qualityProfile: rendererQualityProfile});
+    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, qualityProfile: rendererQualityProfile, orthographic: hideDecorations});
 
     const requestRender = () => {
         threeRef.current?.requestRender();
@@ -424,6 +449,7 @@ export default function HexGrid({
                     m.map?.dispose();
                     m.dispose();
                 }
+                if (child instanceof CSS2DObject) child.element.remove();
             });
         });
         landmarkMeshMapRef.current.clear();
@@ -450,8 +476,43 @@ export default function HexGrid({
             const elevation = tile?.elevation ?? 0;
             const h = tileHeight(elevation);
             const {x, z} = hexToWorld(q, r, HEX_SIZE);
+            if (hideDecorations) {
+                const groupColor = landmark.groupId ? (map.groups ?? {})[landmark.groupId]?.color : undefined;
+                const MARKER_COLOR = new THREE.Color(groupColor ? parseInt(groupColor.replace('#', ''), 16) : 0x333333);
+                const g = new THREE.Group();
+                const geo = new THREE.CylinderGeometry(0.42, 0.42, 0.4, 16);
+                const mat = new THREE.MeshBasicMaterial({ color: MARKER_COLOR });
+                const cylinder = new THREE.Mesh(geo, mat);
+                cylinder.position.y = 0.2;
+                g.add(cylinder);
+
+                // crisp CSS2D label — black text on white background
+                const el = document.createElement('div');
+                el.textContent = landmark.name;
+                el.style.cssText = [
+                    'font-family: ui-monospace, monospace',
+                    'font-size: 11px',
+                    'font-weight: 700',
+                    'color: #000000',
+                    'background: #ffffff',
+                    'padding: 1px 5px',
+                    'border-radius: 3px',
+                    'border: 2px solid ' + (groupColor ?? '#aaaaaa'),
+                    'pointer-events: none',
+                    'white-space: nowrap',
+                    'user-select: none',
+                ].join(';');
+                const label = new CSS2DObject(el);
+                label.position.set(0, 0, 0.6);
+                g.add(label);
+                g.position.set(x, h, z);
+                scene.add(g);
+                landmarkMeshMapRef.current.set(landmark.id, g);
+                return;
+            }
+
             const groupColor = landmark.groupId ? (map.groups ?? {})[landmark.groupId]?.color : undefined;
-            const tintColor = groupColor ? parseInt(groupColor.replace('#', ''), 16) : 0xeeeeee;
+            const tintHex = groupColor ? parseInt(groupColor.replace('#', ''), 16) : 0xeeeeee;
 
             const renderer = getLandmarkRenderer(landmark.type);
             let adjacent: Adjacent[] | undefined;
@@ -470,7 +531,7 @@ export default function HexGrid({
             }
 
             const lmWorstLevel = worstLevel(Object.values(landmark.metrics ?? {}));
-            const landmarkGroup = renderer.build(landmark, elevation, new THREE.Color(tintColor), adjacent, lmWorstLevel);
+            const landmarkGroup = renderer.build(landmark, elevation, new THREE.Color(tintHex), adjacent, lmWorstLevel);
             landmarkGroup.position.set(x, h, z);
             scene.add(landmarkGroup);
             landmarkMeshMapRef.current.set(landmark.id, landmarkGroup);
@@ -499,16 +560,51 @@ export default function HexGrid({
             const tile = idx !== undefined ? tiles[idx] : undefined;
             const {x, z} = hexToWorld(selectedTile.q, selectedTile.r, HEX_SIZE);
             const top = tileHeight(tile?.elevation ?? 0);
-            const mesh = new THREE.Mesh(SELECTION_GEO, SELECTION_MAT);
-            // Centre the tall column so its bottom sits at the tile surface
-            mesh.position.set(x, top + SELECTION_COL_HEIGHT / 2, z);
+
+            let mesh: THREE.Mesh;
+            if (hideDecorations) {
+                // Xray/top-down: flat hex ring on the tile surface, clearly visible from above.
+                const INNER = HEX_SIZE * 0.72;
+                const OUTER = HEX_SIZE * 0.98;
+                const y = top + 0.06;
+                const verts: number[] = [];
+                const idx2: number[] = [];
+                for (let k = 0; k < 6; k++) {
+                    const a0 = (k * Math.PI * 2) / 6;
+                    const a1 = ((k + 1) * Math.PI * 2) / 6;
+                    const ox0 = OUTER * Math.cos(a0), oz0 = OUTER * Math.sin(a0);
+                    const ox1 = OUTER * Math.cos(a1), oz1 = OUTER * Math.sin(a1);
+                    const ix0 = INNER * Math.cos(a0), iz0 = INNER * Math.sin(a0);
+                    const ix1 = INNER * Math.cos(a1), iz1 = INNER * Math.sin(a1);
+                    const base = k * 4;
+                    verts.push(ox0, y, oz0, ox1, y, oz1, ix1, y, iz1, ix0, y, iz0);
+                    idx2.push(base, base + 1, base + 2, base, base + 2, base + 3);
+                }
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+                geo.setIndex(idx2);
+                const mat = new THREE.MeshBasicMaterial({
+                    color: 0x00f0ff,
+                    transparent: true,
+                    opacity: 0.85,
+                    depthWrite: false,
+                    side: THREE.DoubleSide,
+                });
+                mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, 0, z);
+                mesh.renderOrder = 20;
+            } else {
+                mesh = new THREE.Mesh(SELECTION_GEO, SELECTION_MAT);
+                mesh.position.set(x, top + SELECTION_COL_HEIGHT / 2, z);
+            }
+
             scene.add(mesh);
             selectionMeshRef.current = mesh;
         }
 
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedTile, map.map.tiles]);
+    }, [selectedTile, map.map.tiles, hideDecorations]);
 
     const adjacentTiles = (coordinate: HexCoordinate): HexTile[] => {
         return HEX_DIRS.map(
@@ -599,14 +695,39 @@ export default function HexGrid({
         });
         connectionMeshMapRef.current.clear();
 
+        connectionLabelMapRef.current.forEach((lbl) => { scene.remove(lbl); lbl.element.remove(); });
+        connectionLabelMapRef.current.clear();
+        connectionXrayMatRef.current.clear();
+
         const tiles = map.map?.tiles ?? [];
         Object.values(map.connections ?? {}).forEach((conn) => {
-            const obj = hideDecorations
-                ? buildSimpleConnectionLine(conn, tiles)
-                : buildConnectionGroup(conn, tiles);
-            if (!obj) return;
+            let obj: THREE.Object3D | null;
+            if (hideDecorations) {
+                const result = buildXrayLine(conn, tiles);
+                if (!result) return;
+                obj = result.group;
+                connectionXrayMatRef.current.set(conn.id, result.mat);
+            } else {
+                obj = buildConnectionGroup(conn, tiles);
+                if (!obj) return;
+            }
             scene.add(obj);
             connectionMeshMapRef.current.set(conn.id, obj);
+
+            if (hideDecorations && conn.name && conn.path.length >= 2) {
+                const first = conn.path[0];
+                const last  = conn.path[conn.path.length - 1];
+                const { x: ax, z: az } = hexToWorld(first.q, first.r, HEX_SIZE);
+                const { x: bx, z: bz } = hexToWorld(last.q,  last.r,  HEX_SIZE);
+                const firstTile = tileByCoordRef.current.get(`${first.q},${first.r}`);
+                const lastTile  = tileByCoordRef.current.get(`${last.q},${last.r}`);
+                const my = (tileHeight(firstTile?.elevation ?? 1) + tileHeight(lastTile?.elevation ?? 1)) * 0.5 + 0.15;
+                const lbl = new CSS2DObject(makeXrayLabel(conn.name));
+                lbl.position.set((ax + bx) * 0.5, my, (az + bz) * 0.5);
+                lbl.visible = false;
+                scene.add(lbl);
+                connectionLabelMapRef.current.set(conn.id, lbl);
+            }
         });
 
         requestRender();
@@ -615,6 +736,68 @@ export default function HexGrid({
 
     // ── Connection highlight / dim / hide in process mode ────────────────────────────────
     useEffect(() => {
+        if (hideDecorations) {
+            // Xray mode: three levels — active stage (black), rest of process (dark grey), unrelated (grey).
+            const hasProcess = !!highlightConnectionIds;
+            const hasStage   = !!activeStageConnectionIds;
+            connectionXrayMatRef.current.forEach((mat, connId) => {
+                const inStage   = activeStageConnectionIds?.has(connId) ?? false;
+                const inProcess = highlightConnectionIds?.has(connId) ?? false;
+                const color = (hasStage && inStage) ? 0x111111
+                            : (hasProcess && inProcess) ? 0x555555
+                            : 0x888888;
+                mat.color.set(color);
+            });
+            // Labels only appear on active-stage connections; hidden when nothing selected.
+            connectionLabelMapRef.current.forEach((lbl, connId) => {
+                lbl.visible = hasStage
+                    ? (activeStageConnectionIds?.has(connId) ?? false)
+                    : (highlightConnectionIds?.has(connId) ?? false);
+            });
+            // Stage name label — positioned at the centroid of stage connection midpoints.
+            const scene = threeRef.current?.scene;
+            if (stageLabelRef.current) {
+                scene?.remove(stageLabelRef.current);
+                stageLabelRef.current.element.remove();
+                stageLabelRef.current = null;
+            }
+            if (scene && activeStageName && activeStageConnectionIds && activeStageConnectionIds.size > 0) {
+                let cx = 0, cy = 0, cz = 0, count = 0;
+                const conns = map.connections ?? {};
+                activeStageConnectionIds.forEach((id) => {
+                    const conn = conns[id];
+                    if (!conn?.path || conn.path.length < 2) return;
+                    const first = conn.path[0], last = conn.path[conn.path.length - 1];
+                    const { x: ax, z: az } = hexToWorld(first.q, first.r, HEX_SIZE);
+                    const { x: bx, z: bz } = hexToWorld(last.q,  last.r,  HEX_SIZE);
+                    const firstTile = tileByCoordRef.current.get(`${first.q},${first.r}`);
+                    const lastTile  = tileByCoordRef.current.get(`${last.q},${last.r}`);
+                    cx += (ax + bx) * 0.5;
+                    cy += (tileHeight(firstTile?.elevation ?? 1) + tileHeight(lastTile?.elevation ?? 1)) * 0.5 + 0.4;
+                    cz += (az + bz) * 0.5;
+                    count++;
+                });
+                if (count > 0) {
+                    const el = document.createElement('div');
+                    el.textContent = activeStageName;
+                    el.style.cssText = [
+                        'font-family: ui-monospace, monospace', 'font-size: 12px',
+                        'font-weight: 800', 'color: #ffffff',
+                        'background: #111111', 'padding: 2px 8px',
+                        'border-radius: 4px', 'pointer-events: none',
+                        'white-space: nowrap', 'user-select: none',
+                        'letter-spacing: 0.05em', 'text-transform: uppercase',
+                    ].join(';');
+                    const lbl = new CSS2DObject(el);
+                    lbl.position.set(cx / count, cy / count, cz / count);
+                    scene.add(lbl);
+                    stageLabelRef.current = lbl;
+                }
+            }
+            requestRender();
+            return;
+        }
+
         connectionMeshMapRef.current.forEach((obj, connId) => {
             const inProcess = !highlightConnectionIds || highlightConnectionIds.has(connId);
             const inOpenStage = !!(activeStageConnectionIds?.has(connId));
@@ -632,9 +815,12 @@ export default function HexGrid({
                 }
             });
         });
+        connectionLabelMapRef.current.forEach((lbl, connId) => {
+            lbl.visible = !activeStageConnectionIds?.has(connId);
+        });
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [highlightConnectionIds, activeStageConnectionIds]);
+    }, [highlightConnectionIds, activeStageConnectionIds, activeStageName, hideDecorations, map.connections]);
 
     // ── Stage tile highlight (lighter grey for active-stage tiles in process mode) ──
     // Extracted as a plain function so it can be called both after geometry rebuild
@@ -679,8 +865,9 @@ export default function HexGrid({
     // ── CSS2D metric overlay renderer toggle ───────────────────────────────────
     useEffect(() => {
         const hasMetricOverlayEntries = !!metricOverlayEntries && metricOverlayEntries.size > 0;
-        threeRef.current?.setCss2dActive(hasMetricOverlayEntries);
-    }, [metricOverlayEntries, threeRef]);
+        const hasXrayLabels = hideDecorations && Object.keys(map.landmarks ?? {}).length > 0;
+        threeRef.current?.setCss2dActive(hasMetricOverlayEntries || hasXrayLabels);
+    }, [metricOverlayEntries, hideDecorations, map.landmarks, threeRef]);
 
     // ── Highlighted tile ring mesh (process mode) ─────────────────────────────────
     // For each landmark tile: build a flat annular hex ring (6 quads) that sits
@@ -693,7 +880,7 @@ export default function HexGrid({
         // Remove previous ring
         disposeHighlightRings(scene);
 
-        if (!landmarkHighlightColors || landmarkHighlightColors.size === 0) {
+        if (!landmarkHighlightColors || landmarkHighlightColors.size === 0 || hideDecorations) {
             requestRender();
             return;
         }
@@ -818,14 +1005,33 @@ export default function HexGrid({
     // ── Process arrow overlay ─────────────────────────────────────────────────────
     useEffect(() => {
         const renderer = processArrowRendererRef.current;
+        const scene = threeRef.current?.scene;
         if (!renderer) return;
+
+        arrowLabelObjectsRef.current.forEach((lbl) => { scene?.remove(lbl); lbl.element.remove(); });
+        arrowLabelObjectsRef.current = [];
 
         const tiles = map.map?.tiles ?? [];
 
-        if (!processStageConnections || processStageConnections.length === 0) {
-            renderer.update([], tiles);
-        } else {
-            renderer.update(processStageConnections, tiles);
+        // Xray mode uses straight lines for everything; no WebGL arrow ribbons.
+        renderer.update(hideDecorations ? [] : (processStageConnections ?? []), tiles);
+
+        if (!hideDecorations && processStageConnections && processStageConnections.length > 0 && scene) {
+            processStageConnections.forEach(({ stageConn, connection }) => {
+                    const text = stageConn.title || connection.name;
+                    if (!text) return;
+                    const mid = connection.path[Math.floor(connection.path.length / 2)];
+                    if (!mid) return;
+                    const midTile = tileByCoordRef.current.get(`${mid.q},${mid.r}`);
+                    const { x: mx, z: mz } = hexToWorld(mid.q, mid.r, HEX_SIZE);
+                    const my = tileHeight(midTile?.elevation ?? 1) + 0.15;
+                    const el = makeXrayLabel(text);
+                    el.style.borderLeft = '3px solid #38bdf8';
+                    const lbl = new CSS2DObject(el);
+                    lbl.position.set(mx, my, mz);
+                    scene.add(lbl);
+                    arrowLabelObjectsRef.current.push(lbl);
+                });
         }
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -837,6 +1043,12 @@ export default function HexGrid({
             processArrowRendererRef.current?.dispose();
             metricOverlayObjectsRef.current.forEach((obj) => obj.element.remove());
             metricOverlayObjectsRef.current = [];
+            connectionLabelMapRef.current.forEach((lbl) => lbl.element.remove());
+            connectionLabelMapRef.current.clear();
+            arrowLabelObjectsRef.current.forEach((lbl) => lbl.element.remove());
+            arrowLabelObjectsRef.current = [];
+            stageLabelRef.current?.element.remove();
+            stageLabelRef.current = null;
         };
     }, []);
 

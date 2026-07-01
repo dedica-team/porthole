@@ -1,5 +1,4 @@
-import { AlertTriangle, HelpCircle, X } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AlertTriangle, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -240,7 +239,6 @@ export default function Sidebar({
   const relocatingLandmarkId = useMapStore((s) => s.relocatingLandmarkId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
   const processSidebarHidden = useMapStore((s) => s.processSidebarHidden);
-  const setProcessSidebarHidden = useMapStore((s) => s.setProcessSidebarHidden);
   // Derive process mode from the route instead of store state.
   const processMode = !!useMatch('/session/:id/processes');
 
@@ -259,38 +257,20 @@ export default function Sidebar({
 
   return (
     <aside className="absolute inset-y-0 right-0 z-20 flex flex-col w-(--sidebar-width) min-w-0 bg-card border-l border-border overflow-hidden md:relative md:shrink-0">
-      {/* Close button – always visible top-right; show 'Processes' title when process panel list is active */}
-      <div className="flex items-center justify-between px-2 pt-2 shrink-0">
-        {processMode && !selectedLandmark && !selectedConnectionId
-          ? <span className="pl-2 flex items-center gap-1">
-              <span className="text-sm font-semibold text-foreground">Processes</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="text-muted-foreground hover:text-foreground transition-colors">
-                    <HelpCircle className="h-3.5 w-3.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="bottom" align="start" className="max-w-72 text-sm space-y-1.5 leading-relaxed">
-                  <p className="font-semibold">Processes</p>
-                  <p>Processes model ordered sequences of map connections — useful for workflows, routes, or data flows.</p>
-                  <p><span className="font-medium">Stages</span> are the steps within a process. Each stage can hold one or more connections.</p>
-                  <p>To add a connection to a stage, open the stage accordion and click <span className="font-medium">Add Connection</span>, then click a connection line on the map. Click it again to remove it.</p>
-                  <p>Each stage connection can have an optional <span className="font-medium">title</span> and a <span className="font-medium">direction</span> (Forward, Reverse, or Bidirectional) that represents how the connection is traversed in that step.</p>
-                  <p>Stages can be reordered with the move-up / move-down actions in the stage menu.</p>
-                </PopoverContent>
-              </Popover>
-            </span>
-          : <span />}
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-          onClick={processMode ? () => { setSelectedTile(null); setSelectedLandmark(null); setSelectedConnectionId(null); setProcessSidebarHidden(true); } : handleClose}
-          aria-label="Close panel"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Close button – hidden in process mode (panel closed via map buttons) */}
+      {!processMode && (
+        <div className="flex items-center justify-end px-2 pt-2 shrink-0">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={handleClose}
+            aria-label="Close panel"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Connecting-Banner – hide in process mode */}
       {connectingFromLandmarkId && !processMode && (

@@ -10,7 +10,8 @@ import { PipeRenderer }             from './connections/PipeRenderer.ts';
 import { TelegraphRenderer }        from './connections/TelegraphRenderer.ts';
 import { StreetRenderer }           from './connections/StreetRenderer.ts';
 import { ArrowRenderer }            from './connections/ArrowRenderer.ts';
-import { resolvePoints }            from './connections/resolvePoints.ts';
+import { hexToWorld }               from '@/utils/hexUtils.ts';
+import { tileHeight }               from './terrainUtils';
 
 export type { ConnectionRenderer } from './connections/ConnectionRenderer.ts';
 export { PipeRenderer }      from './connections/PipeRenderer.ts';
@@ -36,56 +37,79 @@ export function buildConnectionGroup(conn: Connection, tiles: HexTile[]): THREE.
   return renderer.build(conn, tiles);
 }
 
-/** Dim grey line material shared by all process-mode simple connections. */
-const PROCESS_LINE_MAT = new THREE.MeshBasicMaterial({
-  color: 0x555555,
-  transparent: true,
-  opacity: 0.7,
-  side: THREE.DoubleSide,
-  depthTest: true,
-  depthWrite: true,
-});
-
-const RIBBON_HALF = 0.09;  // half of SHAFT_WIDTH (0.18) from ProcessArrowRenderer
+const HEX_SIZE       = 1;
+const XRAY_LIFT      = 0.04;
+const XRAY_SHAFT_HW  = 0.055;   // half-width of shaft ribbon
+const XRAY_ARROW_HW  = 0.20;    // half-width at arrowhead base
+const XRAY_ARROW_LEN = 0.30;    // length of arrowhead
+const XRAY_TRIM      = 0.44;    // clearance from landmark cylinder edge
 
 /**
- * Builds a flat ribbon mesh following the connection path.
- * Width matches the process arrow shaft so the two look consistent.
- * Used in process mode instead of the full renderer to keep the map clean.
+ * Builds a straight-line xray connection: thin shaft from origin to target
+ * plus a small triangular arrowhead at the target end.
+ * Returns the group and its shared MeshBasicMaterial so the caller can
+ * update the color when highlight state changes.
  */
-export function buildSimpleConnectionLine(conn: Connection, tiles: HexTile[]): THREE.Mesh | null {
-  const pts = resolvePoints(conn, tiles);
-  if (pts.length < 2) return null;
+export function buildXrayLine(
+  conn: Connection,
+  tiles: HexTile[],
+): { group: THREE.Group; mat: THREE.MeshBasicMaterial } | null {
+  if (!conn.path || conn.path.length < 2) return null;
 
-  const positions: number[] = [];
-  const indices:   number[] = [];
-  const up = new THREE.Vector3(0, 1, 0);
-  const side = new THREE.Vector3();
+  const tileMap = new Map<string, HexTile>();
+  for (const t of tiles) tileMap.set(`${t.coordinate.q},${t.coordinate.r}`, t);
 
-  for (let i = 0; i < pts.length; i++) {
-    // tangent direction
-    const prev = pts[Math.max(0, i - 1)];
-    const next = pts[Math.min(pts.length - 1, i + 1)];
-    const tangent = new THREE.Vector3().subVectors(next, prev).normalize();
-    side.crossVectors(tangent, up).normalize().multiplyScalar(RIBBON_HALF);
+  const getY = (q: number, r: number) =>
+    tileHeight(tileMap.get(`${q},${r}`)?.elevation ?? 0) + XRAY_LIFT;
 
-    const p = pts[i];
-    positions.push(p.x - side.x, p.y - side.y, p.z - side.z);  // left
-    positions.push(p.x + side.x, p.y + side.y, p.z + side.z);  // right
-  }
+  const first = conn.path[0];
+  const last  = conn.path[conn.path.length - 1];
 
-  for (let i = 0; i < pts.length - 1; i++) {
-    const base = i * 2;
-    indices.push(base, base + 1, base + 2);
-    indices.push(base + 1, base + 3, base + 2);
-  }
+  const { x: ax, z: az } = hexToWorld(first.q, first.r, HEX_SIZE);
+  const { x: bx, z: bz } = hexToWorld(last.q,  last.r,  HEX_SIZE);
+  const y = (getY(first.q, first.r) + getY(last.q, last.r)) * 0.5;
 
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setIndex(indices);
-  geo.computeVertexNormals();
+  const dx = bx - ax, dz = bz - az;
+  const d  = Math.hypot(dx, dz);
+  if (d < 0.001) return null;
+  const tx = dx / d, tz = dz / d;
+  const px = -tz,    pz =  tx;
 
-  const mesh = new THREE.Mesh(geo, PROCESS_LINE_MAT);
-  return mesh;
+  const totalTrim = XRAY_TRIM * 2 + XRAY_ARROW_LEN;
+  if (d < totalTrim + 0.01) return null;
+
+  // Shaft: from trimmed origin to arrowhead base
+  const s0x = ax + tx * XRAY_TRIM,              s0z = az + tz * XRAY_TRIM;
+  const s1x = bx - tx * (XRAY_TRIM + XRAY_ARROW_LEN), s1z = bz - tz * (XRAY_TRIM + XRAY_ARROW_LEN);
+  // Arrowhead tip: trimmed inward from target
+  const tipX = bx - tx * XRAY_TRIM, tipZ = bz - tz * XRAY_TRIM;
+
+  const mat = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide });
+  const group = new THREE.Group();
+
+  // Shaft ribbon
+  const hw = XRAY_SHAFT_HW;
+  const shaftGeo = new THREE.BufferGeometry();
+  shaftGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array([
+    s0x + px * hw, y, s0z + pz * hw,
+    s0x - px * hw, y, s0z - pz * hw,
+    s1x + px * hw, y, s1z + pz * hw,
+    s1x - px * hw, y, s1z - pz * hw,
+  ]), 3));
+  shaftGeo.setIndex([0, 2, 1, 1, 2, 3]);
+  group.add(new THREE.Mesh(shaftGeo, mat));
+
+  // Arrowhead triangle
+  const aw = XRAY_ARROW_HW;
+  const arrowGeo = new THREE.BufferGeometry();
+  arrowGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array([
+    tipX,          y, tipZ,
+    s1x + px * aw, y, s1z + pz * aw,
+    s1x - px * aw, y, s1z - pz * aw,
+  ]), 3));
+  arrowGeo.setIndex([0, 1, 2]);
+  group.add(new THREE.Mesh(arrowGeo, mat));
+
+  return { group, mat };
 }
 
