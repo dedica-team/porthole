@@ -791,7 +791,7 @@ export default function MetricsView() {
                     </Button>
                   </th>
                   {visibleMetrics.map((m) => (
-                    <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium min-w-40 bg-transparent align-bottom">
+                    <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium w-40 bg-transparent align-bottom">
                       {isCollaborator ? (
                         <Button variant="ghost" fullWidth={true} title={m.description || undefined} size="lg"
                           onClick={() => openMetricDef(m)}
@@ -880,7 +880,7 @@ export default function MetricsView() {
                               return (
                                 <td key={m.id}
                                   data-level={entry?.level ?? 'NONE'}
-                                  className={`metrics-metric-cell px-3 py-2 transition-colors group${isCollaborator ? ' cursor-pointer' : ''}`}
+                                  className={`metrics-metric-cell px-3 py-2 max-w-0 overflow-hidden transition-colors group${isCollaborator ? ' cursor-pointer' : ''}`}
                                   onClick={isCollaborator ? () => openCellEdit(landmark.id, m.id) : undefined}
                                   title={entry ? `${QUALITY_LEVEL_LABEL[entry.level]}${entry.value ? `: ${entry.value}` : ''}` : (isCollaborator ? 'Click to set value' : undefined)}
                                 >
@@ -908,7 +908,7 @@ export default function MetricsView() {
                                           href={entry.link}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="metrics-cell-link inline-block max-w-full self-start truncate align-top text-sm text-link hover:text-link-hover underline underline-offset-2"
+                                          className="metrics-cell-link block w-full truncate text-sm text-link hover:text-link-hover underline underline-offset-2"
                                           onClick={(e) => e.stopPropagation()}
                                           title={entry.link}
                                         >
