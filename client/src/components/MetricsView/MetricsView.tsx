@@ -638,7 +638,7 @@ export default function MetricsView() {
 
         <div className="flex items-center gap-2 ml-auto flex-wrap">
           <Button
-            className="metrics-toolbar-button h-7 gap-1.5 text-sm"
+              variant={"ghost"}
             onClick={() => setShowGroupsDialog(true)}
             title="Manage groups"
           >
@@ -648,14 +648,12 @@ export default function MetricsView() {
           {isCollaborator && (
             <>
               <Button
-                className="metrics-toolbar-button h-7 gap-1.5 text-sm"
                 onClick={() => setShowCreateLandmarkDialog(true)}
                 title="Create a new landmark without position"
               >
                 <Plus className="h-3.5 w-3.5" /> Landmark
               </Button>
               <Button
-                className="metrics-toolbar-button h-7 gap-1.5 text-sm"
                 onClick={() => setShowTemplateSelector(true)}
                 title="Add metric"
               >
