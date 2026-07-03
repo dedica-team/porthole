@@ -63,7 +63,7 @@ function NewSessionDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="relative flex flex-col gap-5 bg-card border border-border shadow-2xl w-full max-w-md mx-4 p-6"
+      <div className="relative flex flex-col gap-4 bg-card border border-border shadow-2xl w-full max-w-md mx-4 p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
         style={{ boxShadow: '0 0 40px rgba(0,240,255,0.15), inset 0 0 0 1px rgba(0,240,255,0.07)', borderColor: 'hsl(185,100%,22%)' }}
       >
         {/* close */}
@@ -81,7 +81,7 @@ function NewSessionDialog({
         </div>
 
         {/* type cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {MAP_TYPE_OPTIONS.map((opt) => (
             <button
               key={opt.type}
@@ -97,7 +97,7 @@ function NewSessionDialog({
                 {opt.icon}
               </span>
               <span className="text-sm font-semibold">{opt.label}</span>
-              <span className="text-sm leading-tight">{opt.description}</span>
+              <span className="text-xs leading-tight">{opt.description}</span>
             </button>
           ))}
         </div>
@@ -347,7 +347,7 @@ export default function LobbyPage() {
         />
       )}
 
-      <div className="flex flex-col h-full max-w-2xl mx-auto px-6 py-6 gap-6">
+      <div className="flex flex-col h-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 gap-4 sm:gap-6">
         {/* Header row */}
         <div className="flex items-center justify-between">
           <div>
@@ -400,7 +400,7 @@ export default function LobbyPage() {
               {maps.map((map) => (
                 <div
                   key={map.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 gap-2 bg-card border border-border transition-all"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-3 gap-2 bg-card border border-border transition-all"
                   style={{ boxShadow: '0 0 0 transparent', transition: 'box-shadow 0.2s ease, border-color 0.2s ease' }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(0,240,255,0.2), inset 0 0 8px rgba(0,240,255,0.04)';
@@ -430,7 +430,7 @@ export default function LobbyPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center flex-wrap gap-2">
                     {/* Admin: delete session */}
                     {isAdmin && (
                       deleteConfirmMapId === map.id ? (

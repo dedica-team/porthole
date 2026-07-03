@@ -230,7 +230,7 @@ export default function AuthPage() {
         </div>
       )}
 
-      <div className="flex flex-col items-center gap-8 p-10 bg-card border border-border shadow-2xl w-full max-w-sm"
+      <div className="flex flex-col items-center gap-8 p-6 sm:p-10 bg-card border border-border shadow-2xl w-full max-w-sm mx-4 sm:mx-0"
         style={{
           boxShadow: '0 0 40px rgba(0,240,255,0.15), inset 0 0 0 1px rgba(0,240,255,0.07)',
           borderColor: 'hsl(185,100%,22%)',

@@ -287,7 +287,7 @@ export default function Navbar() {
 
   return (
     <TooltipProvider>
-      <header className="flex items-center h-12 px-4 gap-3 bg-card border-b border-border shrink-0 z-10">
+      <header className="flex items-center h-12 px-2 sm:px-4 gap-1 sm:gap-3 bg-card border-b border-border shrink-0 z-10 overflow-x-auto">
         {/* Logo – icon only */}
         {!isOnMap ? (
           <div
@@ -534,7 +534,7 @@ export default function Navbar() {
               <Tooltip key={tab.id}>
                 <TooltipTrigger asChild>
                   <button
-                    className={`inline-flex items-center gap-1.5 h-12 px-3 text-sm font-medium border-b-3 transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 h-12 px-2 sm:px-3 text-sm font-medium border-b-3 transition-colors cursor-pointer shrink-0 ${
                       tab.isActive
                         ? `${activeBorderCls} text-warning`
                         : 'border-transparent text-muted-foreground hover:text-foreground'

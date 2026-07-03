@@ -253,22 +253,20 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
     );
 
     return (
-        <div className="flex flex-row flex-wrap gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[...rotations].sort((a, b) => a.name.localeCompare(b.name)).map((r: GreenkeepingRotation) => {
                 const active = getActiveGreenkeepingEntry(r);
                 const keeper = active ? (collaboratorsById[active.collaboratorId] ?? null) : null;
                 const keeperName = keeper?.username ?? (active ? active.collaboratorId : null);
                 return (
-                    <div>
-                        {r.name}
+                    <div key={r.id} className="flex flex-col gap-0.5 text-center w-full">
+                        <span className="text-xs text-muted-foreground truncate w-full">{r.name}</span>
                         <UserAvatar
-                            key={r.id}
                             username={keeperName ?? '—'}
                             avatarUrl={keeper?.avatarUrl}
-                            className="min-w-14 py-2"
+                            className="min-w-14 py-1"
                             title={keeperName ?? 'none'}
                         />
-
                     </div>
                 );
             })}
@@ -294,7 +292,7 @@ export default function SessionOverviewView() {
                 <OverviewCard
                     title="Quality Metrics"
                     icon={<BarChart2 className="h-3.5 w-3.5 text-muted-foreground"/>}
-                    linkLabel="View full metrics"
+                    linkLabel="more"
                     linkTo={`/session/${sessionId}/metrics`}
                 >
                     <QualityMetricsSummary sessionId={sessionId}/>
@@ -303,7 +301,7 @@ export default function SessionOverviewView() {
                 <OverviewCard
                     title="Bus Matrix"
                     icon={<Bus className="h-3.5 w-3.5 text-muted-foreground"/>}
-                    linkLabel="View full matrix"
+                    linkLabel="more"
                     linkTo={`/session/${sessionId}/matrix`}
                 >
                     <BusMatrixSummary sessionId={sessionId}/>
@@ -312,7 +310,7 @@ export default function SessionOverviewView() {
                 <OverviewCard
                     title="Chore Progress"
                     icon={<CheckSquare className="h-3.5 w-3.5 text-muted-foreground"/>}
-                    linkLabel="View all chores"
+                    linkLabel="more"
                     linkTo={`/session/${sessionId}/chores`}
                 >
                     <ChoreProgressSummary sessionId={sessionId}/>
@@ -321,7 +319,7 @@ export default function SessionOverviewView() {
                 <OverviewCard
                     title="Greenkeepers"
                     icon={<Sprout className="h-3.5 w-3.5 text-muted-foreground"/>}
-                    linkLabel="View rotations"
+                    linkLabel="more"
                     linkTo={`/session/${sessionId}/greenkeeping`}
                 >
                     <GreenkeepingRotationsSummary sessionId={sessionId}/>
