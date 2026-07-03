@@ -250,7 +250,7 @@ tr:hover td:not(.group-stripe) {
 }
 
 .data-display-table thead th {
-  background: transparent !important;
+  background: hsl(var(--background)) !important;
 }
 
 .data-display-table tbody td:not(.group-stripe) {
@@ -264,7 +264,7 @@ tr:hover td:not(.group-stripe) {
 
 .data-display-table .data-sticky-cell,
 .data-display-table .data-sticky-header {
-  background: transparent !important;
+  background: hsl(var(--background)) !important;
 }
 
 .data-display-table .data-subtle {

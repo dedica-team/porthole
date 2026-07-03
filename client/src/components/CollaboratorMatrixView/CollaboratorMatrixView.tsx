@@ -201,7 +201,8 @@ export default function CollaboratorMatrixView() {
                   {/* colour-stripe placeholder */}
                   <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" />
                   {/* landmark col header + group filter */}
-                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 data-sticky-header" style={{ left: '1rem' }}>
+                  <th className="text-left p-0 sticky z-20 data-sticky-header" style={{ left: '1rem' }}>
+                    <div className="w-28 px-2 sm:px-4 py-2 font-medium overflow-hidden">
                     <Button
                       ref={filterBtnRef}
                       fullWidth={true}
@@ -215,6 +216,7 @@ export default function CollaboratorMatrixView() {
                       </svg>
                       {hiddenGroups.size > 0 ? `${hiddenGroups.size} hidden` : 'Filter'}
                     </Button>
+                    </div>
                   </th>
                   {collaborators.map((c) => (
                     <th key={c.id} className="text-center px-3 py-2 min-w-28 bg-transparent">
@@ -265,18 +267,19 @@ export default function CollaboratorMatrixView() {
                           )}
                           {/* Landmark name + mini summary squares */}
                           <td
-                            className="px-4 py-2 sticky z-10 data-sticky-cell"
+                            className="p-0 sticky z-10 data-sticky-cell"
                             style={{ left: '1rem' }}
                           >
+                            <div className="w-28 px-2 py-2 overflow-hidden">
                             <LandmarkInfoPopover
                               landmark={landmark}
                               onEditLandmark={onEditLandmark}
                               onRemoveLandmark={onRemoveLandmark}
                               loading={loading}
                             >
-                              <Button variant="ghost" fullWidth={true} title={landmark.name}>
-                                {landmark.name}
-                                <span className="flex gap-0.5 mt-1">
+                              <Button variant="ghost" fullWidth={true} title={landmark.name} className="overflow-hidden">
+                                <span className="truncate">{landmark.name}</span>
+                                <span className="flex gap-0.5 shrink-0">
                               {([...collaborators]
                                       .map((c) => ({ c, lvl: getLevel(landmark.id, c.id) }))
                                       .filter(({ lvl }) => lvl !== 'NONE')
@@ -294,7 +297,7 @@ export default function CollaboratorMatrixView() {
                             </span>
                               </Button>
                             </LandmarkInfoPopover>
-
+                            </div>
                           </td>
                           {/* One cell per collaborator */}
                           {collaborators.map((c) => {

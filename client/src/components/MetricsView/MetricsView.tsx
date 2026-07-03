@@ -773,8 +773,8 @@ export default function MetricsView() {
               <thead className="sticky top-0 z-30">
                 <tr>
                   <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" />
-                  <th className="text-left px-4 py-2 font-medium w-48 min-w-48 sticky z-20 data-sticky-header"
-                    style={{ left: '1rem' }}>
+                  <th className="text-left p-0 sticky z-20 data-sticky-header"
+                    style={{ left: '1rem' }}><div className="w-28 px-2 sm:px-4 py-2 font-medium overflow-hidden">
                     <Button
                       size="sm"
                       variant="flat" fullWidth={true}
@@ -787,7 +787,7 @@ export default function MetricsView() {
                       </svg>
                       {totalHiddenFilters > 0 ? `${totalHiddenFilters} hidden` : 'Filter'}
                     </Button>
-                  </th>
+                  </div></th>
                   {visibleMetrics.map((m) => (
                     <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium w-40 bg-transparent align-bottom">
                       {isCollaborator ? (
@@ -847,16 +847,17 @@ export default function MetricsView() {
                               </td>
                             )}
                             {/* Landmark name + overall badge */}
-                            <td className="metrics-landmark-cell px-2 py-2 sticky z-20 data-sticky-cell" style={{ left: '1rem' }}>
-
+                            <td className="metrics-landmark-cell p-0 sticky z-20 data-sticky-cell" style={{ left: '1rem' }}>
+                              <div className="w-28 px-1 sm:px-2 py-2 overflow-hidden">
                                   {(() => {
                                     const nameEl =
                                       <Button
-                                        variant="ghost" size="lg"
+                                        variant="ghost" size="sm"
                                         fullWidth={true}
                                         title={landmark.description}
+                                        className="overflow-hidden"
                                       >
-                                        <StatusIndicator status={qualityLevelToStatus[lmWorst]} ></StatusIndicator> {landmark.name}
+                                        <StatusIndicator status={qualityLevelToStatus[lmWorst]} /><span className="truncate">{landmark.name}</span>
                                       </Button>
 
                                     return (
@@ -870,6 +871,7 @@ export default function MetricsView() {
                                       </LandmarkInfoPopover>
                                     );
                                   })()}
+                              </div>
                             </td>
                             {/* One cell per metric */}
                             {visibleMetrics.map((m) => {
