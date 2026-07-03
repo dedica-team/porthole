@@ -614,10 +614,11 @@ export default function MetricsView() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="metrics-header flex flex-wrap items-center gap-x-3 gap-y-2 px-6 py-3 shrink-0">
         <BarChart2 className="h-4 w-4 text-muted-foreground" />
+          <h2 className="font-semibold text-foreground">Quality Metrics</h2>
         <Popover>
           <PopoverTrigger asChild>
             <button className="metrics-help-trigger flex items-center gap-1.5 group" title="Help">
-              <h2 className="text-sm font-semibold text-foreground group-hover:opacity-70 transition-opacity">Quality Metrics</h2>
+
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
             </button>
           </PopoverTrigger>
@@ -772,9 +773,9 @@ export default function MetricsView() {
             <table className="data-display-table w-full text-sm border-separate border-spacing-0">
               <thead className="sticky top-0 z-30">
                 <tr>
-                  <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" />
+                  <th className="p-0 sticky left-0 z-20 data-sticky-header" />
                   <th className="text-left p-0 sticky z-20 data-sticky-header"
-                    style={{ left: '1rem' }}><div className="w-28 px-2 sm:px-4 py-2 font-medium overflow-hidden">
+                    style={{ left: '1rem' }}>
                     <Button
                       size="sm"
                       variant="flat" fullWidth={true}
@@ -786,12 +787,11 @@ export default function MetricsView() {
                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
                       </svg>
                       {totalHiddenFilters > 0 ? `${totalHiddenFilters} hidden` : 'Filter'}
-                    </Button>
-                  </div></th>
+                    </Button></th>
                   {visibleMetrics.map((m) => (
-                    <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium w-40 bg-transparent align-bottom">
+                    <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium bg-transparent align-bottom">
                       {isCollaborator ? (
-                        <Button variant="ghost" fullWidth={true} title={m.description || undefined} size="lg"
+                        <Button variant="ghost" fullWidth={true} title={m.description || undefined}
                           onClick={() => openMetricDef(m)}
                         >
                           {m.name}
@@ -848,7 +848,7 @@ export default function MetricsView() {
                             )}
                             {/* Landmark name + overall badge */}
                             <td className="metrics-landmark-cell p-0 sticky z-20 data-sticky-cell" style={{ left: '1rem' }}>
-                              <div className="w-28 px-1 sm:px-2 py-2 overflow-hidden">
+                              <div className=" px-1 sm:px-2 py-2 overflow-hidden">
                                   {(() => {
                                     const nameEl =
                                       <Button
@@ -880,7 +880,7 @@ export default function MetricsView() {
                               return (
                                 <td key={m.id}
                                   data-level={entry?.level ?? 'NONE'}
-                                  className={`metrics-metric-cell px-3 py-2 max-w-0 overflow-hidden transition-colors group${isCollaborator ? ' cursor-pointer' : ''}`}
+                                  className={`metrics-metric-cell px-3 py-2  overflow-hidden transition-colors group${isCollaborator ? ' cursor-pointer' : ''}`}
                                   onClick={isCollaborator ? () => openCellEdit(landmark.id, m.id) : undefined}
                                   title={entry ? `${QUALITY_LEVEL_LABEL[entry.level]}${entry.value ? `: ${entry.value}` : ''}` : (isCollaborator ? 'Click to set value' : undefined)}
                                 >

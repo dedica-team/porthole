@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StatusIndicator } from '@/components/ui/status-badge';
-import { LayoutGrid, Check, X, AlertTriangle, HelpCircle } from 'lucide-react';
+import { Check, X, AlertTriangle, HelpCircle, Users, Bus} from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -21,6 +21,8 @@ import type { Collaborator } from '@/types/session';
 import {GroupFilterPopover, useGroupFilter} from "@/components/ui/GroupFilterPopover.tsx";
 import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPopover.tsx";
 import { useMapActions } from '@/pages/MapPage/MapActionsContext';
+import { Popup } from '@/components/ui/popup';
+import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 
 
 // ── Cell-edit dialog ──────────────────────────────────────────────────────────
@@ -90,6 +92,9 @@ export default function CollaboratorMatrixView() {
     handleSetMatrixEntry: onSetEntry,
     handleEditLandmark: onEditLandmark,
     handleRemoveLandmark: onRemoveLandmark,
+    handleCreateGroup: onCreateGroup,
+    handleEditGroup: onEditGroup,
+    handleRemoveGroup: onRemoveGroup,
     actionLoading: loading,
     error,
     setError,
@@ -104,6 +109,7 @@ export default function CollaboratorMatrixView() {
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
 
   const [cellEdit, setCellEdit] = useState<CellEditState | null>(null);
+  const [showGroupsDialog, setShowGroupsDialog] = useState(false);
   const { hiddenGroups, setHiddenGroups, filterOpen, setFilterOpen, filterBtnRef, filterPopoverRef } =
     useGroupFilter('landmarks.matrix.hiddenGroups');
 
@@ -145,11 +151,12 @@ export default function CollaboratorMatrixView() {
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-6 py-3 shrink-0">
-        <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+        <Bus className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold text-foreground">Bus Matrix</h2>
         <Popover>
           <PopoverTrigger asChild>
             <button className="flex items-center gap-1.5 group" title="Help">
-              <h2 className="text-sm font-semibold text-foreground group-hover:opacity-70 transition-opacity">Bus Matrix</h2>
+
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
             </button>
           </PopoverTrigger>
@@ -164,7 +171,26 @@ export default function CollaboratorMatrixView() {
             </div>
           </PopoverContent>
         </Popover>
+        <div className="ml-auto">
+          <Button
+              variant={"ghost"}
+            onClick={() => setShowGroupsDialog(true)}
+            title="Manage groups"
+          >
+            <Users className="h-3.5 w-3.5" />
+            Groups
+          </Button>
+        </div>
       </div>
+
+      <Popup title="Manage Groups" open={showGroupsDialog} onOpenChange={setShowGroupsDialog} className="max-w-sm max-h-[80vh] flex flex-col" contentClassName="overflow-y-auto p-0 flex-1">
+        <GroupsPanel
+          onCreateGroup={onCreateGroup}
+          onEditGroup={onEditGroup}
+          onRemoveGroup={onRemoveGroup}
+          loading={loading}
+        />
+      </Popup>
 
       {/* ── Error alert ──────────────────────────────────────────────────────── */}
       {error && (
@@ -202,7 +228,7 @@ export default function CollaboratorMatrixView() {
                   <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" />
                   {/* landmark col header + group filter */}
                   <th className="text-left p-0 sticky z-20 data-sticky-header" style={{ left: '1rem' }}>
-                    <div className="w-28 px-2 sm:px-4 py-2 font-medium overflow-hidden">
+                    <div className="w-28 sm:w-44 px-2 sm:px-4 py-2 font-medium overflow-hidden">
                     <Button
                       ref={filterBtnRef}
                       fullWidth={true}
@@ -270,16 +296,15 @@ export default function CollaboratorMatrixView() {
                             className="p-0 sticky z-10 data-sticky-cell"
                             style={{ left: '1rem' }}
                           >
-                            <div className="w-28 px-2 py-2 overflow-hidden">
                             <LandmarkInfoPopover
                               landmark={landmark}
                               onEditLandmark={onEditLandmark}
                               onRemoveLandmark={onRemoveLandmark}
                               loading={loading}
                             >
-                              <Button variant="ghost" fullWidth={true} title={landmark.name} className="overflow-hidden">
-                                <span className="truncate">{landmark.name}</span>
-                                <span className="flex gap-0.5 shrink-0">
+                              <Button variant="ghost" fullWidth={true} title={landmark.name} className="!whitespace-normal flex-col !items-start m-2 py-2">
+                                {landmark.name}
+                                <span className="flex flex-wrap gap-0.5">
                               {([...collaborators]
                                       .map((c) => ({ c, lvl: getLevel(landmark.id, c.id) }))
                                       .filter(({ lvl }) => lvl !== 'NONE')
@@ -297,7 +322,6 @@ export default function CollaboratorMatrixView() {
                             </span>
                               </Button>
                             </LandmarkInfoPopover>
-                            </div>
                           </td>
                           {/* One cell per collaborator */}
                           {collaborators.map((c) => {

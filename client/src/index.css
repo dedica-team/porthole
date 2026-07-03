@@ -278,7 +278,6 @@ tr:hover td:not(.group-stripe) {
 /* MetricsView second-pass contrast tuning */
 .metrics-view .metrics-header {
   position: relative;
-  background: linear-gradient(180deg, rgba(0, 240, 255, 0.06), rgba(0, 240, 255, 0.02));
 }
 
 .metrics-view .metrics-help-trigger,
