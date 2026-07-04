@@ -178,7 +178,7 @@ export default function CreateEditGreenkeepingRotationDialog({
         <Dialog open={open} onOpenChange={(next) => {
             if (!saving) onOpenChange(next);
         }}>
-            <DialogContent className="w-lg max-h-[85vh] flex flex-col overflow-hidden" aria-describedby={undefined}>
+            <DialogContent className="max-w-sm max-h-[85vh] flex flex-col overflow-hidden" aria-describedby={undefined}>
                 <DialogHeader>
                     <DialogTitle className="text-sm">{rotation ? 'Edit Rotation' : 'New Rotation'}</DialogTitle>
                 </DialogHeader>
@@ -231,7 +231,6 @@ export default function CreateEditGreenkeepingRotationDialog({
                             <Button
                                 type="button"
                                 size="sm"
-                                variant="ghost"
                                 className="h-7 px-2 text-sm gap-1"
                                 onClick={() => setCollaboratorRows((rows) => [...rows, {collaboratorId: ''}])}
                             >
@@ -252,7 +251,7 @@ export default function CreateEditGreenkeepingRotationDialog({
                                         <select
                                             value={row.collaboratorId}
                                             onChange={(e) => updateRow(index, e.target.value)}
-                                            className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground flex-1"
+                                            className="h-8 text-sm rounded border border-input bg-background px-2 text-foreground flex-1 w-6"
                                         >
                                             <option value="">Select collaborator…</option>
                                             {sortedCollaborators.map((collaborator) => (
@@ -265,18 +264,18 @@ export default function CreateEditGreenkeepingRotationDialog({
                                                 </option>
                                             ))}
                                         </select>
-                                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8"
+                                        <Button type="button" size="icon" className="h-8"
                                                 onClick={() => moveRow(index, -1)} disabled={index === 0}
                                                 title="Move up">
                                             <ArrowUp className="h-3.5 w-3.5"/>
                                         </Button>
-                                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8"
+                                        <Button type="button" size="icon"  className="h-8"
                                                 onClick={() => moveRow(index, 1)}
                                                 disabled={index === collaboratorRows.length - 1} title="Move down">
                                             <ArrowDown className="h-3.5 w-3.5"/>
                                         </Button>
-                                        <Button type="button" size="icon" variant="ghost"
-                                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        <Button type="button" size="icon"
+                                                className="h-8  text-muted-foreground hover:text-destructive"
                                                 onClick={() => setCollaboratorRows((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}
                                                 title="Remove collaborator">
                                             <X className="h-3.5 w-3.5"/>

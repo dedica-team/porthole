@@ -109,9 +109,6 @@ export default function GreenkeepingRotationsView() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-stretch">
             {sortedRotations.map((rotation) => {
               const activeEntry = getActiveGreenkeepingEntry(rotation);
-              const activeIndex = activeEntry
-                ? rotation.collaborators.findIndex((e) => e.id === activeEntry.id)
-                : -1;
               const groups = rotation.groupIds.map((gid) => currentMap.groups[gid]).filter(Boolean);
               const isBusy = busyRotationId === rotation.id;
               const canAdvance = isCollaborator && rotation.collaborators.length > 1;
@@ -159,49 +156,35 @@ export default function GreenkeepingRotationsView() {
 
                   {/* Rotation order */}
                   {rotation.collaborators.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1 mt-2">
-                      {rotation.collaborators.map((entry, index) => {
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1 mt-2 w-full">
+                      {rotation.collaborators.map((entry) => {
                         const collab = collaboratorMap[entry.collaboratorId];
                         const username = collab?.username ?? 'Unknown';
                         const isActive = activeEntry?.id === entry.id;
-                        const followsActive = activeIndex >= 0 && index === activeIndex + 1;
-                        const showTrailingAdvance = canAdvance && isActive && activeIndex === rotation.collaborators.length - 1;
 
                         return (
-                          <div key={entry.id} className="flex items-center gap-1">
-                            {index > 0 && (
-                              followsActive && canAdvance ? (
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  className="h-6 w-6 shrink-0"
-                                  onClick={(e) => { e.stopPropagation(); handleAdvance(rotation.id); }}
-                                  disabled={isBusy}
-                                  aria-label={`Advance to ${username} in ${rotation.name}`}
-                                  title={`Advance to ${username}`}
-                                >
-                                  <FastForward className="h-3 w-3" />
-                                </Button>
-                              ) : (
-                                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" aria-hidden="true" />
-                              )
-                            )}
+                          <div key={entry.id} className="flex items-center gap-1 w-full sm:w-auto">
                             <div
-                              className={`rounded border px-2 py-1 ${isActive ? 'border-primary' : 'border-border'}`}
+                              className={`rounded border px-2 py-1 flex-1 min-w-0 overflow-hidden ${isActive ? 'border-white' : 'border-border'}`}
                               style={isActive ? { background: 'rgba(0,240,255,0.08)', boxShadow: '0 0 8px rgba(0,240,255,0.18)' } : undefined}
                             >
                               <UserAvatar inline username={username} avatarUrl={collab?.avatarUrl} title={username} />
                             </div>
-                            {showTrailingAdvance && (
+                            {isActive && canAdvance ? (
                               <Button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAdvance(rotation.id); }}
                                 disabled={isBusy}
-                                aria-label={`Advance to next in ${rotation.name}`}
-                                title={`Advance to next`}
+                                aria-label={`Advance rotation ${rotation.name}`}
+                                title="Advance"
                               >
                                 <FastForward className="h-3 w-3" />
                               </Button>
-                            )}
+                            ) :
+                              <Button variant="ghost" className="pointer-events-none cursor-default text-muted-foreground/50" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+                                <ChevronRight className="h-3 w-3" />
+                              </Button>
+                            }
                           </div>
                         );
                       })}
