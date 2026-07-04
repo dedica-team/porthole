@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -239,8 +240,28 @@ export default function Sidebar({
   const relocatingLandmarkId = useMapStore((s) => s.relocatingLandmarkId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
   const processSidebarHidden = useMapStore((s) => s.processSidebarHidden);
-  // Derive process mode from the route instead of store state.
   const processMode = !!useMatch('/session/:id/processes');
+
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [mobileHeight, setMobileHeight] = useState(280);
+  const dragRef = useRef<{ startY: number; startH: number } | null>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const onHandlePointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startY: e.clientY, startH: mobileHeight };
+  };
+  const onHandlePointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const delta = dragRef.current.startY - e.clientY;
+    setMobileHeight(Math.max(120, Math.min(window.innerHeight * 0.85, dragRef.current.startH + delta)));
+  };
+  const onHandlePointerUp = () => { dragRef.current = null; };
 
   // Hide sidebar when nothing is selected and not in process mode
   const isVisible = (processMode && !processSidebarHidden)
@@ -256,7 +277,21 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="absolute inset-y-0 right-0 z-20 flex flex-col w-(--sidebar-width) min-w-0 bg-card border-l border-border overflow-hidden md:relative md:shrink-0">
+    <aside
+      style={isMobile ? { height: mobileHeight } : undefined}
+      className="absolute bottom-0 left-0 right-0 z-20 flex flex-col bg-card border-t border-border overflow-hidden md:top-0 md:left-auto md:w-(--sidebar-width) md:border-t-0 md:border-l md:relative md:shrink-0"
+    >
+      {/* Drag handle – mobile only */}
+      <div
+        className="md:hidden flex items-center justify-center py-1.5 shrink-0 cursor-ns-resize touch-none select-none"
+        onPointerDown={onHandlePointerDown}
+        onPointerMove={onHandlePointerMove}
+        onPointerUp={onHandlePointerUp}
+        onPointerCancel={onHandlePointerUp}
+      >
+        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+      </div>
+
       {/* Close button – hidden in process mode (panel closed via map buttons) */}
       {!processMode && (
         <div className="flex items-center justify-end px-2 pt-2 shrink-0">

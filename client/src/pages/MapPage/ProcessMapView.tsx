@@ -5,7 +5,7 @@
  * for the active process / stage.  Owns all process-specific memos,
  * connection-click handler, and the "New Connection" overlay.
  */
-import { useRef, useCallback, useMemo, useState } from 'react';import { Layers, GitBranch, HelpCircle } from 'lucide-react';import { Button } from '@/components/ui/button';
+import { useRef, useCallback, useMemo, useState, useEffect } from 'react';import { Layers, GitBranch, HelpCircle } from 'lucide-react';import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
@@ -69,6 +69,10 @@ export default function ProcessMapView() {
   const [newProcSaving, setNewProcSaving] = useState(false);
   const [newProcError, setNewProcError] = useState('');
   const fpsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (window.innerWidth < 640) setProcessSidebarHidden(true);
+  }, []);
 
   const handleCreateProcess = async () => {
     if (!currentMap || !newProcName.trim()) return;
