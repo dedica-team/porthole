@@ -102,6 +102,8 @@ interface Props {
     hideDecorations?: boolean;
     /** Renderer quality profile – passed to useThreeScene to (re-)init the WebGL renderer. */
     rendererQualityProfile?: RendererQualityProfile;
+    /** When set, only these landmark IDs show their CSS2D label; others are hidden. */
+    visibleLandmarkLabelIds?: Set<string>;
 }
 
 const HEX_SIZE = 1;
@@ -134,6 +136,7 @@ export default function HexGrid({
                                     activeStageName,
                                     hideDecorations = false,
                                     rendererQualityProfile,
+                                    visibleLandmarkLabelIds,
                                 }: Props) {
     const mountRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
@@ -167,6 +170,16 @@ export default function HexGrid({
     useEffect(() => {
         stageHighlightTilesRef.current = stageHighlightTiles;
     }, [stageHighlightTiles]);
+
+    useEffect(() => {
+        if (!hideDecorations) return;
+        landmarkMeshMapRef.current.forEach((group, landmarkId) => {
+            const show = !visibleLandmarkLabelIds || visibleLandmarkLabelIds.has(landmarkId);
+            group.children.forEach((child) => {
+                if (child instanceof CSS2DObject) child.visible = show;
+            });
+        });
+    }, [visibleLandmarkLabelIds, hideDecorations]);
 
     const selectedTile = useMapStore((s) => s.selectedTile);
     const setSelectedTile = useMapStore((s) => s.setSelectedTile);

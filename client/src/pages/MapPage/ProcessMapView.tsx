@@ -203,6 +203,26 @@ export default function ProcessMapView() {
     return keys.size > 0 ? keys : undefined;
   }, [activeProcessId, activeStageId, processes, currentMap]);
 
+  /** Landmark IDs whose labels should be shown — only those involved in the active process/stage. */
+  const visibleLandmarkLabelIds = useMemo<Set<string> | undefined>(() => {
+    if (!activeProcessId || !currentMap) return undefined;
+    const proc = processes.find((p) => p.id === activeProcessId);
+    if (!proc) return undefined;
+    const stagesToCheck = activeStageId
+      ? proc.stages.filter((s) => s.id === activeStageId)
+      : proc.stages;
+    const ids = new Set<string>();
+    for (const stage of stagesToCheck) {
+      for (const sc of stage.connections) {
+        const conn = currentMap.connections?.[sc.connectionId];
+        if (!conn) continue;
+        ids.add(conn.originId);
+        ids.add(conn.targetId);
+      }
+    }
+    return ids.size > 0 ? ids : undefined;
+  }, [activeProcessId, activeStageId, processes, currentMap]);
+
   /**
    * Per-landmark metric values for the CSS2D overlay.
    * Only landmarks with a non-NONE entry for the selected metric are included.
@@ -286,6 +306,7 @@ export default function ProcessMapView() {
             landmarkHighlightColors={landmarkHighlightColors}
             stageHighlightTiles={stageHighlightTiles}
             metricOverlayEntries={metricOverlayEntries}
+            visibleLandmarkLabelIds={visibleLandmarkLabelIds}
             onConnectionClick={handleConnectionClick}
           />
         </ErrorBoundary>

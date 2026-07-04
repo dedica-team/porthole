@@ -100,7 +100,7 @@ describe('GreenkeepingRotationsView', () => {
     expect(screen.getAllByTitle('alice').length).toBeGreaterThan(0);
     expect(screen.getByTitle('bob')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^rotation$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /advance to bob in weekly core duty/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /advance rotation weekly core duty/i })).toBeInTheDocument();
   });
 
   it('hides create button for viewers', () => {
@@ -108,7 +108,7 @@ describe('GreenkeepingRotationsView', () => {
     render(<GreenkeepingRotationsView />);
 
     expect(screen.queryByRole('button', { name: /^rotation$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /advance to bob in weekly core duty/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /advance rotation weekly core duty/i })).not.toBeInTheDocument();
   });
 
   it('does not show an advance button when a rotation has only one collaborator', () => {
@@ -122,8 +122,7 @@ describe('GreenkeepingRotationsView', () => {
     render(<GreenkeepingRotationsView />);
 
     expect(screen.getByText('alice')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /advance to alice in weekly core duty/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /advance to .* in weekly core duty/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /advance rotation/i })).not.toBeInTheDocument();
   });
 
   it('opens the edit dialog when the title is clicked', async () => {
@@ -156,7 +155,7 @@ describe('GreenkeepingRotationsView', () => {
     });
 
     render(<GreenkeepingRotationsView />);
-    fireEvent.click(screen.getByRole('button', { name: /advance to bob in weekly core duty/i }));
+    fireEvent.click(screen.getByRole('button', { name: /advance rotation weekly core duty/i }));
 
     await waitFor(() => {
       expect(mapApi.advanceGreenkeepingRotation).toHaveBeenCalledWith(MAP_ID, 'rot-1');

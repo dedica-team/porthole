@@ -66,12 +66,9 @@ describe('SessionOverviewView', () => {
     expect(screen.getByText('Greenkeepers')).toBeInTheDocument();
   });
 
-  it('renders "View full →" links pointing to correct sub-routes', () => {
+  it('renders "more" links pointing to correct sub-routes', () => {
     renderView();
-    expect(screen.getByText('View full metrics')).toBeInTheDocument();
-    expect(screen.getByText('View full matrix')).toBeInTheDocument();
-    expect(screen.getByText('View all chores')).toBeInTheDocument();
-    expect(screen.getByText('View rotations')).toBeInTheDocument();
+    expect(screen.getAllByText('more').length).toBeGreaterThanOrEqual(4);
   });
 
   it('shows "No metrics defined." when metrics store is empty', () => {

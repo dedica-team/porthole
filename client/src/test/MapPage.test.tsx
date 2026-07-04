@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import MapPage from '../pages/MapPage/MapPage';
@@ -21,11 +21,13 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
     brushMode,
     hideDecorations,
     onConnectionClick,
+    visibleLandmarkLabelIds,
   }: {
     onTileClick: (q: number, r: number) => void;
     brushMode?: boolean;
     hideDecorations?: boolean;
     onConnectionClick?: (connectionId: string) => void;
+    visibleLandmarkLabelIds?: Set<string>;
   }) => {
     const clickTile = (q: number, r: number) => {
       useMapStore.getState().setSelectedTile({ q, r });
@@ -38,7 +40,11 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
       if (brushMode) onTileClick(q, r);
     };
     return (
-      <div data-testid="hex-grid" data-process-render-mode={hideDecorations ? 'true' : 'false'}>
+      <div
+        data-testid="hex-grid"
+        data-process-render-mode={hideDecorations ? 'true' : 'false'}
+        data-visible-label-ids={visibleLandmarkLabelIds ? [...visibleLandmarkLabelIds].sort().join(',') : 'all'}
+      >
         <button data-testid="tile-empty"   onClick={() => clickTile(1, 0)}>Empty Tile</button>
         <button data-testid="tile-tower"   onClick={() => clickTile(0, 0)}>Tower Tile</button>
         <button data-testid="tile-tower-2" onClick={() => clickTile(3, 0)}>Tower Tile 2</button>
@@ -847,6 +853,91 @@ describe('MapPage – landmark search field', () => {
       expect(state.selectedTile).toEqual({ q: 0, r: 0 });
       expect(state.mainView).toBe('processes'); // handleLandmarkSearch does not call setMainView
     });
+  });
+});
+
+// ── visibleLandmarkLabelIds ───────────────────────────────────────────────────
+
+const PROCESS_LANDMARKS: SessionState['landmarks'] = {
+  'lm-1': { id: 'lm-1', name: 'Alpha', ownerId: COLLABORATOR_ID, coordinate: { q: 0, r: 0 }, type: 'KEEP' },
+  'lm-2': { id: 'lm-2', name: 'Beta',  ownerId: COLLABORATOR_ID, coordinate: { q: 1, r: 0 }, type: 'KEEP' },
+  'lm-3': { id: 'lm-3', name: 'Gamma', ownerId: COLLABORATOR_ID, coordinate: { q: 2, r: 0 }, type: 'KEEP' },
+};
+
+const PROCESS_CONNECTIONS: SessionState['connections'] = {
+  'conn-1': { id: 'conn-1', name: 'A→B', originId: 'lm-1', targetId: 'lm-2', type: 'PIPE', path: [] },
+  'conn-2': { id: 'conn-2', name: 'B→C', originId: 'lm-2', targetId: 'lm-3', type: 'PIPE', path: [] },
+};
+
+const PROCESSES = [
+  {
+    id: 'proc-1',
+    name: 'My Process',
+    description: '',
+    stages: [
+      { id: 'stage-1', name: 'Stage A', order: 1, connections: [{ id: 'sc-1', connectionId: 'conn-1', direction: 'FORWARD' as const }] },
+      { id: 'stage-2', name: 'Stage B', order: 2, connections: [{ id: 'sc-2', connectionId: 'conn-2', direction: 'FORWARD' as const }] },
+    ],
+  },
+];
+
+function labelIds() {
+  return screen.getByTestId('hex-grid').dataset.visibleLabelIds;
+}
+
+describe('ProcessMapView – visibleLandmarkLabelIds', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useAuthStore.setState({ token: 'tok', userId: COLLABORATOR_ID, username: 'test', isAuthenticated: true });
+    useMapStore.setState({
+      currentMap: makeMap({ landmarks: PROCESS_LANDMARKS, connections: PROCESS_CONNECTIONS }),
+      maps: [],
+      processes: PROCESSES,
+      processSidebarHidden: true,
+      activeProcessId: null,
+      activeStageId: null,
+      pendingView: null,
+    });
+  });
+
+  afterEach(() => {
+    useMapStore.setState({ activeProcessId: null, activeStageId: null });
+  });
+
+  it('passes all labels (undefined) when no process is active', async () => {
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await screen.findByTestId('hex-grid');
+    expect(labelIds()).toBe('all');
+  });
+
+  it('shows all landmarks in the process when a process is active but no stage', async () => {
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await screen.findByTestId('hex-grid');
+    await setMapState({ activeProcessId: 'proc-1', activeStageId: null });
+    expect(labelIds()).toBe('lm-1,lm-2,lm-3');
+  });
+
+  it('shows only stage-1 endpoints when stage-1 is active', async () => {
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await screen.findByTestId('hex-grid');
+    await setMapState({ activeProcessId: 'proc-1', activeStageId: 'stage-1' });
+    expect(labelIds()).toBe('lm-1,lm-2');
+  });
+
+  it('shows only stage-2 endpoints when stage-2 is active', async () => {
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await screen.findByTestId('hex-grid');
+    await setMapState({ activeProcessId: 'proc-1', activeStageId: 'stage-2' });
+    expect(labelIds()).toBe('lm-2,lm-3');
+  });
+
+  it('reverts to all labels when the process is deselected', async () => {
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await screen.findByTestId('hex-grid');
+    await setMapState({ activeProcessId: 'proc-1', activeStageId: 'stage-1' });
+    expect(labelIds()).toBe('lm-1,lm-2');
+    await setMapState({ activeProcessId: null, activeStageId: null });
+    expect(labelIds()).toBe('all');
   });
 });
 
