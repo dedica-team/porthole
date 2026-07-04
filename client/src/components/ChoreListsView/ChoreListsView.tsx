@@ -1,6 +1,8 @@
 import {useEffect} from 'react';
-import {Plus, ExternalLink} from 'lucide-react';
+import {Plus, ExternalLink, CheckSquare, HelpCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
+import {PageTitle} from '@/components/ui/PageTitle';
+import {Popup} from '@/components/ui/popup';
 import {UserAvatar} from '@/components/ui/user-avatar';
 import {StatusBadge, choreStateToStatus} from '@/components/ui/status-badge';
 import {useMapStore, useAuthStore} from '@/store/mapStore';
@@ -27,6 +29,7 @@ export default function ChoreListsView() {
 
     const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
     const [createOpen, setCreateOpen] = useState(false);
+    const [showHelpDialog, setShowHelpDialog] = useState(false);
 
     useEffect(() => {
         if (!currentMap || choreListsFetched) return;
@@ -70,17 +73,31 @@ export default function ChoreListsView() {
 
     return (
         <div className="flex flex-col h-full bg-background overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-3 shrink-0">
-                <h2 className="text-lg font-semibold text-foreground">Chore Lists</h2>
-                {isCollaborator && (
-                    <Button size="sm" variant="default" className="h-7 text-sm gap-1.5"
-                            onClick={() => setCreateOpen(true)}>
-                        <Plus className="h-3.5 w-3.5"/>
-                        New List
+            <PageTitle
+                icon={<CheckSquare className="h-3.5 w-3.5" />}
+                title="Chores"
+                actions={<>
+                    <Button variant="ghost" onClick={() => setShowHelpDialog(true)} title="Help">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                        Help
                     </Button>
-                )}
-            </div>
+                    {isCollaborator && (
+                        <Button variant="default" onClick={() => setCreateOpen(true)}>
+                            <Plus className="h-3.5 w-3.5" />
+                            New List
+                        </Button>
+                    )}
+                </>}
+            />
+
+            <Popup title="How to use Chore Lists" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
+                <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
+                    <p><span className="text-foreground font-medium">Chore Lists</span> are shared task boards for your map. Each list contains entries that collaborators can track and complete together.</p>
+                    <p>Click a <span className="text-foreground font-medium">list card</span> to open it and see its entries. From there you can add, update, or remove entries.</p>
+                    <p>Each entry has a <span className="text-foreground font-medium">state</span> — None, Ongoing, Blocked, or Done — and can be assigned to a collaborator.</p>
+                    <p>Click <span className="text-foreground font-medium">New List</span> to create a chore list and give it a title, optional link, and description.</p>
+                </div>
+            </Popup>
 
             {choreListsError && (
                 <p className="px-6 py-2 text-sm text-destructive shrink-0">{choreListsError}</p>
@@ -118,10 +135,10 @@ export default function ChoreListsView() {
                                     onClick={() => setActiveChoreListId(list.id)}
                                 >
                                     {/* Title row + status badges */}
-                                    <div className="flex items-start justify-between gap-2 w-full">
-                                        <h2 className={`font-medium text-lg ${list.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>{list.title}</h2>
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 w-full">
+                                        <h2 className={`font-medium text-lg w-full ${list.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>{list.title}</h2>
                                         {hasDetails && (
-                                            <div className="flex flex-wrap justify-end gap-1 shrink-0">
+                                            <div className="flex flex-wrap gap-1 sm:justify-end sm:shrink-0">
                                                 {CHORE_ENTRY_STATES.filter((s) => counts[s] > 0).map((s) => (
                                                     <StatusBadge key={s} status={choreStateToStatus[s]} className="text-xs font-medium">
                                                         {counts[s]} {CHORE_ENTRY_STATE_LABEL[s]}
@@ -137,10 +154,10 @@ export default function ChoreListsView() {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground hover:text-[hsl(185,100%,54%)] transition-colors truncate"
+                                            className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground hover:text-[hsl(185,100%,54%)] transition-colors min-w-0 overflow-hidden"
                                         >
                                             <ExternalLink className="h-3 w-3 shrink-0"/>
-                                            <span className="truncate">{list.link}</span>
+                                            <span className="truncate min-w-0">{list.link}</span>
                                         </a>
                                     )}
 
@@ -148,7 +165,7 @@ export default function ChoreListsView() {
                                     {assignees.length > 0 && (
                                         <div className="flex flex-wrap gap-1.5 mt-2">
                                             {assignees.map((c) => (
-                                                <UserAvatar key={c.id} username={c.username} avatarUrl={c.avatarUrl} />
+                                                <UserAvatar key={c.id} username={c.username} avatarUrl={c.avatarUrl} inline={true}/>
                                             ))}
                                         </div>
                                     )}

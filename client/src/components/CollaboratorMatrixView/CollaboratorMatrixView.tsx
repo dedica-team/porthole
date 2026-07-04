@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { StatusIndicator } from '@/components/ui/status-badge';
-import { Check, X, AlertTriangle, HelpCircle, Users, Bus} from 'lucide-react';
+import { Check, X, AlertTriangle, HelpCircle, Users, Bus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +22,7 @@ import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPo
 import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 import { Popup } from '@/components/ui/popup';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
+import { PageTitle } from '@/components/ui/PageTitle';
 
 
 // ── Cell-edit dialog ──────────────────────────────────────────────────────────
@@ -110,6 +110,7 @@ export default function CollaboratorMatrixView() {
 
   const [cellEdit, setCellEdit] = useState<CellEditState | null>(null);
   const [showGroupsDialog, setShowGroupsDialog] = useState(false);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
   const { hiddenGroups, setHiddenGroups, filterOpen, setFilterOpen, filterBtnRef, filterPopoverRef } =
     useGroupFilter('landmarks.matrix.hiddenGroups');
 
@@ -150,38 +151,28 @@ export default function CollaboratorMatrixView() {
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-6 py-3 shrink-0">
-        <Bus className="h-4 w-4 text-muted-foreground" />
-        <h2 className="font-semibold text-foreground">Bus Matrix</h2>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="flex items-center gap-1.5 group" title="Help">
-
-              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-4 text-sm" align="start">
-            <div className="flex flex-col gap-3">
-              <h4 className="text-sm font-semibold text-foreground">How to use the Bus Matrix</h4>
-              <div className="flex flex-col gap-2 text-muted-foreground leading-relaxed">
-                <p>The <span className="text-foreground font-medium">Bus Matrix</span> shows how well each collaborator knows each landmark — useful for identifying single points of failure ("bus factor").</p>
-                <p>Each row is a <span className="text-foreground font-medium">landmark</span>, each column is a <span className="text-foreground font-medium">collaborator</span>. Click any cell to set the knowledge level.</p>
-                <p>Use the funnel icon to filter visible groups.</p>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-        <div className="ml-auto">
-          <Button
-              variant={"ghost"}
-            onClick={() => setShowGroupsDialog(true)}
-            title="Manage groups"
-          >
+      <PageTitle
+        icon={<Bus className="h-4 w-4" />}
+        title="Bus Matrix"
+        actions={<>
+          <Button variant="ghost" onClick={() => setShowHelpDialog(true)} title="Help">
+            <HelpCircle className="h-3.5 w-3.5" />
+            Help
+          </Button>
+          <Button variant="ghost" onClick={() => setShowGroupsDialog(true)} title="Manage groups">
             <Users className="h-3.5 w-3.5" />
             Groups
           </Button>
+        </>}
+      />
+
+      <Popup title="How to use the Bus Matrix" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
+          <p>The <span className="text-foreground font-medium">Bus Matrix</span> shows how well each collaborator knows each landmark — useful for identifying single points of failure ("bus factor").</p>
+          <p>Each row is a <span className="text-foreground font-medium">landmark</span>, each column is a <span className="text-foreground font-medium">collaborator</span>. Click any cell to set the knowledge level.</p>
+          <p>Use the funnel icon to filter visible groups.</p>
         </div>
-      </div>
+      </Popup>
 
       <Popup title="Manage Groups" open={showGroupsDialog} onOpenChange={setShowGroupsDialog} className="max-w-sm max-h-[80vh] flex flex-col" contentClassName="overflow-y-auto p-0 flex-1">
         <GroupsPanel

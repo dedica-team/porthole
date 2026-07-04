@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, ExternalLink, FastForward, Plus } from 'lucide-react';
+import { ChevronRight, ExternalLink, FastForward, HelpCircle, Plus, Sprout } from 'lucide-react';
+import { PageTitle } from '@/components/ui/PageTitle';
+import { Popup } from '@/components/ui/popup';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +29,7 @@ export default function GreenkeepingRotationsView() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingRotation, setEditingRotation] = useState<GreenkeepingRotation | null>(null);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [actionError, setActionError] = useState('');
   const [busyRotationId, setBusyRotationId] = useState<string | null>(null);
 
@@ -65,15 +68,31 @@ export default function GreenkeepingRotationsView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      <div className="flex items-center justify-between border-b border-border px-6 py-3 shrink-0">
-        <h2 className="text-sm font-semibold text-foreground">Greenkeeping Rotations</h2>
-        {isCollaborator && (
-          <Button size="sm" variant="default" className="h-7 gap-1.5 text-sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
-            Rotation
+      <PageTitle
+        icon={<Sprout className="h-4 w-4" />}
+        title="Greenkeeping Rotations"
+        actions={<>
+          <Button variant="ghost" onClick={() => setShowHelpDialog(true)} title="Help">
+            <HelpCircle className="h-3.5 w-3.5" />
+            Help
           </Button>
-        )}
-      </div>
+          {isCollaborator && (
+            <Button variant="default" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              Rotation
+            </Button>
+          )}
+        </>}
+      />
+
+      <Popup title="How to use Greenkeeping Rotations" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
+          <p><span className="text-foreground font-medium">Greenkeeping Rotations</span> define recurring duty cycles among collaborators — for example, who is on-call or responsible for a recurring task this week.</p>
+          <p>Each rotation has an ordered list of collaborators. The <span className="text-foreground font-medium">active entry</span> is highlighted with a glowing border. Click the <span className="text-foreground font-medium">advance</span> button between entries to move to the next person.</p>
+          <p>Rotations can be scoped to one or more <span className="text-foreground font-medium">groups</span> and optionally include a link to a schedule or document.</p>
+          <p>Click a <span className="text-foreground font-medium">rotation card</span> to edit its name, description, link, collaborator order, or assigned groups.</p>
+        </div>
+      </Popup>
 
       {(greenkeepingRotationsError || actionError) && (
         <p className="px-6 py-2 text-sm text-destructive shrink-0">{greenkeepingRotationsError || actionError}</p>
@@ -105,10 +124,10 @@ export default function GreenkeepingRotationsView() {
                   onClick={() => { if (isCollaborator) { setActionError(''); setEditingRotation(rotation); } }}
                 >
                   {/* Title row */}
-                  <div className="flex items-start justify-between gap-2 w-full">
-                    <span className="font-medium text-lg text-foreground">{rotation.name}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 w-full">
+                    <span className="font-medium text-lg text-foreground w-full">{rotation.name}</span>
                     {groups.length > 0 && (
-                      <div className="flex flex-wrap justify-end gap-1 shrink-0">
+                      <div className="flex flex-wrap gap-1 sm:justify-end sm:shrink-0">
                         {groups.map((g) => (
                           <span key={g.id} className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 text-xs text-foreground">
                             <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
@@ -131,10 +150,10 @@ export default function GreenkeepingRotationsView() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 mt-0.5 text-xs text-[hsl(185,100%,54%)] hover:underline truncate"
+                      className="flex items-center gap-1 mt-0.5 text-xs text-[hsl(185,100%,54%)] hover:underline w-full min-w-0"
                     >
                       <ExternalLink className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{rotation.link}</span>
+                      <span className="truncate min-w-0 flex-1">{rotation.link}</span>
                     </a>
                   )}
 
@@ -175,13 +194,10 @@ export default function GreenkeepingRotationsView() {
                             </div>
                             {showTrailingAdvance && (
                               <Button
-                                type="button"
-                                size="icon"
-                                className="h-6 w-6 shrink-0"
                                 onClick={(e) => { e.stopPropagation(); handleAdvance(rotation.id); }}
                                 disabled={isBusy}
-                                aria-label={`Advance to ${username} in ${rotation.name}`}
-                                title={`Advance to ${username}`}
+                                aria-label={`Advance to next in ${rotation.name}`}
+                                title={`Advance to next`}
                               >
                                 <FastForward className="h-3 w-3" />
                               </Button>

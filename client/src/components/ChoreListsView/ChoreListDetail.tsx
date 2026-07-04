@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, Pencil, CheckSquare, Square, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { useMapStore } from '@/store/mapStore';
 import { useAuthStore } from '@/store/mapStore';
 import type { ChoreList, ChoreEntry } from '@/types/chores';
@@ -79,42 +80,38 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-6 py-3 shrink-0">
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setActiveChoreListId(null)}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <h2 className={`text-lg font-semibold flex-1 truncate ${choreList.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-          {choreList.title}
-        </h2>
-        {choreList.link && (
-          <a
-            href={choreList.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-muted-foreground hover:text-[hsl(185,100%,54%)] transition-colors"
-            title={choreList.link}
+      <PageTitle
+        icon={
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-foreground" onClick={() => setActiveChoreListId(null)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        }
+        title={<>
+          <span className={choreList.completed ? 'line-through opacity-60' : ''}>{choreList.title}</span>
+          {choreList.link && (
+            <a href={choreList.link} target="_blank" rel="noopener noreferrer"
+               className="text-muted-foreground hover:text-[hsl(185,100%,54%)] transition-colors shrink-0"
+               title={choreList.link}>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </>}
+        actions={isCollaborator && <>
+          <Button title="Edit list" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button
+            className={choreList.completed ? 'text-[hsl(185,100%,54%)]' : 'text-muted-foreground hover:text-[hsl(185,100%,54%)]'}
+            disabled={toggling} onClick={handleToggleCompleted}
           >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        )}
-        {isCollaborator && (
-          <>
-            <Button title="Edit list" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-3.5 w-3.5" /> Edit list
-            </Button>
-            <Button
-              className={`${choreList.completed ? 'text-[hsl(185,100%,54%)]' : 'text-muted-foreground hover:text-[hsl(185,100%,54%)]'}`}
-              disabled={toggling} onClick={handleToggleCompleted}
-            >
-              {choreList.completed ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />} {choreList.completed ? 'Reopen list' : 'Mark as complete'}
-            </Button>
-            <Button variant="destructive" size="icon" title="Delete list" disabled={deleting} onClick={handleDelete}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </>
-        )}
-      </div>
+            {choreList.completed ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+            {choreList.completed ? 'Reopen' : 'Complete'}
+          </Button>
+          <Button variant="destructive"  title="Delete list" disabled={deleting} onClick={handleDelete}>
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+        </>}
+      />
 
       {error && <p className="px-6 py-1 text-sm text-destructive shrink-0">{error}</p>}
 
@@ -136,7 +133,7 @@ export default function ChoreListDetail({ choreList, onUpdated, onDeleted }: Pro
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                     {sectionEntries.map((entry) => (
                       <ChoreEntryRow
                         key={entry.landmarkId}

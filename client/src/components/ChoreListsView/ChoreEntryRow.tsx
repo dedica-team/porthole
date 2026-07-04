@@ -98,12 +98,12 @@ export default function ChoreEntryRow({
         }} style={{borderColor: stateBorderColor[entry.state]}}
                 className={`group h-full w-full !flex-col !items-start !justify-start !whitespace-normal text-left px-4 py-3 transition-colors `}>
             {/* Title row: name left, status badge right */}
-            <div className="flex items-start justify-between gap-2 w-full">
-                <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 w-full">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     {saved && <Check className="h-3 w-3 text-success shrink-0"/>}
-                    <span className="font-medium text-lg text-foreground">{landmarkName}</span>
+                    <span className="font-medium text-lg text-foreground truncate">{landmarkName}</span>
                 </div>
-                {stateBadge}
+                <div className="shrink-0">{stateBadge}</div>
             </div>
 
 
@@ -112,9 +112,9 @@ export default function ChoreEntryRow({
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     {entry.link && (
                         <a href={entry.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                           className="flex items-center gap-1 text-xs text-[hsl(185,100%,54%)] hover:underline truncate">
+                           className="flex items-center gap-1 text-xs text-[hsl(185,100%,54%)] hover:underline min-w-0 overflow-hidden">
                             <ExternalLink className="h-3 w-3 shrink-0"/>
-                            <span className="truncate">{entry.link}</span>
+                            <span className="truncate min-w-0">{entry.link}</span>
                         </a>
                     )}
                     {entry.note && (
