@@ -7,6 +7,9 @@ import {Popup} from '@/components/ui/popup';
 import {MapSettingsForm} from '@/components/Navbar/MapSettingsForm';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 import {useMapActions} from './MapActionsContext';
+import LandmarkSearchField from '@/components/LandmarkSearchField';
+import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
+import type {Landmark} from '@/types/landmark';
 import {UserAvatar} from '@/components/ui/user-avatar';
 import {StatusBadge, StatusIndicator, qualityLevelToStatus, matrixLevelToStatus} from '@/components/ui/status-badge';
 import {MATRIX_LEVEL_LABEL, MATRIX_LEVEL_ORDER} from '@/types/matrix';
@@ -284,9 +287,26 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
 export default function SessionOverviewView() {
     const {id: sessionId = ''} = useParams<{ id: string }>();
     const currentMap = useMapStore((s) => s.currentMap);
+    const storeSetSelectedLandmark = useMapStore((s) => s.setSelectedLandmark);
+    const storeSetSelectedTile = useMapStore((s) => s.setSelectedTile);
+    const storeSetMainView = useMapStore((s) => s.setMainView);
     const [editOpen, setEditOpen] = useState(false);
     const [groupsOpen, setGroupsOpen] = useState(false);
-    const { handleCreateGroup, handleEditGroup, handleRemoveGroup, actionLoading } = useMapActions();
+    const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(null);
+    const {
+        handleCreateGroup, handleEditGroup, handleRemoveGroup,
+        handleEditLandmark, handleRemoveLandmark,
+        handleEditConnection, handleRemoveConnection,
+        actionLoading,
+    } = useMapActions();
+
+    useEffect(() => {
+        storeSetSelectedLandmark(null);
+        storeSetSelectedTile(null);
+        storeSetMainView('idle');
+    }, [storeSetSelectedLandmark, storeSetSelectedTile, storeSetMainView]);
+
+    const landmarks = Object.values(currentMap?.landmarks ?? {});
 
     return (
         <div data-testid="view-overview" className="flex flex-col h-full bg-background overflow-auto">
@@ -294,15 +314,29 @@ export default function SessionOverviewView() {
                 icon={<LayoutDashboard className="h-3.5 w-3.5" />}
                 title={currentMap?.name ?? 'Session Overview'}
                 actions={currentMap && (<>
+                    <LandmarkSearchField landmarks={landmarks} onSelect={(l) => setSelectedLandmark(l)} />
                     <Button variant="ghost" onClick={() => setGroupsOpen(true)} title="Manage groups">
                         <Users className="h-3.5 w-3.5" />
                         Groups
                     </Button>
-                    <Button variant="ghost"  onClick={() => setEditOpen(true)} title="Edit session">
-                        <Pencil className="h-3.5 w-3.5" /> Edit
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditOpen(true)} title="Edit session">
+                        <Pencil className="h-3.5 w-3.5" />
                     </Button>
                 </>)}
             />
+            {selectedLandmark && (
+                <LandmarkInfoPopover
+                    key={selectedLandmark.id}
+                    landmark={selectedLandmark}
+                    open={true}
+                    onOpenChange={(o) => { if (!o) setSelectedLandmark(null); }}
+                    onEditLandmark={handleEditLandmark}
+                    onRemoveLandmark={handleRemoveLandmark}
+                    onEditConnection={handleEditConnection}
+                    onRemoveConnection={handleRemoveConnection}
+                    loading={actionLoading}
+                />
+            )}
             <Popup title="Manage Groups" open={groupsOpen} onOpenChange={setGroupsOpen} className="max-w-sm max-h-[80vh] flex flex-col" contentClassName="overflow-y-auto p-0 flex-1">
                 <GroupsPanel
                     onCreateGroup={handleCreateGroup}

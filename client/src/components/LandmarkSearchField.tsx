@@ -3,12 +3,15 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { Landmark } from '@/types/landmark';
 import { isDecorative } from '@/types/landmark';
+import { useMapStore } from '@/store/mapStore';
 interface Props {
   landmarks: Landmark[];           // already filtered to positioned only
   onSelect: (landmark: Landmark) => void;
 }
 
 export default function LandmarkSearchField({ landmarks, onSelect }: Props) {
+  const mapGroups = useMapStore((s) => s.currentMap?.groups);
+  const groups = mapGroups ?? {};
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -75,8 +78,8 @@ export default function LandmarkSearchField({ landmarks, onSelect }: Props) {
                 className="w-full flex flex-col px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground cursor-pointer"
               >
                 <span className="text-sm font-medium truncate">{l.name}</span>
-                <span className="text-sm text-muted-foreground">
-                  {l.type.replace(/_/g, ' ')} · ({l.coordinate!.q}, {l.coordinate!.r})
+                <span className="text-xs text-muted-foreground truncate">
+                  {l.groupId && groups[l.groupId] ? groups[l.groupId].name : l.type.replace(/_/g, ' ')}
                 </span>
               </button>
             ))}
