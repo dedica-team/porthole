@@ -238,7 +238,7 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
           placeholder="https://… (optional)"
           type="url"
         />
-        <Button type="submit" size="sm" className="h-8 text-sm gap-1.5 w-full" disabled={!addName.trim() || loading}>
+        <Button disabled={!addName.trim() || loading}>
           {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
           Add Group
         </Button>

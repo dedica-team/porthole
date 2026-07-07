@@ -1,10 +1,12 @@
 import {useEffect, useState} from 'react';
 import type React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {LayoutDashboard, BarChart2, Bus, CheckSquare, Sprout, ArrowRight, Pencil} from 'lucide-react';
+import {LayoutDashboard, BarChart2, Bus, CheckSquare, Sprout, ArrowRight, Pencil, Users} from 'lucide-react';
 import {PageTitle} from '@/components/ui/PageTitle';
 import {Popup} from '@/components/ui/popup';
 import {MapSettingsForm} from '@/components/Navbar/MapSettingsForm';
+import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
+import {useMapActions} from './MapActionsContext';
 import {UserAvatar} from '@/components/ui/user-avatar';
 import {StatusBadge, StatusIndicator, qualityLevelToStatus, matrixLevelToStatus} from '@/components/ui/status-badge';
 import {MATRIX_LEVEL_LABEL, MATRIX_LEVEL_ORDER} from '@/types/matrix';
@@ -283,18 +285,32 @@ export default function SessionOverviewView() {
     const {id: sessionId = ''} = useParams<{ id: string }>();
     const currentMap = useMapStore((s) => s.currentMap);
     const [editOpen, setEditOpen] = useState(false);
+    const [groupsOpen, setGroupsOpen] = useState(false);
+    const { handleCreateGroup, handleEditGroup, handleRemoveGroup, actionLoading } = useMapActions();
 
     return (
         <div data-testid="view-overview" className="flex flex-col h-full bg-background overflow-auto">
             <PageTitle
                 icon={<LayoutDashboard className="h-3.5 w-3.5" />}
                 title={currentMap?.name ?? 'Session Overview'}
-                actions={currentMap && (
-                    <Button onClick={() => setEditOpen(true)} title="Edit session">
+                actions={currentMap && (<>
+                    <Button variant="ghost" onClick={() => setGroupsOpen(true)} title="Manage groups">
+                        <Users className="h-3.5 w-3.5" />
+                        Groups
+                    </Button>
+                    <Button variant="ghost"  onClick={() => setEditOpen(true)} title="Edit session">
                         <Pencil className="h-3.5 w-3.5" /> Edit
                     </Button>
-                )}
+                </>)}
             />
+            <Popup title="Manage Groups" open={groupsOpen} onOpenChange={setGroupsOpen} className="max-w-sm max-h-[80vh] flex flex-col" contentClassName="overflow-y-auto p-0 flex-1">
+                <GroupsPanel
+                    onCreateGroup={handleCreateGroup}
+                    onEditGroup={handleEditGroup}
+                    onRemoveGroup={handleRemoveGroup}
+                    loading={actionLoading}
+                />
+            </Popup>
             <Popup title="Edit Session" open={editOpen} onOpenChange={setEditOpen} className="max-w-sm overflow-y-auto max-h-[85vh]">
                 <MapSettingsForm onClose={() => setEditOpen(false)} />
             </Popup>
