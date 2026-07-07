@@ -1,4 +1,5 @@
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
+import {useSearchParams} from 'react-router-dom';
 import {Plus, ExternalLink, CheckSquare, HelpCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {PageTitle} from '@/components/ui/PageTitle';
@@ -9,7 +10,6 @@ import {useMapStore, useAuthStore} from '@/store/mapStore';
 import {fetchChoreLists} from '@/api/mapApi';
 import type {ChoreList, ChoreEntryState} from '@/types/chores';
 import {CHORE_ENTRY_STATES, CHORE_ENTRY_STATE_LABEL} from '@/types/chores';
-import {useState} from 'react';
 import CreateChoreListDialog from './CreateChoreListDialog';
 import ChoreListDetail from './ChoreListDetail';
 
@@ -30,6 +30,27 @@ export default function ChoreListsView() {
     const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
     const [createOpen, setCreateOpen] = useState(false);
     const [showHelpDialog, setShowHelpDialog] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Sync activeChoreListId ↔ ?list= search param for deep-link support
+    useEffect(() => {
+        const listParam = searchParams.get('list');
+        if (listParam && listParam !== activeChoreListId) {
+            setActiveChoreListId(listParam);
+        } else if (!listParam && activeChoreListId) {
+            setActiveChoreListId(null);
+        }
+        // Run only on mount to read the initial URL
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (activeChoreListId) {
+            setSearchParams((prev) => { prev.set('list', activeChoreListId); return prev; }, { replace: true });
+        } else {
+            setSearchParams((prev) => { prev.delete('list'); return prev; }, { replace: true });
+        }
+    }, [activeChoreListId, setSearchParams]);
 
     useEffect(() => {
         if (!currentMap || choreListsFetched) return;
