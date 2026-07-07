@@ -2,17 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import {
   LogOut,
-  Copy,
-  Check,
+  LayoutDashboard,
   BarChart2,
   Bell,
   Bus,
   Radiation,
-  Download,
-  Trash2,
   CheckSquare,
   Trees,
-  LayoutDashboard,
   Sprout
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,13 +17,9 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useAuthStore, useMapStore } from '@/store/mapStore';
-import { editMap, setCollaborationMode, acceptJoinRequest, declineJoinRequest, logoutSession, exportMapJson, removeCollaborator } from '@/api/mapApi';
-import type { CollaborationMode } from '@/types/session';
-import { COLLABORATION_MODE_LABELS } from '@/types/session';
+import { acceptJoinRequest, declineJoinRequest, logoutSession } from '@/api/mapApi';
 import type { RendererQualityProfile } from '@/components/HexGrid/renderQuality';
 
 const RENDERER_QUALITY_LABELS: Record<RendererQualityProfile, string> = {
@@ -55,7 +47,6 @@ export default function Navbar() {
   const avatarUrl = useAuthStore((s) => s.avatarUrl);
   const logout = useAuthStore((s) => s.logout);
   const userId = useAuthStore((s) => s.userId);
-  const isAdmin = useAuthStore((s) => s.isAdmin);
   const tagline = useAuthStore((s) => s.tagline);
   const currentMap = useMapStore((s) => s.currentMap);
   const updateMap = useMapStore((s) => s.updateMap);
@@ -82,17 +73,8 @@ export default function Navbar() {
   };
 
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editCollaborationMode, setEditCollaborationMode] = useState<CollaborationMode>('OPEN');
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [copied, setCopied] = useState(false);
   const [joinReqLoading, setJoinReqLoading] = useState<string | null>(null);
   const [joinReqError, setJoinReqError] = useState('');
-  const [removingCollaboratorId, setRemovingCollaboratorId] = useState<string | null>(null);
-  const [removeCollabError, setRemoveCollabError] = useState('');
 
   const pendingRequests = (currentMap?.joinRequests ?? []);
   const hasPendingRequests = isCollaborator && pendingRequests.length > 0;
@@ -122,73 +104,6 @@ export default function Navbar() {
       setJoinReqError(err instanceof Error ? err.message : 'Failed to decline request');
     } finally {
       setJoinReqLoading(null);
-    }
-  };
-
-  const handlePopoverOpen = (open: boolean) => {
-    if (open && currentMap) {
-      setEditName(currentMap.name ?? '');
-      setEditDescription(currentMap.description ?? '');
-      setEditCollaborationMode(currentMap.collaborationMode ?? 'OPEN');
-      setSaveError('');
-    }
-    setPopoverOpen(open);
-  };
-
-  const handleSave = async () => {
-    if (!currentMap) return;
-    setSaving(true);
-    setSaveError('');
-    try {
-      let updated = await editMap(currentMap.id, editName || undefined, editDescription || undefined);
-      if (editCollaborationMode !== (currentMap.collaborationMode ?? 'OPEN')) {
-        updated = await setCollaborationMode(currentMap.id, editCollaborationMode);
-      }
-      updateMap(updated);
-      setPopoverOpen(false);
-    } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCopyId = () => {
-    if (!currentMap) return;
-    navigator.clipboard.writeText(currentMap.id).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
-
-
-  const handleRemoveCollaborator = async (collaboratorId: string) => {
-    if (!currentMap) return;
-    setRemovingCollaboratorId(collaboratorId);
-    setRemoveCollabError('');
-    try {
-      const updated = await removeCollaborator(currentMap.id, collaboratorId);
-      updateMap(updated);
-    } catch (err: unknown) {
-      setRemoveCollabError(err instanceof Error ? err.message : 'Failed to remove collaborator');
-    } finally {
-      setRemovingCollaboratorId(null);
-    }
-  };
-
-  const handleExport = async () => {
-    if (!currentMap) return;
-    try {
-      const data = await exportMapJson(currentMap.id);
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `session-${currentMap.id}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      // silently ignore
     }
   };
 
@@ -329,150 +244,6 @@ export default function Navbar() {
         {/* Map session area */}
         {isOnMap && currentMap && (
           <>
-            {/* Map name – clicking opens settings popover */}
-            <Popover open={popoverOpen} onOpenChange={handlePopoverOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className="hidden sm:inline tron-logo text-sm truncate max-w-45 hover:opacity-70 transition-opacity text-left cursor-pointer"
-                  title="Map settings"
-                >
-                  {currentMap.name || `#${currentMap.id.slice(0, 8)}`}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4" align="start">
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1">
-                    <h4 className="text-sm font-semibold text-foreground">Map Settings</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {isCollaborator ? 'Edit name and description of this map.' : 'Map details (read-only for viewers).'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-name" className="text-sm">Name</Label>
-                    <Input
-                      id="map-name"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder="Unnamed Map"
-                      className="h-8 text-sm"
-                      readOnly={!isCollaborator}
-                      disabled={!isCollaborator}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-description" className="text-sm">Description</Label>
-                    <Textarea
-                      id="map-description"
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      placeholder="Description…"
-                      className="text-sm resize-none"
-                      rows={3}
-                      readOnly={!isCollaborator}
-                      disabled={!isCollaborator}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-collaboration-mode" className="text-sm">Collaboration mode</Label>
-                    <select
-                      id="map-collaboration-mode"
-                      value={editCollaborationMode}
-                      onChange={(e) => setEditCollaborationMode(e.target.value as CollaborationMode)}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!isCollaborator}
-                    >
-                      {(Object.keys(COLLABORATION_MODE_LABELS) as CollaborationMode[]).map((m) => (
-                        <option key={m} value={m}>
-                          {COLLABORATION_MODE_LABELS[m]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-sm">Map ID</Label>
-                    <div className="flex items-center gap-1.5">
-                      <code className="flex-1 text-sm font-mono bg-muted rounded px-2 py-1.5 text-muted-foreground select-all truncate">
-                        {currentMap.id}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={handleCopyId}
-                      >
-                        {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                      </Button>
-                    </div>
-                  </div>
-                  {isCollaborator && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 justify-start gap-2 px-2 text-sm"
-                      onClick={handleExport}
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Export session JSON
-                    </Button>
-                  )}
-                  {/* Collaborators */}
-                  {currentMap.collaborators.length > 0 && (
-                    <div className="flex flex-col gap-1.5">
-                      <Label className="text-sm">Collaborators</Label>
-                      <div className="flex flex-col gap-1">
-                        {currentMap.collaborators.map((c) => (
-                          <div key={c.id} className="flex items-center gap-2">
-                            <UserAvatar inline size="xs" username={c.username} avatarUrl={c.avatarUrl} className="flex-1 min-w-0" />
-                            {c.id === userId && (
-                              <span className="text-sm text-muted-foreground shrink-0">(you)</span>
-                            )}
-                            {isAdmin && c.id !== userId && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
-                                title={`Remove ${c.username} from session`}
-                                disabled={removingCollaboratorId === c.id}
-                                onClick={() => handleRemoveCollaborator(c.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      {removeCollabError && (
-                        <p className="text-sm text-destructive">{removeCollabError}</p>
-                      )}
-                    </div>
-                  )}
-                  {saveError && (
-                    <p className="text-sm text-destructive">{saveError}</p>
-                  )}
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-sm"
-                      onClick={() => setPopoverOpen(false)}
-                      disabled={saving}
-                    >
-                      {isCollaborator ? 'Cancel' : 'Close'}
-                    </Button>
-                    {isCollaborator && (
-                      <Button
-                        size="sm"
-                        className="h-8 text-sm"
-                        onClick={handleSave}
-                        disabled={saving}
-                      >
-                        {saving ? 'Saving…' : 'Save'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
             {/* Join requests badge – only for collaborators when there are pending requests */}
             {hasPendingRequests && (
               <Popover>

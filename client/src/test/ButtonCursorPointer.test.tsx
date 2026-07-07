@@ -180,11 +180,5 @@ describe('Navbar – all buttons have cursor-pointer', () => {
     assertAllHaveCursorPointer(container);
   });
 
-  it('map settings popover buttons all have cursor-pointer', async () => {
-    const { container } = renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByRole('button', { name: /save/i }));
-    assertAllHaveCursorPointer(container);
-  });
 });
 
