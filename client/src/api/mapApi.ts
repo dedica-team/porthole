@@ -814,20 +814,27 @@ export async function fetchChoreLists(mapId: string): Promise<ChoreList[]> {
   return handleResponse<ChoreList[]>(res);
 }
 
-export async function createChoreList(mapId: string, title: string, landmarkIds: string[], link?: string): Promise<ChoreList[]> {
+export async function createChoreList(mapId: string, title: string, landmarkIds: string[], link?: string, description?: string): Promise<ChoreList[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ title, landmarkIds, link: link ?? null }),
+    body: JSON.stringify({ title, landmarkIds, link: link ?? null, description: description ?? null }),
   });
   return handleResponse<ChoreList[]>(res);
 }
 
-export async function editChoreList(mapId: string, listId: string, title?: string, landmarkIds?: string[], link?: string): Promise<ChoreList[]> {
+export async function editChoreList(mapId: string, listId: string, title?: string, landmarkIds?: string[], link?: string, description?: string | null): Promise<ChoreList[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
-    body: JSON.stringify({ title: title ?? null, landmarkIds: landmarkIds ?? null, link: link !== undefined ? link : null, clearLink: link === undefined }),
+    body: JSON.stringify({
+      title: title ?? null,
+      landmarkIds: landmarkIds ?? null,
+      link: link !== undefined ? link : null,
+      clearLink: link === undefined,
+      description: description !== undefined ? description : null,
+      clearDescription: description === null,
+    }),
   });
   return handleResponse<ChoreList[]>(res);
 }

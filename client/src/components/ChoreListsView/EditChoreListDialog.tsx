@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useMapStore } from '@/store/mapStore';
 import { isDecorative } from '@/types/landmark';
 import type { ChoreList } from '@/types/chores';
@@ -19,6 +20,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
   const currentMap = useMapStore((s) => s.currentMap);
   const [title, setTitle] = useState(choreList.title);
   const [link, setLink] = useState(choreList.link ?? '');
+  const [description, setDescription] = useState(choreList.description ?? '');
   const [selected, setSelected] = useState<Set<string>>(new Set(Object.keys(choreList.entries)));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -27,6 +29,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
     if (open) {
       setTitle(choreList.title);
       setLink(choreList.link ?? '');
+      setDescription(choreList.description ?? '');
       setSelected(new Set(Object.keys(choreList.entries)));
       setError('');
     }
@@ -55,7 +58,8 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
     setSaving(true);
     setError('');
     try {
-      const lists = await editChoreList(currentMap.id, choreList.id, title.trim(), [...selected], link.trim() || undefined);
+      const trimmedDesc = description.trim();
+      const lists = await editChoreList(currentMap.id, choreList.id, title.trim(), [...selected], link.trim() || undefined, trimmedDesc || (choreList.description ? null : undefined));
       onSaved(lists);
       onOpenChange(false);
     } catch (err: unknown) {
@@ -90,6 +94,17 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
               placeholder="https://…"
               className="h-8 text-sm"
               type="url"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="edit-chore-description" className="text-sm">Description <span className="text-muted-foreground">(optional)</span></Label>
+            <Textarea
+              id="edit-chore-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What needs to be checked or done…"
+              className="text-sm resize-none"
+              rows={3}
             />
           </div>
           <div className="flex flex-col gap-1.5">

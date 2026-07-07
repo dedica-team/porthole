@@ -26,8 +26,8 @@ class ListChoreListsUseCaseTest {
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         val broadcast = NoOpBroadcastPort()
         val create = CreateChoreListUseCase(mapStatePort, broadcast, authorizationPort)
-        create.execute(state.id, "Zebra", emptyList(), null, collaborator.id)
-        create.execute(state.id, "Alpha", emptyList(), null, collaborator.id)
+        create.execute(state.id, "Zebra", emptyList(), null, null, collaborator.id)
+        create.execute(state.id, "Alpha", emptyList(), null, null, collaborator.id)
         useCase = ListChoreListsUseCase(authorizationPort)
     }
 

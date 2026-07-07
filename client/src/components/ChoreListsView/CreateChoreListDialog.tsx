@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useMapStore } from '@/store/mapStore';
 import { isDecorative } from '@/types/landmark';
 import { createChoreList } from '@/api/mapApi';
@@ -18,6 +19,7 @@ export default function CreateChoreListDialog({ open, onOpenChange, onCreated }:
   const currentMap = useMapStore((s) => s.currentMap);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
+  const [description, setDescription] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -45,10 +47,11 @@ export default function CreateChoreListDialog({ open, onOpenChange, onCreated }:
     setSaving(true);
     setError('');
     try {
-      const lists = await createChoreList(currentMap.id, title.trim(), [...selected], link.trim() || undefined);
+      const lists = await createChoreList(currentMap.id, title.trim(), [...selected], link.trim() || undefined, description.trim() || undefined);
       onCreated(lists);
       setTitle('');
       setLink('');
+      setDescription('');
       setSelected(new Set());
       onOpenChange(false);
     } catch (err: unknown) {
@@ -85,6 +88,17 @@ export default function CreateChoreListDialog({ open, onOpenChange, onCreated }:
               placeholder="https://…"
               className="h-8 text-sm"
               type="url"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="chore-description" className="text-sm">Description <span className="text-muted-foreground">(optional)</span></Label>
+            <Textarea
+              id="chore-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What needs to be checked or done…"
+              className="text-sm resize-none"
+              rows={3}
             />
           </div>
           <div className="flex flex-col gap-1.5">

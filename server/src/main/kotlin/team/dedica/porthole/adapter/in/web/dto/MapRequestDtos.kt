@@ -166,6 +166,7 @@ data class CreateChoreListRequest(
     @field:NotBlank @field:Size(max = 200) val title: String,
     val landmarkIds: List<String> = emptyList(),
     @field:Size(max = 2000) val link: String? = null,
+    @field:Size(max = 2000) val description: String? = null,
 )
 
 data class EditChoreListRequest(
@@ -173,6 +174,8 @@ data class EditChoreListRequest(
     val landmarkIds: List<String>? = null,
     @field:Size(max = 2000) val link: String? = null,
     val clearLink: Boolean = false,
+    @field:Size(max = 2000) val description: String? = null,
+    val clearDescription: Boolean = false,
 )
 
 data class UpdateChoreEntryRequest(

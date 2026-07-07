@@ -148,6 +148,10 @@ export default function ChoreListsView() {
                                         )}
                                     </div>
 
+                                    {list.description && (
+                                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{list.description}</p>
+                                    )}
+
                                     {list.link && (
                                         <a
                                             href={list.link}

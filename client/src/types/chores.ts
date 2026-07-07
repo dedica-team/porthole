@@ -24,6 +24,7 @@ export interface ChoreList {
   title: string;
   completed: boolean;
   link?: string;
+  description?: string;
   entries: Record<string, ChoreEntry>;
 }
 

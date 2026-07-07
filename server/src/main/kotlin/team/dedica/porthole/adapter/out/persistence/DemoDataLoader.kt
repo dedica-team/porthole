@@ -585,7 +585,7 @@ class DemoDataLoader(
 
         // 1. Monthly infection-control audit – covers all rooms
         val auditListId = createChoreListUseCase.execute(
-            DEMO_MAP_ID, "Monthly Infection-Control Audit", allLandmarks, null, USER_ADMIN_PETRA,
+            DEMO_MAP_ID, "Monthly Infection-Control Audit", allLandmarks, null, null, USER_ADMIN_PETRA,
         ).first { it.title == "Monthly Infection-Control Audit" }.id
 
         fun updateEntry(
@@ -654,7 +654,7 @@ class DemoDataLoader(
                 lm("Pharmacy"),
                 lm("Medical Supply Storage")
             ),
-            "https://wiki.petclinic.demo/equipment-inspection", USER_TECH_MARC,
+            "https://wiki.petclinic.demo/equipment-inspection", null, USER_TECH_MARC,
         ).first { it.title == "Q2 Equipment Inspection" }.id
 
         updateEntry(equipListId, lm("Examination Room 1"), DONE, USER_DR_SARAH, "Otoscope and scale calibrated.")
@@ -692,7 +692,7 @@ class DemoDataLoader(
 
         // 3. Client-area readiness – facility rooms only
         createChoreListUseCase.execute(
-            DEMO_MAP_ID, "Client Area Readiness Check", facilityLandmarks, null, USER_ADMIN_PETRA,
+            DEMO_MAP_ID, "Client Area Readiness Check", facilityLandmarks, null, null, USER_ADMIN_PETRA,
         )
     }
 
