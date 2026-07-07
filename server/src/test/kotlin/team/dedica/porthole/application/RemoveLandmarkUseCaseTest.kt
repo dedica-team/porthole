@@ -113,4 +113,29 @@ class RemoveLandmarkUseCaseTest {
         assertFalse(result.landmarks.containsKey(ironKeepId))
         assertEquals(1, result.connections.size)
     }
+
+    @Test
+    fun `removing landmark removes its entry from chore lists`() {
+        val list = ChoreList(title = "Audit")
+        list.entries[ironKeepId] = ChoreEntry(landmarkId = ironKeepId)
+        list.entries[stoneWallId] = ChoreEntry(landmarkId = stoneWallId)
+        state.choreLists[list.id] = list
+        mapStatePort.save(state)
+        val result = useCase.execute(state.id, collaborator1.id, ironKeepId)
+        val reloadedList = result.choreLists[list.id]!!
+        assertFalse(reloadedList.entries.containsKey(ironKeepId))
+        assertTrue(reloadedList.entries.containsKey(stoneWallId))
+    }
+
+    @Test
+    fun `removing landmark leaves chore lists without that landmark intact`() {
+        val list = ChoreList(title = "Unrelated")
+        list.entries[stoneWallId] = ChoreEntry(landmarkId = stoneWallId)
+        state.choreLists[list.id] = list
+        mapStatePort.save(state)
+        val result = useCase.execute(state.id, collaborator1.id, ironKeepId)
+        val reloadedList = result.choreLists[list.id]!!
+        assertEquals(1, reloadedList.entries.size)
+        assertTrue(reloadedList.entries.containsKey(stoneWallId))
+    }
 }

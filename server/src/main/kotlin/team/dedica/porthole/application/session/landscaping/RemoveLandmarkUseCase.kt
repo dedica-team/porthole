@@ -31,6 +31,8 @@ class RemoveLandmarkUseCase(
         state.landmarks.remove(landmarkId)
         // clean up collaborator matrix entries for the removed landmark
         state.collaboratorMatrix.entries.remove(landmarkId)
+        // clean up chore list entries for the removed landmark
+        state.choreLists.values.forEach { it.entries.remove(landmarkId) }
         sessionStatePort.save(state)
         broadcastPort.send(sessionId, state)
         return state
