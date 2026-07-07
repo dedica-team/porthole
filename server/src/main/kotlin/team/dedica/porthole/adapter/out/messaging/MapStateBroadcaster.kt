@@ -13,32 +13,31 @@ import java.util.UUID
 @Component
 class MapStateBroadcaster(private val messaging: SimpMessagingTemplate) : BroadcastPort {
 
-    @Async
-    override fun send(sessionId: UUID, state: SessionState) {
-        messaging.convertAndSend("/topic/map/$sessionId", MapStateBroadcastDto.from(state))
-    }
+    // Snapshots are built synchronously on the caller's thread before handing off to the
+    // async dispatcher, preventing ConcurrentModificationException from concurrent state writes.
 
-    @Async
+    override fun send(sessionId: UUID, state: SessionState) =
+        sendAsync("/topic/map/$sessionId", MapStateBroadcastDto.from(state))
+
     override fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix) {
         val snapshot = CollaboratorMatrix(
             name = matrix.name,
             entries = matrix.entries.entries.associate { (k, v) -> k to v.toMap().toMutableMap() }.toMutableMap(),
         )
-        messaging.convertAndSend("/topic/map/$sessionId/matrix", snapshot)
+        sendAsync("/topic/map/$sessionId/matrix", snapshot)
     }
 
-    @Async
-    override fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>) {
-        messaging.convertAndSend("/topic/map/$sessionId/metrics", metrics.toMap())
-    }
+    override fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>) =
+        sendAsync("/topic/map/$sessionId/metrics", metrics.toMap())
+
+    override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) =
+        sendAsync("/topic/map/$sessionId/chore-lists", choreLists.toMap())
+
+    override fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>) =
+        sendAsync("/topic/map/$sessionId/greenkeeping-rotations", rotations.toMap())
 
     @Async
-    override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) {
-        messaging.convertAndSend("/topic/map/$sessionId/chore-lists", choreLists.toMap())
-    }
-
-    @Async
-    override fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>) {
-        messaging.convertAndSend("/topic/map/$sessionId/greenkeeping-rotations", rotations.toMap())
+    fun sendAsync(destination: String, payload: Any) {
+        messaging.convertAndSend(destination, payload)
     }
 }
