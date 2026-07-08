@@ -16,7 +16,6 @@ import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection
 import { MATRIX_LEVEL_LABEL } from '@/types/matrix';
 import type { MatrixLevel } from '@/types/matrix';
 import { CHORE_ENTRY_STATE_LABEL } from '@/types/chores';
-import { changeLandmarkOwner } from '@/api/mapApi';
 
 interface Props {
   landmark: Landmark;
@@ -29,6 +28,7 @@ interface Props {
     clearGroup?: boolean,
     link?: string,
     clearLink?: boolean,
+    ownerId?: string | null,
   ) => void;
   onRemoveLandmark: (landmarkId: string) => void;
   onEditConnection?: (
@@ -66,7 +66,6 @@ export default function LandmarkInfoPopover({
   onOpenChange: controlledOnOpenChange,
 }: Props) {
   const currentMap = useMapStore((s) => s.currentMap);
-  const updateMap = useMapStore((s) => s.updateMap);
   const storeMetrics = useMapStore((s) => s.metrics);
   const collaboratorMatrix = useMapStore((s) => s.collaboratorMatrix);
   const choreLists = useMapStore((s) => s.choreLists);
@@ -86,8 +85,7 @@ export default function LandmarkInfoPopover({
   const [editGroupId, setEditGroupId] = useState('');
   const [editLink, setEditLink] = useState('');
   const [linkError, setLinkError] = useState('');
-  const [ownerChanging, setOwnerChanging] = useState(false);
-  const [ownerChangeError, setOwnerChangeError] = useState('');
+  const [editOwnerId, setEditOwnerId] = useState('');
 
   // ── Connection edit state ────────────────────────────────────────────────────
   const [connEditOpen, setConnEditOpen] = useState(false);
@@ -128,8 +126,8 @@ export default function LandmarkInfoPopover({
     setEditDescription(landmark.description ?? '');
     setEditGroupId(landmark.groupId ?? '');
     setEditLink(landmark.link ?? '');
+    setEditOwnerId(landmark.ownerId ?? '');
     setLinkError('');
-    setOwnerChangeError('');
     setInfoOpen(false);
     setEditOpen(true);
   };
@@ -147,6 +145,9 @@ export default function LandmarkInfoPopover({
     const newGroupId = editGroupId || null;
     const groupChanged = newGroupId !== prevGroupId;
     const clearGroup = groupChanged && newGroupId === null;
+    const prevOwnerId = landmark.ownerId ?? null;
+    const newOwnerId = editOwnerId || null;
+    const ownerChanged = newOwnerId !== prevOwnerId;
     onEditLandmark(
       landmark.id,
       trimmed || undefined,
@@ -156,6 +157,7 @@ export default function LandmarkInfoPopover({
       clearGroup,
       trimmedLink || undefined,
       trimmedLink === '' && !!landmark.link,
+      ownerChanged ? newOwnerId : undefined,
     );
     setEditOpen(false);
   };
@@ -207,7 +209,7 @@ export default function LandmarkInfoPopover({
         contentClassName="overflow-y-auto flex-1 flex flex-col gap-4 p-4"
       >
         {/* Basic info */}
-        <div className="flex flex-col gap-2 text-sm">
+        <div className="flex flex-col gap-2">
           {landmark.description && (
             <p className="text-foreground/80 leading-relaxed">{landmark.description}</p>
           )}
@@ -237,60 +239,20 @@ export default function LandmarkInfoPopover({
               </>
             )}
 
-            <span className="text-muted-foreground">Type</span>
-            <span className="text-foreground">{LANDMARK_TYPE_LABELS[landmark.type]}</span>
-
             <span className="text-muted-foreground">Owner</span>
-            {isCollaborator && currentMap.collaborators.length > 0 ? (
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <select
-                  value={landmark.ownerId ?? ''}
-                  disabled={ownerChanging || loading}
-                  className="h-7 text-sm rounded-md border border-input bg-background px-2 text-foreground disabled:opacity-50 disabled:cursor-not-allowed truncate"
-                  onChange={async (e) => {
-                    const newOwnerId = e.target.value || null;
-                    if (newOwnerId === (landmark.ownerId ?? null)) return;
-                    setOwnerChanging(true);
-                    setOwnerChangeError('');
-                    try {
-                      const updated = await changeLandmarkOwner(currentMap.id, landmark.id, newOwnerId);
-                      updateMap(updated);
-                    } catch (err: unknown) {
-                      setOwnerChangeError(err instanceof Error ? err.message : 'Failed to change owner');
-                    } finally {
-                      setOwnerChanging(false);
-                    }
-                  }}
-                >
-                  <option value="">— No owner —</option>
-                  {currentMap.collaborators.map((c) => (
-                    <option key={c.id} value={c.id}>{c.username}{c.id === userId ? ' (you)' : ''}</option>
-                  ))}
-                </select>
-                {ownerChangeError && <span className="text-sm text-destructive col-span-2">{ownerChangeError}</span>}
-              </div>
-            ) : (
-              <span className="text-foreground truncate">
-                {owner ? `${owner.username}${owner.id === userId ? ' (you)' : ''}` : '—'}
-              </span>
-            )}
-
-            {landmark.coordinate && (
-              <>
-                <span className="text-muted-foreground">Position</span>
-                <span className="text-foreground font-mono">({landmark.coordinate.q}, {landmark.coordinate.r})</span>
-              </>
-            )}
+            <span className="text-foreground truncate">
+              {owner ? `${owner.username}${owner.id === userId ? ' (you)' : ''}` : '—'}
+            </span>
 
             <span className="text-muted-foreground">ID</span>
             <span className="text-muted-foreground font-mono truncate" title={landmark.id}>
-              {landmark.id.slice(0, 14)}
+              {landmark.id}
             </span>
           </div>
 
           {isCollaborator && (
-            <div className="pt-1">
-              <Button variant="ghost" fullWidth={true} title="Edit Landmark" onClick={startEdit}>
+            <div className="pt-1 content-right flex justify-end">
+              <Button variant="ghost" title="Edit Landmark" onClick={startEdit}>
                 <Pencil className="h-3 w-3" />
                 Edit
               </Button>
@@ -491,6 +453,19 @@ export default function LandmarkInfoPopover({
               <option value="">— No group —</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          )}
+
+          {currentMap.collaborators.length > 0 && (
+            <select
+              value={editOwnerId}
+              onChange={(e) => setEditOwnerId(e.target.value)}
+              className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground"
+            >
+              <option value="">— No owner —</option>
+              {currentMap.collaborators.map((c) => (
+                <option key={c.id} value={c.id}>{c.username}{c.id === userId ? ' (you)' : ''}</option>
               ))}
             </select>
           )}

@@ -198,7 +198,7 @@ interface Props {
   onStartConnection: (type: ConnectionType, name?: string, description?: string) => void;
   onCancelConnection: () => void;
   onRemoveLandmark: () => void;
-  onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean) => void;
+  onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean, ownerId?: string | null) => void;
   onEditConnection: (connectionId: string, type?: ConnectionType, name?: string, description?: string, clearName?: boolean, clearDescription?: boolean) => void;
   onRemoveConnection: (connectionId: string) => void;
   onCreateMetric: (name: string, description: string) => void;

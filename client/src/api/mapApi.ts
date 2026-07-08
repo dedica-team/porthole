@@ -322,6 +322,7 @@ export async function editLandmark(
   clearGroup?: boolean,
   link?: string,
   clearLink?: boolean,
+  ownerId?: string | null,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'PATCH',
@@ -334,6 +335,8 @@ export async function editLandmark(
       clearGroup: clearGroup ?? false,
       link: link ?? null,
       clearLink: clearLink ?? false,
+      ownerId: ownerId !== undefined ? ownerId : null,
+      clearOwner: ownerId === null,
     }),
   });
   return handleResponse<SessionState>(res);
@@ -635,15 +638,6 @@ export async function adminJoinMap(mapId: string): Promise<SessionState> {
 export async function exportMapJson(mapId: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/export`, {
     headers: authHeaders(),
-  });
-  return handleResponse<SessionState>(res);
-}
-
-export async function changeLandmarkOwner(mapId: string, landmarkId: string, ownerId: string | null): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/owner`, {
-    method: 'PATCH',
-    headers: authHeaders(),
-    body: JSON.stringify({ ownerId }),
   });
   return handleResponse<SessionState>(res);
 }

@@ -22,7 +22,6 @@ import { CHORE_ENTRY_STATE_LABEL } from '@/types/chores';
 import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defaultValueForLevel } from '@/types/landmark';
 import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
 import { MATRIX_LEVEL_LABEL } from '@/types/matrix';
-import { changeLandmarkOwner } from '@/api/mapApi';
 import { UserAvatar } from '@/components/ui/user-avatar';
 interface Props {
   onStartConnection: (type: ConnectionType, name?: string, description?: string) => void;
@@ -36,6 +35,7 @@ interface Props {
     clearGroup?: boolean,
     link?: string,
     clearLink?: boolean,
+    ownerId?: string | null,
   ) => void;
   onEditConnection: (
     connectionId: string,
@@ -56,7 +56,6 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const storeMetrics = useMapStore((s) => s.metrics);
   const collaboratorMatrix = useMapStore((s) => s.collaboratorMatrix);
   const choreLists = useMapStore((s) => s.choreLists);
-  const updateMap = useMapStore((s) => s.updateMap);
   const userId = useAuthStore((s) => s.userId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -85,8 +84,6 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const [metricLinkError, setMetricLinkError] = useState('');
   const [metricBadges, setMetricBadges] = useState<{ key: string; url: string; error: string }[]>([]);
   const [confirmClearMetricId, setConfirmClearMetricId] = useState<string | null>(null);
-  const [ownerChanging, setOwnerChanging] = useState(false);
-  const [ownerChangeError, setOwnerChangeError] = useState('');
   if (!selectedLandmark || !currentMap) return null;
   const isOwner = selectedLandmark.ownerId === userId;
   const isCollaborator = !!(userId && currentMap.collaborators.some((c) => c.id === userId));
@@ -345,33 +342,21 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
           <div className="flex justify-between items-center gap-2 min-w-0">
             <span className="text-sm text-muted-foreground shrink-0">Owner</span>
             {isCollaborator && currentMap.collaborators.length > 0 ? (
-              <div className="flex flex-col gap-0.5 items-end min-w-0">
-                <select
-                  value={selectedLandmark.ownerId ?? ''}
-                  disabled={ownerChanging || loading}
-                  className="h-7 text-sm rounded-md border border-input bg-background px-2 text-foreground disabled:opacity-50 disabled:cursor-not-allowed max-w-40 truncate"
-                  onChange={async (e) => {
-                    const newOwnerId = e.target.value || null;
-                    if (newOwnerId === (selectedLandmark.ownerId ?? null)) return;
-                    setOwnerChanging(true);
-                    setOwnerChangeError('');
-                    try {
-                      const updated = await changeLandmarkOwner(currentMap.id, selectedLandmark.id, newOwnerId);
-                      updateMap(updated);
-                    } catch (err: unknown) {
-                      setOwnerChangeError(err instanceof Error ? err.message : 'Failed to change owner');
-                    } finally {
-                      setOwnerChanging(false);
-                    }
-                  }}
-                >
-                  <option value="">— No owner —</option>
-                  {currentMap.collaborators.map((c) => (
-                    <option key={c.id} value={c.id}>{c.username}{c.id === userId ? ' (you)' : ''}</option>
-                  ))}
-                </select>
-                {ownerChangeError && <span className="text-sm text-destructive">{ownerChangeError}</span>}
-              </div>
+              <select
+                value={selectedLandmark.ownerId ?? ''}
+                disabled={loading}
+                className="h-7 text-sm rounded-md border border-input bg-background px-2 text-foreground disabled:opacity-50 disabled:cursor-not-allowed max-w-40 truncate"
+                onChange={(e) => {
+                  const newOwnerId = e.target.value || null;
+                  if (newOwnerId === (selectedLandmark.ownerId ?? null)) return;
+                  onEditLandmark(selectedLandmark.id, undefined, undefined, undefined, undefined, undefined, undefined, undefined, newOwnerId);
+                }}
+              >
+                <option value="">— No owner —</option>
+                {currentMap.collaborators.map((c) => (
+                  <option key={c.id} value={c.id}>{c.username}{c.id === userId ? ' (you)' : ''}</option>
+                ))}
+              </select>
             ) : (
               <span className="text-sm text-foreground truncate">
                 {owner?.username ?? 'No owner'}

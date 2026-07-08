@@ -14,7 +14,6 @@ import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.session.metrics.CreateUnpositionedLandmarkUseCase
 import team.dedica.porthole.application.session.collaboration.DeclineJoinRequestUseCase
 import team.dedica.porthole.application.lobby.DeleteMapUseCase
-import team.dedica.porthole.application.session.landscaping.ChangeLandmarkOwnerUseCase
 import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
 import team.dedica.porthole.application.session.landscaping.EditMapUseCase
 import team.dedica.porthole.application.lobby.GetMapUseCase
@@ -39,7 +38,6 @@ class SessionController(
     private val joinMapUseCase: JoinMapUseCase,
     private val adminJoinMapUseCase: AdminJoinMapUseCase,
     private val deleteMapUseCase: DeleteMapUseCase,
-    private val changeLandmarkOwnerUseCase: ChangeLandmarkOwnerUseCase,
     private val placeLandmarkUseCase: PlaceLandmarkUseCase,
     private val createUnpositionedLandmarkUseCase: CreateUnpositionedLandmarkUseCase,
     private val positionLandmarkUseCase: PositionLandmarkUseCase,
@@ -109,20 +107,6 @@ class SessionController(
         @AuthenticationPrincipal user: PortholePrincipal,
     ) = ResponseEntity.ok(
         removeCollaboratorUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(collaboratorId))
-    )
-
-    @PatchMapping("/{id}/landmarks/{landmarkId}/owner")
-    fun changeLandmarkOwner(
-        @PathVariable id: String,
-        @PathVariable landmarkId: String,
-        @Valid @RequestBody request: ChangeLandmarkOwnerRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
-    ) = ResponseEntity.ok(
-        changeLandmarkOwnerUseCase.execute(
-            UUID.fromString(id),
-            user.userId,
-            UUID.fromString(landmarkId),
-            request.ownerId?.let { UUID.fromString(it) })
     )
 
     @PatchMapping("/{id}")
@@ -271,7 +255,9 @@ class SessionController(
                 request.groupId?.let { UUID.fromString(it) },
                 request.clearGroup,
                 request.link,
-                request.clearLink
+                request.clearLink,
+                request.ownerId?.let { UUID.fromString(it) },
+                request.clearOwner,
             )
         )
     }
