@@ -37,6 +37,7 @@ interface AuthState {
   logout: () => void;
   setSession: (session: { userId: string; username: string; avatarUrl: string | null; isAdmin?: boolean } | null) => void;
   setSessionLoading: (loading: boolean) => void;
+  setUsername: (username: string) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -67,6 +68,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     sessionResolved: true,
   }),
   setSessionLoading: (loading) => set({ sessionLoading: loading }),
+  setUsername: (username) => set({ username }),
 }));
 
 // MainView only tracks intra-map UI panel state; top-level view routing is
@@ -107,6 +109,7 @@ interface MapStore {
   setMaps: (maps: SessionState[]) => void;
   setCurrentMap: (map: SessionState | null) => void;
   updateMap: (map: SessionState) => void;
+  updateCollaboratorUsername: (userId: string, username: string) => void;
   updateTile: (mapId: string, tile: HexTile) => void;
   /** Remove a tile from the pending set once the server has confirmed it. */
   commitTile: (mapId: string, q: number, r: number) => void;
@@ -252,6 +255,14 @@ export const useMapStore = create<MapStore>((set) => ({
         maps: state.maps.map((m) => (m.id === map.id ? mergedMap : m)),
         selectedLandmark: updatedSelectedLandmark,
       };
+    }),
+  updateCollaboratorUsername: (userId, username) =>
+    set((state) => {
+      if (!state.currentMap) return {};
+      const collaborators = state.currentMap.collaborators.map((c) =>
+        c.id === userId ? { ...c, username } : c,
+      );
+      return { currentMap: { ...state.currentMap, collaborators } };
     }),
   updateTile: (mapId, tile) =>
     set((state) => {

@@ -257,3 +257,121 @@ describe('Navbar – tab navigation', () => {
   });
 });
 
+// ── Username editing ───────────────────────────────────────────────────────────
+
+describe('Navbar – username editing', () => {
+  function openUserMenu() {
+    fireEvent.click(screen.getByRole('button', { name: /user menu/i }));
+  }
+
+  it('shows a pencil button next to the username in the user menu', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /edit username/i })).toBeInTheDocument();
+    });
+  });
+
+  it('switches to edit mode when pencil is clicked', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toHaveValue('alice');
+    });
+  });
+
+  it('prefills the input with the current username', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    expect(screen.getByRole('textbox')).toHaveValue('alice');
+  });
+
+  it('cancels edit mode on Escape without saving', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+    await waitFor(() => {
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+    expect(mapApi.changeUsername).not.toHaveBeenCalled();
+  });
+
+  it('cancels edit mode when X button is clicked', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    // The cancel button has no aria-label so find it by position (after the check button)
+    screen.getAllByRole('button').find(
+      (b) => !b.getAttribute('aria-label') && b.closest('[class*="flex items-center gap-1"]'),
+    );
+    // Use the keyboard shortcut instead as it's the same code path
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument());
+  });
+
+  it('calls changeUsername and updates auth store on Enter', async () => {
+    vi.mocked(mapApi.changeUsername).mockResolvedValue({ username: 'alice2' });
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'alice2' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => {
+      expect(mapApi.changeUsername).toHaveBeenCalledWith('alice2');
+      expect(useAuthStore.getState().username).toBe('alice2');
+    });
+  });
+
+  it('updates collaborator username in currentMap after rename', async () => {
+    vi.mocked(mapApi.changeUsername).mockResolvedValue({ username: 'alice2' });
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'alice2' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => {
+      const collaborators = useMapStore.getState().currentMap?.collaborators ?? [];
+      expect(collaborators.find((c) => c.id === 'p1')?.username).toBe('alice2');
+    });
+  });
+
+  it('shows error message when changeUsername fails', async () => {
+    vi.mocked(mapApi.changeUsername).mockRejectedValue(new Error('Username taken'));
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'bob' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => {
+      expect(screen.getByText('Username taken')).toBeInTheDocument();
+    });
+    expect(useAuthStore.getState().username).toBe('alice');
+  });
+
+  it('does not call API when username is unchanged', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument());
+    expect(mapApi.changeUsername).not.toHaveBeenCalled();
+  });
+});
+

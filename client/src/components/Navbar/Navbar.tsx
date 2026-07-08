@@ -6,7 +6,9 @@ import {
   BarChart2,
   Bell,
   Bus,
+  Check,
   Menu,
+  Pencil,
   X,
   Radiation,
   CheckSquare,
@@ -21,7 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { useAuthStore, useMapStore } from '@/store/mapStore';
-import { acceptJoinRequest, declineJoinRequest, logoutSession } from '@/api/mapApi';
+import { acceptJoinRequest, changeUsername, declineJoinRequest, logoutSession } from '@/api/mapApi';
 import type { RendererQualityProfile } from '@/components/HexGrid/renderQuality';
 
 const RENDERER_QUALITY_LABELS: Record<RendererQualityProfile, string> = {
@@ -75,9 +77,38 @@ export default function Navbar() {
   };
 
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
+  const setUsername = useAuthStore((s) => s.setUsername);
+  const updateCollaboratorUsername = useMapStore((s) => s.updateCollaboratorUsername);
   const [joinReqLoading, setJoinReqLoading] = useState<string | null>(null);
   const [joinReqError, setJoinReqError] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameLoading, setUsernameLoading] = useState(false);
+
+  const startEditUsername = () => {
+    setUsernameInput(username ?? '');
+    setUsernameError('');
+    setEditingUsername(true);
+  };
+
+  const handleSaveUsername = async () => {
+    const trimmed = usernameInput.trim();
+    if (!trimmed || trimmed === username) { setEditingUsername(false); return; }
+    setUsernameLoading(true);
+    setUsernameError('');
+    try {
+      const result = await changeUsername(trimmed);
+      setUsername(result.username);
+      if (userId) updateCollaboratorUsername(userId, result.username);
+      setEditingUsername(false);
+    } catch (err: unknown) {
+      setUsernameError(err instanceof Error ? err.message : 'Failed to update username');
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
 
   useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
@@ -332,12 +363,36 @@ export default function Navbar() {
                 </PopoverTrigger>
                 <PopoverContent className="w-56 p-4" align="end">
                   <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-0.5">
-                      <p className="text-sm font-semibold text-foreground truncate">{username}</p>
-                      <p className="text-sm text-muted-foreground">Signed in</p>
-                      {userId && (
-                        <p className="text-sm text-muted-foreground font-mono truncate select-all mt-0.5" title={userId}>{userId}</p>
+                    <div className="flex flex-col gap-1">
+                      {editingUsername ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <input
+                              autoFocus
+                              value={usernameInput}
+                              onChange={(e) => setUsernameInput(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveUsername(); if (e.key === 'Escape') setEditingUsername(false); }}
+                              disabled={usernameLoading}
+                              className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                            />
+                            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0 text-success hover:text-success/80" disabled={usernameLoading} onClick={handleSaveUsername}>
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" disabled={usernameLoading} onClick={() => setEditingUsername(false)}>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          {usernameError && <p className="text-xs text-destructive">{usernameError}</p>}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm font-semibold text-foreground truncate flex-1">{username}</p>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={startEditUsername} aria-label="Edit username">
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
+                      <p className="text-xs text-muted-foreground">Signed in</p>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="renderer-quality-profile" className="text-sm">Rendering quality</Label>

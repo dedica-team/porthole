@@ -87,6 +87,15 @@ export async function getSession(): Promise<AuthSession> {
   return handleResponse<AuthSession>(res);
 }
 
+export async function changeUsername(username: string): Promise<{ username: string }> {
+  const res = await fetch(`${BASE_URL}/users/me/username`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }),
+  });
+  return handleResponse<{ username: string }>(res);
+}
+
 export async function logoutSession(): Promise<void> {
   const res = await fetch(`${BASE_URL}/auth/logout`, {
     method: 'POST',
