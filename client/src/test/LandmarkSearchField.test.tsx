@@ -79,11 +79,11 @@ describe('LandmarkSearchField', () => {
     window.removeEventListener('keydown', windowSpy);
   });
 
-  it('shows coordinate in dropdown item', async () => {
+  it('shows landmark type when no group is assigned', async () => {
     renderField();
     fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'stone' } });
     await screen.findByText('Stone Tower');
-    expect(screen.getByText(/3.*1/)).toBeInTheDocument();
+    expect(screen.getByText('WATCHTOWER')).toBeInTheDocument();
   });
 });
 

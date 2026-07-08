@@ -5,6 +5,7 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.security.access.AccessDeniedException
 import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
 import team.dedica.porthole.domain.*
 
@@ -166,5 +167,52 @@ class EditLandmarkUseCaseTest {
         mapStatePort.save(state)
         val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, clearLink = true)
         assertNull(result.landmarks[t1Key]!!.link)
+    }
+
+    // ── Owner ─────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `collaborator can assign owner to themselves`() {
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, ownerId = collaborator1.id)
+        assertEquals(collaborator1.id, result.landmarks[t1Key]!!.ownerId)
+    }
+
+    @Test
+    fun `collaborator can reassign owner to another collaborator`() {
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, ownerId = collaborator2.id)
+        assertEquals(collaborator2.id, result.landmarks[t1Key]!!.ownerId)
+    }
+
+    @Test
+    fun `clearOwner sets owner to null`() {
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, clearOwner = true)
+        assertNull(result.landmarks[t1Key]!!.ownerId)
+    }
+
+    @Test
+    fun `omitting owner params leaves owner unchanged`() {
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null)
+        assertEquals(collaborator1.id, result.landmarks[t1Key]!!.ownerId)
+    }
+
+    @Test
+    fun `setting owner to non-collaborator id fails`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.execute(state.id, collaborator1.id, t1Id, null, null, ownerId = UUID.randomUUID())
+        }
+    }
+
+    @Test
+    fun `non-collaborator cannot edit landmark`() {
+        assertThrows(AccessDeniedException::class.java) {
+            useCase.execute(state.id, UUID.randomUUID(), t1Id, null, null, ownerId = collaborator1.id)
+        }
+    }
+
+    @Test
+    fun `owner and other fields can be changed in a single call`() {
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, "Renamed Keep", null, ownerId = collaborator2.id)
+        assertEquals("Renamed Keep", result.landmarks[t1Key]!!.name)
+        assertEquals(collaborator2.id, result.landmarks[t1Key]!!.ownerId)
     }
 }

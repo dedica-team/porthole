@@ -15,11 +15,15 @@ class CreateChoreListUseCase(
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
-    fun execute(sessionId: UUID, title: String, landmarkIds: List<UUID>, link: String?, callerId: UUID): List<ChoreList> {
+    fun execute(sessionId: UUID, title: String, landmarkIds: List<UUID>, link: String?, description: String?, callerId: UUID): List<ChoreList> {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val trimmed = title.trim()
         require(trimmed.isNotBlank()) { "Chore list title must not be blank" }
-        val list = ChoreList(title = trimmed, link = link?.trim()?.takeIf { it.isNotBlank() })
+        val list = ChoreList(
+            title = trimmed,
+            link = link?.trim()?.takeIf { it.isNotBlank() },
+            description = description?.trim()?.takeIf { it.isNotBlank() },
+        )
         landmarkIds.forEach { landmarkId ->
             require(state.landmarks.containsKey(landmarkId)) { "Landmark $landmarkId not found in session $sessionId" }
             list.entries[landmarkId] = ChoreEntry(landmarkId = landmarkId)

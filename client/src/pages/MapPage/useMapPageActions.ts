@@ -160,8 +160,9 @@ export function useMapPageActions() {
   const handleEditLandmark = useCallback((
     landmarkId: string, name?: string, type?: LandmarkType, description?: string,
     groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean,
+    ownerId?: string | null,
   ) => {
-    withAction(() => editLandmark(currentMap!.id, landmarkId, name, type, description, groupId, clearGroup, link, clearLink));
+    withAction(() => editLandmark(currentMap!.id, landmarkId, name, type, description, groupId, clearGroup, link, clearLink, ownerId));
   }, [currentMap, withAction]);
 
   const handleEditLandmarkGroup = useCallback((landmarkId: string, groupId: string | null) => {

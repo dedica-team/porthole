@@ -18,6 +18,8 @@ interface UserAvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Highlight as active (cyan border + ring) */
   active?: boolean
   size?: Size
+  /** Stretch to fill the parent container width */
+  fullWidth?: boolean
 }
 
 export function UserAvatar({
@@ -26,6 +28,7 @@ export function UserAvatar({
   inline = false,
   active = false,
   size = "md",
+  fullWidth = false,
   className,
   ...props
 }: UserAvatarProps) {
@@ -65,9 +68,9 @@ export function UserAvatar({
   }
 
   return (
-    <div className={cn("flex flex-col items-center gap-1", className)} {...props}>
+    <div className={cn("flex flex-col items-center gap-1", fullWidth && "w-full", className)} {...props}>
       {avatarEl}
-      <span className={cn("text-sm text-center truncate max-w-20", active ? "font-medium text-foreground" : "text-foreground")}>
+      <span className={cn("text-sm text-center truncate w-full", active ? "font-medium text-foreground" : "text-foreground")}>
         {username}
       </span>
     </div>

@@ -22,6 +22,8 @@ class EditChoreListUseCase(
         landmarkIds: List<UUID>?,
         link: String?,
         clearLink: Boolean,
+        description: String?,
+        clearDescription: Boolean,
         callerId: UUID
     ): List<ChoreList> {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
@@ -31,6 +33,10 @@ class EditChoreListUseCase(
         when {
             clearLink -> list.link = null
             link != null -> list.link = link.trim().takeIf { it.isNotBlank() }
+        }
+        when {
+            clearDescription -> list.description = null
+            description != null -> list.description = description.trim().takeIf { it.isNotBlank() }
         }
         if (landmarkIds != null) {
             // Validate all landmarks exist

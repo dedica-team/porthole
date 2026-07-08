@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import {
   LogOut,
-  Copy,
-  Check,
+  LayoutDashboard,
   BarChart2,
   Bell,
   Bus,
+  Check,
+  Menu,
+  Pencil,
+  X,
   Radiation,
-  Download,
-  Trash2,
   CheckSquare,
   Trees,
-  LayoutDashboard,
   Sprout
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,13 +21,9 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useAuthStore, useMapStore } from '@/store/mapStore';
-import { editMap, setCollaborationMode, acceptJoinRequest, declineJoinRequest, logoutSession, exportMapJson, removeCollaborator } from '@/api/mapApi';
-import type { CollaborationMode } from '@/types/session';
-import { COLLABORATION_MODE_LABELS } from '@/types/session';
+import { acceptJoinRequest, changeUsername, declineJoinRequest, logoutSession } from '@/api/mapApi';
 import type { RendererQualityProfile } from '@/components/HexGrid/renderQuality';
 
 const RENDERER_QUALITY_LABELS: Record<RendererQualityProfile, string> = {
@@ -55,7 +51,6 @@ export default function Navbar() {
   const avatarUrl = useAuthStore((s) => s.avatarUrl);
   const logout = useAuthStore((s) => s.logout);
   const userId = useAuthStore((s) => s.userId);
-  const isAdmin = useAuthStore((s) => s.isAdmin);
   const tagline = useAuthStore((s) => s.tagline);
   const currentMap = useMapStore((s) => s.currentMap);
   const updateMap = useMapStore((s) => s.updateMap);
@@ -82,17 +77,40 @@ export default function Navbar() {
   };
 
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editCollaborationMode, setEditCollaborationMode] = useState<CollaborationMode>('OPEN');
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [copied, setCopied] = useState(false);
+  const setUsername = useAuthStore((s) => s.setUsername);
+  const updateCollaboratorUsername = useMapStore((s) => s.updateCollaboratorUsername);
   const [joinReqLoading, setJoinReqLoading] = useState<string | null>(null);
   const [joinReqError, setJoinReqError] = useState('');
-  const [removingCollaboratorId, setRemovingCollaboratorId] = useState<string | null>(null);
-  const [removeCollabError, setRemoveCollabError] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameLoading, setUsernameLoading] = useState(false);
+
+  const startEditUsername = () => {
+    setUsernameInput(username ?? '');
+    setUsernameError('');
+    setEditingUsername(true);
+  };
+
+  const handleSaveUsername = async () => {
+    const trimmed = usernameInput.trim();
+    if (!trimmed || trimmed === username) { setEditingUsername(false); return; }
+    setUsernameLoading(true);
+    setUsernameError('');
+    try {
+      const result = await changeUsername(trimmed);
+      setUsername(result.username);
+      if (userId) updateCollaboratorUsername(userId, result.username);
+      setEditingUsername(false);
+    } catch (err: unknown) {
+      setUsernameError(err instanceof Error ? err.message : 'Failed to update username');
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
+
+  useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
   const pendingRequests = (currentMap?.joinRequests ?? []);
   const hasPendingRequests = isCollaborator && pendingRequests.length > 0;
@@ -122,73 +140,6 @@ export default function Navbar() {
       setJoinReqError(err instanceof Error ? err.message : 'Failed to decline request');
     } finally {
       setJoinReqLoading(null);
-    }
-  };
-
-  const handlePopoverOpen = (open: boolean) => {
-    if (open && currentMap) {
-      setEditName(currentMap.name ?? '');
-      setEditDescription(currentMap.description ?? '');
-      setEditCollaborationMode(currentMap.collaborationMode ?? 'OPEN');
-      setSaveError('');
-    }
-    setPopoverOpen(open);
-  };
-
-  const handleSave = async () => {
-    if (!currentMap) return;
-    setSaving(true);
-    setSaveError('');
-    try {
-      let updated = await editMap(currentMap.id, editName || undefined, editDescription || undefined);
-      if (editCollaborationMode !== (currentMap.collaborationMode ?? 'OPEN')) {
-        updated = await setCollaborationMode(currentMap.id, editCollaborationMode);
-      }
-      updateMap(updated);
-      setPopoverOpen(false);
-    } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCopyId = () => {
-    if (!currentMap) return;
-    navigator.clipboard.writeText(currentMap.id).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
-
-
-  const handleRemoveCollaborator = async (collaboratorId: string) => {
-    if (!currentMap) return;
-    setRemovingCollaboratorId(collaboratorId);
-    setRemoveCollabError('');
-    try {
-      const updated = await removeCollaborator(currentMap.id, collaboratorId);
-      updateMap(updated);
-    } catch (err: unknown) {
-      setRemoveCollabError(err instanceof Error ? err.message : 'Failed to remove collaborator');
-    } finally {
-      setRemovingCollaboratorId(null);
-    }
-  };
-
-  const handleExport = async () => {
-    if (!currentMap) return;
-    try {
-      const data = await exportMapJson(currentMap.id);
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `session-${currentMap.id}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      // silently ignore
     }
   };
 
@@ -285,327 +236,213 @@ export default function Navbar() {
     },
   ];
 
+  const visibleTabs = NAV_TABS.filter((t) => t.visible !== false);
+
   return (
     <TooltipProvider>
-      <header className="flex items-center h-12 px-2 sm:px-4 gap-1 sm:gap-3 bg-card border-b border-border shrink-0 z-10 overflow-x-auto">
-        {/* Logo – icon only */}
-        {!isOnMap ? (
-          <div
-            className="flex items-center select-none shrink-0"
-            title={tagline}
-          >
-            <img
-              src="/logo.svg"
-              alt="Porthole"
-              width={22}
-              height={22}
-              style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }}
-            />
-          </div>
-        ) : (
-          <button
-            onClick={() => navigate(isOnMap ? '/lobby' : '/')}
-            className="flex items-center select-none transition-all group shrink-0 cursor-pointer"
-            style={{ textDecoration: 'none' }}
-            title={isOnMap ? 'Back to lobby' : tagline}
-          >
-            <img
-              src="/logo.svg"
-              alt="Porthole"
-              width={22}
-              height={22}
-              style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }}
-            />
-          </button>
-        )}
+      <div className="relative shrink-0 z-40">
+        <header className="flex items-center h-12 px-2 sm:px-4 gap-1 sm:gap-3 bg-card border-b border-border overflow-x-auto">
+          {/* Logo */}
+          {!isOnMap ? (
+            <div className="flex items-center select-none shrink-0" title={tagline}>
+              <img src="/logo.svg" alt="Porthole" width={22} height={22} style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }} />
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate('/lobby')}
+              className="flex items-center select-none transition-all group shrink-0 cursor-pointer"
+              style={{ textDecoration: 'none' }}
+              title="Back to lobby"
+            >
+              <img src="/logo.svg" alt="Porthole" width={22} height={22} style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }} />
+            </button>
+          )}
 
-        {/* Static title when not in a session */}
-        {!isOnMap && (
-          <span className=" tron-logo text-sm" title={tagline}>
-            {location.pathname === '/lobby' ? 'Lobby' : 'Porthole'}
-          </span>
-        )}
+          {/* Static title when not in a session */}
+          {!isOnMap && (
+            <span className="tron-logo text-sm" title={tagline}>
+              {location.pathname === '/lobby' ? 'Lobby' : 'Porthole'}
+            </span>
+          )}
 
-        {/* Map session area */}
-        {isOnMap && currentMap && (
-          <>
-            {/* Map name – clicking opens settings popover */}
-            <Popover open={popoverOpen} onOpenChange={handlePopoverOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className="hidden sm:inline tron-logo text-sm truncate max-w-45 hover:opacity-70 transition-opacity text-left cursor-pointer"
-                  title="Map settings"
-                >
-                  {currentMap.name || `#${currentMap.id.slice(0, 8)}`}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4" align="start">
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1">
-                    <h4 className="text-sm font-semibold text-foreground">Map Settings</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {isCollaborator ? 'Edit name and description of this map.' : 'Map details (read-only for viewers).'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-name" className="text-sm">Name</Label>
-                    <Input
-                      id="map-name"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder="Unnamed Map"
-                      className="h-8 text-sm"
-                      readOnly={!isCollaborator}
-                      disabled={!isCollaborator}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-description" className="text-sm">Description</Label>
-                    <Textarea
-                      id="map-description"
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      placeholder="Description…"
-                      className="text-sm resize-none"
-                      rows={3}
-                      readOnly={!isCollaborator}
-                      disabled={!isCollaborator}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="map-collaboration-mode" className="text-sm">Collaboration mode</Label>
-                    <select
-                      id="map-collaboration-mode"
-                      value={editCollaborationMode}
-                      onChange={(e) => setEditCollaborationMode(e.target.value as CollaborationMode)}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!isCollaborator}
-                    >
-                      {(Object.keys(COLLABORATION_MODE_LABELS) as CollaborationMode[]).map((m) => (
-                        <option key={m} value={m}>
-                          {COLLABORATION_MODE_LABELS[m]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-sm">Map ID</Label>
-                    <div className="flex items-center gap-1.5">
-                      <code className="flex-1 text-sm font-mono bg-muted rounded px-2 py-1.5 text-muted-foreground select-all truncate">
-                        {currentMap.id}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={handleCopyId}
-                      >
-                        {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                      </Button>
-                    </div>
-                  </div>
-                  {isCollaborator && (
+          {/* Map session area */}
+          {isOnMap && currentMap && (
+            <>
+              {/* Join requests badge */}
+              {hasPendingRequests && (
+                <Popover>
+                  <PopoverTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 justify-start gap-2 px-2 text-sm"
-                      onClick={handleExport}
+                      className="relative h-8 w-8 p-0 text-warning hover:text-warning/80 shrink-0"
+                      aria-label={`${pendingRequests.length} pending join request${pendingRequests.length !== 1 ? 's' : ''}`}
                     >
-                      <Download className="h-3.5 w-3.5" />
-                      Export session JSON
+                      <Bell className="h-4 w-4" />
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-sm font-bold text-white">
+                        {pendingRequests.length}
+                      </span>
                     </Button>
-                  )}
-                  {/* Collaborators */}
-                  {currentMap.collaborators.length > 0 && (
-                    <div className="flex flex-col gap-1.5">
-                      <Label className="text-sm">Collaborators</Label>
-                      <div className="flex flex-col gap-1">
-                        {currentMap.collaborators.map((c) => (
-                          <div key={c.id} className="flex items-center gap-2">
-                            <UserAvatar inline size="xs" username={c.username} avatarUrl={c.avatarUrl} className="flex-1 min-w-0" />
-                            {c.id === userId && (
-                              <span className="text-sm text-muted-foreground shrink-0">(you)</span>
-                            )}
-                            {isAdmin && c.id !== userId && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
-                                title={`Remove ${c.username} from session`}
-                                disabled={removingCollaboratorId === c.id}
-                                onClick={() => handleRemoveCollaborator(c.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-4" align="start">
+                    <div className="flex flex-col gap-3">
+                      <h4 className="text-sm font-semibold text-foreground">Join Requests</h4>
+                      {joinReqError && <p className="text-sm text-destructive">{joinReqError}</p>}
+                      <div className="flex flex-col gap-2">
+                        {pendingRequests.map((req) => (
+                          <div key={req.id} className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-2">
+                            <UserAvatar inline size="sm" username={req.username} avatarUrl={req.avatarUrl} className="min-w-0 flex-1" />
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-sm text-success hover:text-success/80 hover:bg-success/10" disabled={joinReqLoading === req.id} onClick={() => handleAcceptRequest(req.id)}>Accept</Button>
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-sm text-destructive hover:text-destructive/80 hover:bg-destructive/10" disabled={joinReqLoading === req.id} onClick={() => handleDeclineRequest(req.id)}>Decline</Button>
+                            </div>
                           </div>
                         ))}
                       </div>
-                      {removeCollabError && (
-                        <p className="text-sm text-destructive">{removeCollabError}</p>
-                      )}
                     </div>
-                  )}
-                  {saveError && (
-                    <p className="text-sm text-destructive">{saveError}</p>
-                  )}
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-sm"
-                      onClick={() => setPopoverOpen(false)}
-                      disabled={saving}
-                    >
-                      {isCollaborator ? 'Cancel' : 'Close'}
-                    </Button>
-                    {isCollaborator && (
-                      <Button
-                        size="sm"
-                        className="h-8 text-sm"
-                        onClick={handleSave}
-                        disabled={saving}
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Mobile: session name */}
+              <span className="sm:hidden text-sm font-medium text-foreground truncate">
+                {currentMap.name}
+              </span>
+
+              {/* Desktop: all tabs */}
+              <div className="hidden sm:flex items-center">
+                {visibleTabs.map((tab) => (
+                  <Tooltip key={tab.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        className={`inline-flex items-center gap-1.5 h-12 px-3 text-sm font-medium border-b-3 transition-colors cursor-pointer shrink-0 ${
+                          tab.isActive
+                            ? `${activeBorderCls} text-warning`
+                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                        onClick={tab.onClick}
+                        aria-current={tab.isActive ? 'page' : undefined}
                       >
-                        {saving ? 'Saving…' : 'Save'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            {/* Join requests badge – only for collaborators when there are pending requests */}
-            {hasPendingRequests && (
+                        {tab.icon}
+                        <span>{tab.label}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-sm">{tab.tooltip}</TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="flex-1" />
+
+          {/* Mobile hamburger – only in a session */}
+          {isOnMap && currentMap && (
+            <button
+              className="sm:hidden flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors cursor-pointer shrink-0"
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+          )}
+
+          {username && (
+            <>
+              <Separator orientation="vertical" className="h-5 bg-border" />
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="relative h-8 w-8 p-0 text-warning hover:text-warning/80"
-                    aria-label={`${pendingRequests.length} pending join request${pendingRequests.length !== 1 ? 's' : ''}`}
-                  >
-                    <Bell className="h-4 w-4" />
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-sm font-bold text-white">
-                      {pendingRequests.length}
-                    </span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0 shrink-0" aria-label="User menu">
+                    <Avatar className="h-7 w-7">
+                      {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
+                      <AvatarFallback className="text-sm bg-secondary text-secondary-foreground">
+                        {username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-72 p-4" align="start">
+                <PopoverContent className="w-56 p-4" align="end">
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-sm font-semibold text-foreground">Join Requests</h4>
-                    {joinReqError && (
-                      <p className="text-sm text-destructive">{joinReqError}</p>
-                    )}
-                    <div className="flex flex-col gap-2">
-                      {pendingRequests.map((req) => (
-                        <div
-                          key={req.id}
-                          className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-2"
-                        >
-                          <UserAvatar inline size="sm" username={req.username} avatarUrl={req.avatarUrl} className="min-w-0 flex-1" />
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-sm text-success hover:text-success/80 hover:bg-success/10"
-                              disabled={joinReqLoading === req.id}
-                              onClick={() => handleAcceptRequest(req.id)}
-                            >
-                              Accept
+                    <div className="flex flex-col gap-1">
+                      {editingUsername ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <input
+                              autoFocus
+                              value={usernameInput}
+                              onChange={(e) => setUsernameInput(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveUsername(); if (e.key === 'Escape') setEditingUsername(false); }}
+                              disabled={usernameLoading}
+                              className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                            />
+                            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0 text-success hover:text-success/80" disabled={usernameLoading} onClick={handleSaveUsername}>
+                              <Check className="h-3.5 w-3.5" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-sm text-destructive hover:text-destructive/80 hover:bg-destructive/10"
-                              disabled={joinReqLoading === req.id}
-                              onClick={() => handleDeclineRequest(req.id)}
-                            >
-                              Decline
+                            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" disabled={usernameLoading} onClick={() => setEditingUsername(false)}>
+                              <X className="h-3.5 w-3.5" />
                             </Button>
                           </div>
+                          {usernameError && <p className="text-xs text-destructive">{usernameError}</p>}
                         </div>
-                      ))}
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm font-semibold text-foreground truncate flex-1">{username}</p>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={startEditUsername} aria-label="Edit username">
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">Signed in</p>
                     </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="renderer-quality-profile" className="text-sm">Rendering quality</Label>
+                      <select
+                        id="renderer-quality-profile"
+                        value={rendererQualityProfile}
+                        onChange={(e) => setRendererQualityProfile(e.target.value as RendererQualityProfile)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      >
+                        {(Object.keys(RENDERER_QUALITY_LABELS) as RendererQualityProfile[]).map((profile) => (
+                          <option key={profile} value={profile}>{RENDERER_QUALITY_LABELS[profile]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <Separator />
+                    <Button variant="ghost" size="sm" className="h-8 text-sm justify-start gap-2 px-2" onClick={handleLogout}>
+                      <LogOut className="h-3.5 w-3.5" />
+                      Logout
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
-            )}
-            {/* ── Nav tabs ─────────────────────────────────────────────────── */}
-            {NAV_TABS.filter((t) => t.visible !== false).map((tab) => (
-              <Tooltip key={tab.id}>
-                <TooltipTrigger asChild>
-                  <button
-                    className={`inline-flex items-center gap-1 sm:gap-1.5 h-12 px-2 sm:px-3 text-sm font-medium border-b-3 transition-colors cursor-pointer shrink-0 ${
-                      tab.isActive
-                        ? `${activeBorderCls} text-warning`
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                    onClick={tab.onClick}
-                    aria-current={tab.isActive ? 'page' : undefined}
-                  >
-                    {tab.icon}
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-sm">{tab.tooltip}</TooltipContent>
-              </Tooltip>
-            ))}
-          </>
-        )}
-        <div className="flex-1" />
-        {username && (
+            </>
+          )}
+        </header>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && isOnMap && currentMap && (
           <>
-            <Separator orientation="vertical" className="h-5 bg-border" />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0" aria-label="User menu">
-                  <Avatar className="h-7 w-7">
-                    {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
-                    <AvatarFallback className="text-sm bg-secondary text-secondary-foreground">
-                      {username.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-4" align="end">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-sm font-semibold text-foreground truncate">{username}</p>
-                    <p className="text-sm text-muted-foreground">Signed in</p>
-                    {userId && (
-                      <p className="text-sm text-muted-foreground font-mono truncate select-all mt-0.5" title={userId}>{userId}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="renderer-quality-profile" className="text-sm">Rendering quality</Label>
-                    <select
-                      id="renderer-quality-profile"
-                      value={rendererQualityProfile}
-                      onChange={(e) => setRendererQualityProfile(e.target.value as RendererQualityProfile)}
-                      className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                    >
-                      {(Object.keys(RENDERER_QUALITY_LABELS) as RendererQualityProfile[]).map((profile) => (
-                        <option key={profile} value={profile}>
-                          {RENDERER_QUALITY_LABELS[profile]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Separator />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-sm justify-start gap-2 px-2"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Logout
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
+            <nav className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-lg z-50 flex flex-col">
+              {visibleTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  className={`flex items-center gap-3 w-full px-4 py-3 text-sm border-l-3 transition-colors cursor-pointer ${
+                    tab.isActive
+                      ? 'border-warning text-warning bg-warning/5'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/30'
+                  }`}
+                  onClick={() => { tab.onClick(); setMobileMenuOpen(false); }}
+                  aria-current={tab.isActive ? 'page' : undefined}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
           </>
         )}
-      </header>
+      </div>
     </TooltipProvider>
   );
 }

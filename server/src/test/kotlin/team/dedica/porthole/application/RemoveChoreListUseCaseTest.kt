@@ -29,7 +29,7 @@ class RemoveChoreListUseCaseTest {
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         val broadcast = NoOpBroadcastPort()
         listId = CreateChoreListUseCase(mapStatePort, broadcast, authorizationPort)
-            .execute(state.id, "My List", emptyList(), null, collaborator.id)[0].id
+            .execute(state.id, "My List", emptyList(), null, null, collaborator.id)[0].id
         useCase = RemoveChoreListUseCase(mapStatePort, broadcast, authorizationPort)
     }
 

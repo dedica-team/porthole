@@ -7,5 +7,6 @@ data class ChoreList(
     var title: String,
     var completed: Boolean = false,
     var link: String? = null,
+    var description: String? = null,
     val entries: MutableMap<UUID, ChoreEntry> = mutableMapOf(), // keyed by landmarkId
 )

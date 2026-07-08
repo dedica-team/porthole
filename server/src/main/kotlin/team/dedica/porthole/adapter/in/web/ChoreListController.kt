@@ -38,6 +38,7 @@ class ChoreListController(
                 request.title,
                 request.landmarkIds.map { UUID.fromString(it) },
                 request.link,
+                request.description,
                 user.userId
             )
         )
@@ -57,6 +58,8 @@ class ChoreListController(
                 request.landmarkIds?.map { UUID.fromString(it) },
                 request.link,
                 request.clearLink,
+                request.description,
+                request.clearDescription,
                 user.userId
             )
         )

@@ -7,10 +7,6 @@ import jakarta.validation.constraints.Size
 import team.dedica.porthole.domain.ChoreEntryState
 import java.util.UUID
 
-data class ChangeLandmarkOwnerRequest(
-    val ownerId: String?,  // null or blank → unset owner
-)
-
 /** Sent by the client when creating a new mapping session. */
 data class CreateMapRequest(
     /** "LAND" (default), "SEA", or "BLANK" */
@@ -38,6 +34,8 @@ data class EditLandmarkRequest(
     val clearGroup: Boolean = false,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val link: String? = null,
     val clearLink: Boolean = false,
+    val ownerId: String? = null,
+    val clearOwner: Boolean = false,
 )
 
 data class CreateConnectionRequest(
@@ -166,6 +164,7 @@ data class CreateChoreListRequest(
     @field:NotBlank @field:Size(max = 200) val title: String,
     val landmarkIds: List<String> = emptyList(),
     @field:Size(max = 2000) val link: String? = null,
+    @field:Size(max = 2000) val description: String? = null,
 )
 
 data class EditChoreListRequest(
@@ -173,6 +172,8 @@ data class EditChoreListRequest(
     val landmarkIds: List<String>? = null,
     @field:Size(max = 2000) val link: String? = null,
     val clearLink: Boolean = false,
+    @field:Size(max = 2000) val description: String? = null,
+    val clearDescription: Boolean = false,
 )
 
 data class UpdateChoreEntryRequest(

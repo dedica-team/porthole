@@ -35,14 +35,14 @@ class CreateChoreListUseCaseTest {
 
     @Test
     fun `creates a chore list and returns sorted list`() {
-        val result = useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, collaborator.id)
+        val result = useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, null, collaborator.id)
         assertEquals(1, result.size)
         assertEquals("Audit", result[0].title)
     }
 
     @Test
     fun `creates entry for each provided landmark`() {
-        useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, collaborator.id)
+        useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, null, collaborator.id)
         val saved = mapStatePort.findById(state.id)!!
         val list = saved.choreLists.values.first()
         val key = landmarkUuid
@@ -52,7 +52,7 @@ class CreateChoreListUseCaseTest {
 
     @Test
     fun `new list has completed=false`() {
-        useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, collaborator.id)
+        useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, null, collaborator.id)
         val list = mapStatePort.findById(state.id)!!.choreLists.values.first()
         assertFalse(list.completed)
     }
@@ -60,43 +60,64 @@ class CreateChoreListUseCaseTest {
     @Test
     fun `blank title throws IllegalArgumentException`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, "   ", listOf(landmarkUuid), null, collaborator.id)
+            useCase.execute(state.id, "   ", listOf(landmarkUuid), null, null, collaborator.id)
         }
     }
 
     @Test
     fun `non-collaborator throws AccessDeniedException`() {
         assertThrows(AccessDeniedException::class.java) {
-            useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, collaborator2.id)
+            useCase.execute(state.id, "Audit", listOf(landmarkUuid), null, null, collaborator2.id)
         }
     }
 
     @Test
     fun `unknown landmark throws IllegalArgumentException`() {
         assertThrows(IllegalArgumentException::class.java) {
-            useCase.execute(state.id, "Audit", listOf(UUID.randomUUID()), null, collaborator.id)
+            useCase.execute(state.id, "Audit", listOf(UUID.randomUUID()), null, null, collaborator.id)
         }
     }
 
     @Test
     fun `unknown map throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(UUID.randomUUID(), "Audit", listOf(landmarkUuid), null, collaborator.id)
+            useCase.execute(UUID.randomUUID(), "Audit", listOf(landmarkUuid), null, null, collaborator.id)
         }
     }
 
     @Test
     fun `returned list is sorted by title`() {
-        useCase.execute(state.id, "Zebra", emptyList(), null, collaborator.id)
-        val result = useCase.execute(state.id, "Alpha", emptyList(), null, collaborator.id)
+        useCase.execute(state.id, "Zebra", emptyList(), null, null, collaborator.id)
+        val result = useCase.execute(state.id, "Alpha", emptyList(), null, null, collaborator.id)
         assertEquals("Alpha", result[0].title)
         assertEquals("Zebra", result[1].title)
     }
 
     @Test
     fun `persists the new chore list`() {
-        useCase.execute(state.id, "My List", emptyList(), null, collaborator.id)
+        useCase.execute(state.id, "My List", emptyList(), null, null, collaborator.id)
         val saved = mapStatePort.findById(state.id)!!
         assertEquals(1, saved.choreLists.size)
+    }
+
+    @Test
+    fun `saves description when provided`() {
+        useCase.execute(state.id, "Audit", emptyList(), null, "Check all items", collaborator.id)
+        val list = mapStatePort.findById(state.id)!!.choreLists.values.first()
+        assertEquals("Check all items", list.description)
+    }
+
+    @Test
+    fun `description is null when not provided`() {
+        useCase.execute(state.id, "Audit", emptyList(), null, null, collaborator.id)
+        val list = mapStatePort.findById(state.id)!!.choreLists.values.first()
+        assertNull(list.description)
+    }
+
+    @Test
+    fun `blank description is stored as null`() {
+        useCase.execute(state.id, "Audit", emptyList(), null, "   ", collaborator.id)
+        val list = mapStatePort.findById(state.id)!!.choreLists.values.first()
+        assertNull(list.description)
     }
 }

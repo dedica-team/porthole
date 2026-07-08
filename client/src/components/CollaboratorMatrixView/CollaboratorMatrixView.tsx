@@ -237,7 +237,7 @@ export default function CollaboratorMatrixView() {
                   </th>
                   {collaborators.map((c) => (
                     <th key={c.id} className="text-center px-3 py-2 min-w-28 bg-transparent">
-                      <UserAvatar username={c.username} avatarUrl={c.avatarUrl} />
+                      <UserAvatar username={c.username} avatarUrl={c.avatarUrl} fullWidth={true} />
                     </th>
                   ))}
                 </tr>

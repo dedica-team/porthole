@@ -117,6 +117,59 @@ describe('mapStore – updateMap', () => {
   });
 });
 
+describe('mapStore – updateCollaboratorUsername', () => {
+  const mapWithCollaborators: SessionState = {
+    ...makeMap(),
+    collaborators: [
+      { id: 'u1', username: 'alice' },
+      { id: 'u2', username: 'bob' },
+    ],
+  };
+
+  beforeEach(() => {
+    useMapStore.setState({ currentMap: mapWithCollaborators, maps: [] });
+  });
+
+  it('updates the matching collaborator username', () => {
+    useMapStore.getState().updateCollaboratorUsername('u1', 'alice2');
+    const collaborators = useMapStore.getState().currentMap!.collaborators;
+    expect(collaborators.find((c) => c.id === 'u1')?.username).toBe('alice2');
+  });
+
+  it('does not affect other collaborators', () => {
+    useMapStore.getState().updateCollaboratorUsername('u1', 'alice2');
+    const collaborators = useMapStore.getState().currentMap!.collaborators;
+    expect(collaborators.find((c) => c.id === 'u2')?.username).toBe('bob');
+  });
+
+  it('does nothing when currentMap is null', () => {
+    useMapStore.setState({ currentMap: null });
+    expect(() => useMapStore.getState().updateCollaboratorUsername('u1', 'alice2')).not.toThrow();
+  });
+
+  it('does nothing when userId does not match any collaborator', () => {
+    useMapStore.getState().updateCollaboratorUsername('unknown', 'ghost');
+    const collaborators = useMapStore.getState().currentMap!.collaborators;
+    expect(collaborators.map((c) => c.username)).toEqual(['alice', 'bob']);
+  });
+});
+
+describe('useAuthStore – setUsername', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ username: 'alice', isAuthenticated: true });
+  });
+
+  it('updates the username in auth store', () => {
+    useAuthStore.getState().setUsername('alice2');
+    expect(useAuthStore.getState().username).toBe('alice2');
+  });
+
+  it('does not change other auth state fields', () => {
+    useAuthStore.getState().setUsername('alice2');
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
+});
+
 describe('useAuthStore – session state', () => {
   beforeEach(() => {
     useAuthStore.setState({

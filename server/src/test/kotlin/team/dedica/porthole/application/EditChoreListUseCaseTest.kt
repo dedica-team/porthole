@@ -36,27 +36,41 @@ class EditChoreListUseCaseTest {
         val broadcast = NoOpBroadcastPort()
         // Create initial list with lm1
         val createUseCase = CreateChoreListUseCase(mapStatePort, broadcast, authorizationPort)
-        listId = createUseCase.execute(state.id, "Old Title", listOf(lm1Uuid), null, collaborator.id)[0].id
+        listId = createUseCase.execute(state.id, "Old Title", listOf(lm1Uuid), null, null, collaborator.id)[0].id
         editUseCase = EditChoreListUseCase(mapStatePort, broadcast, authorizationPort)
     }
 
     @Test
     fun `updates title`() {
-        val result = editUseCase.execute(state.id, listId, "New Title", null, null, false, collaborator.id)
+        val result = editUseCase.execute(state.id, listId, "New Title", null, null, false, null, false, collaborator.id)
         assertEquals("New Title", result[0].title)
     }
 
     @Test
     fun `sets and clears link`() {
-        editUseCase.execute(state.id, listId, null, null, "https://wiki.example", false, collaborator.id)
+        editUseCase.execute(state.id, listId, null, null, "https://wiki.example", false, null, false, collaborator.id)
         assertEquals("https://wiki.example", mapStatePort.findById(state.id)!!.choreLists[listId]!!.link)
-        editUseCase.execute(state.id, listId, null, null, null, true, collaborator.id)
+        editUseCase.execute(state.id, listId, null, null, null, true, null, false, collaborator.id)
         assertNull(mapStatePort.findById(state.id)!!.choreLists[listId]!!.link)
     }
 
     @Test
+    fun `sets and clears description`() {
+        editUseCase.execute(state.id, listId, null, null, null, false, "My description", false, collaborator.id)
+        assertEquals("My description", mapStatePort.findById(state.id)!!.choreLists[listId]!!.description)
+        editUseCase.execute(state.id, listId, null, null, null, false, null, true, collaborator.id)
+        assertNull(mapStatePort.findById(state.id)!!.choreLists[listId]!!.description)
+    }
+
+    @Test
+    fun `blank description is stored as null`() {
+        editUseCase.execute(state.id, listId, null, null, null, false, "   ", false, collaborator.id)
+        assertNull(mapStatePort.findById(state.id)!!.choreLists[listId]!!.description)
+    }
+
+    @Test
     fun `adds new landmarks with NONE state`() {
-        editUseCase.execute(state.id, listId, null, listOf(lm1Uuid, lm2Uuid), null, false, collaborator.id)
+        editUseCase.execute(state.id, listId, null, listOf(lm1Uuid, lm2Uuid), null, false, null, false, collaborator.id)
         val list = mapStatePort.findById(state.id)!!.choreLists[listId]!!
         assertTrue(list.entries.containsKey(lm2Uuid))
         assertEquals(ChoreEntryState.NONE, list.entries[lm2Uuid]!!.state)
@@ -64,7 +78,7 @@ class EditChoreListUseCaseTest {
 
     @Test
     fun `removes de-selected landmarks`() {
-        editUseCase.execute(state.id, listId, null, emptyList(), null, false, collaborator.id)
+        editUseCase.execute(state.id, listId, null, emptyList(), null, false, null, false, collaborator.id)
         val list = mapStatePort.findById(state.id)!!.choreLists[listId]!!
         assertTrue(list.entries.isEmpty())
     }
@@ -75,14 +89,14 @@ class EditChoreListUseCaseTest {
         mapStatePort.findById(state.id)!!.choreLists[listId]!!.entries[lm1Uuid]!!.state = ChoreEntryState.DONE
         mapStatePort.save(mapStatePort.findById(state.id)!!)
         // Edit keeping lm1 + adding lm2
-        editUseCase.execute(state.id, listId, null, listOf(lm1Uuid, lm2Uuid), null, false, collaborator.id)
+        editUseCase.execute(state.id, listId, null, listOf(lm1Uuid, lm2Uuid), null, false, null, false, collaborator.id)
         val list = mapStatePort.findById(state.id)!!.choreLists[listId]!!
         assertEquals(ChoreEntryState.DONE, list.entries[lm1Uuid]!!.state)
     }
 
     @Test
     fun `ignores blank title (keeps old)`() {
-        editUseCase.execute(state.id, listId, "   ", null, null, false, collaborator.id)
+        editUseCase.execute(state.id, listId, "   ", null, null, false, null, false, collaborator.id)
         val list = mapStatePort.findById(state.id)!!.choreLists[listId]!!
         assertEquals("Old Title", list.title)
     }
@@ -90,21 +104,21 @@ class EditChoreListUseCaseTest {
     @Test
     fun `non-collaborator throws AccessDeniedException`() {
         assertThrows(AccessDeniedException::class.java) {
-            editUseCase.execute(state.id, listId, "Hack", null, null, false, collaborator2.id)
+            editUseCase.execute(state.id, listId, "Hack", null, null, false, null, false, collaborator2.id)
         }
     }
 
     @Test
     fun `unknown list throws NoSuchElementException`() {
         assertThrows(NoSuchElementException::class.java) {
-            editUseCase.execute(state.id, UUID.randomUUID(), "Title", null, null, false, collaborator.id)
+            editUseCase.execute(state.id, UUID.randomUUID(), "Title", null, null, false, null, false, collaborator.id)
         }
     }
 
     @Test
     fun `unknown landmark throws IllegalArgumentException`() {
         assertThrows(IllegalArgumentException::class.java) {
-            editUseCase.execute(state.id, listId, null, listOf(UUID.randomUUID()), null, false, collaborator.id)
+            editUseCase.execute(state.id, listId, null, listOf(UUID.randomUUID()), null, false, null, false, collaborator.id)
         }
     }
 }

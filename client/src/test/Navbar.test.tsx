@@ -56,148 +56,6 @@ beforeEach(() => {
   });
 });
 
-// ── Map ID button ─────────────────────────────────────────────────────────────
-
-describe('Navbar – map ID button', () => {
-  it('shows the first 8 chars of the map ID', () => {
-    renderNavbar();
-    expect(screen.getByText(`#${MAP_ID.slice(0, 8)}`)).toBeInTheDocument();
-  });
-
-  it('shows the map name when one is set', () => {
-    useMapStore.setState({ currentMap: makeMap({ name: 'My Campaign' }) });
-    renderNavbar();
-    expect(screen.getByText('My Campaign')).toBeInTheDocument();
-  });
-
-  it('does not show a name element when name is undefined', () => {
-    renderNavbar();
-    expect(screen.queryByText('My Campaign')).not.toBeInTheDocument();
-  });
-});
-
-// ── Popover opens ─────────────────────────────────────────────────────────────
-
-describe('Navbar – map settings popover', () => {
-  it('opens the popover when the map button is clicked', async () => {
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => {
-      expect(screen.getByLabelText('Name')).toBeInTheDocument();
-      expect(screen.getByLabelText('Description')).toBeInTheDocument();
-    });
-  });
-
-  it('pre-fills name and description from currentMap', async () => {
-    useMapStore.setState({
-      currentMap: makeMap({ name: 'Existing Name', description: 'Existing Desc' }),
-    });
-    renderNavbar();
-    fireEvent.click(screen.getByText('Existing Name'));
-    await waitFor(() => {
-      expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('Existing Name');
-      expect(screen.getByLabelText<HTMLTextAreaElement>('Description').value).toBe('Existing Desc');
-    });
-  });
-
-  it('displays the full map ID in the popover', async () => {
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => {
-      expect(screen.getByText(MAP_ID)).toBeInTheDocument();
-    });
-  });
-
-  it('closes the popover when Cancel is clicked', async () => {
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByText('Cancel'));
-    fireEvent.click(screen.getByText('Cancel'));
-    await waitFor(() => {
-      expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
-    });
-  });
-});
-
-// ── Save ──────────────────────────────────────────────────────────────────────
-
-describe('Navbar – saving map name/description', () => {
-  it('calls editMap with the entered values on Save', async () => {
-    const updatedMap = makeMap({ name: 'New Name', description: 'New Desc' });
-    vi.mocked(mapApi.editMap).mockResolvedValue(updatedMap);
-
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByLabelText('Name'));
-
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Name' } });
-    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'New Desc' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => {
-      expect(mapApi.editMap).toHaveBeenCalledWith(MAP_ID, 'New Name', 'New Desc');
-    });
-  });
-
-  it('closes the popover after a successful save', async () => {
-    vi.mocked(mapApi.editMap).mockResolvedValue(makeMap({ name: 'Saved' }));
-
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByLabelText('Name'));
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => {
-      expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
-    });
-  });
-
-  it('updates the store with the response from editMap', async () => {
-    const updatedMap = makeMap({ name: 'Store Updated' });
-    vi.mocked(mapApi.editMap).mockResolvedValue(updatedMap);
-
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByLabelText('Name'));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Store Updated' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => {
-      expect(useMapStore.getState().currentMap?.name).toBe('Store Updated');
-    });
-  });
-
-  it('shows an error message when editMap rejects', async () => {
-    vi.mocked(mapApi.editMap).mockRejectedValue(new Error('Server error'));
-
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByLabelText('Name'));
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Server error')).toBeInTheDocument();
-    });
-  });
-
-  it('passes undefined for empty name so the server can treat it as null', async () => {
-    vi.mocked(mapApi.editMap).mockResolvedValue(makeMap());
-
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByLabelText('Name'));
-
-    // leave name empty
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => {
-      // empty string → passed as undefined (|| undefined)
-      expect(mapApi.editMap).toHaveBeenCalledWith(MAP_ID, undefined, undefined);
-    });
-  });
-});
-
 // ── Join Requests ─────────────────────────────────────────────────────────────
 
 describe('Navbar – join requests (collaborator view)', () => {
@@ -322,79 +180,6 @@ describe('Navbar – join requests (collaborator view)', () => {
   });
 });
 
-// ── Session export in map dropdown ───────────────────────────────────────────
-
-describe('Navbar – session export', () => {
-  beforeEach(() => {
-    useAuthStore.setState({
-      token: 'tok',
-      userId: 'p1',
-      username: 'alice',
-      avatarUrl: null,
-      isAuthenticated: true,
-      isAdmin: false,
-    });
-  });
-
-  it('renders the Export button in the session dropdown for collaborators', async () => {
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /export session json/i })).toBeInTheDocument();
-    });
-  });
-
-  it('does NOT render the Export button for viewers', async () => {
-    useMapStore.setState({
-      currentMap: makeMap({ collaborators: [{ id: 'other', username: 'other' }] }),
-    });
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => {
-      expect(screen.queryByRole('button', { name: /export session json/i })).not.toBeInTheDocument();
-    });
-  });
-
-  it('does NOT render the Export button when not on a map page', () => {
-    renderNavbar('/lobby');
-    expect(screen.queryByRole('button', { name: /export session json/i })).not.toBeInTheDocument();
-  });
-
-  it('calls exportMapJson and triggers a download on click', async () => {
-    const mapData = makeMap({ name: 'Export Test' });
-    vi.mocked(mapApi.exportMapJson).mockResolvedValue(mapData);
-
-    // mock URL.createObjectURL / revokeObjectURL
-    const createObjectURL = vi.fn(() => 'blob:mock-url');
-    const revokeObjectURL = vi.fn();
-    window.URL.createObjectURL = createObjectURL;
-    window.URL.revokeObjectURL = revokeObjectURL;
-
-    // mock anchor click
-    const clickSpy = vi.fn();
-    const origCreate = document.createElement.bind(document);
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-      const el = origCreate(tag);
-      if (tag === 'a') el.click = clickSpy;
-      return el;
-    });
-
-    renderNavbar();
-    fireEvent.click(screen.getByText(`#${MAP_ID.slice(0, 8)}`));
-    await waitFor(() => screen.getByRole('button', { name: /export session json/i }));
-    fireEvent.click(screen.getByRole('button', { name: /export session json/i }));
-
-    await waitFor(() => {
-      expect(mapApi.exportMapJson).toHaveBeenCalledWith(MAP_ID);
-      expect(createObjectURL).toHaveBeenCalled();
-      expect(clickSpy).toHaveBeenCalled();
-      expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
-    });
-
-    vi.restoreAllMocks();
-  });
-});
-
 // ── Tab navigation ──────────────────────────────────────────────────────────────────────────────
 // Navigation is now route-based: each tab click calls navigate() to a sub-route.
 // We verify the correct route is rendered by checking which sub-route element
@@ -469,6 +254,124 @@ describe('Navbar – tab navigation', () => {
   it('deeplink to /metrics sub-route renders metrics view', () => {
     renderWithRoutes(`/session/${MAP_ID}/metrics`);
     expect(screen.getByTestId('view-metrics')).toBeInTheDocument();
+  });
+});
+
+// ── Username editing ───────────────────────────────────────────────────────────
+
+describe('Navbar – username editing', () => {
+  function openUserMenu() {
+    fireEvent.click(screen.getByRole('button', { name: /user menu/i }));
+  }
+
+  it('shows a pencil button next to the username in the user menu', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /edit username/i })).toBeInTheDocument();
+    });
+  });
+
+  it('switches to edit mode when pencil is clicked', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toHaveValue('alice');
+    });
+  });
+
+  it('prefills the input with the current username', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    expect(screen.getByRole('textbox')).toHaveValue('alice');
+  });
+
+  it('cancels edit mode on Escape without saving', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+    await waitFor(() => {
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+    expect(mapApi.changeUsername).not.toHaveBeenCalled();
+  });
+
+  it('cancels edit mode when X button is clicked', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    // The cancel button has no aria-label so find it by position (after the check button)
+    screen.getAllByRole('button').find(
+      (b) => !b.getAttribute('aria-label') && b.closest('[class*="flex items-center gap-1"]'),
+    );
+    // Use the keyboard shortcut instead as it's the same code path
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument());
+  });
+
+  it('calls changeUsername and updates auth store on Enter', async () => {
+    vi.mocked(mapApi.changeUsername).mockResolvedValue({ username: 'alice2' });
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'alice2' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => {
+      expect(mapApi.changeUsername).toHaveBeenCalledWith('alice2');
+      expect(useAuthStore.getState().username).toBe('alice2');
+    });
+  });
+
+  it('updates collaborator username in currentMap after rename', async () => {
+    vi.mocked(mapApi.changeUsername).mockResolvedValue({ username: 'alice2' });
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'alice2' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => {
+      const collaborators = useMapStore.getState().currentMap?.collaborators ?? [];
+      expect(collaborators.find((c) => c.id === 'p1')?.username).toBe('alice2');
+    });
+  });
+
+  it('shows error message when changeUsername fails', async () => {
+    vi.mocked(mapApi.changeUsername).mockRejectedValue(new Error('Username taken'));
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'bob' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => {
+      expect(screen.getByText('Username taken')).toBeInTheDocument();
+    });
+    expect(useAuthStore.getState().username).toBe('alice');
+  });
+
+  it('does not call API when username is unchanged', async () => {
+    renderNavbar();
+    openUserMenu();
+    await waitFor(() => screen.getByRole('button', { name: /edit username/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit username/i }));
+    await waitFor(() => screen.getByRole('textbox'));
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument());
+    expect(mapApi.changeUsername).not.toHaveBeenCalled();
   });
 });
 

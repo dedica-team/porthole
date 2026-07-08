@@ -87,6 +87,15 @@ export async function getSession(): Promise<AuthSession> {
   return handleResponse<AuthSession>(res);
 }
 
+export async function changeUsername(username: string): Promise<{ username: string }> {
+  const res = await fetch(`${BASE_URL}/users/me/username`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }),
+  });
+  return handleResponse<{ username: string }>(res);
+}
+
 export async function logoutSession(): Promise<void> {
   const res = await fetch(`${BASE_URL}/auth/logout`, {
     method: 'POST',
@@ -322,6 +331,7 @@ export async function editLandmark(
   clearGroup?: boolean,
   link?: string,
   clearLink?: boolean,
+  ownerId?: string | null,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'PATCH',
@@ -334,6 +344,8 @@ export async function editLandmark(
       clearGroup: clearGroup ?? false,
       link: link ?? null,
       clearLink: clearLink ?? false,
+      ownerId: ownerId !== undefined ? ownerId : null,
+      clearOwner: ownerId === null,
     }),
   });
   return handleResponse<SessionState>(res);
@@ -639,15 +651,6 @@ export async function exportMapJson(mapId: string): Promise<SessionState> {
   return handleResponse<SessionState>(res);
 }
 
-export async function changeLandmarkOwner(mapId: string, landmarkId: string, ownerId: string | null): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/owner`, {
-    method: 'PATCH',
-    headers: authHeaders(),
-    body: JSON.stringify({ ownerId }),
-  });
-  return handleResponse<SessionState>(res);
-}
-
 
 
 export async function fetchProcesses(mapId: string): Promise<Process[]> {
@@ -814,20 +817,27 @@ export async function fetchChoreLists(mapId: string): Promise<ChoreList[]> {
   return handleResponse<ChoreList[]>(res);
 }
 
-export async function createChoreList(mapId: string, title: string, landmarkIds: string[], link?: string): Promise<ChoreList[]> {
+export async function createChoreList(mapId: string, title: string, landmarkIds: string[], link?: string, description?: string): Promise<ChoreList[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ title, landmarkIds, link: link ?? null }),
+    body: JSON.stringify({ title, landmarkIds, link: link ?? null, description: description ?? null }),
   });
   return handleResponse<ChoreList[]>(res);
 }
 
-export async function editChoreList(mapId: string, listId: string, title?: string, landmarkIds?: string[], link?: string): Promise<ChoreList[]> {
+export async function editChoreList(mapId: string, listId: string, title?: string, landmarkIds?: string[], link?: string, description?: string | null): Promise<ChoreList[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
-    body: JSON.stringify({ title: title ?? null, landmarkIds: landmarkIds ?? null, link: link !== undefined ? link : null, clearLink: link === undefined }),
+    body: JSON.stringify({
+      title: title ?? null,
+      landmarkIds: landmarkIds ?? null,
+      link: link !== undefined ? link : null,
+      clearLink: link === undefined,
+      description: description !== undefined ? description : null,
+      clearDescription: description === null,
+    }),
   });
   return handleResponse<ChoreList[]>(res);
 }

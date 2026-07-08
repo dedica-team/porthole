@@ -29,7 +29,7 @@ class ToggleChoreListCompletedUseCaseTest {
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         val broadcast = NoOpBroadcastPort()
         listId = CreateChoreListUseCase(mapStatePort, broadcast, authorizationPort)
-            .execute(state.id, "Checklist", emptyList(), null, collaborator.id)[0].id
+            .execute(state.id, "Checklist", emptyList(), null, null, collaborator.id)[0].id
         useCase = ToggleChoreListCompletedUseCase(mapStatePort, broadcast, authorizationPort)
     }
 

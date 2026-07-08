@@ -31,7 +31,7 @@ class UpdateChoreEntryUseCaseTest {
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
         val broadcast = NoOpBroadcastPort()
         listId = CreateChoreListUseCase(mapStatePort, broadcast, authorizationPort)
-            .execute(state.id, "Sprint", listOf(landmarkUuid), null, collaborator.id)[0].id
+            .execute(state.id, "Sprint", listOf(landmarkUuid), null, null, collaborator.id)[0].id
         useCase = UpdateChoreEntryUseCase(mapStatePort, broadcast, authorizationPort)
     }
 

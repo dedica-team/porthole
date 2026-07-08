@@ -27,6 +27,8 @@ class EditLandmarkUseCase(
         clearGroup: Boolean = false,
         link: String? = null,
         clearLink: Boolean = false,
+        ownerId: UUID? = null,
+        clearOwner: Boolean = false,
     ): SessionState {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val landmark = state.landmarks[landmarkId]
@@ -52,9 +54,17 @@ class EditLandmarkUseCase(
             link != null -> cleanLink(link)
             else -> landmark.link
         }
+        val newOwnerId = when {
+            clearOwner -> null
+            ownerId != null -> {
+                require(state.isCollaborator(ownerId)) { "New owner $ownerId is not a collaborator in session $sessionId" }
+                ownerId
+            }
+            else -> landmark.ownerId
+        }
         state.landmarks[landmarkId] = landmark.copy(
             name = newName, type = newType, description = newDescription,
-            groupId = newGroupId, link = newLink,
+            groupId = newGroupId, link = newLink, ownerId = newOwnerId,
             metrics = landmark.metrics,
         )
         sessionStatePort.save(state)

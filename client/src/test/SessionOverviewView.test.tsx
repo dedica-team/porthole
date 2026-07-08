@@ -2,8 +2,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import SessionOverviewView from '../pages/MapPage/SessionOverviewView';
+import { MapActionsContext } from '../pages/MapPage/MapActionsContext';
+import type { MapActions } from '../pages/MapPage/MapActionsContext';
 import { useMapStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
+
+const mockActions: MapActions = {
+  handleCreateGroup: vi.fn(),
+  handleEditGroup: vi.fn(),
+  handleRemoveGroup: vi.fn(),
+  actionLoading: false,
+  error: null,
+  setError: vi.fn(),
+  handleSetMatrixEntry: vi.fn(),
+  handleEditLandmark: vi.fn(),
+  handleRemoveLandmark: vi.fn(),
+} as unknown as MapActions;
 
 vi.mock('../api/mapApi', () => ({
   fetchChoreLists: vi.fn(),
@@ -25,11 +39,13 @@ const BASE_MAP = {
 
 function renderView() {
   return render(
-    <MemoryRouter initialEntries={[`/session/${SESSION_ID}`]}>
-      <Routes>
-        <Route path="/session/:id" element={<SessionOverviewView />} />
-      </Routes>
-    </MemoryRouter>,
+    <MapActionsContext.Provider value={mockActions}>
+      <MemoryRouter initialEntries={[`/session/${SESSION_ID}`]}>
+        <Routes>
+          <Route path="/session/:id" element={<SessionOverviewView />} />
+        </Routes>
+      </MemoryRouter>
+    </MapActionsContext.Provider>,
   );
 }
 

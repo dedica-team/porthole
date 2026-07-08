@@ -26,7 +26,7 @@ describe('Navbar (HUD replacement)', () => {
     expect(screen.getByText('AL')).toBeInTheDocument();
   });
 
-  it('shows session id on map page', () => {
+  it('shows user avatar button on map page', () => {
     useAuthStore.setState({ username: 'alice', avatarUrl: null, isAuthenticated: true });
     useMapStore.setState({
       currentMap: {
@@ -40,7 +40,7 @@ describe('Navbar (HUD replacement)', () => {
       },
     });
     renderNavbar('/session/map-abcd1234');
-    expect(screen.getByText('#map-abcd')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /user menu/i })).toBeInTheDocument();
   });
 
   it('shows collaborator initials on map page', () => {
@@ -60,9 +60,6 @@ describe('Navbar (HUD replacement)', () => {
       },
     });
     renderNavbar('/session/map-abcd1234');
-    // The map name is shown as the popover trigger in the navbar bar.
-    // Collaborator details are inside the popover (opened on click).
-    expect(screen.getByText('#map-abcd')).toBeInTheDocument();
     // The current user's avatar is always shown in the top-right user menu.
     expect(screen.getAllByText('AL').length).toBeGreaterThanOrEqual(1);
   });

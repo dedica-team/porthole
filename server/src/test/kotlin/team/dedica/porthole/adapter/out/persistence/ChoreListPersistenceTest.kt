@@ -80,4 +80,22 @@ class ChoreListPersistenceTest {
         val reloaded = saveAndReload(state)
         assertTrue(reloaded.choreLists.isEmpty())
     }
+
+    @Test
+    fun `saves and reloads chore list description`() {
+        val state = baseState()
+        val list = ChoreList(title = "Inspection", description = "Check all equipment thoroughly")
+        state.choreLists[list.id] = list
+        val reloaded = saveAndReload(state)
+        assertEquals("Check all equipment thoroughly", reloaded.choreLists[list.id]!!.description)
+    }
+
+    @Test
+    fun `null description round-trips as null`() {
+        val state = baseState()
+        val list = ChoreList(title = "Simple", description = null)
+        state.choreLists[list.id] = list
+        val reloaded = saveAndReload(state)
+        assertNull(reloaded.choreLists[list.id]!!.description)
+    }
 }
