@@ -3,7 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import AuthPage from '../pages/AuthPage/AuthPage';
 import * as mapApi from '../api/mapApi';
-import { useAuthStore } from '../store/mapStore';
+import { useAuthStore, useMapStore } from '../store/mapStore';
+import { clearDefaultSessionId } from '../utils/sessionCookies';
+import type { SessionState } from '../types/session';
 
 vi.mock('../api/mapApi');
 
@@ -13,6 +15,7 @@ function renderAuthPage() {
       <Routes>
         <Route path="/" element={<AuthPage />} />
         <Route path="/lobby" element={<div data-testid="lobby-page" />} />
+        <Route path="/session/:id" element={<div data-testid="session-page" />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -25,8 +28,19 @@ const mockAuthResponse = {
   avatarUrl: null,
 };
 
+const makeMap = (id: string): SessionState => ({
+  id,
+  createdAt: new Date().toISOString(),
+  collaborators: [],
+  landmarks: {},
+  connections: {},
+  groups: {},
+  map: { tiles: [] },
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
+  clearDefaultSessionId('u1');
   useAuthStore.setState({
     token: null,
     userId: null,
@@ -34,9 +48,12 @@ beforeEach(() => {
     avatarUrl: null,
     isAuthenticated: false,
   });
+  useMapStore.setState({ maps: [], currentMap: null });
 
   // Default: GitHub is enabled
   vi.mocked(mapApi.getAuthFeatures).mockResolvedValue({ githubEnabled: true, keycloakEnabled: false, webAuthnEnabled: false });
+  // Default: no sessions yet → login falls back to the lobby
+  vi.mocked(mapApi.listMaps).mockResolvedValue([]);
 
   // Default: GitHub config returns a clientId
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -284,6 +301,75 @@ describe('AuthPage – Passkey modal', () => {
     fireEvent.click(screen.getByRole('button', { name: /register new passkey/i }));
 
     await waitFor(() => expect(screen.getByText('HTTP 400')).toBeInTheDocument());
+  });
+});
+
+// ── Auto-enter default session after login ────────────────────────────────────
+
+describe('AuthPage – automatically enters the default session after login', () => {
+  beforeEach(() => {
+    vi.stubGlobal('PublicKeyCredential', class {});
+  });
+
+  it('navigates straight into the first session when the user has no stored default', async () => {
+    vi.mocked(mapApi.listMaps).mockResolvedValue([makeMap('m1'), makeMap('m2')]);
+    vi.mocked(mapApi.webauthnAuthStart).mockResolvedValue({
+      sessionId: 's1',
+      challenge: 'Y2hhbGxlbmdl',
+      allowCredentials: [],
+      userVerification: 'preferred',
+      timeout: 60000,
+    });
+    const mockCred = { id: 'cred-id', rawId: new ArrayBuffer(8), type: 'public-key', response: { clientDataJSON: new ArrayBuffer(0), authenticatorData: new ArrayBuffer(0), signature: new ArrayBuffer(0), userHandle: null } };
+    vi.stubGlobal('navigator', { credentials: { get: vi.fn().mockResolvedValue(mockCred) } });
+    vi.mocked(mapApi.webauthnAuthFinish).mockResolvedValue(mockAuthResponse);
+
+    renderAuthPage();
+    fireEvent.click(screen.getByRole('button', { name: /sign in with passkey/i }));
+
+    await waitFor(() => expect(screen.getByTestId('session-page')).toBeInTheDocument());
+    expect(screen.queryByTestId('lobby-page')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the lobby when the user has no sessions at all', async () => {
+    vi.mocked(mapApi.listMaps).mockResolvedValue([]);
+    vi.mocked(mapApi.webauthnAuthStart).mockResolvedValue({
+      sessionId: 's1',
+      challenge: 'Y2hhbGxlbmdl',
+      allowCredentials: [],
+      userVerification: 'preferred',
+      timeout: 60000,
+    });
+    const mockCred = { id: 'cred-id', rawId: new ArrayBuffer(8), type: 'public-key', response: { clientDataJSON: new ArrayBuffer(0), authenticatorData: new ArrayBuffer(0), signature: new ArrayBuffer(0), userHandle: null } };
+    vi.stubGlobal('navigator', { credentials: { get: vi.fn().mockResolvedValue(mockCred) } });
+    vi.mocked(mapApi.webauthnAuthFinish).mockResolvedValue(mockAuthResponse);
+
+    renderAuthPage();
+    fireEvent.click(screen.getByRole('button', { name: /sign in with passkey/i }));
+
+    await waitFor(() => expect(screen.getByTestId('lobby-page')).toBeInTheDocument());
+  });
+
+  it('respects a previously chosen default session stored in the cookie', async () => {
+    const { setDefaultSessionId } = await import('../utils/sessionCookies');
+    setDefaultSessionId('u1', 'm2');
+    vi.mocked(mapApi.listMaps).mockResolvedValue([makeMap('m1'), makeMap('m2')]);
+    vi.mocked(mapApi.webauthnAuthStart).mockResolvedValue({
+      sessionId: 's1',
+      challenge: 'Y2hhbGxlbmdl',
+      allowCredentials: [],
+      userVerification: 'preferred',
+      timeout: 60000,
+    });
+    const mockCred = { id: 'cred-id', rawId: new ArrayBuffer(8), type: 'public-key', response: { clientDataJSON: new ArrayBuffer(0), authenticatorData: new ArrayBuffer(0), signature: new ArrayBuffer(0), userHandle: null } };
+    vi.stubGlobal('navigator', { credentials: { get: vi.fn().mockResolvedValue(mockCred) } });
+    vi.mocked(mapApi.webauthnAuthFinish).mockResolvedValue(mockAuthResponse);
+
+    renderAuthPage();
+    fireEvent.click(screen.getByRole('button', { name: /sign in with passkey/i }));
+
+    await waitFor(() => expect(screen.getByTestId('session-page')).toBeInTheDocument());
+    expect(useMapStore.getState().currentMap?.id).toBe('m2');
   });
 });
 

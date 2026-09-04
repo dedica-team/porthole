@@ -11,7 +11,8 @@ import {
   webauthnAuthFinish,
   base64urlToBuffer,
 } from '@/api/mapApi';
-import { useAuthStore } from '@/store/mapStore';
+import { useAuthStore, useMapStore } from '@/store/mapStore';
+import { enterDefaultSession } from '@/utils/enterDefaultSession';
 
 export default function AuthPage() {
   const [oauthError, setOauthError] = useState<string | null>(null);
@@ -29,14 +30,17 @@ export default function AuthPage() {
   const sessionResolved = useAuthStore((s) => s.sessionResolved);
   const tagline = useAuthStore((s) => s.tagline);
   const setTagline = useAuthStore((s) => s.setTagline);
+  const userId = useAuthStore((s) => s.userId);
+  const setMaps = useMapStore((s) => s.setMaps);
+  const setCurrentMap = useMapStore((s) => s.setCurrentMap);
 
   const webAuthnSupported = typeof window !== 'undefined' && !!window.PublicKeyCredential && webAuthnServerEnabled;
 
   useEffect(() => {
-    if (sessionResolved && isAuthenticated) {
-      navigate('/lobby', { replace: true });
+    if (sessionResolved && isAuthenticated && userId) {
+      void enterDefaultSession(userId, navigate, setMaps, setCurrentMap);
     }
-  }, [isAuthenticated, navigate, sessionResolved]);
+  }, [isAuthenticated, navigate, sessionResolved, userId, setMaps, setCurrentMap]);
 
   useEffect(() => {
     getAuthFeatures()
@@ -82,7 +86,7 @@ export default function AuthPage() {
       if (!cred) throw new Error('No credential returned');
       const authResp = await webauthnAuthFinish(startResp.sessionId, cred);
       authLogin(authResp.userId, authResp.username, authResp.avatarUrl, authResp.isAdmin);
-      navigate('/lobby', { replace: true });
+      await enterDefaultSession(authResp.userId, navigate, setMaps, setCurrentMap);
     } catch (err: unknown) {
       // NotAllowedError = user cancelled or no discoverable credential → show modal
       const name = err instanceof DOMException ? err.name : '';
@@ -128,7 +132,7 @@ export default function AuthPage() {
       if (!cred) throw new Error('No credential created');
       const authResp = await webauthnRegisterFinish(startResp.sessionId, cred);
       authLogin(authResp.userId, authResp.username, authResp.avatarUrl, authResp.isAdmin);
-      navigate('/lobby', { replace: true });
+      await enterDefaultSession(authResp.userId, navigate, setMaps, setCurrentMap);
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
         setPasskeyError(null);
@@ -152,7 +156,7 @@ export default function AuthPage() {
       if (!cred) throw new Error('No credential returned');
       const authResp = await webauthnAuthFinish(startResp.sessionId, cred);
       authLogin(authResp.userId, authResp.username, authResp.avatarUrl, authResp.isAdmin);
-      navigate('/lobby', { replace: true });
+      await enterDefaultSession(authResp.userId, navigate, setMaps, setCurrentMap);
     } catch (err: unknown) {
       if (!(err instanceof DOMException && err.name === 'NotAllowedError')) {
         setPasskeyError(err instanceof Error ? err.message : 'Sign-in failed');

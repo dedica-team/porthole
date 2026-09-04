@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSession } from '@/api/mapApi';
-import { useAuthStore } from '@/store/mapStore';
+import { useAuthStore, useMapStore } from '@/store/mapStore';
+import { enterDefaultSession } from '@/utils/enterDefaultSession';
 
 /**
  * Landing page after Spring OAuth2 redirects back from Keycloak.
  * The porthole JWT cookie is already set by KeycloakLoginSuccessHandler.
- * We just need to load the session and navigate to the lobby.
+ * We just need to load the session and enter the user's default session.
  */
 export default function KeycloakCallbackPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const authLogin = useAuthStore((s) => s.login);
+  const setMaps = useMapStore((s) => s.setMaps);
+  const setCurrentMap = useMapStore((s) => s.setCurrentMap);
   const called = useRef(false);
 
   useEffect(() => {
@@ -21,12 +24,12 @@ export default function KeycloakCallbackPage() {
     getSession()
       .then((resp) => {
         authLogin(resp.userId, resp.username, resp.avatarUrl, resp.isAdmin);
-        navigate('/lobby', { replace: true });
+        return enterDefaultSession(resp.userId, navigate, setMaps, setCurrentMap);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Login failed.');
       });
-  }, [authLogin, navigate]);
+  }, [authLogin, navigate, setMaps, setCurrentMap]);
 
   const tronEmblem = (
     <img

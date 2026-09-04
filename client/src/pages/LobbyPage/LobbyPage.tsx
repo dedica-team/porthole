@@ -6,6 +6,7 @@ import type { MapType, MapSize } from '@/api/mapApi';
 import type { CollaborationMode } from '@/types/session';
 import { COLLABORATION_MODE_LABELS } from '@/types/session';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
+import { setDefaultSessionId } from '@/utils/sessionCookies';
 import AppShell from '@/components/AppShell/AppShell';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -243,6 +244,7 @@ export default function LobbyPage() {
     try {
       const map = await adminJoinMap(mapId);
       setCurrentMap(map);
+      if (userId) setDefaultSessionId(userId, map.id);
       navigate(`/session/${map.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to join session');
@@ -283,6 +285,7 @@ export default function LobbyPage() {
     try {
       const map = await createMap(mapType, mapSize, collaborationMode);
       setCurrentMap(map);
+      if (userId) setDefaultSessionId(userId, map.id);
       navigate(`/session/${map.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create session');
@@ -297,6 +300,7 @@ export default function LobbyPage() {
     try {
       const map = await joinMap(mapId);
       setCurrentMap(map);
+      if (userId) setDefaultSessionId(userId, map.id);
       navigate(`/session/${map.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to join session');
@@ -452,6 +456,7 @@ export default function LobbyPage() {
                       disabled={loading}
                       onClick={() => {
                         setCurrentMap(map);
+                        if (userId) setDefaultSessionId(userId, map.id);
                         navigate(`/session/${map.id}`);
                       }}
                     >
