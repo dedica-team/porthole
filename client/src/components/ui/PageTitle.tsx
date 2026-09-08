@@ -15,7 +15,7 @@ export function PageTitle({ icon, title, actions, className }: PageTitleProps) {
   return (
     <div className={cn('flex items-center gap-2 px-3 sm:px-6 py-3 shrink-0', className)}>
       {icon && <span className="text-warning shrink-0">{icon}</span>}
-      <h1 className="text-lg font-semibold text-warning flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">{title}</h1>
+      <h1 className="text-xl font-semibold text-warning flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">{title}</h1>
       {actions && (
         <>
           <div className="hidden sm:flex items-center flex-wrap gap-2 shrink-0">{actions}</div>

@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { useAuthStore, useMapStore } from '@/store/mapStore';
@@ -162,7 +161,7 @@ export default function Navbar() {
   const isOverviewActive     = !!matchOverview;
 
   // The active-tab bottom border class.
-  const activeBorderCls = 'border-warning';
+  const activeBorderCls = 'border-primary';
 
   const NAV_TABS: NavTab[] = [
     {
@@ -239,7 +238,6 @@ export default function Navbar() {
   const visibleTabs = NAV_TABS.filter((t) => t.visible !== false);
 
   return (
-    <TooltipProvider>
       <div className="relative shrink-0 z-40">
         <header className="flex items-center h-12 px-2 sm:px-4 gap-1 sm:gap-3 bg-card border-b border-border overflow-x-auto">
           {/* Logo */}
@@ -312,23 +310,20 @@ export default function Navbar() {
               {/* Desktop: all tabs */}
               <div className="hidden sm:flex items-center">
                 {visibleTabs.map((tab) => (
-                  <Tooltip key={tab.id}>
-                    <TooltipTrigger asChild>
-                      <button
-                        className={`inline-flex items-center gap-1.5 h-12 px-3 text-sm font-medium border-b-3 transition-colors cursor-pointer shrink-0 ${
-                          tab.isActive
-                            ? `${activeBorderCls} text-warning`
-                            : 'border-transparent text-muted-foreground hover:text-foreground'
-                        }`}
-                        onClick={tab.onClick}
-                        aria-current={tab.isActive ? 'page' : undefined}
-                      >
-                        {tab.icon}
-                        <span>{tab.label}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-sm">{tab.tooltip}</TooltipContent>
-                  </Tooltip>
+                  <button
+                    key={tab.id}
+                    title={tab.tooltip}
+                    className={`inline-flex items-center gap-1.5 h-12 px-3 text-sm font-medium border-b-3 transition-colors cursor-pointer shrink-0 ${
+                      tab.isActive
+                        ? `${activeBorderCls} text-primary`
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={tab.onClick}
+                    aria-current={tab.isActive ? 'page' : undefined}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
                 ))}
               </div>
             </>
@@ -443,6 +438,5 @@ export default function Navbar() {
           </>
         )}
       </div>
-    </TooltipProvider>
   );
 }
