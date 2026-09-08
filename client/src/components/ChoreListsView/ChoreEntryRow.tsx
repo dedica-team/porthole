@@ -168,7 +168,7 @@ export default function ChoreEntryRow({
                             {draftLink && (
                                 <a href={draftLink} target="_blank" rel="noopener noreferrer"
                                    onClick={(e) => e.stopPropagation()}
-                                   className="flex items-center gap-1 text-xs text-[hsl(185,100%,54%)] hover:underline min-w-0 overflow-hidden">
+                                   className="flex items-center gap-1 text-xs text-[hsl(var(--link))] hover:underline min-w-0 overflow-hidden">
                                     <ExternalLink className="h-3 w-3 shrink-0"/>
                                     <span className="truncate min-w-0">{draftLink}</span>
                                 </a>

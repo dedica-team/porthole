@@ -121,7 +121,7 @@ export default function CreateChoreListDialog({ open, onOpenChange, onCreated }:
                     type="checkbox"
                     checked={selected.has(l.id)}
                     onChange={() => toggle(l.id)}
-                    className="accent-[hsl(185,100%,54%)]"
+                    className="accent-[hsl(var(--primary))]"
                   />
                   <span className="truncate text-foreground">{l.name}</span>
                 </label>

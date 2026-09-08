@@ -147,7 +147,7 @@ export default function GreenkeepingRotationsView() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 mt-0.5 text-xs text-[hsl(185,100%,54%)] hover:underline w-full min-w-0"
+                      className="flex items-center gap-1 mt-0.5 text-xs text-[hsl(var(--link))] hover:underline w-full min-w-0"
                     >
                       <ExternalLink className="h-3 w-3 shrink-0" />
                       <span className="truncate min-w-0 flex-1">{rotation.link}</span>

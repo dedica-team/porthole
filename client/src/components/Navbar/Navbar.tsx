@@ -245,7 +245,7 @@ export default function Navbar() {
           {/* Logo */}
           {!isOnMap ? (
             <div className="flex items-center select-none shrink-0" title={tagline}>
-              <img src="/logo.svg" alt="Porthole" width={22} height={22} style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }} />
+              <img src="/logo.svg" alt="Porthole" width={22} height={22} style={{ filter: 'drop-shadow(0 0 4px hsl(var(--holo-indigo)))' }} />
             </div>
           ) : (
             <button
@@ -254,7 +254,7 @@ export default function Navbar() {
               style={{ textDecoration: 'none' }}
               title="Back to lobby"
             >
-              <img src="/logo.svg" alt="Porthole" width={22} height={22} style={{ filter: 'drop-shadow(0 0 4px hsl(185,100%,54%))' }} />
+              <img src="/logo.svg" alt="Porthole" width={22} height={22} style={{ filter: 'drop-shadow(0 0 4px hsl(var(--holo-indigo)))' }} />
             </button>
           )}
 

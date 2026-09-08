@@ -215,7 +215,7 @@ export default function CreateEditGreenkeepingRotationDialog({
                                         type="checkbox"
                                         checked={selectedGroupIds.has(group.id)}
                                         onChange={() => toggleGroup(group.id)}
-                                        className="accent-[hsl(185,100%,54%)]"
+                                        className="accent-[hsl(var(--primary))]"
                                     />
                                     <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
                                           style={{backgroundColor: group.color}}/>

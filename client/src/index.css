@@ -1,48 +1,48 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TRON INTERFACE THEME
-   Black grid / cyan neon / electric-blue glow
+   HOLOGRAPHIC INTERFACE THEME
+   White grid / electric indigo / clean-light sci-fi
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer base {
   :root {
-    /* Core palette – near-black base, cyan/electric-blue accents */
-    --tron-cyan:      185 100% 54%;    /* #0ff / #17e9ff   */
-    --tron-blue:      200 100% 45%;    /* #00a8e8           */
-    --tron-ink:       190  45% 92%;    /* icy readable text */
-    --tron-ink-soft:  190  24% 72%;    /* secondary text    */
-    --tron-dark:        0   0%  2%;    /* #050505           */
-    --tron-surface:   200  22%  7%;    /* #0a1115           */
-    --tron-panel:     200  18% 11%;    /* #132027           */
-    --tron-line:      190  85% 28%;    /* readable cyan edge */
-    --tron-glow:      185 100% 54%;    /* glow colour       */
+    /* Core palette – bright base, indigo/violet accents */
+    --holo-indigo:    232  88% 58%;    /* electric indigo    */
+    --holo-violet:    255  80% 62%;    /* soft violet        */
+    --holo-ink:       224  35% 12%;    /* very dark navy     */
+    --holo-ink-soft:  220  18% 46%;    /* secondary text     */
+    --holo-bg:        216  30% 96%;    /* near-white blue    */
+    --holo-surface:   216  40% 98%;    /* lightest surface   */
+    --holo-panel:     218  28% 92%;    /* panel background   */
+    --holo-line:      220  40% 80%;    /* border colour      */
+    --holo-glow:      232  88% 58%;    /* glow colour        */
 
-    --background:        var(--tron-dark);
-    --foreground:        var(--tron-ink);
-    --card:              var(--tron-surface);
-    --card-foreground:   var(--tron-ink);
-    --popover:           var(--tron-panel);
-    --popover-foreground:var(--tron-ink);
-    --primary:           var(--tron-cyan);
-    --primary-foreground:var(--tron-dark);
-    --secondary:         var(--tron-panel);
-    --secondary-foreground: var(--tron-ink);
-    --muted:             var(--tron-panel);
-    --muted-foreground:  var(--tron-ink-soft);
-    --accent:            190 55% 16%;
-    --accent-foreground: var(--tron-ink);
-    --destructive:         0 90% 55%;
+    --background:        var(--holo-bg);
+    --foreground:        var(--holo-ink);
+    --card:              var(--holo-surface);
+    --card-foreground:   var(--holo-ink);
+    --popover:           var(--holo-surface);
+    --popover-foreground:var(--holo-ink);
+    --primary:           var(--holo-indigo);
+    --primary-foreground:216 40% 98%;
+    --secondary:         var(--holo-panel);
+    --secondary-foreground: var(--holo-ink);
+    --muted:             var(--holo-panel);
+    --muted-foreground:  var(--holo-ink-soft);
+    --accent:            232 60% 92%;
+    --accent-foreground: var(--holo-ink);
+    --destructive:         0 80% 52%;
     --destructive-foreground: 0 0% 98%;
-    --success:          142 71% 45%;
-    --warning:           38 92% 50%;
-    --info:             var(--tron-blue);
-    --link:             var(--tron-cyan);
-    --link-hover:       185 100% 70%;
-    --border:            var(--tron-line);
-    --input:             var(--tron-line);
-    --ring:              var(--tron-cyan);
-    --radius: 0.15rem;           /* sharp corners for the Tron look */
+    --success:          142 60% 36%;
+    --warning:          222  55% 22%;    /* very dark blue     */
+    --info:             var(--holo-violet);
+    --link:             196  85% 30%;    /* deep teal          */
+    --link-hover:       196  85% 20%;
+    --border:            var(--holo-line);
+    --input:             var(--holo-line);
+    --ring:              var(--holo-indigo);
+    --radius: 0.15rem;           /* sharp corners for the sci-fi look */
     --sidebar-width: 320px;
   }
 }
@@ -85,7 +85,7 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* ── Tron scanline overlay on the root ───────────────────────────────────── */
+/* ── Holographic scanline overlay on the root ────────────────────────────── */
 #root::before {
   content: '';
   pointer-events: none;
@@ -96,8 +96,8 @@ html, body, #root {
     to bottom,
     transparent 0px,
     transparent 3px,
-    rgba(0, 240, 255, 0.01) 3px,
-    rgba(0, 240, 255, 0.01) 4px
+    rgba(100, 110, 220, 0.018) 3px,
+    rgba(100, 110, 220, 0.018) 4px
   );
 }
 
@@ -108,8 +108,8 @@ body {
   -webkit-font-smoothing: antialiased;
   /* faint circuit-grid background */
   background-image:
-    linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
+    linear-gradient(rgba(80, 100, 220, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80, 100, 220, 0.06) 1px, transparent 1px);
   background-size: 40px 40px;
   text-shadow: none;
 }
@@ -124,26 +124,26 @@ a, button, [role="button"] {
   transition: text-shadow 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
 }
 
-/* ── Tron-styled borders / panels ───────────────────────────────────────── */
+/* ── Holographic borders / panels ────────────────────────────────────────── */
 header,
 aside,
 [class*="border-border"] {
-  border-color: hsl(var(--tron-line)) !important;
+  border-color: hsl(var(--holo-line)) !important;
 }
 
-/* Navbar / header – glowing top stripe */
+/* Navbar / header */
 header {
-  background: hsl(var(--tron-surface)) !important;
+  background: hsl(var(--holo-surface)) !important;
   box-shadow:
-    0 1px 0 hsl(var(--tron-line)),
-    0 2px 16px rgba(0, 240, 255, 0.12);
-  border-bottom: 1px solid hsl(var(--tron-line)) !important;
+    0 1px 0 hsl(var(--holo-line)),
+    0 2px 16px rgba(80, 100, 220, 0.08);
+  border-bottom: 1px solid hsl(var(--holo-line)) !important;
 }
 
 /* Sidebar */
 aside {
-  background: hsl(var(--tron-surface)) !important;
-  box-shadow: -2px 0 20px rgba(0, 240, 255, 0.07);
+  background: hsl(var(--holo-surface)) !important;
+  box-shadow: 2px 0 16px rgba(80, 100, 220, 0.06);
 }
 
 /* Cards / popovers */
@@ -151,23 +151,23 @@ aside {
 [role="dialog"],
 .popover-content,
 [class*="bg-card"] {
-  background: hsl(var(--tron-panel)) !important;
-  border-color: hsl(var(--tron-line)) !important;
-  box-shadow: 0 0 18px rgba(0, 240, 255, 0.10), inset 0 0 0 1px rgba(0, 240, 255, 0.12);
+  background: hsl(var(--holo-surface)) !important;
+  border-color: hsl(var(--holo-line)) !important;
+  box-shadow: 0 4px 24px rgba(80, 100, 220, 0.10), inset 0 0 0 1px rgba(80, 100, 220, 0.08);
 }
 
 /* Inputs */
 input, textarea, select {
-  background: hsl(var(--tron-surface)) !important;
+  background: hsl(var(--holo-surface)) !important;
   color: hsl(var(--foreground)) !important;
-  border-color: hsl(var(--tron-line)) !important;
-  caret-color: hsl(var(--tron-cyan));
+  border-color: hsl(var(--holo-line)) !important;
+  caret-color: hsl(var(--holo-indigo));
   outline: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 input:focus, textarea:focus, select:focus {
-  border-color: hsl(var(--tron-cyan)) !important;
-  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.2) !important;
+  border-color: hsl(var(--holo-indigo)) !important;
+  box-shadow: 0 0 0 2px rgba(80, 100, 220, 0.18) !important;
 }
 input::placeholder,
 textarea::placeholder {
@@ -175,41 +175,40 @@ textarea::placeholder {
   opacity: 0.85;
 }
 
-/* Primary buttons – glowing cyan */
+/* Primary buttons – solid indigo */
 button[class*="bg-primary"],
 [class*="btn-primary"] {
-  background: transparent !important;
-  color: hsl(var(--tron-cyan)) !important;
-  border: 1px solid hsl(var(--tron-cyan)) !important;
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.08);
+  background: hsl(var(--holo-indigo)) !important;
+  color: hsl(216 40% 98%) !important;
+  border: 1px solid hsl(var(--holo-indigo)) !important;
+  box-shadow: 0 2px 10px rgba(80, 100, 220, 0.30);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 button[class*="bg-primary"]:hover,
 [class*="btn-primary"]:hover {
-  background: rgba(0, 240, 255, 0.12) !important;
-  box-shadow: 0 0 16px rgba(0, 240, 255, 0.55), inset 0 0 12px rgba(0, 240, 255, 0.12);
+  background: hsl(232 88% 48%) !important;
+  box-shadow: 0 4px 18px rgba(80, 100, 220, 0.45);
 }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: hsl(var(--tron-dark)); }
+::-webkit-scrollbar-track { background: hsl(var(--holo-panel)); }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--tron-line));
+  background: hsl(var(--holo-line));
   border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--tron-cyan));
-  box-shadow: 0 0 6px hsl(var(--tron-cyan));
+  background: hsl(var(--holo-indigo));
 }
 
 /* Selection */
 ::selection {
-  background: rgba(0, 240, 255, 0.25);
-  color: #fff;
+  background: rgba(80, 100, 220, 0.20);
+  color: hsl(var(--holo-ink));
 }
 
-/* Text that uses muted-foreground – keep readable but tinted */
+/* Text that uses muted-foreground – keep readable */
 [class*="text-muted-foreground"] {
   color: hsl(var(--muted-foreground)) !important;
 }
@@ -217,34 +216,34 @@ button[class*="bg-primary"]:hover,
 /* Separator */
 [data-orientation="vertical"].bg-border,
 [data-orientation="horizontal"].bg-border {
-  background: hsl(var(--tron-line)) !important;
-  opacity: 0.6;
+  background: hsl(var(--holo-line)) !important;
+  opacity: 0.7;
 }
 
-/* Avatar ring – glow colour matches ring */
+/* Avatar ring */
 [class*="ring-offset-card"] {
-  --tw-ring-offset-color: hsl(var(--tron-surface));
+  --tw-ring-offset-color: hsl(var(--holo-surface));
 }
 
-/* Table – tron grid lines */
+/* Table – grid lines */
 table {
   border-collapse: collapse;
 }
 th, td {
-  border-color: hsl(var(--tron-line)) !important;
+  border-color: hsl(var(--holo-line)) !important;
 }
 thead th {
-  background: hsl(var(--tron-surface)) !important;
-  color: hsl(var(--tron-cyan)) !important;
+  background: hsl(var(--holo-panel)) !important;
+  color: hsl(var(--holo-indigo)) !important;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-size: 0.65rem;
 }
 tr:hover td:not(.group-stripe) {
-  background: rgba(0, 240, 255, 0.06) !important;
+  background: rgba(80, 100, 220, 0.05) !important;
 }
 
-/* Dense data areas: preserve Tron chrome, but make values easier to scan */
+/* Dense data areas */
 .data-display-table {
   color: hsl(var(--foreground));
 }
@@ -259,7 +258,7 @@ tr:hover td:not(.group-stripe) {
 }
 
 .data-display-table tbody tr:hover td:not(.group-stripe) {
-  background: rgba(0, 240, 255, 0.06) !important;
+  background: rgba(80, 100, 220, 0.05) !important;
 }
 
 .data-display-table .data-sticky-cell,
@@ -275,7 +274,7 @@ tr:hover td:not(.group-stripe) {
   color: hsl(var(--muted-foreground) / 0.72) !important;
 }
 
-/* MetricsView second-pass contrast tuning */
+/* MetricsView */
 .metrics-view .metrics-header {
   position: relative;
 }
@@ -287,7 +286,7 @@ tr:hover td:not(.group-stripe) {
 
 .metrics-view .metrics-help-trigger:hover,
 .metrics-view .metrics-toolbar-button:hover {
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.18);
+  text-shadow: 0 0 10px rgba(80, 100, 220, 0.22);
 }
 
 .metrics-view .metrics-metric-header-cell {
@@ -317,7 +316,7 @@ tr:hover td:not(.group-stripe) {
 }
 
 .metrics-view .metrics-group-label {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.14);
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.12);
 }
 
 .metrics-view .metrics-landmark-cell {
@@ -341,15 +340,15 @@ tr:hover td:not(.group-stripe) {
 }
 
 .metrics-view .metrics-metric-cell[data-level="GOOD"]::after {
-  background: linear-gradient(180deg, rgba(34, 197, 94, 0.08), transparent);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.07), transparent);
 }
 
 .metrics-view .metrics-metric-cell[data-level="PARTIAL"]::after {
-  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), transparent);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.07), transparent);
 }
 
 .metrics-view .metrics-metric-cell[data-level="BAD"]::after {
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.08), transparent);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.07), transparent);
 }
 
 .metrics-view .metrics-cell-content {
@@ -364,34 +363,34 @@ tr:hover td:not(.group-stripe) {
 /* Alert destructive */
 [class*="alert-destructive"],
 [data-variant="destructive"] {
-  border-color: hsl(0 90% 55% / 0.6) !important;
-  background: hsl(0 90% 10%) !important;
+  border-color: hsl(0 80% 52% / 0.5) !important;
+  background: hsl(0 80% 96%) !important;
 }
 
-/* Tron glow on logo text */
+/* Holo glow on logo text */
 .tron-logo {
-  text-shadow: 0 0 8px hsl(var(--tron-cyan)), 0 0 20px hsl(var(--tron-cyan));
-  color: hsl(var(--tron-cyan));
+  text-shadow: 0 0 12px rgba(80, 100, 220, 0.35);
+  color: hsl(var(--holo-indigo));
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 /* Active nav / sidebar items */
 [class*="bg-accent"] {
-  background: rgba(0, 240, 255, 0.10) !important;
-  border-left: 2px solid hsl(var(--tron-cyan));
+  background: rgba(80, 100, 220, 0.10) !important;
+  border-left: 2px solid hsl(var(--holo-indigo));
 }
 button[class*="hover:bg-accent"]:not([class*="border-input"]) {
   border-left: none;
 }
 button[class*="hover:bg-accent"]:hover {
-  background: rgba(0, 240, 255, 0.22) !important;
+  background: rgba(80, 100, 220, 0.12) !important;
 }
 
 /* Code / mono spans */
 code, .font-mono {
-  color: hsl(var(--tron-cyan));
-  background: rgba(0, 240, 255, 0.06);
+  color: hsl(var(--holo-indigo));
+  background: rgba(80, 100, 220, 0.07);
 }
 
 

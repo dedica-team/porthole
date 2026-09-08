@@ -65,7 +65,7 @@ function NewSessionDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="relative flex flex-col gap-4 bg-card border border-border shadow-2xl w-full max-w-md mx-4 p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
-        style={{ boxShadow: '0 0 40px rgba(0,240,255,0.15), inset 0 0 0 1px rgba(0,240,255,0.07)', borderColor: 'hsl(185,100%,22%)' }}
+        style={{ boxShadow: '0 4px 32px rgba(80,100,220,0.14), inset 0 0 0 1px rgba(80,100,220,0.08)' }}
       >
         {/* close */}
         <button
@@ -171,7 +171,7 @@ function JoinRequestDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="relative flex flex-col gap-4 bg-card border border-border shadow-2xl w-full max-w-sm mx-4 p-6"
-        style={{ boxShadow: '0 0 40px rgba(0,240,255,0.15), inset 0 0 0 1px rgba(0,240,255,0.07)', borderColor: 'hsl(185,100%,22%)' }}
+        style={{ boxShadow: '0 4px 32px rgba(80,100,220,0.14), inset 0 0 0 1px rgba(80,100,220,0.08)' }}
       >
         <button
           className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -394,7 +394,7 @@ export default function LobbyPage() {
               alt="Porthole logo"
               width={48}
               height={48}
-              style={{ filter: 'drop-shadow(0 0 8px hsl(185,100%,54%))' }}
+              style={{ filter: 'drop-shadow(0 0 8px hsl(var(--holo-indigo)))' }}
             />
             <p className="tron-logo text-sm">No sessions initialised. Create one to enter the grid.</p>
           </div>

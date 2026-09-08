@@ -162,7 +162,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
                     type="checkbox"
                     checked={selected.has(l.id)}
                     onChange={() => toggle(l.id)}
-                    className="accent-[hsl(185,100%,54%)]"
+                    className="accent-[hsl(var(--primary))]"
                   />
                   <span className="truncate text-foreground">{l.name}</span>
                 </label>
@@ -176,7 +176,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
             <Button
               fullWidth={true}
               variant="flat"
-              className={completed ? 'text-[hsl(185,100%,54%)]' : 'text-muted-foreground hover:text-[hsl(185,100%,54%)]'}
+              className={completed ? 'text-primary' : 'text-muted-foreground hover:text-primary'}
               disabled={toggling}
               onClick={handleToggleCompleted}
             >
