@@ -287,6 +287,36 @@ tr:hover td:not(.group-stripe) {
   color: hsl(var(--muted-foreground) / 0.72) !important;
 }
 
+/* Greenkeeping table – stack to single column on mobile */
+@media (max-width: 639px) {
+  .greenkeeping-table,
+  .greenkeeping-table tbody,
+  .greenkeeping-table tr,
+  .greenkeeping-table td {
+    display: block;
+    width: 100%;
+  }
+  .greenkeeping-table thead {
+    display: none;
+  }
+  .greenkeeping-table tr {
+    border-bottom: 1px solid hsl(var(--holo-line));
+  }
+  .greenkeeping-table td {
+    border-bottom: none !important;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .greenkeeping-table td:first-child {
+    padding-top: 0.75rem;
+    padding-bottom: 0.25rem;
+  }
+  .greenkeeping-table td:last-child {
+    padding-top: 0;
+    padding-bottom: 0.75rem;
+  }
+}
+
 /* MetricsView */
 .metrics-view .metrics-header {
   position: relative;

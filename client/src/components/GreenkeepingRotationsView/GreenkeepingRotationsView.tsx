@@ -155,7 +155,7 @@ export default function GreenkeepingRotationsView() {
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
-          <table className="data-display-table w-full text-sm border-separate border-spacing-0">
+          <table className="greenkeeping-table data-display-table w-full text-sm border-separate border-spacing-0">
             <thead className="sticky top-0 z-10">
               <tr>
                 <th className="text-left px-4 py-2 font-medium data-sticky-header w-2/5">Rotation</th>
