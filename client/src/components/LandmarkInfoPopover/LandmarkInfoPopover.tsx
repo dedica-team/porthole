@@ -195,7 +195,7 @@ export default function LandmarkInfoPopover({
     <>
       {/* ── Trigger (only rendered in uncontrolled mode) ─────────────────── */}
       {!isControlled && (
-        <span className="cursor-pointer" onClick={() => setInfoOpen(true)}>
+        <span className="cursor-pointer block h-full w-full" onClick={() => setInfoOpen(true)}>
           {children}
         </span>
       )}

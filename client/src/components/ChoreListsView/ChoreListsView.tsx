@@ -1,20 +1,33 @@
-import {useEffect, useState} from 'react';
-import {useSearchParams} from 'react-router-dom';
-import {Plus, ExternalLink, CheckSquare, HelpCircle} from 'lucide-react';
-import {Button} from '@/components/ui/button';
-import {PageTitle} from '@/components/ui/PageTitle';
-import {Popup} from '@/components/ui/popup';
-import {UserAvatar} from '@/components/ui/user-avatar';
-import {StatusBadge, choreStateToStatus} from '@/components/ui/status-badge';
-import {useMapStore, useAuthStore} from '@/store/mapStore';
-import {fetchChoreLists} from '@/api/mapApi';
-import type {ChoreList, ChoreEntryState} from '@/types/chores';
-import {CHORE_ENTRY_STATES, CHORE_ENTRY_STATE_LABEL} from '@/types/chores';
+import React, { useEffect, useState } from 'react';
+import { Plus, CheckSquare, HelpCircle, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PageTitle } from '@/components/ui/PageTitle';
+import { Popup } from '@/components/ui/popup';
+import { useMapStore, useAuthStore } from '@/store/mapStore';
+import { fetchChoreLists } from '@/api/mapApi';
+import type { ChoreList } from '@/types/chores';
+import { isDecorative } from '@/types/landmark';
+import { useShallow } from 'zustand/react/shallow';
+import { useGroupFilter, GroupFilterPopover } from '@/components/ui/GroupFilterPopover';
+import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
+import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 import CreateChoreListDialog from './CreateChoreListDialog';
-import ChoreListDetail from './ChoreListDetail';
+import EditChoreListDialog from './EditChoreListDialog';
+import ChoreEntryRow from './ChoreEntryRow';
+
+// Stable empty-object fallback so useShallow doesn't see a "new" value each render.
+const EMPTY_LANDMARKS: Record<string, never> = {};
 
 export default function ChoreListsView() {
-    const currentMap = useMapStore((s) => s.currentMap);
+    const {
+        handleEditLandmark: onEditLandmark,
+        handleRemoveLandmark: onRemoveLandmark,
+        actionLoading: loading,
+    } = useMapActions();
+    const { currentMap, landmarksMap } = useMapStore(useShallow((s) => ({
+        currentMap: s.currentMap,
+        landmarksMap: s.currentMap?.landmarks ?? EMPTY_LANDMARKS,
+    })));
     const choreLists = useMapStore((s) => s.choreLists);
     const setChoreLists = useMapStore((s) => s.setChoreLists);
     const choreListsFetched = useMapStore((s) => s.choreListsFetched);
@@ -23,34 +36,14 @@ export default function ChoreListsView() {
     const setChoreListsLoading = useMapStore((s) => s.setChoreListsLoading);
     const choreListsError = useMapStore((s) => s.choreListsError);
     const setChoreListsError = useMapStore((s) => s.setChoreListsError);
-    const activeChoreListId = useMapStore((s) => s.activeChoreListId);
-    const setActiveChoreListId = useMapStore((s) => s.setActiveChoreListId);
     const userId = useAuthStore((s) => s.userId);
 
     const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
     const [createOpen, setCreateOpen] = useState(false);
     const [showHelpDialog, setShowHelpDialog] = useState(false);
-    const [searchParams, setSearchParams] = useSearchParams();
-
-    // Sync activeChoreListId ↔ ?list= search param for deep-link support
-    useEffect(() => {
-        const listParam = searchParams.get('list');
-        if (listParam && listParam !== activeChoreListId) {
-            setActiveChoreListId(listParam);
-        } else if (!listParam && activeChoreListId) {
-            setActiveChoreListId(null);
-        }
-        // Run only on mount to read the initial URL
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (activeChoreListId) {
-            setSearchParams((prev) => { prev.set('list', activeChoreListId); return prev; }, { replace: true });
-        } else {
-            setSearchParams((prev) => { prev.delete('list'); return prev; }, { replace: true });
-        }
-    }, [activeChoreListId, setSearchParams]);
+    const [editingList, setEditingList] = useState<ChoreList | null>(null);
+    const { hiddenGroups, setHiddenGroups, filterOpen, setFilterOpen, filterBtnRef, filterPopoverRef } =
+        useGroupFilter('landmarks.chores.hiddenGroups');
 
     useEffect(() => {
         if (!currentMap || choreListsFetched) return;
@@ -67,30 +60,29 @@ export default function ChoreListsView() {
 
     if (!currentMap) return null;
 
-    const activeList = activeChoreListId ? choreLists.find((l) => l.id === activeChoreListId) : null;
-    if (activeList) {
-        return (
-            <ChoreListDetail
-                choreList={activeList}
-                onUpdated={(lists) => setChoreLists(lists)}
-                onDeleted={() => {
-                    setChoreLists(choreLists.filter((l) => l.id !== activeList.id));
-                    setActiveChoreListId(null);
-                }}
-            />
-        );
-    }
-
-    const sorted = [...choreLists].sort((a, b) => {
+    const sortedLists = [...choreLists].sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
         return a.title.localeCompare(b.title);
     });
 
-    const countsByState = (list: ChoreList): Record<ChoreEntryState, number> => {
-        const counts = {NONE: 0, ONGOING: 0, BLOCKED: 0, DONE: 0};
-        for (const e of Object.values(list.entries)) counts[e.state]++;
-        return counts;
-    };
+    const landmarks = Object.values(landmarksMap)
+        .filter((lm) => !isDecorative(lm.type))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    const groups = currentMap.groups ?? {};
+
+    // Build ordered sections: one per group (sorted by name), then ungrouped
+    const groupedSections: Array<{ groupId: string | null; label: string; color: string }> = [
+        ...Object.values(groups)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((g) => ({ groupId: g.id, label: g.name, color: g.color })),
+        { groupId: null, label: 'Ungrouped', color: '#6b7280' },
+    ];
+
+    const landmarksByGroup = (groupId: string | null) =>
+        landmarks.filter((lm) => (lm.groupId ?? null) === groupId);
+
+    const handleEntryUpdated = (updated: ChoreList) =>
+        setChoreLists(choreLists.map((l) => (l.id === updated.id ? updated : l)));
 
     return (
         <div className="flex flex-col h-full bg-background overflow-hidden">
@@ -113,10 +105,11 @@ export default function ChoreListsView() {
 
             <Popup title="How to use Chore Lists" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
                 <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
-                    <p><span className="text-foreground font-medium">Chore Lists</span> are shared task boards for your map. Each list contains entries that collaborators can track and complete together.</p>
-                    <p>Click a <span className="text-foreground font-medium">list card</span> to open it and see its entries. From there you can add, update, or remove entries.</p>
-                    <p>Each entry has a <span className="text-foreground font-medium">state</span> — None, Ongoing, Blocked, or Done — and can be assigned to a collaborator.</p>
+                    <p>Each <span className="text-foreground font-medium">column</span> is a chore list; each <span className="text-foreground font-medium">row</span> is a landmark. Cells only appear for landmarks that belong to that list.</p>
+                    <p>Click a <span className="text-foreground font-medium">cell</span> to update its state (None, Ongoing, Blocked, Done) and assignee.</p>
+                    <p>Click a <span className="text-foreground font-medium">column header</span> to rename the list, change its landmarks, mark it complete, or delete it.</p>
                     <p>Click <span className="text-foreground font-medium">New List</span> to create a chore list and give it a title, optional link, and description.</p>
+                    <p>Click a <span className="text-foreground font-medium">landmark name</span> to edit it.</p>
                 </div>
             </Popup>
 
@@ -128,84 +121,181 @@ export default function ChoreListsView() {
             {choreListsLoading && (
                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">Loading…</div>
             )}
-            {!choreListsLoading && sorted.length === 0 && (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                    No chore lists yet.{isCollaborator ? ' Create one with "+ New List".' : ''}
+            {!choreListsLoading && sortedLists.length === 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
+                    <CheckSquare className="h-8 w-8 opacity-20" />
+                    <span>No chore lists yet.</span>
+                    {isCollaborator && (
+                        <button className="text-sm text-primary hover:underline" onClick={() => setCreateOpen(true)}>
+                            + Add your first list
+                        </button>
+                    )}
                 </div>
             )}
 
-            {/* Cards */}
-            {!choreListsLoading && sorted.length > 0 && (
-                <div className="flex-1 overflow-auto px-6 py-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-stretch">
-                        {sorted.map((list) => {
-                            const counts = countsByState(list);
-                            const assigneeIds = [...new Set(
-                                Object.values(list.entries).map((e) => e.assigneeId).filter(Boolean) as string[]
-                            )];
-                            const assignees = assigneeIds
-                                .map((id) => currentMap.collaborators.find((c) => c.id === id))
-                                .filter(Boolean) as typeof currentMap.collaborators;
-                            const hasDetails = CHORE_ENTRY_STATES.some((s) => counts[s] > 0) || assignees.length > 0;
-
-                            return (
-                                <Button
-                                    variant={"ghost"}
-                                    key={list.id}
-                                    className={`group h-full w-full !flex-col !items-start !justify-start !whitespace-normal text-left px-4 py-3 transition-colors ${list.completed ? 'opacity-50' : ''}`}
-                                    onClick={() => setActiveChoreListId(list.id)}
-                                >
-                                    {/* Title row + status badges */}
-                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 w-full">
-                                        <h2 className={`font-medium text-lg w-full ${list.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>{list.title}</h2>
-                                        {hasDetails && (
-                                            <div className="flex flex-wrap gap-1 sm:justify-end sm:shrink-0">
-                                                {CHORE_ENTRY_STATES.filter((s) => counts[s] > 0).map((s) => (
-                                                    <StatusBadge key={s} status={choreStateToStatus[s]} className="text-xs font-medium">
-                                                        {counts[s]} {CHORE_ENTRY_STATE_LABEL[s]}
-                                                    </StatusBadge>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {list.description && (
-                                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{list.description}</p>
-                                    )}
-
-                                    {list.link && (
-                                        <a
-                                            href={list.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground hover:text-[hsl(185,100%,54%)] transition-colors min-w-0 overflow-hidden"
-                                        >
-                                            <ExternalLink className="h-3 w-3 shrink-0"/>
-                                            <span className="truncate min-w-0">{list.link}</span>
-                                        </a>
-                                    )}
-
-                                    {/* Assignees */}
-                                    {assignees.length > 0 && (
-                                        <div className="flex flex-wrap gap-1.5 mt-2">
-                                            {assignees.map((c) => (
-                                                <UserAvatar key={c.id} username={c.username} avatarUrl={c.avatarUrl} inline={true}/>
-                                            ))}
+            {/* Table: landmarks as rows, chore lists as columns */}
+            {!choreListsLoading && sortedLists.length > 0 && (
+                <div className="flex-1 overflow-auto">
+                    <div className="min-w-max">
+                        <table className="data-display-table w-full text-sm border-separate border-spacing-0">
+                            <thead className="sticky top-0 z-30">
+                                <tr>
+                                    <th className="w-4 p-0 sticky left-0 z-20 data-sticky-header" />
+                                    <th className="text-left p-0 sticky z-20 data-sticky-header" style={{ left: '1rem' }}>
+                                        <div className="w-28 sm:w-44 px-2 sm:px-4 py-2 font-medium overflow-hidden">
+                                            <Button
+                                                ref={filterBtnRef}
+                                                fullWidth={true}
+                                                variant="flat"
+                                                className={`h-7 gap-1.5 text-sm${hiddenGroups.size > 0 ? ' border-primary text-primary' : ''}`}
+                                                title={hiddenGroups.size > 0 ? 'Groups filtered — click to change' : 'Filter groups'}
+                                                onClick={() => setFilterOpen((v) => !v)}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                                                </svg>
+                                                {hiddenGroups.size > 0 ? `${hiddenGroups.size} hidden` : 'Filter'}
+                                            </Button>
                                         </div>
-                                    )}
-                                </Button>
-                            );
-                        })}
+                                    </th>
+                                    {sortedLists.map((list) => (
+                                        <th key={list.id} className="text-left px-3 py-2 min-w-56 font-medium bg-transparent align-bottom">
+                                            {isCollaborator ? (
+                                                <Button variant="ghost" fullWidth={true} title={list.description || undefined}
+                                                    onClick={() => setEditingList(list)}
+                                                >
+                                                    <span className={list.completed ? 'line-through text-muted-foreground' : ''}>{list.title}</span>
+                                                    {list.link && <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                                                </Button>
+                                            ) : (
+                                                <span
+                                                    className={`text-sm font-medium normal-case${list.completed ? ' line-through text-muted-foreground' : ' text-muted-foreground'}`}
+                                                    title={list.description || undefined}
+                                                >
+                                                    {list.title}
+                                                </span>
+                                            )}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {groupedSections.map(({ groupId, label, color }) => {
+                                    if (hiddenGroups.has(groupId)) return null;
+                                    const sectionLandmarks = landmarksByGroup(groupId);
+                                    if (sectionLandmarks.length === 0) return null;
+                                    return (
+                                        <React.Fragment key={groupId ?? 'ungrouped'}>
+                                            {sectionLandmarks.map((landmark, rowIdx) => (
+                                                <tr key={landmark.id}>
+                                                    {rowIdx === 0 && (
+                                                        <td
+                                                            rowSpan={sectionLandmarks.length}
+                                                            className="w-4 p-0 sticky left-0 z-10 select-none"
+                                                            style={{
+                                                                backgroundColor: `color-mix(in srgb, ${color} 40%, black)`,
+                                                                minWidth: '1rem',
+                                                                width: '1rem',
+                                                            }}
+                                                            title={label}
+                                                        >
+                                                            <div
+                                                                className="flex items-center justify-center"
+                                                                style={{ height: `${sectionLandmarks.length * 2.25}rem`, minHeight: '2rem' }}
+                                                            >
+                                                                <span
+                                                                    className="text-md font-bold uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                                                                    style={{
+                                                                        writingMode: 'vertical-rl',
+                                                                        transform: 'rotate(180deg)',
+                                                                        color: `color-mix(in srgb, ${color} 25%, #fff)`,
+                                                                        maxHeight: '8rem',
+                                                                        textOverflow: 'ellipsis',
+                                                                    }}
+                                                                >
+                                                                    {label}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                    )}
+                                                    <td className="p-2 sticky z-10 data-sticky-cell" style={{ left: '1rem' }}>
+                                                        <LandmarkInfoPopover
+                                                            landmark={landmark}
+                                                            onEditLandmark={onEditLandmark}
+                                                            onRemoveLandmark={onRemoveLandmark}
+                                                            loading={loading}
+                                                        >
+                                                            <Button variant="ghost" fullWidth={true} title={landmark.description} className="h-full w-full overflow-hidden justify-start px-3 py-2 text-lg">
+                                                                <span className="truncate">{landmark.name}</span>
+                                                            </Button>
+                                                        </LandmarkInfoPopover>
+                                                    </td>
+                                                    {sortedLists.map((list) => {
+                                                        const entry = list.entries[landmark.id];
+                                                        return (
+                                                            <td key={list.id} className="p-0">
+                                                                {entry ? (
+                                                                    <ChoreEntryRow
+                                                                        mapId={currentMap.id}
+                                                                        listId={list.id}
+                                                                        entry={entry}
+                                                                        landmark={landmark}
+                                                                        collaborators={currentMap.collaborators}
+                                                                        isCollaborator={isCollaborator}
+                                                                        onUpdated={handleEntryUpdated}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="flex items-center justify-start px-3 py-2">
+                                                                        <span className="text-sm text-muted-foreground/40">—</span>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}
+
+            <GroupFilterPopover
+                open={filterOpen}
+                btnRef={filterBtnRef}
+                popoverRef={filterPopoverRef}
+                sections={groupedSections.filter((s) => landmarksByGroup(s.groupId).length > 0)}
+                hiddenGroups={hiddenGroups}
+                onToggle={(groupId) => setHiddenGroups((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
+                    return next;
+                })}
+                onShowAll={() => setHiddenGroups(new Set())}
+            />
 
             <CreateChoreListDialog
                 open={createOpen}
                 onOpenChange={setCreateOpen}
                 onCreated={(lists) => setChoreLists(lists)}
             />
+
+            <EditChoreListDialog
+                key={editingList?.id}
+                open={!!editingList}
+                onOpenChange={(v) => { if (!v) setEditingList(null); }}
+                choreList={editingList}
+                onSaved={(lists) => setChoreLists(lists)}
+                onToggleCompleted={(updated) => setChoreLists(choreLists.map((l) => (l.id === updated.id ? updated : l)))}
+                onDeleted={(listId) => { setChoreLists(choreLists.filter((l) => l.id !== listId)); setEditingList(null); }}
+            />
         </div>
     );
 }
+
+
+
+

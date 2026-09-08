@@ -1,5 +1,5 @@
 import {useState, useRef} from 'react';
-import {ExternalLink, Check} from 'lucide-react';
+import {ExternalLink, Check, StickyNote} from 'lucide-react';
 import {UserAvatar} from '@/components/ui/user-avatar';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
@@ -76,13 +76,6 @@ export default function ChoreEntryRow({
     const assignee = collaborators.find((c) => c.id === entry.assigneeId);
     const landmarkName = landmark?.name ?? entry.landmarkId;
 
-    const stateBorderColor: Record<string, string> = {
-        DONE: 'hsl(var(--success))',
-        ONGOING: 'hsl(var(--info))',
-        BLOCKED: 'hsl(var(--destructive))',
-        NONE: 'hsl(var(--muted-foreground) / 0.2)',
-    };
-
     const stateBadge = (
         <StatusBadge status={choreStateToStatus[entry.state]} className="text-sm font-medium shrink-0">
             {CHORE_ENTRY_STATE_LABEL[entry.state]}
@@ -90,43 +83,37 @@ export default function ChoreEntryRow({
     );
 
     return (
-        <Button variant="ghost" title="Edit entry" onClick={(e) => {
-            if (isCollaborator) {
+        <div
+            title="Edit entry"
+            onClick={isCollaborator ? (e) => {
                 e.stopPropagation();
                 openDialog();
-            }
-        }} style={{borderColor: stateBorderColor[entry.state]}}
-                className={`group h-full w-full !flex-col !items-start !justify-start !whitespace-normal text-left px-4 py-3 transition-colors `}>
-            {/* Title row: name left, status badge right */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 w-full">
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    {saved && <Check className="h-3 w-3 text-success shrink-0"/>}
-                    <span className="font-medium text-lg text-foreground truncate">{landmarkName}</span>
-                </div>
-                <div className="shrink-0">{stateBadge}</div>
+            } : undefined}
+            role={isCollaborator ? 'button' : undefined}
+            tabIndex={isCollaborator ? 0 : undefined}
+            onKeyDown={isCollaborator ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openDialog();
+                }
+            } : undefined}
+            className={`group w-full flex flex-col items-start justify-start px-3 py-2 transition-colors${isCollaborator ? ' cursor-pointer' : ''}`}>
+            {/* Title row: badge + assignee */}
+            <div className="flex items-center gap-1.5 shrink-0">
+                {saved && <Check className="h-3 w-3 text-success shrink-0"/>}
+                {stateBadge}
+                {/* Assignee */}
+                {assignee && (
+                    <UserAvatar inline size="xs" username={assignee.username} avatarUrl={assignee.avatarUrl} className="mt-0.5" />
+                )}
+                {/* Note indicator */}
+                {entry.note && (
+                    <span title={entry.note} className="inline-flex shrink-0">
+                        <StickyNote className="h-3 w-3 text-muted-foreground"/>
+                    </span>
+                )}
             </div>
-
-
-            {/* Link + note */}
-            {(entry.link || entry.note) && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                    {entry.link && (
-                        <a href={entry.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                           className="flex items-center gap-1 text-xs text-[hsl(185,100%,54%)] hover:underline min-w-0 overflow-hidden">
-                            <ExternalLink className="h-3 w-3 shrink-0"/>
-                            <span className="truncate min-w-0">{entry.link}</span>
-                        </a>
-                    )}
-                    {entry.note && (
-                        <span className="text-foreground">{entry.note}</span>
-                    )}
-                </div>
-            )}
-
-            {/* Assignee */}
-            {assignee && (
-                <UserAvatar inline size="xs" username={assignee.username} avatarUrl={assignee.avatarUrl} className="mt-0.5" />
-            )}
 
 
             {/* Edit dialog */}
@@ -178,6 +165,14 @@ export default function ChoreEntryRow({
                                 className="h-7 text-sm px-2"
                                 type="url"
                             />
+                            {draftLink && (
+                                <a href={draftLink} target="_blank" rel="noopener noreferrer"
+                                   onClick={(e) => e.stopPropagation()}
+                                   className="flex items-center gap-1 text-xs text-[hsl(185,100%,54%)] hover:underline min-w-0 overflow-hidden">
+                                    <ExternalLink className="h-3 w-3 shrink-0"/>
+                                    <span className="truncate min-w-0">{draftLink}</span>
+                                </a>
+                            )}
                         </div>
 
                         <div className="flex flex-col gap-1">
@@ -200,6 +195,6 @@ export default function ChoreEntryRow({
                     </div>
                 </DialogContent>
             </Dialog>
-        </Button>
+        </div>
     );
 }
