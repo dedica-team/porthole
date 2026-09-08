@@ -157,6 +157,10 @@ describe('GreenkeepingRotationsView', () => {
     render(<GreenkeepingRotationsView />);
     fireEvent.click(screen.getByRole('button', { name: /advance rotation weekly core duty/i }));
 
+    // dialog opens — confirm the advance
+    await waitFor(() => screen.getByRole('button', { name: /confirm/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+
     await waitFor(() => {
       expect(mapApi.advanceGreenkeepingRotation).toHaveBeenCalledWith(MAP_ID, 'rot-1');
       expect(screen.getByText('bob')).toBeInTheDocument();

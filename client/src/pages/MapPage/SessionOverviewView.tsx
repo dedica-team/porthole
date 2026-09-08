@@ -268,7 +268,7 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
                 const keeperName = keeper?.username ?? (active ? active.collaboratorId : null);
                 return (
                     <div key={r.id} className="flex flex-col gap-0.5 text-center w-full">
-                        <span className="text-xs text-muted-foreground truncate w-full">{r.name}</span>
+                        <span className="text-md text-muted-foreground truncate w-full">{r.name}</span>
                         <UserAvatar
                             username={keeperName ?? '—'}
                             avatarUrl={keeper?.avatarUrl}
