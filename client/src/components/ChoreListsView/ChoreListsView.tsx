@@ -225,7 +225,7 @@ export default function ChoreListsView() {
                                                             onRemoveLandmark={onRemoveLandmark}
                                                             loading={loading}
                                                         >
-                                                            <Button variant="ghost" fullWidth={true} title={landmark.description} className="h-full w-full overflow-hidden justify-start px-3 py-2 text-lg">
+                                                            <Button variant="ghost" fullWidth={true} title={landmark.description} className="h-full w-full overflow-hidden justify-start px-3 py-2 text-md">
                                                                 <span className="truncate">{landmark.name}</span>
                                                             </Button>
                                                         </LandmarkInfoPopover>
