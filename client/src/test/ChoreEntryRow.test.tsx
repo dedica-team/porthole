@@ -52,9 +52,12 @@ beforeEach(() => vi.clearAllMocks());
 // ── Read-only display ────────────────────────────────────────────────────────
 
 describe('ChoreEntryRow – display', () => {
-  it('renders landmark name', () => {
+  it('renders landmark name in the edit dialog title', async () => {
     renderRow(makeEntry());
-    expect(screen.getByText('Reception')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit entry'));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Reception' })).toBeInTheDocument();
+    });
   });
 
   it('renders state badge', () => {
@@ -67,14 +70,31 @@ describe('ChoreEntryRow – display', () => {
     expect(screen.getByText('alice')).toBeInTheDocument();
   });
 
-  it('renders link when set', () => {
-    renderRow(makeEntry({ link: 'https://wiki.example' }));
-    expect(screen.getByRole('link', { name: /wiki\.example/i })).toBeInTheDocument();
+  it('shows a note indicator icon when note is set', () => {
+    renderRow(makeEntry({ note: 'Check fire exits' }));
+    expect(screen.getByTitle('Check fire exits')).toBeInTheDocument();
   });
 
-  it('renders note when set', () => {
+  it('does not show a note indicator icon when note is unset', () => {
+    renderRow(makeEntry());
+    expect(screen.queryByTitle('Check fire exits')).not.toBeInTheDocument();
+  });
+
+  it('renders link in the edit dialog when set', async () => {
+    renderRow(makeEntry({ link: 'https://wiki.example' }));
+    fireEvent.click(screen.getByTitle('Edit entry'));
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /wiki\.example/i })).toBeInTheDocument();
+    });
+  });
+
+  it('renders note in the edit dialog when set', async () => {
     renderRow(makeEntry({ note: 'Check fire exits' }));
-    expect(screen.getByText('Check fire exits')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit entry'));
+    await waitFor(() => {
+      const ta = screen.getByPlaceholderText('Note…') as HTMLTextAreaElement;
+      expect(ta.value).toBe('Check fire exits');
+    });
   });
 
   it('does not open edit dialog for viewers when row is clicked', async () => {

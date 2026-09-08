@@ -32,6 +32,12 @@ export default function GreenkeepingRotationsView() {
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [actionError, setActionError] = useState('');
   const [busyRotationId, setBusyRotationId] = useState<string | null>(null);
+  const [pendingAdvance, setPendingAdvance] = useState<{
+    rotationId: string;
+    rotationName: string;
+    nextUsername: string;
+    nextAvatarUrl?: string | null;
+  } | null>(null);
 
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
 
@@ -94,6 +100,49 @@ export default function GreenkeepingRotationsView() {
         </div>
       </Popup>
 
+      <Popup
+        title="Advance rotation"
+        open={!!pendingAdvance}
+        onOpenChange={(open) => { if (!open) setPendingAdvance(null); }}
+        className="max-w-xs"
+      >
+        {pendingAdvance && (
+          <div className="flex flex-col items-center gap-4 py-2">
+            <p className="text-sm text-muted-foreground text-center">
+              Next up in <span className="font-semibold text-foreground">{pendingAdvance.rotationName}</span>:
+            </p>
+            <UserAvatar
+              username={pendingAdvance.nextUsername}
+              avatarUrl={pendingAdvance.nextAvatarUrl || undefined}
+              className="py-1"
+              title={pendingAdvance.nextUsername}
+            />
+            <div className="flex gap-2 w-full">
+              <Button
+                variant="ghost"
+                fullWidth={true}
+                onClick={() => setPendingAdvance(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                fullWidth={true}
+                disabled={busyRotationId === pendingAdvance.rotationId}
+                onClick={() => {
+                  const id = pendingAdvance.rotationId;
+                  setPendingAdvance(null);
+                  handleAdvance(id);
+                }}
+                className="gap-1.5"
+              >
+                <FastForward className="h-4 w-4" />
+                Confirm
+              </Button>
+            </div>
+          </div>
+        )}
+      </Popup>
+
       {(greenkeepingRotationsError || actionError) && (
         <p className="px-6 py-2 text-sm text-destructive shrink-0">{greenkeepingRotationsError || actionError}</p>
       )}
@@ -105,95 +154,114 @@ export default function GreenkeepingRotationsView() {
           No greenkeeping rotations yet.{isCollaborator ? ' Create one with "Rotation".' : ''}
         </div>
       ) : (
-        <div className="flex-1 overflow-auto px-6 py-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-stretch">
-            {sortedRotations.map((rotation) => {
-              const activeEntry = getActiveGreenkeepingEntry(rotation);
-              const groups = rotation.groupIds.map((gid) => currentMap.groups[gid]).filter(Boolean);
-              const isBusy = busyRotationId === rotation.id;
-              const canAdvance = isCollaborator && rotation.collaborators.length > 1;
+        <div className="flex-1 overflow-auto">
+          <table className="greenkeeping-table data-display-table w-full text-sm border-separate border-spacing-0">
+            <thead className="sticky top-0 z-10">
+              <tr>
+                <th className="text-left px-4 py-2 font-medium data-sticky-header w-2/5">Rotation</th>
+                <th className="text-left px-4 py-2 font-medium data-sticky-header">Assignees</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRotations.map((rotation) => {
+                const activeEntry = getActiveGreenkeepingEntry(rotation);
+                const groups = rotation.groupIds.map((gid) => currentMap.groups[gid]).filter(Boolean);
+                const isBusy = busyRotationId === rotation.id;
+                const canAdvance = isCollaborator && rotation.collaborators.length > 1;
 
-              return (
-                <Button
-                  key={rotation.id}
-                  variant="ghost"
-                  className="group h-full w-full !flex-col !items-start !justify-start !whitespace-normal text-left px-4 py-3"
-                  onClick={() => { if (isCollaborator) { setActionError(''); setEditingRotation(rotation); } }}
-                >
-                  {/* Title row */}
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 w-full">
-                    <span className="font-medium text-lg text-foreground w-full">{rotation.name}</span>
-                    {groups.length > 0 && (
-                      <div className="flex flex-wrap gap-1 sm:justify-end sm:shrink-0">
-                        {groups.map((g) => (
-                          <span key={g.id} className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 text-xs text-foreground">
-                            <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
-                            {g.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                return (
+                  <tr
+                    key={rotation.id}
+                    className={isCollaborator ? 'cursor-pointer' : undefined}
+                    onClick={() => { if (isCollaborator) { setActionError(''); setEditingRotation(rotation); } }}
+                  >
+                    {/* Left: rotation metadata */}
+                    <td className="px-4 py-3 align-top border-b border-border">
+                      <div className="font-semibold text-foreground text-lg">{rotation.name}</div>
+                      {rotation.description && (
+                        <p className="mt-0.5 text-sm text-muted-foreground">{rotation.description}</p>
+                      )}
+                      {rotation.link && (
+                        <a
+                          href={rotation.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1 mt-1 text-xs text-[hsl(var(--link))] hover:underline min-w-0"
+                        >
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                          <span className="truncate min-w-0">{rotation.link}</span>
+                        </a>
+                      )}
+                      {groups.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {groups.map((g) => (
+                            <span key={g.id} className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 text-xs text-foreground">
+                              <span className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
+                              {g.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
 
-                  {/* Description */}
-                  {rotation.description && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{rotation.description}</p>
-                  )}
+                    {/* Right: assignee chain + advance */}
+                    <td className="px-4 py-3 align-middle border-b border-border" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {rotation.collaborators.map((entry, idx) => {
+                          const collab = collaboratorMap[entry.collaboratorId];
+                          const username = collab?.username ?? 'Unknown';
+                          const isActive = activeEntry?.id === entry.id;
+                          const isLast = idx === rotation.collaborators.length - 1;
 
-                  {/* Link */}
-                  {rotation.link && (
-                    <a
-                      href={rotation.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 mt-0.5 text-xs text-[hsl(185,100%,54%)] hover:underline w-full min-w-0"
-                    >
-                      <ExternalLink className="h-3 w-3 shrink-0" />
-                      <span className="truncate min-w-0 flex-1">{rotation.link}</span>
-                    </a>
-                  )}
-
-                  {/* Rotation order */}
-                  {rotation.collaborators.length > 0 && (
-                    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1 mt-2 w-full">
-                      {rotation.collaborators.map((entry) => {
-                        const collab = collaboratorMap[entry.collaboratorId];
-                        const username = collab?.username ?? 'Unknown';
-                        const isActive = activeEntry?.id === entry.id;
-
-                        return (
-                          <div key={entry.id} className="flex items-center gap-1 w-full sm:w-auto">
-                            <div
-                              className={`rounded border px-2 py-1 flex-1 min-w-0 overflow-hidden ${isActive ? 'border-white' : 'border-border'}`}
-                              style={isActive ? { background: 'rgba(0,240,255,0.08)', boxShadow: '0 0 8px rgba(0,240,255,0.18)' } : undefined}
-                            >
-                              <UserAvatar inline username={username} avatarUrl={collab?.avatarUrl} title={username} />
-                            </div>
-                            {isActive && canAdvance ? (
-                              <Button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleAdvance(rotation.id); }}
-                                disabled={isBusy}
-                                aria-label={`Advance rotation ${rotation.name}`}
-                                title="Advance"
+                          return (
+                            <div key={entry.id} className="flex items-center gap-1.5">
+                              <div
+                                className={`rounded border px-2 py-1 ${isActive ? 'border-secondary-foreground' : 'border-border'}`}
+                                style={isActive ? { background: 'rgba(80,100,220,0.08)' } : undefined}
                               >
-                                <FastForward className="h-3 w-3" />
-                              </Button>
-                            ) :
-                              <Button variant="ghost" className="pointer-events-none cursor-default text-muted-foreground/50" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
-                                <ChevronRight className="h-3 w-3" />
-                              </Button>
-                            }
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </Button>
-              );
-            })}
-          </div>
+                                <UserAvatar username={username} avatarUrl={collab?.avatarUrl} title={username} />
+                              </div>
+                              {isActive && canAdvance && (() => {
+                                const activeIdx = rotation.collaborators.findIndex((e) => e.id === activeEntry?.id);
+                                const nextEntry = rotation.collaborators[(activeIdx + 1) % rotation.collaborators.length];
+                                const nextCollab = collaboratorMap[nextEntry?.collaboratorId];
+                                const nextUsername = nextCollab?.username ?? 'Unknown';
+                                return (
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingAdvance({
+                                        rotationId: rotation.id,
+                                        rotationName: rotation.name,
+                                        nextUsername,
+                                        nextAvatarUrl: nextCollab?.avatarUrl,
+                                      });
+                                    }}
+                                    disabled={isBusy}
+                                    aria-label={`Advance rotation ${rotation.name}`}
+                                    title="Advance to next"
+                                    className="h-9 w-9"
+                                  >
+                                    <FastForward className="h-5 w-5" />
+                                  </Button>
+                                );
+                              })()}
+                              {!isActive && !isLast && (
+                                <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

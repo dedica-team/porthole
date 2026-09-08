@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CheckSquare, Square, Trash2, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,30 +8,38 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMapStore } from '@/store/mapStore';
 import { isDecorative } from '@/types/landmark';
 import type { ChoreList } from '@/types/chores';
-import { editChoreList } from '@/api/mapApi';
+import { editChoreList, toggleChoreListCompleted, deleteChoreList } from '@/api/mapApi';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  choreList: ChoreList;
+  choreList: ChoreList | null;
   onSaved: (lists: ChoreList[]) => void;
+  onToggleCompleted: (updated: ChoreList) => void;
+  onDeleted: (listId: string) => void;
 }
 
-export default function EditChoreListDialog({ open, onOpenChange, choreList, onSaved }: Props) {
+export default function EditChoreListDialog({ open, onOpenChange, choreList, onSaved, onToggleCompleted, onDeleted }: Props) {
   const currentMap = useMapStore((s) => s.currentMap);
-  const [title, setTitle] = useState(choreList.title);
-  const [link, setLink] = useState(choreList.link ?? '');
-  const [description, setDescription] = useState(choreList.description ?? '');
-  const [selected, setSelected] = useState<Set<string>>(new Set(Object.keys(choreList.entries)));
+  const [title, setTitle] = useState(choreList?.title ?? '');
+  const [link, setLink] = useState(choreList?.link ?? '');
+  const [description, setDescription] = useState(choreList?.description ?? '');
+  const [selected, setSelected] = useState<Set<string>>(new Set(Object.keys(choreList?.entries ?? {})));
+  const [completed, setCompleted] = useState(choreList?.completed ?? false);
   const [saving, setSaving] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (open) {
+    if (open && choreList) {
       setTitle(choreList.title);
       setLink(choreList.link ?? '');
       setDescription(choreList.description ?? '');
       setSelected(new Set(Object.keys(choreList.entries)));
+      setCompleted(choreList.completed);
+      setConfirmDelete(false);
       setError('');
     }
   }, [open, choreList]);
@@ -54,7 +63,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
   };
 
   const handleSave = async () => {
-    if (!currentMap || !title.trim()) return;
+    if (!currentMap || !choreList || !title.trim()) return;
     setSaving(true);
     setError('');
     try {
@@ -69,12 +78,41 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
     }
   };
 
+  const handleToggleCompleted = async () => {
+    if (!currentMap || !choreList) return;
+    setToggling(true);
+    setError('');
+    try {
+      const updated = await toggleChoreListCompleted(currentMap.id, choreList.id);
+      onToggleCompleted(updated);
+      setCompleted(updated.completed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to toggle');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!currentMap || !choreList) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await deleteChoreList(currentMap.id, choreList.id);
+      onDeleted(choreList.id);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete');
+      setDeleting(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!saving) onOpenChange(v); }}>
+    <Dialog open={open} onOpenChange={(v) => { if (!saving && !deleting) onOpenChange(v); }}>
       <DialogContent className="w-96 max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-sm">Edit Chore List</DialogTitle>
         </DialogHeader>
+        {choreList && (
         <div className="flex flex-col gap-3 overflow-y-auto flex-1 py-1">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-chore-title" className="text-sm">Title</Label>
@@ -124,7 +162,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
                     type="checkbox"
                     checked={selected.has(l.id)}
                     onChange={() => toggle(l.id)}
-                    className="accent-[hsl(185,100%,54%)]"
+                    className="accent-[hsl(var(--primary))]"
                   />
                   <span className="truncate text-foreground">{l.name}</span>
                 </label>
@@ -132,7 +170,53 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
             </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {/* Complete / Reopen */}
+          <div className="border-t border-border pt-3 mt-1">
+            <Button
+              fullWidth={true}
+              variant="flat"
+              className={completed ? 'text-primary' : 'text-muted-foreground hover:text-primary'}
+              disabled={toggling}
+              onClick={handleToggleCompleted}
+            >
+              {toggling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : completed ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+              {completed ? 'Reopen list' : 'Mark list complete'}
+            </Button>
+          </div>
+
+          {/* Delete section */}
+          <div className="border-t border-border pt-3">
+            {!confirmDelete ? (
+              <Button
+                variant="destructive" fullWidth={true}
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete list…
+              </Button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm text-destructive">Delete «{choreList.title}»? This cannot be undone.</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="flex-1 h-7 text-sm"
+                    disabled={deleting}
+                    onClick={handleDelete}
+                  >
+                    {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, delete'}
+                  </Button>
+                  <Button type="button" size="sm" variant="flat" className="h-7 px-3 text-sm" onClick={() => setConfirmDelete(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+        )}
         <DialogFooter className="pt-2">
           <Button variant="flat" size="sm" className="h-8 text-sm" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button size="sm" className="h-8 text-sm" onClick={handleSave} disabled={saving || !title.trim()}>
@@ -143,4 +227,6 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
     </Dialog>
   );
 }
+
+
 

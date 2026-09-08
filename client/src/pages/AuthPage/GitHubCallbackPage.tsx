@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { githubCallback } from '@/api/mapApi';
-import { useAuthStore } from '@/store/mapStore';
+import { useAuthStore, useMapStore } from '@/store/mapStore';
+import { enterDefaultSession } from '@/utils/enterDefaultSession';
 
 export default function GitHubCallbackPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const authLogin = useAuthStore((s) => s.login);
+  const setMaps = useMapStore((s) => s.setMaps);
+  const setCurrentMap = useMapStore((s) => s.setCurrentMap);
   const called = useRef(false);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
@@ -24,12 +27,12 @@ export default function GitHubCallbackPage() {
     githubCallback(code, state)
       .then((resp) => {
         authLogin(resp.userId, resp.username, resp.avatarUrl);
-        navigate('/lobby', { replace: true });
+        return enterDefaultSession(resp.userId, navigate, setMaps, setCurrentMap);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Login failed.');
       });
-  }, [validationError, code, state, authLogin, navigate]);
+  }, [validationError, code, state, authLogin, navigate, setMaps, setCurrentMap]);
 
   const tronEmblem = (
     <img

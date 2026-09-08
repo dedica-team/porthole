@@ -17,7 +17,7 @@ import type {MatrixLevel} from '@/types/matrix';
 import {worstLevel} from '@/types/landmark';
 import type {LandmarkMetricEntry} from '@/types/landmark';
 import {fetchChoreLists, fetchGreenkeepingRotations, fetchCollaboratorMatrix} from '@/api/mapApi';
-import {useMapStore} from '@/store/mapStore';
+import {useMapStore, useAuthStore} from '@/store/mapStore';
 import type {GreenkeepingRotation} from '@/types/greenkeeping';
 import {getActiveGreenkeepingEntry} from '@/types/greenkeeping';
 import {Button} from "@/components/ui/button.tsx";
@@ -268,7 +268,7 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
                 const keeperName = keeper?.username ?? (active ? active.collaboratorId : null);
                 return (
                     <div key={r.id} className="flex flex-col gap-0.5 text-center w-full">
-                        <span className="text-xs text-muted-foreground truncate w-full">{r.name}</span>
+                        <span className="text-md text-muted-foreground truncate w-full">{r.name}</span>
                         <UserAvatar
                             username={keeperName ?? '—'}
                             avatarUrl={keeper?.avatarUrl}
@@ -287,6 +287,8 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
 export default function SessionOverviewView() {
     const {id: sessionId = ''} = useParams<{ id: string }>();
     const currentMap = useMapStore((s) => s.currentMap);
+    const userId = useAuthStore((s) => s.userId);
+    const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
     const storeSetSelectedLandmark = useMapStore((s) => s.setSelectedLandmark);
     const storeSetSelectedTile = useMapStore((s) => s.setSelectedTile);
     const storeSetMainView = useMapStore((s) => s.setMainView);
@@ -324,6 +326,11 @@ export default function SessionOverviewView() {
                     </Button>
                 </>)}
             />
+            {currentMap && (
+                <p className="px-3 sm:px-6 pb-1 text-xs text-muted-foreground">
+                    You are a <span className="font-medium text-foreground">{isCollaborator ? 'collaborator' : 'viewer'}</span> on this session.
+                </p>
+            )}
             {selectedLandmark && (
                 <LandmarkInfoPopover
                     key={selectedLandmark.id}
