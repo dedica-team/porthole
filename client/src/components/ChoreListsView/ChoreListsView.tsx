@@ -191,7 +191,7 @@ export default function ChoreListsView() {
                                                     {rowIdx === 0 && (
                                                         <td
                                                             rowSpan={sectionLandmarks.length}
-                                                            className="w-4 p-0 sticky left-0 z-10 select-none"
+                                                            className="group-stripe w-4 p-0 sticky left-0 z-10 select-none"
                                                             style={{
                                                                 backgroundColor: `color-mix(in srgb, ${color} 40%, black)`,
                                                                 minWidth: '1rem',
