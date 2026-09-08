@@ -35,11 +35,10 @@ export function clearDefaultSessionId(userId: string): void {
  * in the given list, otherwise the first session in the list.
  */
 export function resolveDefaultSessionId(maps: SessionState[], userId: string): string | null {
-  if (maps.length === 0) return null;
   const cookieId = getDefaultSessionId(userId);
   if (cookieId && maps.some((m) => m.id === cookieId)) {
     return cookieId;
   }
-  return maps[0].id;
+  return null;
 }
 

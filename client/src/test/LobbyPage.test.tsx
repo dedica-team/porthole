@@ -80,7 +80,7 @@ describe('LobbyPage – OPEN map', () => {
 
     await waitFor(() => expect(screen.getByText('Open World')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     await waitFor(() => expect(mapApi.joinMap).toHaveBeenCalledWith(MAP_ID));
     expect(mapApi.requestJoin).not.toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe('LobbyPage – OPEN map', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Open World')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     await waitFor(() => expect(screen.getByText('Server error')).toBeInTheDocument());
   });
@@ -113,7 +113,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
 
     await waitFor(() => expect(screen.getByText('Members Only')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     expect(screen.getByRole('heading', { name: /request to join/i })).toBeInTheDocument();
     // map name appears in both the list and the dialog
@@ -129,7 +129,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Secret Atlas')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     // The dialog contains the map name in a <strong> element
     expect(screen.getByRole('heading', { name: /request to join/i })).toBeInTheDocument();
@@ -143,7 +143,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Members Only')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     expect(screen.getByRole('heading', { name: /request to join/i })).toBeInTheDocument();
 
@@ -163,7 +163,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Members Only')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     const sendBtn = screen.getByRole('button', { name: /send request/i });
     fireEvent.click(sendBtn);
@@ -174,7 +174,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
     expect(screen.queryByRole('heading', { name: /request to join/i })).not.toBeInTheDocument();
     // join button replaced by pending status badge
     expect(screen.getByText(/request pending/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /join as collaborator/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^join$/i })).not.toBeInTheDocument();
     // should NOT have navigated away
     expect(screen.queryByTestId('map-page')).not.toBeInTheDocument();
   });
@@ -187,7 +187,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Members Only')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
     fireEvent.click(screen.getByRole('button', { name: /send request/i }));
 
     await waitFor(() => expect(mapApi.requestJoin).toHaveBeenCalled());
@@ -202,7 +202,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Members Only')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
     fireEvent.click(screen.getByRole('button', { name: /send request/i }));
 
     await waitFor(() => expect(screen.getByText('Already requested')).toBeInTheDocument());
@@ -215,7 +215,7 @@ describe('LobbyPage – REQUEST map (non-collaborator)', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Members Only')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     expect(screen.getByRole('heading', { name: /request to join/i })).toBeInTheDocument();
 
@@ -239,7 +239,7 @@ describe('LobbyPage – PRIVATE map', () => {
 
     await waitFor(() => expect(screen.getByText('Private Island')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     await waitFor(() => expect(mapApi.joinMap).toHaveBeenCalledWith(MAP_ID));
     expect(screen.getByText('Access denied')).toBeInTheDocument();
@@ -260,7 +260,7 @@ describe('LobbyPage – already a collaborator', () => {
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('My Map')).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: /join as collaborator/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^join$/i })).not.toBeInTheDocument();
   });
 });
 
@@ -275,7 +275,7 @@ describe('LobbyPage – choosing a session persists it as the new default', () =
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Open World')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
 
     await waitFor(() => expect(screen.getByTestId('map-page')).toBeInTheDocument());
     expect(getDefaultSessionId(USER_ID)).toBe(MAP_ID);
@@ -302,7 +302,7 @@ describe('LobbyPage – choosing a session persists it as the new default', () =
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('My Map')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }));
 
     await waitFor(() => expect(screen.getByTestId('map-page')).toBeInTheDocument());
     expect(getDefaultSessionId(USER_ID)).toBe(MAP_ID);
@@ -316,7 +316,7 @@ describe('LobbyPage – choosing a session persists it as the new default', () =
     renderLobbyPage();
 
     await waitFor(() => expect(screen.getByText('Members Only')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
     fireEvent.click(screen.getByRole('button', { name: /send request/i }));
 
     await waitFor(() => expect(mapApi.requestJoin).toHaveBeenCalled());

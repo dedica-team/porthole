@@ -311,7 +311,7 @@ describe('AuthPage – automatically enters the default session after login', ()
     vi.stubGlobal('PublicKeyCredential', class {});
   });
 
-  it('navigates straight into the first session when the user has no stored default', async () => {
+  it('navigates to the lobby when the user has no stored default session', async () => {
     vi.mocked(mapApi.listMaps).mockResolvedValue([makeMap('m1'), makeMap('m2')]);
     vi.mocked(mapApi.webauthnAuthStart).mockResolvedValue({
       sessionId: 's1',
@@ -327,8 +327,8 @@ describe('AuthPage – automatically enters the default session after login', ()
     renderAuthPage();
     fireEvent.click(screen.getByRole('button', { name: /sign in with passkey/i }));
 
-    await waitFor(() => expect(screen.getByTestId('session-page')).toBeInTheDocument());
-    expect(screen.queryByTestId('lobby-page')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('lobby-page')).toBeInTheDocument());
+    expect(screen.queryByTestId('session-page')).not.toBeInTheDocument();
   });
 
   it('falls back to the lobby when the user has no sessions at all', async () => {

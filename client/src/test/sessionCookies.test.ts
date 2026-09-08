@@ -73,9 +73,9 @@ describe('resolveDefaultSessionId', () => {
     expect(resolveDefaultSessionId([], 'user-1')).toBeNull();
   });
 
-  it('returns the first map in the list when no cookie is set', () => {
+  it('returns null when no cookie is set', () => {
     const maps = [makeMap('m1'), makeMap('m2')];
-    expect(resolveDefaultSessionId(maps, 'user-1')).toBe('m1');
+    expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
   });
 
   it('returns the cookie-stored session id when it still exists in the list', () => {
@@ -84,16 +84,16 @@ describe('resolveDefaultSessionId', () => {
     expect(resolveDefaultSessionId(maps, 'user-1')).toBe('m2');
   });
 
-  it('falls back to the first map when the cookie-stored session no longer exists', () => {
+  it('returns null when the cookie-stored session no longer exists', () => {
     const maps = [makeMap('m1'), makeMap('m2')];
     setDefaultSessionId('user-1', 'deleted-session');
-    expect(resolveDefaultSessionId(maps, 'user-1')).toBe('m1');
+    expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
   });
 
-  it('does not use another user\'s stored default session', () => {
+  it('returns null when another user has a cookie but this user does not', () => {
     const maps = [makeMap('m1'), makeMap('m2')];
     setDefaultSessionId('user-2', 'm2');
-    expect(resolveDefaultSessionId(maps, 'user-1')).toBe('m1');
+    expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
   });
 });
 

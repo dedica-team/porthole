@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 describe('enterDefaultSession', () => {
-  it('navigates to the first session and stores it via setMaps when no cookie is set', async () => {
+  it('navigates to the lobby when sessions exist but no cookie is set', async () => {
     const maps = [makeMap('m1'), makeMap('m2')];
     vi.mocked(mapApi.listMaps).mockResolvedValue(maps);
     const navigate = vi.fn();
@@ -34,8 +34,8 @@ describe('enterDefaultSession', () => {
     await enterDefaultSession(USER_ID, navigate, setMaps, setCurrentMap);
 
     expect(setMaps).toHaveBeenCalledWith(maps);
-    expect(setCurrentMap).toHaveBeenCalledWith(maps[0]);
-    expect(navigate).toHaveBeenCalledWith('/session/m1', { replace: true });
+    expect(setCurrentMap).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/lobby', { replace: true });
   });
 
   it('navigates to the cookie-stored session when it still exists', async () => {

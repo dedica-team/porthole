@@ -400,101 +400,103 @@ export default function LobbyPage() {
           </div>
         ) : (
           <ScrollArea className="flex-1">
-            <div className="flex flex-col gap-2 w-full">
-              {maps.map((map) => (
-                <div
-                  key={map.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-3 gap-2 bg-card border border-border transition-all"
-                  style={{ boxShadow: '0 0 0 transparent', transition: 'box-shadow 0.2s ease, border-color 0.2s ease' }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(0,240,255,0.2), inset 0 0 8px rgba(0,240,255,0.04)';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'hsl(185,100%,40%)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 transparent';
-                    (e.currentTarget as HTMLElement).style.borderColor = '';
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                      <span className="text-s font-semibold text-foreground">
-                        {map.name ?? 'Unnamed Map'}
+            <div className="flex flex-col w-full">
+              {maps.map((map) => {
+                const isMember = map.collaborators.some((c) => c.id === userId);
+                return (
+                  <div
+                    key={map.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-3 border-b border-border last:border-0"
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="font-semibold text-foreground text-lg">
+                        {map.name ?? 'Unnamed session'}
                       </span>
                       {map.description && (
-                        <span className="text-sm text-muted-foreground">
-                          {map.description}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{map.description}</span>
                       )}
                       <div className="flex items-center gap-1 mt-0.5">
                         <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">
-                          {map.collaborators.length} collaborator
-                          {map.collaborators.length !== 1 ? 's' : ''}
+                        <span className="text-xs text-muted-foreground">
+                          {map.collaborators.length} collaborator{map.collaborators.length !== 1 ? 's' : ''}
                         </span>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center flex-wrap gap-2">
-                    {/* Admin: delete session */}
-                    {isAdmin && (
-                      deleteConfirmMapId === map.id ? (
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-destructive">Delete?</span>
-                          <Button size="sm" variant="destructive" className="h-7 px-2 text-sm" disabled={loading} onClick={() => handleDelete(map.id)}>Yes</Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-sm" onClick={() => setDeleteConfirmMapId(null)}>No</Button>
-                        </div>
-                      ) : (
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" disabled={loading} title="Delete session" onClick={() => setDeleteConfirmMapId(map.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 gap-1.5 text-sm text-muted-foreground"
-                      disabled={loading}
-                      onClick={() => {
-                        setCurrentMap(map);
-                        if (userId) setDefaultSessionId(userId, map.id);
-                        navigate(`/session/${map.id}`);
-                      }}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      {map.collaborators.some((c) => c.id === userId) ? 'Continue' : 'View'}
-                    </Button>
-                    {/* Admin join bypasses collaboration mode */}
-                    {isAdmin && !map.collaborators.some((c) => c.id === userId) && (
-                      <Button size="sm" variant="default" className="h-8 gap-1.5 text-sm" disabled={loading} onClick={() => handleAdminJoin(map.id)}>
-                        <LogIn className="h-3.5 w-3.5" />
-                        Join as Collaborator
-                      </Button>
-                    )}
-                    {!isAdmin && !map.collaborators.some((c) => c.id === userId) && (() => {
-                      const hasPending =
-                        requestSent === map.id ||
-                        (userId != null && map.joinRequests?.some((r) => r.userId === userId));
-                      if (hasPending) {
-                        return (
-                          <span className="text-sm text-muted-foreground px-2">Request pending ⏳</span>
-                        );
-                      }
-                      return (
+                    <div className="flex items-center flex-wrap gap-2 shrink-0">
+                      {/* Admin: delete session */}
+                      {isAdmin && (
+                        deleteConfirmMapId === map.id ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-destructive">Delete?</span>
+                            <Button size="sm" variant="destructive" className="h-7 px-2 text-sm" disabled={loading} onClick={() => handleDelete(map.id)}>Yes</Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-sm" onClick={() => setDeleteConfirmMapId(null)}>No</Button>
+                          </div>
+                        ) : (
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" disabled={loading} title="Delete session" onClick={() => setDeleteConfirmMapId(map.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )
+                      )}
+                      {isMember ? (
                         <Button
-                          size="sm"
-                          variant="default"
-                          className="h-8 gap-1.5 text-sm"
+                          onClick={() => {
+                            setCurrentMap(map);
+                            if (userId) setDefaultSessionId(userId, map.id);
+                            navigate(`/session/${map.id}`);
+                          }}
                           disabled={loading}
-                          onClick={() => handleJoinClick(map)}
+                          className="gap-1.5"
                         >
-                          <LogIn className="h-3.5 w-3.5" />
-                          Join as Collaborator
+                          <Eye className="h-4 w-4" />
+                          Enter
                         </Button>
-                      );
-                    })()}
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1.5 text-muted-foreground"
+                            disabled={loading}
+                            onClick={() => {
+                              setCurrentMap(map);
+                              if (userId) setDefaultSessionId(userId, map.id);
+                              navigate(`/session/${map.id}`);
+                            }}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            View
+                          </Button>
+                          {/* Admin join bypasses collaboration mode */}
+                          {isAdmin && (
+                            <Button className="gap-1.5" disabled={loading} onClick={() => handleAdminJoin(map.id)}>
+                              <LogIn className="h-4 w-4" />
+                              Join as Collaborator
+                            </Button>
+                          )}
+                          {!isAdmin && (() => {
+                            const hasPending =
+                              requestSent === map.id ||
+                              (userId != null && map.joinRequests?.some((r) => r.userId === userId));
+                            if (hasPending) {
+                              return <span className="text-sm text-muted-foreground px-2">Request pending ⏳</span>;
+                            }
+                            return (
+                              <Button
+                                className="gap-1.5"
+                                disabled={loading}
+                                onClick={() => handleJoinClick(map)}
+                              >
+                                <LogIn className="h-4 w-4" />
+                                Join
+                              </Button>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         )}
