@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, CheckSquare, HelpCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PageTitle } from '@/components/ui/PageTitle';
 import { Popup } from '@/components/ui/popup';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { fetchChoreLists } from '@/api/mapApi';
@@ -84,24 +83,10 @@ export default function ChoreListsView() {
     const handleEntryUpdated = (updated: ChoreList) =>
         setChoreLists(choreLists.map((l) => (l.id === updated.id ? updated : l)));
 
+    const cardBtnCls = 'flex items-center gap-1.5 px-3 text-xs text-foreground bg-secondary/70 hover:text-muted-foreground hover:bg-secondary border-l border-border transition-colors cursor-pointer shrink-0';
+
     return (
-        <div className="flex flex-col h-full bg-background overflow-hidden">
-            <PageTitle
-                icon={<CheckSquare className="h-3.5 w-3.5" />}
-                title="Chores"
-                actions={<>
-                    <Button variant="ghost" onClick={() => setShowHelpDialog(true)} title="Help">
-                        <HelpCircle className="h-3.5 w-3.5" />
-                        Help
-                    </Button>
-                    {isCollaborator && (
-                        <Button variant="default" onClick={() => setCreateOpen(true)}>
-                            <Plus className="h-3.5 w-3.5" />
-                            New List
-                        </Button>
-                    )}
-                </>}
-            />
+        <div className="flex flex-col h-full overflow-y-auto">
 
             <Popup title="How to use Chore Lists" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
                 <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
@@ -113,29 +98,48 @@ export default function ChoreListsView() {
                 </div>
             </Popup>
 
-            {choreListsError && (
-                <p className="px-6 py-2 text-sm text-destructive shrink-0">{choreListsError}</p>
-            )}
+            {/* ── Main card ───────────────────────────────────────────────────── */}
+            <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3">
 
-            {/* Empty / loading states */}
-            {choreListsLoading && (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">Loading…</div>
-            )}
-            {!choreListsLoading && sortedLists.length === 0 && (
-                <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
-                    <CheckSquare className="h-8 w-8 opacity-20" />
-                    <span>No chore lists yet.</span>
+                {/* Card header */}
+                <div className="flex items-stretch border-b border-border shrink-0">
+                    <div className="flex items-center gap-2 px-4 py-2.5 text-md font-semibold text-foreground flex-1">
+                        <CheckSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                        Chores
+                    </div>
+                    <button className={cardBtnCls} onClick={() => setShowHelpDialog(true)}>
+                        <HelpCircle className="h-3.5 w-3.5" /> Help
+                    </button>
                     {isCollaborator && (
-                        <button className="text-sm text-primary hover:underline" onClick={() => setCreateOpen(true)}>
-                            + Add your first list
+                        <button className={cardBtnCls} onClick={() => setCreateOpen(true)}>
+                            <Plus className="h-3.5 w-3.5" /> New List
                         </button>
                     )}
                 </div>
-            )}
 
-            {/* Table: landmarks as rows, chore lists as columns */}
-            {!choreListsLoading && sortedLists.length > 0 && (
-                <div className="flex-1 overflow-auto">
+                {choreListsError && (
+                    <p className="px-4 py-2 text-sm text-destructive shrink-0">{choreListsError}</p>
+                )}
+
+                {/* Empty / loading states */}
+                {choreListsLoading && (
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">Loading…</div>
+                )}
+                {!choreListsLoading && sortedLists.length === 0 && (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
+                        <CheckSquare className="h-8 w-8 opacity-20" />
+                        <span>No chore lists yet.</span>
+                        {isCollaborator && (
+                            <button className="text-sm text-primary hover:underline" onClick={() => setCreateOpen(true)}>
+                                + Add your first list
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Table: landmarks as rows, chore lists as columns */}
+                {!choreListsLoading && sortedLists.length > 0 && (
+                <div className="overflow-x-auto">
                     <div className="min-w-max">
                         <table className="data-display-table w-full text-sm border-separate border-spacing-0">
                             <thead className="sticky top-0 z-30">
@@ -261,7 +265,9 @@ export default function ChoreListsView() {
                         </table>
                     </div>
                 </div>
-            )}
+                )}
+
+            </div>{/* end card */}
 
             <GroupFilterPopover
                 open={filterOpen}

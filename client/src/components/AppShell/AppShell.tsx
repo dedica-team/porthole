@@ -6,7 +6,7 @@ interface Props {
 }
 export default function AppShell({ children, sidebar }: Props) {
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-background">
+    <div className="flex flex-col w-full h-full overflow-hidden">
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 relative overflow-hidden">

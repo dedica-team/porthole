@@ -315,7 +315,7 @@ export default function ProcessMapView() {
 
       {/* Left toolbar */}
       <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
-        <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} />
+        <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} placeholder="Locate…" />
         <Popover>
           <PopoverTrigger asChild>
             <Button

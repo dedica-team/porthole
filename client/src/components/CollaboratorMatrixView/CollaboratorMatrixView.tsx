@@ -22,7 +22,6 @@ import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPo
 import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 import { Popup } from '@/components/ui/popup';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
-import { PageTitle } from '@/components/ui/PageTitle';
 
 
 // ── Cell-edit dialog ──────────────────────────────────────────────────────────
@@ -148,23 +147,10 @@ export default function CollaboratorMatrixView() {
     });
   };
 
+  const cardBtnCls = 'flex items-center gap-1.5 px-3 text-xs text-foreground bg-secondary/70 hover:text-muted-foreground hover:bg-secondary border-l border-border transition-colors cursor-pointer shrink-0';
+
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <PageTitle
-        icon={<Bus className="h-4 w-4" />}
-        title="Bus Matrix"
-        actions={<>
-          <Button variant="ghost" onClick={() => setShowHelpDialog(true)} title="Help">
-            <HelpCircle className="h-3.5 w-3.5" />
-            Help
-          </Button>
-          <Button variant="ghost" onClick={() => setShowGroupsDialog(true)} title="Manage groups">
-            <Users className="h-3.5 w-3.5" />
-            Groups
-          </Button>
-        </>}
-      />
+    <div className="flex flex-col h-full overflow-y-auto">
 
       <Popup title="How to use the Bus Matrix" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
         <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
@@ -183,9 +169,26 @@ export default function CollaboratorMatrixView() {
         />
       </Popup>
 
-      {/* ── Error alert ──────────────────────────────────────────────────────── */}
-      {error && (
-        <div className="px-6 pt-3 shrink-0">
+      {/* ── Main card ───────────────────────────────────────────────────────── */}
+      <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3">
+
+        {/* Card header */}
+        <div className="flex items-stretch border-b border-border shrink-0">
+          <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
+            <Bus className="h-3.5 w-3.5 text-muted-foreground" />
+            Bus Matrix
+          </div>
+          <button className={cardBtnCls} onClick={() => setShowHelpDialog(true)}>
+            <HelpCircle className="h-3.5 w-3.5" /> Help
+          </button>
+          <button className={cardBtnCls} onClick={() => setShowGroupsDialog(true)}>
+            <Users className="h-3.5 w-3.5" /> Groups
+          </button>
+        </div>
+
+        {/* ── Error alert ────────────────────────────────────────────────── */}
+        {error && (
+          <div className="px-4 py-3 shrink-0">
           <Alert variant="destructive" className="py-2 pr-2 relative">
             <AlertTriangle className="h-3.5 w-3.5" />
             <AlertDescription className="text-sm pr-6">{error}</AlertDescription>
@@ -198,19 +201,19 @@ export default function CollaboratorMatrixView() {
               </button>
             )}
           </Alert>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* ── Empty state ──────────────────────────────────────────────────────── */}
-      {landmarks.length === 0 && (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-          No landmarks yet.
-        </div>
-      )}
+        {/* ── Empty state ──────────────────────────────────────────────────── */}
+        {landmarks.length === 0 && (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+            No landmarks yet.
+          </div>
+        )}
 
       {/* ── Table ────────────────────────────────────────────────────────────── */}
       {landmarks.length > 0 && (
-        <div className="flex-1 overflow-auto">
+        <div className="overflow-x-auto">
           <div className="min-w-max">
             <table className="data-display-table w-full text-sm border-separate border-spacing-0">
               <thead className="sticky top-0 z-30">
@@ -347,6 +350,8 @@ export default function CollaboratorMatrixView() {
           </div>
         </div>
       )}
+
+      </div>{/* end card */}
 
       {/* ── Dialogs ──────────────────────────────────────────────────────────── */}
 

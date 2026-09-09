@@ -793,7 +793,7 @@ describe('MapPage – landmark search field', () => {
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
-    expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Locate…')).toBeInTheDocument();
   });
 
   it('search input is visible in process mode', async () => {
@@ -803,7 +803,7 @@ describe('MapPage – landmark search field', () => {
       editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
-    await waitFor(() => expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Locate…')).toBeInTheDocument());
   });
 
   it('typing filters landmarks and shows dropdown', async () => {
@@ -814,7 +814,7 @@ describe('MapPage – landmark search field', () => {
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
-    fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'tower' } });
+    fireEvent.change(screen.getByPlaceholderText('Locate…'), { target: { value: 'tower' } });
     await waitFor(() => expect(screen.getByText('Tower One')).toBeInTheDocument());
   });
 
@@ -826,7 +826,7 @@ describe('MapPage – landmark search field', () => {
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
-    fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'tower one' } });
+    fireEvent.change(screen.getByPlaceholderText('Locate…'), { target: { value: 'tower one' } });
     const result = await screen.findByText('Tower One');
     fireEvent.mouseDown(result);
     await waitFor(() => {
@@ -844,9 +844,9 @@ describe('MapPage – landmark search field', () => {
       editorTerrain: 'GRASS', mainView: 'processes', confirmPending: false,
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
-    await waitFor(() => screen.getByPlaceholderText('Search…'));
-    fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'tower one' } });
-    const result = await screen.findAllByText('Tower One').then((els) => els[0]);
+    await waitFor(() => screen.getByPlaceholderText('Locate…'));
+    fireEvent.change(screen.getByPlaceholderText('Locate…'), { target: { value: 'tower one' } });
+    const result = await screen.findByRole('button', { name: /tower one/i });
     fireEvent.mouseDown(result);
     await waitFor(() => {
       const state = useMapStore.getState();

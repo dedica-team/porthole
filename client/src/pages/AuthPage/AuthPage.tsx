@@ -266,12 +266,6 @@ export default function AuthPage() {
               onClick={handleGitHubLogin}
               className="w-full gap-2 uppercase tracking-widest text-sm h-11"
               size="lg"
-              style={{
-                background: 'transparent',
-                border: '1px solid hsl(185,100%,54%)',
-                color: 'hsl(185,100%,54%)',
-                boxShadow: '0 0 10px rgba(0,240,255,0.3), inset 0 0 10px rgba(0,240,255,0.06)',
-              }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.background = 'rgba(0,240,255,0.10)';
                 (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(0,240,255,0.5), inset 0 0 14px rgba(0,240,255,0.10)';
