@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import {
   LogOut,
@@ -24,6 +24,11 @@ import { Label } from '@/components/ui/label';
 import { useAuthStore, useMapStore } from '@/store/mapStore';
 import { acceptJoinRequest, changeUsername, declineJoinRequest, logoutSession } from '@/api/mapApi';
 import type { RendererQualityProfile } from '@/components/HexGrid/renderQuality';
+import {MapSettingsForm} from "@/components/Navbar/MapSettingsForm.tsx";
+import LandmarkSearchField from '@/components/LandmarkSearchField';
+import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
+import { MapActionsContext } from '@/pages/MapPage/MapActionsContext';
+import type { Landmark } from '@/types/landmark';
 
 const RENDERER_QUALITY_LABELS: Record<RendererQualityProfile, string> = {
   high: 'High',
@@ -78,8 +83,12 @@ export default function Navbar() {
   const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
   const setUsername = useAuthStore((s) => s.setUsername);
   const updateCollaboratorUsername = useMapStore((s) => s.updateCollaboratorUsername);
+  const mapActions = useContext(MapActionsContext);
+  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(null);
+  const landmarks = Object.values(currentMap?.landmarks ?? {});
   const [joinReqLoading, setJoinReqLoading] = useState<string | null>(null);
   const [joinReqError, setJoinReqError] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editingUsername, setEditingUsername] = useState(false);
   const [usernameInput, setUsernameInput] = useState('');
@@ -239,7 +248,7 @@ export default function Navbar() {
 
   return (
       <div className="relative shrink-0 z-40">
-        <header className="flex items-center h-12 px-2 sm:px-4 gap-1 sm:gap-3 bg-card border-b border-border overflow-x-auto">
+        <header className="flex items-center h-12 px-2 sm:px-4 gap-1 sm:gap-3 bg-card border-border overflow-x-auto mx-3 sm:mx-6 mt-2 rounded-lg">
           {/* Logo */}
           {!isOnMap ? (
             <div className="flex items-center select-none shrink-0" title={tagline}>
@@ -302,10 +311,20 @@ export default function Navbar() {
                 </Popover>
               )}
 
-              {/* Mobile: session name */}
-              <span className="sm:hidden text-sm font-medium text-foreground truncate">
-                {currentMap.name}
-              </span>
+              {/* Session name – opens settings popover */}
+              <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    className="tron-logo text-sm truncate max-w-[10rem] sm:max-w-[14rem] hover:opacity-70 transition-opacity text-left cursor-pointer shrink-0"
+                    title="Session settings"
+                  >
+                    {currentMap.name || `#${currentMap.id.slice(0, 8)}`}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="start">
+                  <MapSettingsForm onClose={() => setSettingsOpen(false)} />
+                </PopoverContent>
+              </Popover>
 
               {/* Desktop: all tabs */}
               <div className="hidden sm:flex items-center">
@@ -340,6 +359,10 @@ export default function Navbar() {
             >
               {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
+          )}
+
+          {isOnMap && currentMap && (
+            <LandmarkSearchField landmarks={landmarks} onSelect={(l) => setSelectedLandmark(l)} />
           )}
 
           {username && (
@@ -413,6 +436,21 @@ export default function Navbar() {
             </>
           )}
         </header>
+
+        {/* Landmark info popover (triggered by navbar search) */}
+        {selectedLandmark && mapActions && (
+          <LandmarkInfoPopover
+            key={selectedLandmark.id}
+            landmark={selectedLandmark}
+            open={true}
+            onOpenChange={(o) => { if (!o) setSelectedLandmark(null); }}
+            onEditLandmark={mapActions.handleEditLandmark}
+            onRemoveLandmark={mapActions.handleRemoveLandmark}
+            onEditConnection={mapActions.handleEditConnection}
+            onRemoveConnection={mapActions.handleRemoveConnection}
+            loading={mapActions.actionLoading}
+          />
+        )}
 
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && isOnMap && currentMap && (

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { ChevronRight, ExternalLink, FastForward, HelpCircle, Plus, Sprout } from 'lucide-react';
-import { PageTitle } from '@/components/ui/PageTitle';
 import { Popup } from '@/components/ui/popup';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Button } from '@/components/ui/button';
@@ -72,24 +71,10 @@ export default function GreenkeepingRotationsView() {
     }
   };
 
+  const cardBtnCls = 'flex items-center gap-1.5 px-3 text-xs text-foreground bg-secondary/70 hover:text-muted-foreground hover:bg-secondary border-l border-border transition-colors cursor-pointer shrink-0';
+
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
-      <PageTitle
-        icon={<Sprout className="h-4 w-4" />}
-        title="Greenkeeping Rotations"
-        actions={<>
-          <Button variant="ghost" onClick={() => setShowHelpDialog(true)} title="Help">
-            <HelpCircle className="h-3.5 w-3.5" />
-            Help
-          </Button>
-          {isCollaborator && (
-            <Button variant="default" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              Rotation
-            </Button>
-          )}
-        </>}
-      />
+    <div className="flex h-full flex-col overflow-y-auto">
 
       <Popup title="How to use Greenkeeping Rotations" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
         <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
@@ -143,18 +128,37 @@ export default function GreenkeepingRotationsView() {
         )}
       </Popup>
 
-      {(greenkeepingRotationsError || actionError) && (
-        <p className="px-6 py-2 text-sm text-destructive shrink-0">{greenkeepingRotationsError || actionError}</p>
-      )}
+      {/* ── Main card ───────────────────────────────────────────────────────── */}
+      <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3">
 
-      {greenkeepingRotationsLoading ? (
+        {/* Card header */}
+        <div className="flex items-stretch border-b border-border shrink-0">
+          <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
+            <Sprout className="h-3.5 w-3.5 text-muted-foreground" />
+            Greenkeeping Rotations
+          </div>
+          <button className={cardBtnCls} onClick={() => setShowHelpDialog(true)}>
+            <HelpCircle className="h-3.5 w-3.5" /> Help
+          </button>
+          {isCollaborator && (
+            <button className={cardBtnCls} onClick={() => setCreateOpen(true)}>
+              <Plus className="h-3.5 w-3.5" /> Rotation
+            </button>
+          )}
+        </div>
+
+        {(greenkeepingRotationsError || actionError) && (
+          <p className="px-4 py-2 text-sm text-destructive shrink-0">{greenkeepingRotationsError || actionError}</p>
+        )}
+
+        {greenkeepingRotationsLoading ? (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading…</div>
       ) : sortedRotations.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
           No greenkeeping rotations yet.{isCollaborator ? ' Create one with "Rotation".' : ''}
         </div>
       ) : (
-        <div className="flex-1 overflow-auto">
+        <div className="overflow-x-auto">
           <table className="greenkeeping-table data-display-table w-full text-sm border-separate border-spacing-0">
             <thead className="sticky top-0 z-10">
               <tr>
@@ -264,6 +268,8 @@ export default function GreenkeepingRotationsView() {
           </table>
         </div>
       )}
+
+      </div>{/* end card */}
 
       <CreateEditGreenkeepingRotationDialog
         open={createOpen}

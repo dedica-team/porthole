@@ -12,7 +12,7 @@
     --holo-violet:    255  80% 62%;    /* soft violet        */
     --holo-ink:       224  35% 12%;    /* very dark navy     */
     --holo-ink-soft:  220  18% 46%;    /* secondary text     */
-    --holo-bg:        216  30% 96%;    /* near-white blue    */
+    --holo-bg:        216  25% 82%;    /* near-white blue    */
     --holo-surface:   216  40% 98%;    /* lightest surface   */
     --holo-panel:     218  28% 92%;    /* panel background   */
     --holo-line:      220  40% 80%;    /* border colour      */
@@ -106,11 +106,11 @@ body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
-  /* faint circuit-grid background */
   background-image:
-    linear-gradient(rgba(80, 100, 220, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(80, 100, 220, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(80, 100, 220, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80, 100, 220, 0.10) 1px, transparent 1px);
   background-size: 40px 40px;
+  background-repeat: repeat;
   text-shadow: none;
 }
 
@@ -134,9 +134,11 @@ aside,
 /* Navbar / header – more specific than [class*="bg-card"] */
 header[class],
 header[class*="bg-card"] {
-  background: hsl(216 28% 84%) !important;
-  box-shadow: 0 1px 0 hsl(216 28% 74%), 0 2px 8px rgba(80, 100, 180, 0.10) !important;
-  border-bottom: 1px solid hsl(216 28% 74%) !important;
+  background: hsl(var(--holo-surface) / 0.88) !important;
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: 0 2px 16px rgba(80, 100, 180, 0.10) !important;
+  border: none !important;
   color: hsl(var(--holo-ink)) !important;
 }
 header[class] *:not([class*="text-primary"]),
@@ -164,8 +166,8 @@ aside {
 .popover-content,
 [class*="bg-card"] {
   background: hsl(var(--holo-surface)) !important;
-  border-color: hsl(var(--holo-line)) !important;
-  box-shadow: 0 4px 24px rgba(80, 100, 220, 0.10), inset 0 0 0 1px rgba(80, 100, 220, 0.08);
+  border: none !important;
+  box-shadow: 0 4px 24px rgba(80, 100, 220, 0.10);
   color: hsl(224 40% 5%) !important;
 }
 
@@ -221,6 +223,14 @@ button[class*="bg-primary"]:hover,
   color: hsl(var(--holo-ink));
 }
 
+[class~="bg-background"] {
+  background-image:
+    linear-gradient(rgba(80, 100, 220, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80, 100, 220, 0.10) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-repeat: repeat;
+}
+
 /* Text that uses muted-foreground – keep readable */
 [class*="text-muted-foreground"] {
   color: hsl(var(--muted-foreground)) !important;
@@ -262,7 +272,7 @@ tr:hover td:not(.group-stripe) {
 }
 
 .data-display-table thead th {
-  background: hsl(var(--background)) !important;
+  background: transparent !important;
 }
 
 .data-display-table tbody td:not(.group-stripe) {
@@ -276,7 +286,7 @@ tr:hover td:not(.group-stripe) {
 
 .data-display-table .data-sticky-cell,
 .data-display-table .data-sticky-header {
-  background: hsl(var(--background)) !important;
+  background: hsl(var(--card)) !important;
 }
 
 .data-display-table .data-subtle {

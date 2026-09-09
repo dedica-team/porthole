@@ -71,7 +71,7 @@ describe('SessionOverviewView', () => {
   it('renders the overview container', () => {
     renderView();
     expect(screen.getByTestId('view-overview')).toBeInTheDocument();
-    expect(screen.getByText('Session Overview')).toBeInTheDocument();
+    expect(screen.getByText('Session')).toBeInTheDocument();
   });
 
   it('renders all four card titles', () => {
@@ -153,8 +153,8 @@ describe('SessionOverviewView', () => {
     renderView();
     expect(screen.getByText('Weekly Cleanup')).toBeInTheDocument();
     // keeper name and initials avatar
-    expect(screen.getByText('alice')).toBeInTheDocument();
-    expect(screen.getByText('AL')).toBeInTheDocument();
+    expect(screen.getAllByText('alice').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('AL').length).toBeGreaterThan(0);
   });
 
   it('shows landmark rows and collaborator header initials in Bus Matrix card', () => {

@@ -24,7 +24,6 @@ import {
   useGroupFilter,
 } from '@/components/ui/GroupFilterPopover';
 import { useMapActions } from '@/pages/MapPage/MapActionsContext';
-import {PageTitle} from "@/components/ui/PageTitle.tsx";
 
 interface BadgeRow { key: string; url: string; error: string; }
 
@@ -610,34 +609,10 @@ export default function MetricsView() {
         .map(([, entry]) => entry),
     );
 
+  const cardBtnCls = 'flex items-center gap-1.5 px-3 text-xs text-foreground bg-secondary/70 hover:text-muted-foreground hover:bg-secondary border-l border-border transition-colors cursor-pointer shrink-0';
+
   return (
-    <div className="metrics-view flex flex-col h-full bg-background overflow-hidden">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <PageTitle
-        className="metrics-header"
-        icon={<BarChart2 className="h-4 w-4" />}
-        title="Quality Metrics"
-        actions={<>
-          <Button variant="ghost" onClick={() => setShowHelpDialog(true)} title="Help">
-            <HelpCircle className="h-3.5 w-3.5" />
-            Help
-          </Button>
-          <Button variant="ghost" onClick={() => setShowGroupsDialog(true)} title="Manage groups">
-            <Users className="h-3.5 w-3.5" />
-            Groups
-          </Button>
-          {isCollaborator && (
-            <>
-              <Button onClick={() => setShowCreateLandmarkDialog(true)} title="Create a new landmark without position">
-                <Plus className="h-3.5 w-3.5" /> Landmark
-              </Button>
-              <Button onClick={() => setShowTemplateSelector(true)} title="Add metric">
-                <Plus className="h-3.5 w-3.5" /> Metric
-              </Button>
-            </>
-          )}
-        </>}
-      />
+    <div className="flex flex-col h-full overflow-y-auto">
 
       {/* ── Groups dialog ───────────────────────────────────────────────────── */}
       <Popup title="Manage Groups" open={showGroupsDialog} onOpenChange={setShowGroupsDialog} className="max-w-sm max-h-[80vh] flex flex-col" contentClassName="overflow-y-auto p-0 flex-1">
@@ -660,9 +635,36 @@ export default function MetricsView() {
         </div>
       </Popup>
 
-      {/* ── Error alert ─────────────────────────────────────────────────────── */}
-      {error && (
-        <div className="px-6 pt-3 shrink-0">
+      {/* ── Main card ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3">
+
+        {/* Card header */}
+        <div className="flex items-stretch border-b border-border shrink-0">
+          <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
+            <BarChart2 className="h-3.5 w-3.5 text-muted-foreground" />
+            Quality Metrics
+          </div>
+          <button className={cardBtnCls} onClick={() => setShowHelpDialog(true)} title="Help">
+            <HelpCircle className="h-3.5 w-3.5" /> Help
+          </button>
+          <button className={cardBtnCls} onClick={() => setShowGroupsDialog(true)}>
+            <Users className="h-3.5 w-3.5" /> Groups
+          </button>
+          {isCollaborator && (
+            <>
+              <button className={cardBtnCls} onClick={() => setShowCreateLandmarkDialog(true)} title="Create a new landmark without position">
+                <Plus className="h-3.5 w-3.5" /> Landmark
+              </button>
+              <button className={cardBtnCls} onClick={() => setShowTemplateSelector(true)} title="Add metric">
+                <Plus className="h-3.5 w-3.5" /> Metric
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* ── Error alert ──────────────────────────────────────────────────── */}
+        {error && (
+          <div className="px-4 py-3 shrink-0">
           <Alert variant="destructive" className="py-2 pr-2 relative">
             <AlertTriangle className="h-3.5 w-3.5" />
             <AlertDescription className="text-sm pr-6">{error}</AlertDescription>
@@ -675,23 +677,23 @@ export default function MetricsView() {
               </button>
             )}
           </Alert>
-        </div>
-      )}
+          </div>
+        )}
 
-      {metrics.length === 0 && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
-          <BarChart2 className="h-8 w-8 opacity-20" />
-          <span>No metrics defined yet.</span>
-          {isCollaborator && (
-            <button
-              className="text-sm text-primary hover:underline"
-              onClick={() => setShowTemplateSelector(true)}
-            >
-              + Add your first metric
-            </button>
-          )}
-        </div>
-      )}
+        {metrics.length === 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground text-sm">
+            <BarChart2 className="h-8 w-8 opacity-20" />
+            <span>No metrics defined yet.</span>
+            {isCollaborator && (
+              <button
+                className="text-sm text-primary hover:underline"
+                onClick={() => setShowTemplateSelector(true)}
+              >
+                + Add your first metric
+              </button>
+            )}
+          </div>
+        )}
 
       {/* ── Metric definition edit dialog ───────────────────────────────────── */}
       <MetricDefinitionEditDialog
@@ -753,7 +755,7 @@ export default function MetricsView() {
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
       {metrics.length > 0 && (
-        <div className="flex-1 overflow-auto">
+        <div className="overflow-x-auto">
           <div className="min-w-max">
             <table className="data-display-table w-full text-sm border-separate border-spacing-0">
               <thead className="sticky top-0 z-30">
@@ -929,6 +931,8 @@ export default function MetricsView() {
           </div>
         </div>
       )}
+
+      </div>{/* end card */}
 
       <MetricTemplateSelector
         open={showTemplateSelector}

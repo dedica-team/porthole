@@ -1,15 +1,11 @@
 import {useEffect, useState} from 'react';
 import type React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {LayoutDashboard, BarChart2, Bus, CheckSquare, Sprout, ArrowRight, Pencil, Users} from 'lucide-react';
-import {PageTitle} from '@/components/ui/PageTitle';
+import {BarChart2, Bus, CheckSquare, Sprout, ArrowRight, Users, Info, Cog} from 'lucide-react';
 import {Popup} from '@/components/ui/popup';
 import {MapSettingsForm} from '@/components/Navbar/MapSettingsForm';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 import {useMapActions} from './MapActionsContext';
-import LandmarkSearchField from '@/components/LandmarkSearchField';
-import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
-import type {Landmark} from '@/types/landmark';
 import {UserAvatar} from '@/components/ui/user-avatar';
 import {StatusBadge, StatusIndicator, qualityLevelToStatus, matrixLevelToStatus} from '@/components/ui/status-badge';
 import {MATRIX_LEVEL_LABEL, MATRIX_LEVEL_ORDER} from '@/types/matrix';
@@ -20,38 +16,40 @@ import {fetchChoreLists, fetchGreenkeepingRotations, fetchCollaboratorMatrix} fr
 import {useMapStore, useAuthStore} from '@/store/mapStore';
 import type {GreenkeepingRotation} from '@/types/greenkeeping';
 import {getActiveGreenkeepingEntry} from '@/types/greenkeeping';
-import {Button} from "@/components/ui/button.tsx";
 
 // ── Overview card wrapper ─────────────────────────────────────────────────────
+
+const cardBtnCls = 'flex items-center gap-1 px-3 text-xs text-foreground bg-secondary/70 hover:text-muted-foreground hover:bg-secondary border-l border-border transition-colors cursor-pointer shrink-0';
 
 interface OverviewCardProps {
     title: string;
     icon: React.ReactNode;
-    linkLabel: string;
-    linkTo: string;
+    linkLabel?: string;
+    linkTo?: string;
+    onAction?: () => void;
+    actions?: React.ReactNode;
+    contentClassName?: string;
     children: React.ReactNode;
 }
 
-function OverviewCard({title, icon, linkLabel, linkTo, children}: OverviewCardProps) {
+function OverviewCard({title, icon, linkLabel, linkTo, onAction, actions, contentClassName, children}: OverviewCardProps) {
     const navigate = useNavigate();
+    const handleClick = onAction ?? (linkTo ? () => navigate(linkTo) : undefined);
     return (
-        <div className="flex flex-col rounded-lg border border-border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <div className="flex items-center gap-2 font-semibold text-foreground">
+        <div className="flex flex-col rounded-lg bg-card overflow-hidden">
+            <div className="flex items-stretch border-b border-border shrink-0">
+                <div className="flex items-center gap-2 px-4 py-2.5 text-md font-semibold text-foreground flex-1">
                     {icon}
                     {title}
                 </div>
-                <Button
-                    size={"sm"}
-                    variant={"ghost"}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    onClick={() => navigate(linkTo)}
-                >
-                    {linkLabel}
-                    <ArrowRight className="h-3 w-3"/>
-                </Button>
+                {actions ?? (linkLabel && handleClick && (
+                    <button className={cardBtnCls} onClick={handleClick}>
+                        {linkLabel}
+                        <ArrowRight className="h-3 w-3"/>
+                    </button>
+                ))}
             </div>
-            <div className="flex-1 overflow-auto max-h-56 p-4">
+            <div className={`flex-1 overflow-auto p-4 ${contentClassName ?? 'max-h-56'}`}>
                 {children}
             </div>
         </div>
@@ -282,23 +280,49 @@ function GreenkeepingRotationsSummary({}: { sessionId: string }) {
     );
 }
 
+// ── Session info summary ──────────────────────────────────────────────────────
+
+function SessionInfoSummary() {
+    const currentMap = useMapStore((s) => s.currentMap);
+    const userId = useAuthStore((s) => s.userId);
+    if (!currentMap) return null;
+    const isCollaborator = !!(userId && currentMap.collaborators.some((c) => c.id === userId));
+    const collaborators = [...currentMap.collaborators].sort((a, b) => a.username.localeCompare(b.username));
+    return (
+        <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 flex flex-col gap-1.5">
+                {currentMap.description ? (
+                    <p className="text-sm text-foreground">{currentMap.description}</p>
+                ) : (
+                    <p className="text-sm text-muted-foreground italic">No description.</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                    You are a <span className="font-medium text-foreground">{isCollaborator ? 'collaborator' : 'viewer'}</span>.
+                </p>
+
+            </div>
+            {collaborators.length > 0 && (
+                <div className="flex flex-wrap gap-2 sm:border-l sm:border-border sm:pl-4 shrink-0">
+                    {collaborators.map((c) => (
+                        <UserAvatar key={c.id} username={c.username} avatarUrl={c.avatarUrl} title={c.username}/>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function SessionOverviewView() {
     const {id: sessionId = ''} = useParams<{ id: string }>();
-    const currentMap = useMapStore((s) => s.currentMap);
-    const userId = useAuthStore((s) => s.userId);
-    const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
     const storeSetSelectedLandmark = useMapStore((s) => s.setSelectedLandmark);
     const storeSetSelectedTile = useMapStore((s) => s.setSelectedTile);
     const storeSetMainView = useMapStore((s) => s.setMainView);
     const [editOpen, setEditOpen] = useState(false);
     const [groupsOpen, setGroupsOpen] = useState(false);
-    const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(null);
     const {
         handleCreateGroup, handleEditGroup, handleRemoveGroup,
-        handleEditLandmark, handleRemoveLandmark,
-        handleEditConnection, handleRemoveConnection,
         actionLoading,
     } = useMapActions();
 
@@ -308,42 +332,9 @@ export default function SessionOverviewView() {
         storeSetMainView('idle');
     }, [storeSetSelectedLandmark, storeSetSelectedTile, storeSetMainView]);
 
-    const landmarks = Object.values(currentMap?.landmarks ?? {});
-
     return (
-        <div data-testid="view-overview" className="flex flex-col h-full bg-background overflow-auto">
-            <PageTitle
-                icon={<LayoutDashboard className="h-3.5 w-3.5" />}
-                title={currentMap?.name ?? 'Session Overview'}
-                actions={currentMap && (<>
-                    <LandmarkSearchField landmarks={landmarks} onSelect={(l) => setSelectedLandmark(l)} />
-                    <Button variant="ghost" onClick={() => setGroupsOpen(true)} title="Manage groups">
-                        <Users className="h-3.5 w-3.5" />
-                        Groups
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditOpen(true)} title="Edit session">
-                        <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                </>)}
-            />
-            {currentMap && (
-                <p className="px-3 sm:px-6 pb-1 text-xs text-muted-foreground">
-                    You are a <span className="font-medium text-foreground">{isCollaborator ? 'collaborator' : 'viewer'}</span> on this session.
-                </p>
-            )}
-            {selectedLandmark && (
-                <LandmarkInfoPopover
-                    key={selectedLandmark.id}
-                    landmark={selectedLandmark}
-                    open={true}
-                    onOpenChange={(o) => { if (!o) setSelectedLandmark(null); }}
-                    onEditLandmark={handleEditLandmark}
-                    onRemoveLandmark={handleRemoveLandmark}
-                    onEditConnection={handleEditConnection}
-                    onRemoveConnection={handleRemoveConnection}
-                    loading={actionLoading}
-                />
-            )}
+        <div data-testid="view-overview" className="flex flex-col h-full overflow-auto">
+
             <Popup title="Manage Groups" open={groupsOpen} onOpenChange={setGroupsOpen} className="max-w-sm max-h-[80vh] flex flex-col" contentClassName="overflow-y-auto p-0 flex-1">
                 <GroupsPanel
                     onCreateGroup={handleCreateGroup}
@@ -356,7 +347,27 @@ export default function SessionOverviewView() {
                 <MapSettingsForm onClose={() => setEditOpen(false)} />
             </Popup>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 sm:px-6 pb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-3 sm:px-6 pb-6 pt-4">
+                <div className="md:col-span-2">
+                    <OverviewCard
+                        title="Session"
+                        icon={<Info className="h-3.5 w-3.5 text-muted-foreground"/>}
+                        actions={<>
+                            <button className={cardBtnCls} onClick={() => setGroupsOpen(true)}>
+                                <Users className="h-3 w-3"/>
+                                Groups
+                            </button>
+                            <button className={cardBtnCls} onClick={() => setEditOpen(true)}>
+                                <Cog className="h-3 w-3"/>
+                                Settings
+                            </button>
+                        </>}
+                        contentClassName=""
+                    >
+                        <SessionInfoSummary/>
+                    </OverviewCard>
+                </div>
+
                 <OverviewCard
                     title="Quality Metrics"
                     icon={<BarChart2 className="h-3.5 w-3.5 text-muted-foreground"/>}
