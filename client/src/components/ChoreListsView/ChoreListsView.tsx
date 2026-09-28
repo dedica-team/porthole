@@ -90,11 +90,11 @@ export default function ChoreListsView() {
 
             <Popup title="How to use Chore Lists" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
                 <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
-                    <p>Each <span className="text-foreground font-medium">column</span> is a chore list; each <span className="text-foreground font-medium">row</span> is a landmark. Cells only appear for landmarks that belong to that list.</p>
+                    <p>Each <span className="text-foreground font-medium">column</span> is a chore list; each <span className="text-foreground font-medium">row</span> is an element. Cells only appear for elements that belong to that list.</p>
                     <p>Click a <span className="text-foreground font-medium">cell</span> to update its state (None, Ongoing, Blocked, Done) and assignee.</p>
-                    <p>Click a <span className="text-foreground font-medium">column header</span> to rename the list, change its landmarks, mark it complete, or delete it.</p>
+                    <p>Click a <span className="text-foreground font-medium">column header</span> to rename the list, change its elements, mark it complete, or delete it.</p>
                     <p>Click <span className="text-foreground font-medium">New List</span> to create a chore list and give it a title, optional link, and description.</p>
-                    <p>Click a <span className="text-foreground font-medium">landmark name</span> to edit it.</p>
+                    <p>Click a <span className="text-foreground font-medium">element name</span> to edit it.</p>
                 </div>
             </Popup>
 

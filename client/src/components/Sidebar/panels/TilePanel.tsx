@@ -137,7 +137,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
            <Separator className="bg-border" />
            <div className="flex flex-col gap-2">
              <div className="flex justify-between items-center">
-               <span className="text-sm text-muted-foreground">Landmark</span>
+               <span className="text-sm text-muted-foreground">Element</span>
                <span className="text-sm text-foreground">
                  {LANDMARK_TYPE_LABELS[landmarkOnTile.type]} · {landmarkOnTile.name}
                </span>
@@ -195,11 +195,11 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
         <>
           <Separator className="bg-border" />
           {!isCollaborator ? (
-            <p className="text-sm text-muted-foreground">Join as collaborator to place landmarks.</p>
+            <p className="text-sm text-muted-foreground">Join as collaborator to place elements.</p>
           ) : showNameForm ? (
             <form onSubmit={handleSubmit} className="flex flex-col gap-2">
               <p className="text-sm text-muted-foreground">
-                Choose a name and type for your landmark.
+                Choose a name and type for your element.
               </p>
               <Input
                 autoFocus
@@ -248,7 +248,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                   disabled={!canSubmit}
                 >
                   {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <span>{LANDMARK_TYPE_LABELS[selectedType].split(' ')[0]}</span>}
-                  Create Landmark
+                  Create Element
                 </Button>
                 <Button
                   type="button"
@@ -270,17 +270,17 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                 onClick={handlePlaceClick}
               >
                 <span>🏗</span>
-                Create Landmark
+                Create Element
               </Button>
 
               {canPlace && unpositionedLandmarks.length > 0 && (
                 <div className="rounded-md border border-border/60 p-2.5 flex flex-col gap-2">
-                  <p className="text-sm uppercase tracking-wider text-muted-foreground">Position existing landmark</p>
+                  <p className="text-sm uppercase tracking-wider text-muted-foreground">Position existing element</p>
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="h-8 text-sm"
-                    placeholder="Search landmarks..."
+                    placeholder="Search elements..."
                   />
                   <div className="max-h-40 overflow-y-auto flex flex-col gap-1">
                     {filteredUnpositionedLandmarks.map((lm) => {
@@ -313,7 +313,7 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
                       );
                     })}
                     {filteredUnpositionedLandmarks.length === 0 && (
-                      <p className="text-sm text-muted-foreground py-1 px-1">No matching landmarks found.</p>
+                      <p className="text-sm text-muted-foreground py-1 px-1">No matching elements found.</p>
                     )}
                   </div>
                 </div>

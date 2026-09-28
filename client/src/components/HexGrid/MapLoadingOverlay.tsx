@@ -61,7 +61,7 @@ export default function MapLoadingOverlay({ ready, tileCount, landmarkCount, mod
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground/60">
             <Castle className="h-3 w-3" />
-            <span>{landmarkCount.toLocaleString()} landmarks</span>
+            <span>{landmarkCount.toLocaleString()} elements</span>
           </div>
         </div>
       </div>

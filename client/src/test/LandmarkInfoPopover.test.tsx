@@ -71,9 +71,9 @@ describe('LandmarkInfoPopover', () => {
       </LandmarkInfoPopover>
     );
     fireEvent.click(screen.getByText('Open Me'));
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     // The edit dialog should now be open with the form
-    expect(screen.getByText('Edit Landmark')).toBeInTheDocument();
+    expect(screen.getByText('Edit Element')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Name')).toHaveValue('Tower 1');
   });
 
@@ -86,7 +86,7 @@ describe('LandmarkInfoPopover', () => {
       </LandmarkInfoPopover>
     );
     fireEvent.click(screen.getByText('Open Me'));
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     
     // Click "Remove" button in the edit dialog (destructive variant)
     fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
@@ -109,7 +109,7 @@ describe('LandmarkInfoPopover', () => {
       </LandmarkInfoPopover>
     );
     fireEvent.click(screen.getByText('Open Me'));
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     
     fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
     expect(screen.getByText(/remove «Tower 1»\?/i)).toBeInTheDocument();

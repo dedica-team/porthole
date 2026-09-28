@@ -252,7 +252,7 @@ export default function LandmarkInfoPopover({
 
           {isCollaborator && (
             <div className="pt-1 content-right flex justify-end">
-              <Button variant="ghost" title="Edit Landmark" onClick={startEdit}>
+              <Button variant="ghost" title="Edit Element" onClick={startEdit}>
                 <Pencil className="h-3 w-3" />
                 Edit
               </Button>
@@ -415,7 +415,7 @@ export default function LandmarkInfoPopover({
       </Popup>
 
       {/* ── Landmark edit popup ──────────────────────────────────────────── */}
-      <Popup title="Edit Landmark" open={editOpen} onOpenChange={setEditOpen} className="max-w-md">
+      <Popup title="Edit Element" open={editOpen} onOpenChange={setEditOpen} className="max-w-md">
         <form onSubmit={handleSave} className="flex flex-col gap-2.5">
           <Input
             autoFocus

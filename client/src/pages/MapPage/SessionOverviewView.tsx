@@ -127,7 +127,7 @@ function BusMatrixSummary({}: { sessionId: string }) {
     const landmarks = Object.values(currentMap.landmarks).sort((a, b) => a.name.localeCompare(b.name));
 
     if (collaborators.length === 0) return <p className="text-sm text-muted-foreground">No collaborators.</p>;
-    if (landmarks.length === 0) return <p className="text-sm text-muted-foreground">No landmarks.</p>;
+    if (landmarks.length === 0) return <p className="text-sm text-muted-foreground">No elements.</p>;
     if (!collaboratorMatrix) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
     const noExpert = landmarks.filter((l) =>
@@ -137,7 +137,7 @@ function BusMatrixSummary({}: { sessionId: string }) {
     );
 
     if (noExpert.length === 0)
-        return <div className="text-sm text-muted-foreground">All landmarks have at least one expert.</div>;
+        return <div className="text-sm text-muted-foreground">All elements have at least one expert.</div>;
 
     return (
         <div className="flex flex-col gap-1">

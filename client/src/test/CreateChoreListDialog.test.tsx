@@ -60,7 +60,7 @@ describe('CreateChoreListDialog – rendering', () => {
   it('shows a placeholder message when the map has no landmarks', () => {
     setup([]);
     renderDialog();
-    expect(screen.getByText('No landmarks on this map yet.')).toBeInTheDocument();
+    expect(screen.getByText('No elements on this map yet.')).toBeInTheDocument();
   });
 
   it('disables Create when the title is blank', () => {

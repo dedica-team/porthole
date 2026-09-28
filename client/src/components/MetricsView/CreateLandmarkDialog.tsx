@@ -76,9 +76,9 @@ export default function CreateLandmarkDialog({ open, loading, groups, onSubmit, 
   };
 
   return (
-    <Popup title="Create Landmark" open={open} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
+    <Popup title="Create Element" open={open} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
       <p className="text-sm text-muted-foreground mb-3">
-        Create a landmark without a position. You can place it later from the tile sidebar.
+        Create an element without a position. You can place it later from the tile sidebar.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <Input
@@ -133,7 +133,7 @@ export default function CreateLandmarkDialog({ open, loading, groups, onSubmit, 
         <div className="flex gap-2 pt-1">
           <Button type="submit" size="sm" className="flex-1 gap-1.5 h-8" disabled={!name.trim() || isDecorative(type) || loading}>
             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-            Create Landmark
+            Create Element
           </Button>
           <CloseButton onClick={handleClose} />
         </div>

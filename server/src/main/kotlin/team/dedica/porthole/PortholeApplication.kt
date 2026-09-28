@@ -11,9 +11,9 @@ import team.dedica.porthole.config.PortholeAuthProperties
 @EnableAsync
 @EnableScheduling
 @EnableConfigurationProperties(PortholeAuthProperties::class)
-class LandmarksApplication
+class PortholeApplication
 
 fun main(args: Array<String>) {
-    runApplication<LandmarksApplication>(*args)
+    runApplication<PortholeApplication>(*args)
 }
 
