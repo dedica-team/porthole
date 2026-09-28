@@ -103,7 +103,7 @@ export default function CreateChoreListDialog({ open, onOpenChange, onCreated }:
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-sm">Landmarks</Label>
+              <Label className="text-sm">Elements</Label>
               <button
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 onClick={toggleAll}
@@ -113,7 +113,7 @@ export default function CreateChoreListDialog({ open, onOpenChange, onCreated }:
             </div>
             <div className="flex flex-col gap-1 max-h-52 overflow-y-auto rounded-md border border-input bg-background p-2">
               {landmarks.length === 0 && (
-                <p className="text-sm text-muted-foreground px-1">No landmarks on this map yet.</p>
+                <p className="text-sm text-muted-foreground px-1">No elements on this map yet.</p>
               )}
               {landmarks.map((l) => (
                 <label key={l.id} className="flex items-center gap-2 cursor-pointer rounded px-1 py-0.5 hover:bg-muted text-sm">

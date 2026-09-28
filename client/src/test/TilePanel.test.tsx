@@ -51,7 +51,7 @@ function setup(selectedTile = { q: 1, r: 0 }) {
 
 function openForm(onPlaceLandmark = vi.fn()) {
   render(<TilePanel onPlaceLandmark={onPlaceLandmark} onPositionLandmark={vi.fn()} loading={false} />);
-  fireEvent.click(screen.getByRole('button', { name: /create landmark/i }));
+  fireEvent.click(screen.getByRole('button', { name: /create element/i }));
 }
 
 function selectType(type: string) {
@@ -107,14 +107,14 @@ describe('TilePanel – submit validation for decorative vs non-decorative types
     openForm();
     selectType('WALL');
     fireEvent.change(screen.getByPlaceholderText(/name \(optional\)/i), { target: { value: 'x' } });
-    expect(screen.getByRole('button', { name: /create landmark/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /create element/i })).not.toBeDisabled();
   });
 
   it('Create Landmark button is enabled for decorative type (WALL) even with empty name', () => {
     openForm();
     selectType('WALL');
     // leave name empty – decorative types do not require a name
-    expect(screen.getByRole('button', { name: /create landmark/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /create element/i })).not.toBeDisabled();
   });
 
   it('decorative type (WALL) name matching an existing slug is accepted (no slug check)', () => {
@@ -122,7 +122,7 @@ describe('TilePanel – submit validation for decorative vs non-decorative types
     selectType('WALL');
     // 'iron keep' would normally collide with slug 'iron-keep' for non-decorative types
     fireEvent.change(screen.getByPlaceholderText(/name \(optional\)/i), { target: { value: 'iron keep' } });
-    expect(screen.getByRole('button', { name: /create landmark/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /create element/i })).not.toBeDisabled();
     expect(screen.queryByText(/already taken/i)).not.toBeInTheDocument();
   });
 
@@ -131,33 +131,33 @@ describe('TilePanel – submit validation for decorative vs non-decorative types
     selectType('KEEP');
     fireEvent.change(screen.getByPlaceholderText(/iron keep/i), { target: { value: 'iron keep' } });
     expect(screen.getByText(/already taken/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create landmark/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /create element/i })).toBeDisabled();
   });
 
   it('non-decorative type with empty name disables submit', () => {
     openForm();
     selectType('KEEP');
     // name field is empty by default
-    expect(screen.getByRole('button', { name: /create landmark/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /create element/i })).toBeDisabled();
   });
 
   it('calls onPlaceLandmark with decorative type (WALL) and provided name on submit', () => {
     const onPlace = vi.fn();
     render(<TilePanel onPlaceLandmark={onPlace} onPositionLandmark={vi.fn()} loading={false} />);
-    fireEvent.click(screen.getByRole('button', { name: /create landmark/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create element/i }));
     selectType('WALL');
     fireEvent.change(screen.getByPlaceholderText(/name \(optional\)/i), { target: { value: 'East Wall' } });
-    fireEvent.submit(screen.getByRole('button', { name: /create landmark/i }).closest('form')!);
+    fireEvent.submit(screen.getByRole('button', { name: /create element/i }).closest('form')!);
     expect(onPlace).toHaveBeenCalledWith(1, 0, 'East Wall', 'WALL');
   });
 
   it('calls onPlaceLandmark with string as name when no name is entered for decorative type (WALL)', () => {
     const onPlace = vi.fn();
     render(<TilePanel onPlaceLandmark={onPlace} onPositionLandmark={vi.fn()} loading={false} />);
-    fireEvent.click(screen.getByRole('button', { name: /create landmark/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create element/i }));
     selectType('WALL');
     // submit immediately without typing a name
-    fireEvent.submit(screen.getByRole('button', { name: /create landmark/i }).closest('form')!);
+    fireEvent.submit(screen.getByRole('button', { name: /create element/i }).closest('form')!);
     expect(onPlace).toHaveBeenCalledOnce();
     const [, , submittedName, submittedType] = onPlace.mock.calls[0];
     expect(submittedType).toBe('WALL');
@@ -254,20 +254,20 @@ describe('TilePanel – positioning list UX for unpositioned landmarks', () => {
 
   it('shows unpositioned landmarks and their group label', () => {
     render(<TilePanel onPlaceLandmark={vi.fn()} onPositionLandmark={vi.fn()} loading={false} />);
-    expect(screen.getByText(/position existing landmark/i)).toBeInTheDocument();
+    expect(screen.getByText(/position existing element/i)).toBeInTheDocument();
     expect(screen.getByText(/fuel depot/i)).toBeInTheDocument();
     expect(screen.getByText('Alpha')).toBeInTheDocument();
   });
 
   it('filters list by search query and shows empty message when no match', () => {
     render(<TilePanel onPlaceLandmark={vi.fn()} onPositionLandmark={vi.fn()} loading={false} />);
-    const input = screen.getByPlaceholderText(/search landmarks/i);
+    const input = screen.getByPlaceholderText(/search elements/i);
 
     fireEvent.change(input, { target: { value: 'signal' } });
     expect(screen.getByText(/signal tower/i)).toBeInTheDocument();
     expect(screen.queryByText(/fuel depot/i)).not.toBeInTheDocument();
 
     fireEvent.change(input, { target: { value: 'does-not-exist' } });
-    expect(screen.getByText(/no matching landmarks found/i)).toBeInTheDocument();
+    expect(screen.getByText(/no matching elements found/i)).toBeInTheDocument();
   });
 });

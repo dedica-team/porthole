@@ -200,7 +200,7 @@ export default function Navbar() {
     {
       id: 'chores',
       label: 'Chores',
-      tooltip: 'Chore todo lists per landmark',
+      tooltip: 'Chore todo lists per element',
       icon: <CheckSquare className="h-3.5 w-3.5" />,
       isActive: isChoresActive,
       onClick: () => goTo('chores'),

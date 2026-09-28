@@ -1,0 +1,18 @@
+# Build directories
+target/
+build/
+.gradle/
+out/
+
+# IDE & Config
+.idea/
+.git/
+*.iws
+*.iml
+
+# Node / Web / Assets
+node_modules/
+dist/
+*.svg
+*.png
+*.jpg

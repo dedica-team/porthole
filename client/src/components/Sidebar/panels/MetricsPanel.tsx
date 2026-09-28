@@ -113,7 +113,7 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
               return (
                 <div key={metric.id} className="flex flex-col gap-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
                   <span className="text-sm text-destructive text-center">Remove «{metric.name}»?</span>
-                  <p className="text-sm text-muted-foreground text-center">All landmark values for this metric will be cleared.</p>
+                  <p className="text-sm text-muted-foreground text-center">All element values for this metric will be cleared.</p>
                   <div className="flex gap-2">
                     <Button
                       size="sm"

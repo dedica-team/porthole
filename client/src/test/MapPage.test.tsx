@@ -147,14 +147,14 @@ describe('MapPage – landmark placement confirmation', () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
-    expect(screen.getByText('Create Landmark')).toBeInTheDocument();
+    expect(screen.getByText('Create Element')).toBeInTheDocument();
   });
 
   it('shows confirm message after clicking Create Landmark once', async () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
-    fireEvent.click(screen.getByText('Create Landmark'));
+    fireEvent.click(screen.getByText('Create Element'));
     expect(screen.getByPlaceholderText('e.g. Iron Keep')).toBeInTheDocument();
   });
 
@@ -162,9 +162,9 @@ describe('MapPage – landmark placement confirmation', () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
-    fireEvent.click(screen.getByText('Create Landmark'));
+    fireEvent.click(screen.getByText('Create Element'));
     fireEvent.change(screen.getByPlaceholderText('e.g. Iron Keep'), { target: { value: 'Iron Keep' } });
-    fireEvent.click(screen.getByText('Create Landmark'));
+    fireEvent.click(screen.getByText('Create Element'));
     await waitFor(() => expect(mapApi.placeLandmark).toHaveBeenCalledWith(MAP_ID, 1, 0, 'Iron Keep', 'KEEP'));
   });
 
@@ -172,7 +172,7 @@ describe('MapPage – landmark placement confirmation', () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
-    fireEvent.click(screen.getByText('Create Landmark'));
+    fireEvent.click(screen.getByText('Create Element'));
     fireEvent.click(screen.getByText('Cancel'));
     expect(mapApi.placeLandmark).not.toHaveBeenCalled();
     expect(screen.queryByPlaceholderText('e.g. Iron Keep')).not.toBeInTheDocument();
@@ -182,14 +182,14 @@ describe('MapPage – landmark placement confirmation', () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-tower'));
-    expect(screen.queryByText('Create Landmark')).not.toBeInTheDocument();
+    expect(screen.queryByText('Create Element')).not.toBeInTheDocument();
   });
 
   it('shows Create Landmark button for water tile', async () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-water'));
-    expect(screen.getByText('Create Landmark')).toBeInTheDocument();
+    expect(screen.getByText('Create Element')).toBeInTheDocument();
   });
 });
 
@@ -220,7 +220,7 @@ describe('MapPage – connection flow', () => {
     fireEvent.click(screen.getByTestId('tile-tower'));
     fireEvent.click(screen.getByText('Create Connection'));
     fireEvent.click(screen.getByText('Select Target'));
-    expect(screen.getByText(/Click a target landmark to connect/)).toBeInTheDocument();
+    expect(screen.getByText(/Click a target element to connect/)).toBeInTheDocument();
   });
 
   it('clicking a second landmark while connecting calls createConnection API', async () => {
@@ -242,7 +242,7 @@ describe('MapPage – connection flow', () => {
     fireEvent.click(screen.getByText('Create Connection'));
     fireEvent.click(screen.getByText('Select Target'));
     fireEvent.click(screen.getByTestId('tile-empty'));
-    expect(screen.queryByText(/Click a target landmark to connect/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Click a target element to connect/)).not.toBeInTheDocument();
     expect(mapApi.createConnection).not.toHaveBeenCalled();
   });
 
@@ -253,7 +253,7 @@ describe('MapPage – connection flow', () => {
     fireEvent.click(screen.getByText('Create Connection'));
     fireEvent.click(screen.getByText('Select Target'));
     fireEvent.keyDown(window, { key: 'Escape' });
-    expect(screen.queryByText(/Click a target landmark to connect/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Click a target element to connect/)).not.toBeInTheDocument();
   });
 });
 
@@ -380,7 +380,7 @@ describe('MapPage – regression: Create Connection button visibility', () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-tower'));
-    expect(screen.getByTitle('Edit Landmark')).toBeInTheDocument();
+    expect(screen.getByTitle('Edit Element')).toBeInTheDocument();
     expect(screen.getByText('Create Connection')).toBeInTheDocument();
   });
 });
@@ -425,9 +425,9 @@ describe('MapPage – regression: withAction applies REST response', () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
-    fireEvent.click(screen.getByText('Create Landmark'));
+    fireEvent.click(screen.getByText('Create Element'));
     fireEvent.change(screen.getByPlaceholderText('e.g. Iron Keep'), { target: { value: 'New Tower' } });
-    fireEvent.click(screen.getByText('Create Landmark'));
+    fireEvent.click(screen.getByText('Create Element'));
     await waitFor(() => expect(mapApi.placeLandmark).toHaveBeenCalled());
     await waitFor(() =>
       expect(useMapStore.getState().currentMap?.landmarks).toHaveProperty('new-landmark'),
@@ -662,7 +662,7 @@ describe('MapPage – process mode: processRenderMode', () => {
     renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => screen.getByTestId('hex-grid'));
     fireEvent.click(screen.getByTestId('tile-empty'));
-    expect(screen.queryByText('Create Landmark')).not.toBeInTheDocument();
+    expect(screen.queryByText('Create Element')).not.toBeInTheDocument();
   });
 
   it('connection click in pick mode calls addConnectionToStage', async () => {    vi.mocked(mapApi.addConnectionToStage).mockResolvedValue([{

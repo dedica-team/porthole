@@ -154,8 +154,8 @@ export default function CollaboratorMatrixView() {
 
       <Popup title="How to use the Bus Matrix" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
         <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
-          <p>The <span className="text-foreground font-medium">Bus Matrix</span> shows how well each collaborator knows each landmark — useful for identifying single points of failure ("bus factor").</p>
-          <p>Each row is a <span className="text-foreground font-medium">landmark</span>, each column is a <span className="text-foreground font-medium">collaborator</span>. Click any cell to set the knowledge level.</p>
+          <p>The <span className="text-foreground font-medium">Bus Matrix</span> shows how well each collaborator knows each element — useful for identifying single points of failure ("bus factor").</p>
+          <p>Each row is a <span className="text-foreground font-medium">element</span>, each column is a <span className="text-foreground font-medium">collaborator</span>. Click any cell to set the knowledge level.</p>
           <p>Use the funnel icon to filter visible groups.</p>
         </div>
       </Popup>
@@ -207,7 +207,7 @@ export default function CollaboratorMatrixView() {
         {/* ── Empty state ──────────────────────────────────────────────────── */}
         {landmarks.length === 0 && (
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            No landmarks yet.
+            No elements yet.
           </div>
         )}
 

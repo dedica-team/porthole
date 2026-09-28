@@ -71,7 +71,7 @@ describe('CollaboratorMatrixView', () => {
     fireEvent.click(screen.getByText('Tower 1'));
 
     // Go to edit mode in popover
-    const editBtn = screen.getByTitle('Edit Landmark');
+    const editBtn = screen.getByTitle('Edit Element');
     fireEvent.click(editBtn);
 
     // Click remove button

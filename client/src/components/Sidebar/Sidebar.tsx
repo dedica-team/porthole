@@ -310,7 +310,7 @@ export default function Sidebar({
       {/* Connecting-Banner – hide in process mode */}
       {connectingFromLandmarkId && !processMode && (
         <div className="flex items-center justify-between px-4 py-2.5 bg-primary/10 border-b border-primary/30 shrink-0">
-          <span className="text-sm text-primary">Click a target landmark to connect</span>
+          <span className="text-sm text-primary">Click a target element to connect</span>
           <Button
             size="sm"
             variant="ghost"

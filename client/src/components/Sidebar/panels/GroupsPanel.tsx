@@ -146,7 +146,7 @@ export default function GroupsPanel({ onCreateGroup, onEditGroup, onRemoveGroup,
                   <p className="text-sm text-muted-foreground">
                     Remove <strong>{group.name}</strong>?
                     {count > 0 && (
-                      <span className="text-warning"> {count} landmark{count > 1 ? 's' : ''} will lose their group.</span>
+                      <span className="text-warning"> {count} element{count > 1 ? 's' : ''} will lose their group.</span>
                     )}
                   </p>
                   <div className="flex gap-1.5">

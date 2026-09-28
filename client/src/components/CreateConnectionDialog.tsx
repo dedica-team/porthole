@@ -69,7 +69,7 @@ function LandmarkCombobox({
             className="w-full justify-between h-9 px-3 rounded-lg border border-border bg-background text-sm font-normal cursor-pointer"
           >
             <span className={selected ? 'text-foreground' : 'text-muted-foreground'}>
-              {selected ? selected.name : 'Select landmark…'}
+              {selected ? selected.name : 'Select element…'}
             </span>
             <ChevronsUpDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
           </Button>
@@ -143,11 +143,11 @@ export default function CreateConnectionDialog({
 
   const handleSubmit = async () => {
     if (!origin || !target) {
-      setError('Please select both landmarks.');
+      setError('Please select both elements.');
       return;
     }
     if (origin.id === target.id) {
-      setError('Start and end landmarks must differ.');
+      setError('Start and end elements must differ.');
       return;
     }
     const isDuplicate = existingConnections.some(
@@ -156,7 +156,7 @@ export default function CreateConnectionDialog({
         (c.originId === target.id && c.targetId === origin.id),
     );
     if (isDuplicate) {
-      setError('A connection between these two landmarks already exists.');
+      setError('A connection between these two elements already exists.');
       return;
     }
     setLoading(true);
@@ -178,7 +178,7 @@ export default function CreateConnectionDialog({
         <DialogHeader>
           <DialogTitle className="text-base">New Connection</DialogTitle>
           <DialogDescription>
-            Create a new connection by choosing a start landmark, an end landmark and an optional title.
+            Create a new connection by choosing a start element, an end element and an optional title.
           </DialogDescription>
         </DialogHeader>
 
@@ -215,7 +215,7 @@ export default function CreateConnectionDialog({
 
           {/* Start landmark */}
           <LandmarkCombobox
-            label="Start landmark"
+            label="Start element"
             landmarks={landmarks}
             selected={origin}
             excluded={target?.id}
@@ -224,7 +224,7 @@ export default function CreateConnectionDialog({
 
           {/* End landmark */}
           <LandmarkCombobox
-            label="End landmark"
+            label="End element"
             landmarks={landmarks}
             selected={target}
             excluded={origin?.id}

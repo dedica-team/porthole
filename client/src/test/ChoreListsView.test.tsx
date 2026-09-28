@@ -202,7 +202,7 @@ describe('ChoreListsView – landmark row editing', () => {
     render(<ChoreListsView />);
 
     fireEvent.click(screen.getAllByText('Reception')[0]);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     fireEvent.click(screen.getByRole('button', { name: /remove/i }));
     fireEvent.click(screen.getByRole('button', { name: /yes, remove/i }));
 

@@ -54,8 +54,8 @@ describe('CreateConnectionDialog', () => {
   it('renders title input, type select and two landmark pickers', () => {
     renderDialog();
     expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
-    expect(screen.getByText(/^start landmark$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^end landmark$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^start element$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^end element$/i)).toBeInTheDocument();
     // native <select> for type
     expect(document.body.querySelector('select')).toBeInTheDocument();
   });
@@ -75,7 +75,7 @@ describe('CreateConnectionDialog', () => {
     act(() => { fireEvent.click(getLandmarkTrigger(0)); });
     fireEvent.click(await screen.findByText('Alpha'));
     fireEvent.click(screen.getByText('Create Connection'));
-    expect(await screen.findByText(/please select both landmarks/i)).toBeInTheDocument();
+    expect(await screen.findByText(/please select both elements/i)).toBeInTheDocument();
     expect(mapApi.createConnection).not.toHaveBeenCalled();
   });
 
