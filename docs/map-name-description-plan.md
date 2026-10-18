@@ -64,7 +64,7 @@ PATCH /api/sessions/{id}
 ```
 
 - Request Body: `EditMapRequest`
-- Authentifizierung: `@AuthenticationPrincipal UserDetails`
+- Authentifizierung: ` UserDetails`
 - Delegiert an `EditMapUseCase.execute(...)`
 - Gibt `200 OK` mit dem vollständigen `MapState` zurück (konsistent mit anderen Endpunkten).
 

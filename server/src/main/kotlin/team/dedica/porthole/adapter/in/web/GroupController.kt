@@ -1,22 +1,15 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
-import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Delete
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Patch
-import io.micronaut.http.annotation.PathVariable
-import io.micronaut.http.annotation.Post
-import io.micronaut.http.annotation.Put
-import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.annotation.*
 import jakarta.validation.Valid
-import team.dedica.porthole.adapter.`in`.web.dto.*
+import team.dedica.porthole.adapter.`in`.web.dto.CreateGroupRequest
+import team.dedica.porthole.adapter.`in`.web.dto.EditGroupRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
-import team.dedica.porthole.application.session.metrics.*
-import java.util.UUID
+import team.dedica.porthole.application.session.metrics.CreateGroupUseCase
+import team.dedica.porthole.application.session.metrics.EditGroupUseCase
+import team.dedica.porthole.application.session.metrics.RemoveGroupUseCase
+import java.util.*
 
 @Controller("/api/sessions/{id}/groups")
 class GroupController(
@@ -28,7 +21,7 @@ class GroupController(
     fun createGroup(
         @PathVariable id: String,
         @Valid @Body request: CreateGroupRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             createGroupUseCase.execute(
@@ -46,7 +39,7 @@ class GroupController(
         @PathVariable id: String,
         @PathVariable groupId: String,
         @Valid @Body request: EditGroupRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             editGroupUseCase.execute(
@@ -66,7 +59,7 @@ class GroupController(
     fun removeGroup(
         @PathVariable id: String,
         @PathVariable groupId: String,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(removeGroupUseCase.execute(
             UUID.fromString(id),

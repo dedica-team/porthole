@@ -255,7 +255,7 @@ runCatching { authorizationPort.accessSession(assigneeId, sessionId, SessionRole
 
 ### Alle Map/Session-Controller
 
-- Typen `UserDetails` → `PortholePrincipal` bei `@AuthenticationPrincipal`
+- Typen `UserDetails` → `PortholePrincipal` bei ``
 - `user.username` → `user.userId` an Use Cases übergeben
 - `resolveUserId()`-Hilfsmethoden entfernen
 - `adminService`- und `userPort`-Constructor-Parameter aus `MapController` entfernen

@@ -1,7 +1,7 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
 import java.security.Principal
-import java.util.UUID
+import java.util.*
 
 /**
  * Authenticated caller, resolved from a Porthole JWT.

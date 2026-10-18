@@ -4,7 +4,6 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import team.dedica.porthole.application.port.GetMetricTemplatesPort
-import team.dedica.porthole.domain.MetricTemplate
 
 @Controller("/api/metric-templates")
 class MetricTemplateController(

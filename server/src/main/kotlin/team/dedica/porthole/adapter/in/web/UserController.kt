@@ -5,7 +5,7 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Patch
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
+
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.port.UserPort
 
@@ -17,7 +17,7 @@ class UserController(private val userRepository: UserPort) {
 
     @Patch("/me/username")
     fun changeUsername(
-        @AuthenticationPrincipal principal: PortholePrincipal?,
+         principal: PortholePrincipal?,
         @Body request: ChangeUsernameRequest,
     ): HttpResponse<*> {
         principal ?: return HttpResponse.unauthorized<Any>()

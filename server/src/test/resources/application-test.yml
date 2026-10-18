@@ -40,4 +40,6 @@ porthole:
       redirect-uri: "http://localhost:5173/auth/github/callback"
     allowed-origins: "http://localhost:5173"
   storage:
-    path: ${porthole.test.storage.path:${java.io.tmpdir}/porthole-test-storage}
+    # Relative to the module working directory; lives under target/ so it is cleaned
+    # by `mvn clean` and never pollutes the source tree.
+    path: ${porthole.test.storage.path:target/porthole-test-storage}

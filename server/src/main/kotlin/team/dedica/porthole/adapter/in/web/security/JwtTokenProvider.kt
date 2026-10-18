@@ -6,8 +6,7 @@ import io.jsonwebtoken.security.Keys
 import jakarta.inject.Singleton
 import team.dedica.porthole.config.PortholeAuthProperties
 import java.nio.charset.StandardCharsets
-import java.util.Date
-import java.util.UUID
+import java.util.*
 import javax.crypto.SecretKey
 
 data class AuthTokenClaims(val userId: UUID, val username: String)

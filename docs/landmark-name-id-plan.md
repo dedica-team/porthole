@@ -74,7 +74,7 @@ data class PlaceTowerRequest(val q: Int, val r: Int, val name: String)
 fun removeTower(
     @PathVariable id: String,
     @PathVariable towerId: String,
-    @AuthenticationPrincipal user: UserDetails,
+     user: UserDetails,
 ) = ResponseEntity.ok(removeTowerUseCase.execute(id, user.username, towerId))
 ```
 

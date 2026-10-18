@@ -1,23 +1,17 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import jakarta.validation.Valid
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
-import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Delete
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Patch
-import io.micronaut.http.annotation.PathVariable
-import io.micronaut.http.annotation.Post
-import io.micronaut.http.annotation.Put
-import io.micronaut.http.annotation.QueryValue
-import team.dedica.porthole.adapter.`in`.web.dto.*
+import io.micronaut.http.annotation.*
+import jakarta.validation.Valid
+import team.dedica.porthole.adapter.`in`.web.dto.EditCollaboratorMatrixRequest
+import team.dedica.porthole.adapter.`in`.web.dto.SetMatrixEntryRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
-import team.dedica.porthole.application.session.metrics.*
+import team.dedica.porthole.application.session.metrics.ClearMatrixEntryUseCase
+import team.dedica.porthole.application.session.metrics.EditCollaboratorMatrixUseCase
+import team.dedica.porthole.application.session.metrics.GetCollaboratorMatrixUseCase
+import team.dedica.porthole.application.session.metrics.SetMatrixEntryUseCase
 import team.dedica.porthole.domain.MatrixLevel
-import java.util.UUID
+import java.util.*
 
 @Controller("/api/sessions/{id}/collaborator-matrix")
 class CollaboratorMatrixController(
@@ -27,14 +21,14 @@ class CollaboratorMatrixController(
     private val clearMatrixEntryUseCase: ClearMatrixEntryUseCase,
 ) {
     @Get
-    fun getMatrix(@PathVariable id: String, @AuthenticationPrincipal user: PortholePrincipal): HttpResponse<*> =
+    fun getMatrix(@PathVariable id: String,  user: PortholePrincipal): HttpResponse<*> =
         HttpResponse.ok(getCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.userId))
 
     @Patch
     fun editMatrix(
         @PathVariable id: String,
         @Valid @Body request: EditCollaboratorMatrixRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> {
         val name = request.name?.trim()
         if (name.isNullOrBlank()) return HttpResponse.badRequest("Matrix name must not be blank")
@@ -47,7 +41,7 @@ class CollaboratorMatrixController(
         @PathVariable landmarkId: String,
         @PathVariable collaboratorId: String,
         @Body request: SetMatrixEntryRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> {
         val level = runCatching { MatrixLevel.valueOf(request.level.uppercase()) }.getOrElse {
             return HttpResponse.badRequest("Unknown matrix level: ${request.level}")
@@ -68,7 +62,7 @@ class CollaboratorMatrixController(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @PathVariable collaboratorId: String,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             clearMatrixEntryUseCase.execute(

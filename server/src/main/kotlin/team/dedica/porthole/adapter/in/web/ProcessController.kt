@@ -1,22 +1,12 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import jakarta.validation.Valid
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
-import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Delete
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Patch
-import io.micronaut.http.annotation.PathVariable
-import io.micronaut.http.annotation.Post
-import io.micronaut.http.annotation.Put
-import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.annotation.*
+import jakarta.validation.Valid
 import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.processes.*
-import java.util.UUID
+import java.util.*
 
 @Controller("/api/sessions/{id}/processes")
 class ProcessController(
@@ -36,7 +26,7 @@ class ProcessController(
     @Get
     fun listProcesses(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(listProcessesUseCase.execute(UUID.fromString(id), user.userId))
 
@@ -44,7 +34,7 @@ class ProcessController(
     fun createProcess(
         @PathVariable id: String,
         @Valid @Body request: CreateProcessRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             createProcessUseCase.execute(
@@ -60,7 +50,7 @@ class ProcessController(
         @PathVariable id: String,
         @PathVariable processId: String,
         @Valid @Body request: EditProcessRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             editProcessUseCase.execute(
@@ -76,7 +66,7 @@ class ProcessController(
     fun removeProcess(
         @PathVariable id: String,
         @PathVariable processId: String,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(removeProcessUseCase.execute(
             UUID.fromString(id),
@@ -89,7 +79,7 @@ class ProcessController(
         @PathVariable id: String,
         @PathVariable processId: String,
         @Valid @Body request: CreateProcessStageRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             addProcessStageUseCase.execute(
@@ -106,7 +96,7 @@ class ProcessController(
         @PathVariable id: String,
         @PathVariable processId: String,
         @Body request: ReorderProcessStagesRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             reorderProcessStagesUseCase.execute(
@@ -122,7 +112,7 @@ class ProcessController(
         @PathVariable id: String,
         @PathVariable processId: String,
         @PathVariable stageId: String,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             removeProcessStageUseCase.execute(
@@ -139,7 +129,7 @@ class ProcessController(
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @Valid @Body request: EditProcessStageRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             editProcessStageUseCase.execute(
@@ -159,7 +149,7 @@ class ProcessController(
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @Body request: AddStageConnectionRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             addStageConnectionUseCase.execute(
@@ -180,7 +170,7 @@ class ProcessController(
         @PathVariable stageId: String,
         @PathVariable stageConnId: String,
         @Body request: EditStageConnectionRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             editStageConnectionUseCase.execute(
@@ -201,7 +191,7 @@ class ProcessController(
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @PathVariable stageConnId: String,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             removeStageConnectionUseCase.execute(

@@ -9,16 +9,11 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.QueryValue
 import io.micronaut.http.cookie.Cookie
 import io.micronaut.http.cookie.SameSite
-import team.dedica.porthole.adapter.`in`.web.security.AdminService
-import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
-import team.dedica.porthole.adapter.`in`.web.security.GitHubOAuthStateService
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
-import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
+import team.dedica.porthole.adapter.`in`.web.security.*
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthProperties
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 
 data class AuthResponse(
     val userId: UUID,
@@ -100,7 +95,7 @@ class OAuthController(
     }
 
     @Get("/session")
-    fun session(@AuthenticationPrincipal user: PortholePrincipal?): HttpResponse<AuthResponse> {
+    fun session( user: PortholePrincipal?): HttpResponse<AuthResponse> {
         val authenticatedUser = user ?: return HttpResponse.unauthorized()
         val userRecord = userRepository.findByUsername(authenticatedUser.username)
             ?: return HttpResponse.unauthorized()

@@ -104,7 +104,7 @@ Base path: `/api/sessions/{id}/chore-lists`
 | `DELETE` | `/{listId}` | Delete a chore list | Collaborator only |
 | `PATCH` | `/{listId}/entries/{landmarkId}` | Update a single entry (state, assigneeId, link, note) | Collaborator only |
 
-All write endpoints resolve the caller from `@AuthenticationPrincipal UserDetails` and call `state.requireCollaborator(user.id)` — throwing `IllegalArgumentException` → 400 (handled by `GlobalExceptionHandler`) for viewers. Viewers calling write endpoints receive the same 400 with message "User … is not a collaborator on map …".
+All write endpoints resolve the caller from ` UserDetails` and call `state.requireCollaborator(user.id)` — throwing `IllegalArgumentException` → 400 (handled by `GlobalExceptionHandler`) for viewers. Viewers calling write endpoints receive the same 400 with message "User … is not a collaborator on map …".
 
 **DTO additions to `MapRequestDtos.kt`:**
 ```kotlin

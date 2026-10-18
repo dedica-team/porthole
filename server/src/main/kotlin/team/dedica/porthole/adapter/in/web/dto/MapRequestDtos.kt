@@ -6,7 +6,7 @@ import io.micronaut.core.annotation.Introspected
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import team.dedica.porthole.domain.ChoreEntryState
-import java.util.UUID
+import java.util.*
 
 /** Sent by the client when creating a new mapping session. */
 @Introspected

@@ -32,7 +32,7 @@
         <micronaut.maven.plugin.version>4.9.0</micronaut.maven.plugin.version>
         <micronaut.test.resources.version>2.7.0</micronaut.test.resources.version>
         <micronaut.test.resources.enabled>false</micronaut.test.resources.enabled>
-        <exec.mainClass>team.dedica.porthole.LandmarksApplicationKt</exec.mainClass>
+        <exec.mainClass>team.dedica.porthole.PortholeApplicationKt</exec.mainClass>
     </properties>
 
     <repositories>
@@ -76,6 +76,11 @@
                     <groupId>io.micronaut.maven</groupId>
                     <artifactId>micronaut-maven-plugin</artifactId>
                     <version>${micronaut.maven.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.15.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

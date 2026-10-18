@@ -3,7 +3,7 @@ package team.dedica.porthole.adapter.`in`.web.security
 import jakarta.inject.Singleton
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.util.Base64
+import java.util.*
 
 @Singleton
 class GitHubOAuthStateService {

@@ -1,24 +1,14 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import jakarta.validation.Valid
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
-import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Delete
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Patch
-import io.micronaut.http.annotation.PathVariable
-import io.micronaut.http.annotation.Post
-import io.micronaut.http.annotation.Put
-import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.annotation.*
+import jakarta.validation.Valid
 import team.dedica.porthole.adapter.`in`.web.dto.CreateGreenkeepingRotationRequest
 import team.dedica.porthole.adapter.`in`.web.dto.EditGreenkeepingRotationRequest
 import team.dedica.porthole.adapter.`in`.web.dto.GreenkeepingRotationCollaboratorRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.greenkeeping.*
-import java.util.UUID
+import java.util.*
 
 @Controller("/api/sessions/{id}/greenkeeping-rotations")
 class GreenkeepingRotationController(
@@ -31,7 +21,7 @@ class GreenkeepingRotationController(
     @Get
     fun list(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(listGreenkeepingRotationsUseCase.execute(UUID.fromString(id), user.userId))
 
@@ -39,7 +29,7 @@ class GreenkeepingRotationController(
     fun create(
         @PathVariable id: String,
         @Valid @Body request: CreateGreenkeepingRotationRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             createGreenkeepingRotationUseCase.execute(
@@ -58,7 +48,7 @@ class GreenkeepingRotationController(
         @PathVariable id: String,
         @PathVariable rotationId: String,
         @Valid @Body request: EditGreenkeepingRotationRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             editGreenkeepingRotationUseCase.execute(
@@ -79,7 +69,7 @@ class GreenkeepingRotationController(
     fun delete(
         @PathVariable id: String,
         @PathVariable rotationId: String,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> {
         removeGreenkeepingRotationUseCase.execute(UUID.fromString(id), UUID.fromString(rotationId), user.userId)
         return HttpResponse.noContent<Any>()
@@ -89,7 +79,7 @@ class GreenkeepingRotationController(
     fun advance(
         @PathVariable id: String,
         @PathVariable rotationId: String,
-        @AuthenticationPrincipal user: PortholePrincipal,
+         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             advanceGreenkeepingRotationUseCase.execute(

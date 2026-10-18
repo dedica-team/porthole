@@ -231,7 +231,7 @@ EclipseStore-Binärdaten werden nicht übernommen.
 - `pom.xml`: EclipseStore-Deps entfernen, ggf. `jackson-datatype-jsr310` explizit hinzufügen
   (ist via Spring Boot BOM oft transitiv verfügbar)
 - `application.yml`: `landmarks.storage.path` zeigt jetzt auf `data/json`
-- `LandmarksApplication.kt`: `@EnableScheduling` hinzufügen (wenn periodisches Flush gewünscht)
+- `PortholeApplication.kt`: `@EnableScheduling` hinzufügen (wenn periodisches Flush gewünscht)
 - `surefire`-Konfiguration in `pom.xml`: `landmarks.test.storage.path` anpassen
 
 ---

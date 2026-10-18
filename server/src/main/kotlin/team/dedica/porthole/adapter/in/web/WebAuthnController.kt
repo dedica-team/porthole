@@ -2,38 +2,25 @@ package team.dedica.porthole.adapter.`in`.web
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.yubico.webauthn.FinishAssertionOptions
-import com.yubico.webauthn.FinishRegistrationOptions
-import com.yubico.webauthn.RelyingParty
-import com.yubico.webauthn.StartAssertionOptions
-import com.yubico.webauthn.StartRegistrationOptions
-import com.yubico.webauthn.data.AuthenticatorAssertionResponse
-import com.yubico.webauthn.data.AuthenticatorAttestationResponse
-import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
+import com.yubico.webauthn.*
+import com.yubico.webauthn.data.*
 import com.yubico.webauthn.data.ByteArray
-import com.yubico.webauthn.data.ClientAssertionExtensionOutputs
-import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs
-import com.yubico.webauthn.data.PublicKeyCredential
-import com.yubico.webauthn.data.RelyingPartyIdentity
-import com.yubico.webauthn.data.ResidentKeyRequirement
-import com.yubico.webauthn.data.UserIdentity
-import com.yubico.webauthn.data.UserVerificationRequirement
-import org.slf4j.LoggerFactory
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
-import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Post
+import org.slf4j.LoggerFactory
+import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
-import team.dedica.porthole.config.PortholeAuthProperties
-import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.adapter.out.repository.YubicoCredentialRepository
 import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.config.PortholeAuthProperties
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────

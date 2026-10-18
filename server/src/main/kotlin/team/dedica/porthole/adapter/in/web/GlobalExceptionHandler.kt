@@ -1,17 +1,18 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import io.micronaut.context.annotation.Primary
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.exceptions.HttpStatusException
-import io.micronaut.context.annotation.Primary
 import io.micronaut.http.server.exceptions.ExceptionHandler
 import io.micronaut.json.JsonSyntaxException
 import jakarta.inject.Singleton
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import team.dedica.porthole.domain.AccessDeniedException
+
 
 data class ErrorResponse(val message: String, val status: Int)
 

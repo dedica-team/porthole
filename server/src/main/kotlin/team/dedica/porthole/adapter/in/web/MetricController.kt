@@ -1,23 +1,15 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
-import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Delete
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Patch
-import io.micronaut.http.annotation.PathVariable
-import io.micronaut.http.annotation.Post
-import io.micronaut.http.annotation.Put
-import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.annotation.*
 import jakarta.validation.Valid
-import team.dedica.porthole.adapter.`in`.web.dto.*
+import team.dedica.porthole.adapter.`in`.web.dto.CreateMetricRequest
+import team.dedica.porthole.adapter.`in`.web.dto.EditMetricRequest
+import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.metrics.*
 import team.dedica.porthole.domain.QualityLevel
-import java.util.UUID
+import java.util.*
 
 @Controller("/api/sessions/{id}/metrics")
 class MetricController(
@@ -27,14 +19,14 @@ class MetricController(
     private val removeMetricUseCase: RemoveMetricUseCase,
 ) {
     @Get
-    fun listMetrics(@PathVariable id: String, @AuthenticationPrincipal user: PortholePrincipal): HttpResponse<*> =
+    fun listMetrics(@PathVariable id: String, user: PortholePrincipal): HttpResponse<*> =
         HttpResponse.ok(listMetricsUseCase.execute(UUID.fromString(id), user.userId))
 
     @Post
     fun createMetric(
         @PathVariable id: String,
         @Valid @Body request: CreateMetricRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+        user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             createMetricUseCase.execute(
@@ -51,7 +43,7 @@ class MetricController(
         @PathVariable id: String,
         @PathVariable metricId: String,
         @Valid @Body request: EditMetricRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+        user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             editMetricUseCase.execute(
@@ -69,7 +61,7 @@ class MetricController(
     fun removeMetric(
         @PathVariable id: String,
         @PathVariable metricId: String,
-        @AuthenticationPrincipal user: PortholePrincipal
+        user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(removeMetricUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(metricId)))
 }
@@ -85,7 +77,7 @@ class LandmarkMetricController(
         @PathVariable landmarkId: String,
         @PathVariable metricId: String,
         @Valid @Body request: SetLandmarkMetricRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+        user: PortholePrincipal
     ): HttpResponse<*> {
         val level = runCatching { QualityLevel.valueOf(request.level.uppercase()) }.getOrElse {
             return HttpResponse.badRequest("Unknown quality level: ${request.level}")
@@ -111,7 +103,7 @@ class LandmarkMetricController(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @PathVariable metricId: String,
-        @AuthenticationPrincipal user: PortholePrincipal
+        user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             clearLandmarkMetricUseCase.execute(

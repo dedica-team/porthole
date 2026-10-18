@@ -1,5 +1,6 @@
 package team.dedica.porthole.adapter.out.persistence
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.context.annotation.Property
 import io.micronaut.scheduling.annotation.Scheduled
@@ -39,22 +40,23 @@ class JsonStore(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val storageDir: Path = Paths.get(storagePath).toAbsolutePath().normalize()
-    private val mapsDir:    Path = storageDir.resolve("maps")
-    private val usersFile:  Path = storageDir.resolve("users.json")
+    private val mapsDir: Path = storageDir.resolve("maps")
+    private val usersFile: Path = storageDir.resolve("users.json")
 
     /** Last-mutation timestamp (ms) per map ID. Presence means the map is dirty. */
     private val dirtyAt = ConcurrentHashMap<UUID, Long>()
 
-    @Volatile private var usersDirty = false
+    @Volatile
+    private var usersDirty = false
 
-    lateinit var sessionStates: ConcurrentHashMap<UUID, SessionState>
-    lateinit var users:     ConcurrentHashMap<UUID, UserRecord>
+    var sessionStates: ConcurrentHashMap<UUID, SessionState>
+    var users: ConcurrentHashMap<UUID, UserRecord>
 
     init {
         Files.createDirectories(storageDir)
         Files.createDirectories(mapsDir)
         sessionStates = loadAllMaps()
-        users     = loadOrEmpty(usersFile, object : com.fasterxml.jackson.core.type.TypeReference<Map<UUID, UserRecord>>() {})
+        users = loadOrEmpty(usersFile, object : TypeReference<Map<UUID, UserRecord>>() {})
         log.info(
             "JsonStore initialised – {} map(s), {} user(s) loaded from {}",
             sessionStates.size, users.size, storageDir,
@@ -159,7 +161,7 @@ class JsonStore(
 
     private fun <V> loadOrEmpty(
         file: Path,
-        typeRef: com.fasterxml.jackson.core.type.TypeReference<Map<UUID, V>>,
+        typeRef: TypeReference<Map<UUID, V>>,
     ): ConcurrentHashMap<UUID, V> {
         if (!Files.exists(file)) return ConcurrentHashMap()
         return try {

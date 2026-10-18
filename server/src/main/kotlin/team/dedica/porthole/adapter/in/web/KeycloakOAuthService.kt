@@ -3,7 +3,7 @@ package team.dedica.porthole.adapter.`in`.web
 import jakarta.inject.Singleton
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.UserPort
-import java.util.UUID
+import java.util.*
 
 data class KeycloakUserInfo(
     val keycloakId: String,

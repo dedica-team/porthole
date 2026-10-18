@@ -1,22 +1,14 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import jakarta.validation.Valid
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
-import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Delete
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Patch
-import io.micronaut.http.annotation.PathVariable
-import io.micronaut.http.annotation.Post
-import io.micronaut.http.annotation.Put
-import io.micronaut.http.annotation.QueryValue
-import team.dedica.porthole.adapter.`in`.web.dto.*
+import io.micronaut.http.annotation.*
+import jakarta.validation.Valid
+import team.dedica.porthole.adapter.`in`.web.dto.CreateChoreListRequest
+import team.dedica.porthole.adapter.`in`.web.dto.EditChoreListRequest
+import team.dedica.porthole.adapter.`in`.web.dto.UpdateChoreEntryRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.chorelists.*
-import java.util.UUID
+import java.util.*
 
 @Controller("/api/sessions/{id}/chore-lists")
 class ChoreListController(
@@ -30,7 +22,7 @@ class ChoreListController(
     @Get
     fun listChoreLists(
         @PathVariable id: String,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(listChoreListsUseCase.execute(UUID.fromString(id), user.userId))
 
@@ -38,7 +30,7 @@ class ChoreListController(
     fun createChoreList(
         @PathVariable id: String,
         @Valid @Body request: CreateChoreListRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             createChoreListUseCase.execute(
@@ -56,7 +48,7 @@ class ChoreListController(
         @PathVariable id: String,
         @PathVariable listId: String,
         @Valid @Body request: EditChoreListRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             editChoreListUseCase.execute(
@@ -76,7 +68,7 @@ class ChoreListController(
     fun toggleComplete(
         @PathVariable id: String,
         @PathVariable listId: String,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             toggleChoreListCompletedUseCase.execute(
@@ -90,7 +82,7 @@ class ChoreListController(
     fun deleteChoreList(
         @PathVariable id: String,
         @PathVariable listId: String,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> {
         removeChoreListUseCase.execute(UUID.fromString(id), UUID.fromString(listId), user.userId)
         return HttpResponse.noContent<Any>()
@@ -102,7 +94,7 @@ class ChoreListController(
         @PathVariable listId: String,
         @PathVariable landmarkId: String,
         @Body request: UpdateChoreEntryRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
+         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(
             updateChoreEntryUseCase.execute(
