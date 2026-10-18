@@ -78,7 +78,7 @@ class AddProcessStageUseCaseTest {
 
     @Test
     fun `non-collaborator throws AccessDeniedException`() {
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             addStageUseCase.execute(state.id, processId, "Stage", 0, collaborator2.id)
         }
     }

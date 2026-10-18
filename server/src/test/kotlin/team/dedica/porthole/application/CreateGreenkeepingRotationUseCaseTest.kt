@@ -3,7 +3,7 @@ package team.dedica.porthole.application
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.security.access.AccessDeniedException
+import team.dedica.porthole.domain.AccessDeniedException
 import team.dedica.porthole.application.session.greenkeeping.CreateGreenkeepingRotationUseCase
 import team.dedica.porthole.application.session.greenkeeping.GreenkeepingRotationCollaboratorPatch
 import team.dedica.porthole.domain.Collaborator

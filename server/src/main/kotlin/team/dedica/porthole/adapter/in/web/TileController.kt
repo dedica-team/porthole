@@ -1,8 +1,17 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Patch
+import io.micronaut.http.annotation.PathVariable
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
+import io.micronaut.http.annotation.QueryValue
 import team.dedica.porthole.adapter.`in`.web.dto.EditTileRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.landscaping.EditTileUseCase
@@ -10,24 +19,23 @@ import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.Terrain
 import java.util.UUID
 
-@RestController
-@RequestMapping("/api/sessions/{id}/tiles")
+@Controller("/api/sessions/{id}/tiles")
 class TileController(
     private val editTileUseCase: EditTileUseCase,
 ) {
-    @PatchMapping("/{q}/{r}")
+    @Patch("/{q}/{r}")
     fun editTile(
         @PathVariable id: String,
         @PathVariable q: Int,
         @PathVariable r: Int,
-        @RequestBody request: EditTileRequest,
+        @Body request: EditTileRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> {
+    ): HttpResponse<*> {
         val terrain = request.terrain?.let {
             runCatching { Terrain.valueOf(it.uppercase()) }
-                .getOrElse { return ResponseEntity.badRequest().body("Unknown terrain: $it") }
+                .getOrElse { return HttpResponse.badRequest("Unknown terrain: $it") }
         }
-        return ResponseEntity.ok(
+        return HttpResponse.ok(
             editTileUseCase.execute(
                 UUID.fromString(id),
                 user.userId,

@@ -1,16 +1,24 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import jakarta.validation.Valid
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Patch
+import io.micronaut.http.annotation.PathVariable
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
+import io.micronaut.http.annotation.QueryValue
 import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.chorelists.*
 import java.util.UUID
 
-@RestController
-@RequestMapping("/api/sessions/{id}/chore-lists")
+@Controller("/api/sessions/{id}/chore-lists")
 class ChoreListController(
     private val listChoreListsUseCase: ListChoreListsUseCase,
     private val createChoreListUseCase: CreateChoreListUseCase,
@@ -19,20 +27,20 @@ class ChoreListController(
     private val toggleChoreListCompletedUseCase: ToggleChoreListCompletedUseCase,
     private val updateChoreEntryUseCase: UpdateChoreEntryUseCase,
 ) {
-    @GetMapping
+    @Get
     fun listChoreLists(
         @PathVariable id: String,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(listChoreListsUseCase.execute(UUID.fromString(id), user.userId))
+    ): HttpResponse<*> =
+        HttpResponse.ok(listChoreListsUseCase.execute(UUID.fromString(id), user.userId))
 
-    @PostMapping
+    @Post
     fun createChoreList(
         @PathVariable id: String,
-        @Valid @RequestBody request: CreateChoreListRequest,
+        @Valid @Body request: CreateChoreListRequest,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             createChoreListUseCase.execute(
                 UUID.fromString(id),
                 request.title,
@@ -43,14 +51,14 @@ class ChoreListController(
             )
         )
 
-    @PatchMapping("/{listId}")
+    @Patch("/{listId}")
     fun editChoreList(
         @PathVariable id: String,
         @PathVariable listId: String,
-        @Valid @RequestBody request: EditChoreListRequest,
+        @Valid @Body request: EditChoreListRequest,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             editChoreListUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(listId),
@@ -64,13 +72,13 @@ class ChoreListController(
             )
         )
 
-    @PatchMapping("/{listId}/complete")
+    @Patch("/{listId}/complete")
     fun toggleComplete(
         @PathVariable id: String,
         @PathVariable listId: String,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             toggleChoreListCompletedUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(listId),
@@ -78,25 +86,25 @@ class ChoreListController(
             )
         )
 
-    @DeleteMapping("/{listId}")
+    @Delete("/{listId}")
     fun deleteChoreList(
         @PathVariable id: String,
         @PathVariable listId: String,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Void> {
+    ): HttpResponse<*> {
         removeChoreListUseCase.execute(UUID.fromString(id), UUID.fromString(listId), user.userId)
-        return ResponseEntity.noContent().build()
+        return HttpResponse.noContent<Any>()
     }
 
-    @PatchMapping("/{listId}/entries/{landmarkId}")
+    @Patch("/{listId}/entries/{landmarkId}")
     fun updateChoreEntry(
         @PathVariable id: String,
         @PathVariable listId: String,
         @PathVariable landmarkId: String,
-        @RequestBody request: UpdateChoreEntryRequest,
+        @Body request: UpdateChoreEntryRequest,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             updateChoreEntryUseCase.execute(
                 sessionId = UUID.fromString(id),
                 listId = UUID.fromString(listId),

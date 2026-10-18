@@ -1,8 +1,26 @@
-spring:
-  security:
-    oauth2:
-      client:
-        registration: {}
+micronaut:
+  server:
+    cors:
+      enabled: true
+      configurations:
+        default:
+          allowed-origins:
+            - http://localhost:5173
+          allowed-methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          allow-credentials: true
+
+endpoints:
+  all:
+    enabled: false
+  health:
+    enabled: true
+    sensitive: false
 
 porthole:
   auth:
@@ -23,6 +41,3 @@ porthole:
     allowed-origins: "http://localhost:5173"
   storage:
     path: ${porthole.test.storage.path:${java.io.tmpdir}/porthole-test-storage}
-
-
-

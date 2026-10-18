@@ -1,16 +1,24 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import jakarta.validation.Valid
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Patch
+import io.micronaut.http.annotation.PathVariable
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
+import io.micronaut.http.annotation.QueryValue
 import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.processes.*
 import java.util.UUID
 
-@RestController
-@RequestMapping("/api/sessions/{id}/processes")
+@Controller("/api/sessions/{id}/processes")
 class ProcessController(
     private val listProcessesUseCase: ListProcessesUseCase,
     private val createProcessUseCase: CreateProcessUseCase,
@@ -25,20 +33,20 @@ class ProcessController(
     private val removeStageConnectionUseCase: RemoveStageConnectionUseCase,
 ) {
 
-    @GetMapping
+    @Get
     fun listProcesses(
         @PathVariable id: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(listProcessesUseCase.execute(UUID.fromString(id), user.userId))
+    ): HttpResponse<*> =
+        HttpResponse.ok(listProcessesUseCase.execute(UUID.fromString(id), user.userId))
 
-    @PostMapping
+    @Post
     fun createProcess(
         @PathVariable id: String,
-        @Valid @RequestBody request: CreateProcessRequest,
+        @Valid @Body request: CreateProcessRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             createProcessUseCase.execute(
                 UUID.fromString(id),
                 request.name,
@@ -47,14 +55,14 @@ class ProcessController(
             )
         )
 
-    @PatchMapping("/{processId}")
+    @Patch("/{processId}")
     fun editProcess(
         @PathVariable id: String,
         @PathVariable processId: String,
-        @Valid @RequestBody request: EditProcessRequest,
+        @Valid @Body request: EditProcessRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             editProcessUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
@@ -64,26 +72,26 @@ class ProcessController(
             )
         )
 
-    @DeleteMapping("/{processId}")
+    @Delete("/{processId}")
     fun removeProcess(
         @PathVariable id: String,
         @PathVariable processId: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(removeProcessUseCase.execute(
+    ): HttpResponse<*> =
+        HttpResponse.ok(removeProcessUseCase.execute(
             UUID.fromString(id),
             UUID.fromString(processId),
             user.userId
         ))
 
-    @PostMapping("/{processId}/stages")
+    @Post("/{processId}/stages")
     fun addStage(
         @PathVariable id: String,
         @PathVariable processId: String,
-        @Valid @RequestBody request: CreateProcessStageRequest,
+        @Valid @Body request: CreateProcessStageRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             addProcessStageUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
@@ -93,14 +101,14 @@ class ProcessController(
             )
         )
 
-    @PostMapping("/{processId}/stages/reorder")
+    @Post("/{processId}/stages/reorder")
     fun reorderStages(
         @PathVariable id: String,
         @PathVariable processId: String,
-        @RequestBody request: ReorderProcessStagesRequest,
+        @Body request: ReorderProcessStagesRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             reorderProcessStagesUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
@@ -109,14 +117,14 @@ class ProcessController(
             )
         )
 
-    @DeleteMapping("/{processId}/stages/{stageId}")
+    @Delete("/{processId}/stages/{stageId}")
     fun removeStage(
         @PathVariable id: String,
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             removeProcessStageUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
@@ -125,15 +133,15 @@ class ProcessController(
             )
         )
 
-    @PatchMapping("/{processId}/stages/{stageId}")
+    @Patch("/{processId}/stages/{stageId}")
     fun editStage(
         @PathVariable id: String,
         @PathVariable processId: String,
         @PathVariable stageId: String,
-        @Valid @RequestBody request: EditProcessStageRequest,
+        @Valid @Body request: EditProcessStageRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             editProcessStageUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
@@ -145,15 +153,15 @@ class ProcessController(
             )
         )
 
-    @PostMapping("/{processId}/stages/{stageId}/connections")
+    @Post("/{processId}/stages/{stageId}/connections")
     fun addStageConnection(
         @PathVariable id: String,
         @PathVariable processId: String,
         @PathVariable stageId: String,
-        @RequestBody request: AddStageConnectionRequest,
+        @Body request: AddStageConnectionRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             addStageConnectionUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
@@ -165,16 +173,16 @@ class ProcessController(
             )
         )
 
-    @PatchMapping("/{processId}/stages/{stageId}/connections/{stageConnId}")
+    @Patch("/{processId}/stages/{stageId}/connections/{stageConnId}")
     fun editStageConnection(
         @PathVariable id: String,
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @PathVariable stageConnId: String,
-        @RequestBody request: EditStageConnectionRequest,
+        @Body request: EditStageConnectionRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             editStageConnectionUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),
@@ -187,15 +195,15 @@ class ProcessController(
             )
         )
 
-    @DeleteMapping("/{processId}/stages/{stageId}/connections/{stageConnId}")
+    @Delete("/{processId}/stages/{stageId}/connections/{stageConnId}")
     fun removeStageConnection(
         @PathVariable id: String,
         @PathVariable processId: String,
         @PathVariable stageId: String,
         @PathVariable stageConnId: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             removeStageConnectionUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(processId),

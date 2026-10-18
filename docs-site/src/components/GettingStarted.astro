@@ -112,7 +112,7 @@ cd porthole
 cp .env.example .env    <span style="color:#8b949e"># add PORTHOLE_GITHUB_CLIENT_ID / SECRET</span>
 <span style="color:#8b949e"># 2. Install dependencies</span>
 make setup
-<span style="color:#8b949e"># 3. Start (Spring Boot :8080 + Vite :5173)</span>
+<span style="color:#8b949e"># 3. Start (Micronaut :8080 + Vite :5173)</span>
 make dev</code></pre>
         <p style="color:var(--muted); font-size:0.875rem; margin-top:0.75rem;">
           Open <a href="http://localhost:5173">localhost:5173</a> for the React dev server
@@ -140,7 +140,7 @@ make build
 <span style="color:#8b949e"># Run the JAR directly</span>
 java -jar server/target/porthole-*.jar</code></pre>
         <p style="color:var(--muted); font-size:0.875rem; margin-top:0.75rem;">
-          The client's <code>dist/</code> is automatically served by Spring Boot from the JAR.
+          The client's <code>dist/</code> is automatically served by Micronaut from the JAR.
         </p>
       </div>
       <div id="tab-keycloak" class="tab-pane">

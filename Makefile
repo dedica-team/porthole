@@ -38,7 +38,7 @@ help:
 	@echo ""
 	@echo "  $(GREEN)Development$(RESET)"
 	@echo "    make dev            Start server + client in parallel"
-	@echo "    make dev-server     Start Spring Boot with hot-reload"
+	@echo "    make dev-server     Start Micronaut dev server"
 	@echo "    make dev-client     Start Vite dev server"
 	@echo ""
 	@echo "  $(GREEN)Testing$(RESET)"
@@ -97,9 +97,9 @@ dev:
 
 .PHONY: dev-server
 dev-server:
-	@echo "$(BOLD)→ Starting Spring Boot dev server…$(RESET)"
+	@echo "$(BOLD)→ Starting Micronaut dev server…$(RESET)"
 	cd $(ROOT) && PORTHOLE_JWT_SECRET=$${PORTHOLE_JWT_SECRET:-porthole-super-secret-key-change-in-production-must-be-256-bits!!} \
-	  $(MVN) spring-boot:run -pl server
+	  $(MVN) mn:run -pl server
 
 .PHONY: dev-client
 dev-client:

@@ -5,7 +5,7 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.security.access.AccessDeniedException
+import team.dedica.porthole.domain.AccessDeniedException
 import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
 import team.dedica.porthole.domain.*
 

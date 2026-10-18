@@ -1,10 +1,10 @@
 package team.dedica.porthole.adapter.out.persistence
 
+import io.micronaut.context.annotation.Requires
+import io.micronaut.context.event.StartupEvent
+import io.micronaut.runtime.event.annotation.EventListener
+import jakarta.inject.Singleton
 import org.slf4j.LoggerFactory
-import org.springframework.boot.ApplicationArguments
-import org.springframework.boot.ApplicationRunner
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.stereotype.Component
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.lobby.JoinMapUseCase
 import team.dedica.porthole.application.port.SessionStatePort
@@ -50,8 +50,8 @@ import kotlin.math.abs
  *     case covers custom IDs or the hexagonal map type), and
  *   - saving [UserRecord]s (users come from auth providers; there is no "create user" use case).
  */
-@Component
-@ConditionalOnProperty(name = ["porthole.demo.enabled"], havingValue = "true")
+@Singleton
+@Requires(property = "porthole.demo.enabled", value = "true")
 class DemoDataLoader(
     // Infrastructure ports (direct access only where no use case exists)
     private val sessionStatePort: SessionStatePort,
@@ -72,7 +72,7 @@ class DemoDataLoader(
     private val updateChoreEntryUseCase: UpdateChoreEntryUseCase,
     private val createGreenkeepingRotationUseCase: CreateGreenkeepingRotationUseCase,
     private val advanceGreenkeepingRotationUseCase: AdvanceGreenkeepingRotationUseCase,
-) : ApplicationRunner {
+) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -119,7 +119,8 @@ class DemoDataLoader(
 
     // ── Entry point ───────────────────────────────────────────────────────────
 
-    override fun run(args: ApplicationArguments) {
+    @EventListener
+    fun run(event: StartupEvent) {
 
         log.info("Reloading pet clinic demo landscape …")
         createUsers()

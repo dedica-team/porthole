@@ -99,7 +99,7 @@ class CreateUnpositionedLandmarkUseCaseTest {
 
     @Test
     fun `non-collaborator is rejected`() {
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             useCase.execute(state.id, collaborator2.id, "Iron Keep")
         }
     }

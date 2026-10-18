@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.session.metrics
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
 import team.dedica.porthole.application.DataSanitationUtils.HEX_COLOR_REGEX
 import team.dedica.porthole.application.port.AuthorizationPort
@@ -11,7 +11,7 @@ import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 
-@Component
+@Singleton
 class EditGroupUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,

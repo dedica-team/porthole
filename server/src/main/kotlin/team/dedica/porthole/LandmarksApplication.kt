@@ -1,19 +1,15 @@
 package team.dedica.porthole
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.runApplication
-import org.springframework.scheduling.annotation.EnableAsync
-import org.springframework.scheduling.annotation.EnableScheduling
-import team.dedica.porthole.config.PortholeAuthProperties
+import io.micronaut.runtime.Micronaut
 
-@SpringBootApplication
-@EnableAsync
-@EnableScheduling
-@EnableConfigurationProperties(PortholeAuthProperties::class)
+/**
+ * Micronaut application entry point.
+ *
+ * Scheduling and async execution are enabled by the Micronaut framework by default
+ * (`micronaut-context`), so no annotation is required.
+ */
 class LandmarksApplication
 
 fun main(args: Array<String>) {
-    runApplication<LandmarksApplication>(*args)
+    Micronaut.run(LandmarksApplication::class.java, *args)
 }
-

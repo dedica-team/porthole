@@ -6,16 +6,16 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.kotlinModule
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Primary
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Named
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.LandmarkType
 
-@Configuration
+@Factory
 class JsonPersistenceConfig {
 
-    @Primary
+    @Named("persistenceObjectMapper")
     @Bean
     fun persistenceObjectMapper(): ObjectMapper {
         val hexKeyModule = SimpleModule().apply {

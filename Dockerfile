@@ -23,7 +23,7 @@ RUN mvn -pl server -am dependency:resolve dependency:resolve-plugins -q
 # Copy sources, run tests explicitly, then build the uberjar
 COPY server/src server/src
 
-# Inject built frontend into Spring Boot's static-resources folder
+# Inject built frontend into the Micronaut static-resources folder (classpath:static)
 COPY --from=frontend /app/client/dist server/src/main/resources/static
 
 # Explicit test gate (fails build if tests fail)
@@ -40,7 +40,6 @@ RUN addgroup -S app && adduser -S -G app app
 COPY --from=backend --chown=app:app /app/server/target/server-1.0-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
-EXPOSE 8081
 
 USER app
 

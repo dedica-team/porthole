@@ -56,7 +56,7 @@ class AcceptJoinRequestUseCaseTest {
 
     @Test
     fun `non-collaborator acceptor throws AccessDeniedException`() {
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             useCase.execute(state.id, UUID.randomUUID(), requestId)
         }
     }

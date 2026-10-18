@@ -57,7 +57,7 @@ class CreateProcessUseCaseTest {
     @Test
     fun `non-collaborator throws AccessDeniedException`() {
         // Bob is not a collaborator on state
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             useCase.execute(state.id, "Spy Flow", null, collaborator2.id)
         }
     }

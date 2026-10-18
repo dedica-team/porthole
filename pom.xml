@@ -19,8 +19,20 @@
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
         <java.version>21</java.version>
-        <spring.boot.version>3.5.14</spring.boot.version>
+        <maven.compiler.release>21</maven.compiler.release>
         <jsonwebtoken.version>0.13.0</jsonwebtoken.version>
+
+        <!-- Micronaut -->
+        <micronaut.version>4.8.3</micronaut.version>
+        <micronaut.core.version>4.8.18</micronaut.core.version>
+        <micronaut.security.version>4.12.2</micronaut.security.version>
+        <micronaut.validation.version>4.9.0</micronaut.validation.version>
+        <micronaut.kotlin.version>4.6.0</micronaut.kotlin.version>
+        <micronaut.test.version>4.7.0</micronaut.test.version>
+        <micronaut.maven.plugin.version>4.9.0</micronaut.maven.plugin.version>
+        <micronaut.test.resources.version>2.7.0</micronaut.test.resources.version>
+        <micronaut.test.resources.enabled>false</micronaut.test.resources.enabled>
+        <exec.mainClass>team.dedica.porthole.LandmarksApplicationKt</exec.mainClass>
     </properties>
 
     <repositories>
@@ -33,9 +45,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring.boot.version}</version>
+                <groupId>io.micronaut.platform</groupId>
+                <artifactId>micronaut-platform</artifactId>
+                <version>${micronaut.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -59,53 +71,24 @@
                     <groupId>org.jetbrains.kotlin</groupId>
                     <artifactId>kotlin-maven-plugin</artifactId>
                     <version>${kotlin.version}</version>
-                    <configuration>
-                        <jvmTarget>${kotlin.compiler.jvmTarget}</jvmTarget>
-                        <compilerPlugins>
-                            <plugin>spring</plugin>
-                            <plugin>all-open</plugin>
-                        </compilerPlugins>
-                    </configuration>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.jetbrains.kotlin</groupId>
-                            <artifactId>kotlin-maven-allopen</artifactId>
-                            <version>${kotlin.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>org.jetbrains.kotlin</groupId>
-                            <artifactId>kotlin-maven-noarg</artifactId>
-                            <version>${kotlin.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <executions>
-                        <execution>
-                            <id>compile</id>
-                            <goals><goal>compile</goal></goals>
-                            <configuration>
-                                <sourceDirs>
-                                    <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-                                </sourceDirs>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>test-compile</id>
-                            <goals><goal>test-compile</goal></goals>
-                            <configuration>
-                                <sourceDirs>
-                                    <sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
-                                </sourceDirs>
-                            </configuration>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
+                    <groupId>io.micronaut.maven</groupId>
+                    <artifactId>micronaut-maven-plugin</artifactId>
+                    <version>${micronaut.maven.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.5</version>
+                    <version>3.5.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.6.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>
     </build>
 
 </project>
-

@@ -1,6 +1,6 @@
 package team.dedica.porthole.adapter.out.authorization
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -8,7 +8,7 @@ import team.dedica.porthole.domain.SessionRole
 import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
-@Component
+@Singleton
 class AuthorizationService(
     private val adminService: AdminService,
     private val sessionStatePort: SessionStatePort,

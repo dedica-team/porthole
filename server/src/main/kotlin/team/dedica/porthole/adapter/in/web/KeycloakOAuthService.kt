@@ -1,6 +1,6 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.stereotype.Service
+import jakarta.inject.Singleton
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.UserPort
 import java.util.UUID
@@ -17,7 +17,7 @@ data class KeycloakUserInfo(
  * HTTP interaction (authorization code flow, token exchange, userinfo) is now
  * delegated to Spring Security OAuth2 Client — see [KeycloakLoginSuccessHandler].
  */
-@Service
+@Singleton
 class KeycloakOAuthService(
     private val userRepository: UserPort,
 ) {

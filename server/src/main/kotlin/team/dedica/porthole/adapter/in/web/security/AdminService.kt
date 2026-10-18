@@ -1,13 +1,13 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
+import io.micronaut.context.annotation.Property
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import java.util.UUID
 
-@Component
+@Singleton
 class AdminService(
-    @Value("\${porthole.admin.user-ids:}") adminUserIdsRaw: String,
+    @Property(name = "porthole.admin.user-ids", defaultValue = "") adminUserIdsRaw: String,
 ) {
     private val log = LoggerFactory.getLogger(AdminService::class.java)
     private val adminIds: Set<String> = adminUserIdsRaw

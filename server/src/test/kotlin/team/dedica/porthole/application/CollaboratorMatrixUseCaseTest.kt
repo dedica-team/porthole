@@ -59,7 +59,7 @@ class CollaboratorMatrixUseCaseTest {
     @Test
     fun `set matrix entry non-collaborator throws AccessDeniedException`() {
         val useCase = SetMatrixEntryUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             useCase.execute(state.id, UUID.randomUUID(), landmarkId, targetId, MatrixLevel.HIGH)
         }
     }
@@ -119,7 +119,7 @@ class CollaboratorMatrixUseCaseTest {
     @Test
     fun `edit matrix name non-collaborator throws AccessDeniedException`() {
         val useCase = EditCollaboratorMatrixUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             useCase.execute(state.id, UUID.randomUUID(), "Name")
         }
     }

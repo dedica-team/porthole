@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.session.metrics
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -11,7 +11,7 @@ import team.dedica.porthole.domain.MatrixLevel
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-@Component
+@Singleton
 class SetMatrixEntryUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,

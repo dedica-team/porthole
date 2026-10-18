@@ -1,50 +1,58 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import jakarta.validation.Valid
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Patch
+import io.micronaut.http.annotation.PathVariable
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
+import io.micronaut.http.annotation.QueryValue
 import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.metrics.*
 import team.dedica.porthole.domain.MatrixLevel
 import java.util.UUID
 
-@RestController
-@RequestMapping("/api/sessions/{id}/collaborator-matrix")
+@Controller("/api/sessions/{id}/collaborator-matrix")
 class CollaboratorMatrixController(
     private val getCollaboratorMatrixUseCase: GetCollaboratorMatrixUseCase,
     private val editCollaboratorMatrixUseCase: EditCollaboratorMatrixUseCase,
     private val setMatrixEntryUseCase: SetMatrixEntryUseCase,
     private val clearMatrixEntryUseCase: ClearMatrixEntryUseCase,
 ) {
-    @GetMapping
-    fun getMatrix(@PathVariable id: String, @AuthenticationPrincipal user: PortholePrincipal): ResponseEntity<Any> =
-        ResponseEntity.ok(getCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.userId))
+    @Get
+    fun getMatrix(@PathVariable id: String, @AuthenticationPrincipal user: PortholePrincipal): HttpResponse<*> =
+        HttpResponse.ok(getCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.userId))
 
-    @PatchMapping
+    @Patch
     fun editMatrix(
         @PathVariable id: String,
-        @Valid @RequestBody request: EditCollaboratorMatrixRequest,
+        @Valid @Body request: EditCollaboratorMatrixRequest,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> {
+    ): HttpResponse<*> {
         val name = request.name?.trim()
-        if (name.isNullOrBlank()) return ResponseEntity.badRequest().body("Matrix name must not be blank")
-        return ResponseEntity.ok(editCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.userId, name))
+        if (name.isNullOrBlank()) return HttpResponse.badRequest("Matrix name must not be blank")
+        return HttpResponse.ok(editCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.userId, name))
     }
 
-    @PutMapping("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
+    @Put("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
     fun setEntry(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @PathVariable collaboratorId: String,
-        @RequestBody request: SetMatrixEntryRequest,
+        @Body request: SetMatrixEntryRequest,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> {
+    ): HttpResponse<*> {
         val level = runCatching { MatrixLevel.valueOf(request.level.uppercase()) }.getOrElse {
-            return ResponseEntity.badRequest().body("Unknown matrix level: ${request.level}")
+            return HttpResponse.badRequest("Unknown matrix level: ${request.level}")
         }
-        return ResponseEntity.ok(
+        return HttpResponse.ok(
             setMatrixEntryUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
@@ -55,14 +63,14 @@ class CollaboratorMatrixController(
         )
     }
 
-    @DeleteMapping("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
+    @Delete("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
     fun clearEntry(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
         @PathVariable collaboratorId: String,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<*> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             clearMatrixEntryUseCase.execute(
                 UUID.fromString(id),
                 user.userId,

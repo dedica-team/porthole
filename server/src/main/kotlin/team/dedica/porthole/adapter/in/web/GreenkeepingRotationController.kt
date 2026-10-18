@@ -1,9 +1,18 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import jakarta.validation.Valid
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Patch
+import io.micronaut.http.annotation.PathVariable
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
+import io.micronaut.http.annotation.QueryValue
 import team.dedica.porthole.adapter.`in`.web.dto.CreateGreenkeepingRotationRequest
 import team.dedica.porthole.adapter.`in`.web.dto.EditGreenkeepingRotationRequest
 import team.dedica.porthole.adapter.`in`.web.dto.GreenkeepingRotationCollaboratorRequest
@@ -11,8 +20,7 @@ import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.greenkeeping.*
 import java.util.UUID
 
-@RestController
-@RequestMapping("/api/sessions/{id}/greenkeeping-rotations")
+@Controller("/api/sessions/{id}/greenkeeping-rotations")
 class GreenkeepingRotationController(
     private val listGreenkeepingRotationsUseCase: ListGreenkeepingRotationsUseCase,
     private val createGreenkeepingRotationUseCase: CreateGreenkeepingRotationUseCase,
@@ -20,20 +28,20 @@ class GreenkeepingRotationController(
     private val removeGreenkeepingRotationUseCase: RemoveGreenkeepingRotationUseCase,
     private val advanceGreenkeepingRotationUseCase: AdvanceGreenkeepingRotationUseCase,
 ) {
-    @GetMapping
+    @Get
     fun list(
         @PathVariable id: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(listGreenkeepingRotationsUseCase.execute(UUID.fromString(id), user.userId))
+    ): HttpResponse<*> =
+        HttpResponse.ok(listGreenkeepingRotationsUseCase.execute(UUID.fromString(id), user.userId))
 
-    @PostMapping
+    @Post
     fun create(
         @PathVariable id: String,
-        @Valid @RequestBody request: CreateGreenkeepingRotationRequest,
+        @Valid @Body request: CreateGreenkeepingRotationRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             createGreenkeepingRotationUseCase.execute(
                 sessionId = UUID.fromString(id),
                 name = request.name,
@@ -45,14 +53,14 @@ class GreenkeepingRotationController(
             )
         )
 
-    @PatchMapping("/{rotationId}")
+    @Patch("/{rotationId}")
     fun edit(
         @PathVariable id: String,
         @PathVariable rotationId: String,
-        @Valid @RequestBody request: EditGreenkeepingRotationRequest,
+        @Valid @Body request: EditGreenkeepingRotationRequest,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             editGreenkeepingRotationUseCase.execute(
                 sessionId = UUID.fromString(id),
                 rotationId = UUID.fromString(rotationId),
@@ -67,23 +75,23 @@ class GreenkeepingRotationController(
             )
         )
 
-    @DeleteMapping("/{rotationId}")
+    @Delete("/{rotationId}")
     fun delete(
         @PathVariable id: String,
         @PathVariable rotationId: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Void> {
+    ): HttpResponse<*> {
         removeGreenkeepingRotationUseCase.execute(UUID.fromString(id), UUID.fromString(rotationId), user.userId)
-        return ResponseEntity.noContent().build()
+        return HttpResponse.noContent<Any>()
     }
 
-    @PostMapping("/{rotationId}/advance")
+    @Post("/{rotationId}/advance")
     fun advance(
         @PathVariable id: String,
         @PathVariable rotationId: String,
         @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             advanceGreenkeepingRotationUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(rotationId),

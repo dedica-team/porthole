@@ -5,9 +5,16 @@ import org.junit.jupiter.api.Test
 
 class KeycloakEnabledTest {
 
+    private fun keycloak(clientId: String, clientSecret: String, issuerUri: String) =
+        PortholeAuthProperties.Keycloak().apply {
+            this.clientId = clientId
+            this.clientSecret = clientSecret
+            this.issuerUri = issuerUri
+        }
+
     @Test
     fun `keycloak is enabled with clientId and issuerUri`() {
-        val kc = PortholeAuthProperties.Keycloak(
+        val kc = keycloak(
             clientId = "my-client",
             clientSecret = "",
             issuerUri = "https://keycloak.example.com/realms/test",
@@ -17,7 +24,7 @@ class KeycloakEnabledTest {
 
     @Test
     fun `keycloak is enabled with clientId, secret, and issuerUri`() {
-        val kc = PortholeAuthProperties.Keycloak(
+        val kc = keycloak(
             clientId = "my-client",
             clientSecret = "my-secret",
             issuerUri = "https://keycloak.example.com/realms/test",
@@ -27,7 +34,7 @@ class KeycloakEnabledTest {
 
     @Test
     fun `keycloak is disabled when clientId is blank`() {
-        val kc = PortholeAuthProperties.Keycloak(
+        val kc = keycloak(
             clientId = "",
             clientSecret = "my-secret",
             issuerUri = "https://keycloak.example.com/realms/test",
@@ -37,7 +44,7 @@ class KeycloakEnabledTest {
 
     @Test
     fun `keycloak is disabled when issuerUri is blank`() {
-        val kc = PortholeAuthProperties.Keycloak(
+        val kc = keycloak(
             clientId = "my-client",
             clientSecret = "",
             issuerUri = "",
@@ -53,18 +60,17 @@ class KeycloakEnabledTest {
 
     @Test
     fun `jwt isUsingDefaultSecret returns true for default secret`() {
-        val jwt = PortholeAuthProperties.Jwt(
-            secret = PortholeAuthProperties.Jwt.INSECURE_DEFAULT,
-        )
+        val jwt = PortholeAuthProperties.Jwt().apply {
+            secret = PortholeAuthProperties.Jwt.INSECURE_DEFAULT
+        }
         assertTrue(jwt.isUsingDefaultSecret())
     }
 
     @Test
     fun `jwt isUsingDefaultSecret returns false for custom secret`() {
-        val jwt = PortholeAuthProperties.Jwt(
-            secret = "my-very-secure-custom-secret-for-production-use!!",
-        )
+        val jwt = PortholeAuthProperties.Jwt().apply {
+            secret = "my-very-secure-custom-secret-for-production-use!!"
+        }
         assertFalse(jwt.isUsingDefaultSecret())
     }
 }
-

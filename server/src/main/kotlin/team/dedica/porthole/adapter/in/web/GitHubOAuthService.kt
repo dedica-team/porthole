@@ -1,16 +1,16 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.http.HttpEntity
-import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
-import org.springframework.http.MediaType
-import org.springframework.stereotype.Service
-import org.springframework.web.client.RestTemplate
-import org.springframework.util.LinkedMultiValueMap
-import org.springframework.web.util.UriComponentsBuilder
+import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.inject.Singleton
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthProperties
+import java.net.URI
+import java.net.URLEncoder
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 data class GitHubUserInfo(
@@ -23,69 +23,53 @@ data class GitHubUserInfo(
 /**
  * Encapsulates all GitHub OAuth API interactions.
  * Keeps [OAuthController] thin and allows this logic to be tested independently.
+ *
+ * Uses the JDK [HttpClient] directly: GitHub OAuth calls are infrequent and do not
+ * benefit from Micronaut's load-balanced client, which is designed for service discovery.
  */
-@Service
+@Singleton
 class GitHubOAuthService(
     private val userRepository: UserPort,
+    private val objectMapper: ObjectMapper,
     props: PortholeAuthProperties,
 ) {
     private val clientId = props.github.clientId
     private val clientSecret = props.github.clientSecret
-    // RestTemplate is intentionally not a shared Bean here – OAuth calls are infrequent
-    // and do not benefit from connection pooling. Replace with WebClient if async is needed.
-    private val restTemplate = RestTemplate()
+    private val httpClient: HttpClient = HttpClient.newHttpClient()
 
     fun buildAuthorizationUrl(state: String, redirectUri: String): String =
-        UriComponentsBuilder.fromUriString("https://github.com/login/oauth/authorize")
-            .queryParam("client_id", clientId)
-            .queryParam("redirect_uri", redirectUri)
-            .queryParam("scope", "read:user,user:email")
-            .queryParam("state", state)
-            .build(true)
-            .toUriString()
+        "https://github.com/login/oauth/authorize?" + formEncode(
+            mapOf(
+                "client_id" to clientId,
+                "redirect_uri" to redirectUri,
+                "scope" to "read:user,user:email",
+                "state" to state,
+            ),
+        )
 
     /** Exchanges the OAuth authorization code for a GitHub access token. */
     fun exchangeCodeForToken(code: String, redirectUri: String): String? {
-        val headers = HttpHeaders().apply {
-            accept = listOf(MediaType.APPLICATION_JSON)
-            contentType = MediaType.APPLICATION_FORM_URLENCODED
-        }
-        val body = LinkedMultiValueMap<String, String>().apply {
-            add("client_id", clientId)
-            add("client_secret", clientSecret)
-            add("code", code)
-            add("redirect_uri", redirectUri)
-        }
-        val response = runCatching {
-            restTemplate.exchange(
-                "https://github.com/login/oauth/access_token",
-                HttpMethod.POST,
-                HttpEntity(body, headers),
-                Map::class.java,
-            )
-        }.getOrNull() ?: return null
+        val body = formEncode(
+            mapOf(
+                "client_id" to clientId,
+                "client_secret" to clientSecret,
+                "code" to code,
+                "redirect_uri" to redirectUri,
+            ),
+        )
+        val request = HttpRequest.newBuilder(URI.create("https://github.com/login/oauth/access_token"))
+            .header("Accept", "application/json")
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build()
 
-        @Suppress("UNCHECKED_CAST")
-        return (response.body as? Map<String, Any>)?.get("access_token") as? String
+        val response = send(request) ?: return null
+        return response["access_token"] as? String
     }
 
     /** Fetches basic user info (id, login, avatar_url) from the GitHub API. */
     fun fetchUserInfo(accessToken: String): GitHubUserInfo? {
-        val headers = HttpHeaders().apply {
-            setBearerAuth(accessToken)
-            accept = listOf(MediaType.APPLICATION_JSON)
-        }
-        val response = runCatching {
-            restTemplate.exchange(
-                "https://api.github.com/user",
-                HttpMethod.GET,
-                HttpEntity<Unit>(headers),
-                Map::class.java,
-            )
-        }.getOrNull() ?: return null
-
-        @Suppress("UNCHECKED_CAST")
-        val body = response.body as? Map<String, Any> ?: return null
+        val body = get("https://api.github.com/user", accessToken) ?: return null
         val githubId = body["id"]?.toString() ?: return null
         val login = body["login"] as? String ?: return null
         val avatarUrl = body["avatar_url"] as? String
@@ -95,25 +79,48 @@ class GitHubOAuthService(
 
     /** Fetches the verified primary email address from the GitHub API. */
     private fun fetchPrimaryEmail(accessToken: String): String? {
-        val headers = HttpHeaders().apply {
-            setBearerAuth(accessToken)
-            accept = listOf(MediaType.APPLICATION_JSON)
-        }
-        val response = runCatching {
-            restTemplate.exchange(
-                "https://api.github.com/user/emails",
-                HttpMethod.GET,
-                HttpEntity<Unit>(headers),
-                List::class.java,
-            )
-        }.getOrNull() ?: return null
-
+        val raw = rawRequest("https://api.github.com/user/emails", accessToken) ?: return null
         @Suppress("UNCHECKED_CAST")
-        val emails = response.body as? List<Map<String, Any>> ?: return null
+        val emails = runCatching { objectMapper.readValue(raw, List::class.java) as? List<Map<String, Any>> }
+            .getOrNull() ?: return null
         return emails
             .firstOrNull { it["primary"] == true && it["verified"] == true }
             ?.get("email") as? String
     }
+
+    private fun get(url: String, accessToken: String): Map<String, Any>? {
+        val raw = rawRequest(url, accessToken) ?: return null
+        @Suppress("UNCHECKED_CAST")
+        return runCatching { objectMapper.readValue(raw, Map::class.java) as? Map<String, Any> }
+            .getOrNull()
+    }
+
+    private fun rawRequest(url: String, accessToken: String): String? {
+        val request = HttpRequest.newBuilder(URI.create(url))
+            .header("Accept", "application/json")
+            .header("Authorization", "Bearer $accessToken")
+            .header("User-Agent", "porthole")
+            .GET()
+            .build()
+        return sendString(request)
+    }
+
+    private fun send(request: HttpRequest): Map<String, Any>? {
+        val raw = sendString(request) ?: return null
+        @Suppress("UNCHECKED_CAST")
+        return runCatching { objectMapper.readValue(raw, Map::class.java) as? Map<String, Any> }
+            .getOrNull()
+    }
+
+    private fun sendString(request: HttpRequest): String? = runCatching {
+        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+        if (response.statusCode() !in 200..299) null else response.body()
+    }.getOrNull()
+
+    private fun formEncode(params: Map<String, String>): String =
+        params.entries.joinToString("&") { (key, value) ->
+            "${URLEncoder.encode(key, StandardCharsets.UTF_8)}=${URLEncoder.encode(value, StandardCharsets.UTF_8)}"
+        }
 
     /**
      * Looks up or creates a [UserRecord] based on the given [GitHubUserInfo].
@@ -148,4 +155,3 @@ class GitHubOAuthService(
             newUser
         }
 }
-

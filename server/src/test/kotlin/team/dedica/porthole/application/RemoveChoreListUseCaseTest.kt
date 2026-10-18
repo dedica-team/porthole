@@ -4,7 +4,7 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.security.access.AccessDeniedException
+import team.dedica.porthole.domain.AccessDeniedException
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.chorelists.CreateChoreListUseCase
 import team.dedica.porthole.application.session.chorelists.RemoveChoreListUseCase

@@ -2,7 +2,9 @@ package team.dedica.porthole.adapter.out.persistence
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.springframework.boot.DefaultApplicationArguments
+import io.micronaut.context.BeanContext
+import io.micronaut.context.event.StartupEvent
+import org.mockito.kotlin.mock
 import team.dedica.porthole.application.InMemoryAuthorizationPort
 import team.dedica.porthole.application.InMemorySessionStatePort
 import team.dedica.porthole.application.InMemoryTestUserRepository
@@ -55,20 +57,22 @@ class DemoDataLoaderTest {
         advanceGreenkeepingRotationUseCase = AdvanceGreenkeepingRotationUseCase(mapPort, broadcast, authPort),
     )
 
+    private val event = StartupEvent(mock<BeanContext>())
+
     @Test
     fun `loader runs to completion without throwing`() {
-        assertDoesNotThrow { loader.run(DefaultApplicationArguments()) }
+        assertDoesNotThrow { loader.run(event) }
     }
 
     @Test
     fun `map is persisted with correct id`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         assertNotNull(mapPort.findById(DEMO_MAP_ID), "Demo map must be persisted")
     }
 
     @Test
     fun `all 5 users are created`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         listOf(
             DemoDataLoader.UN_PETRA, DemoDataLoader.UN_SARAH,
             DemoDataLoader.UN_JAMES, DemoDataLoader.UN_ANNA, DemoDataLoader.UN_MARC,
@@ -79,35 +83,35 @@ class DemoDataLoaderTest {
 
     @Test
     fun `map has 5 collaborators`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(5, map.collaborators.size, "Expected 5 collaborators")
     }
 
     @Test
     fun `map has 3 groups`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(3, map.groups.size, "Expected 3 landmark groups")
     }
 
     @Test
     fun `map has 5 quality metrics`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(5, map.metrics.size, "Expected 5 quality metrics")
     }
 
     @Test
     fun `map has 15 landmarks`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(15, map.landmarks.size, "Expected 15 landmarks")
     }
 
     @Test
     fun `all landmarks are positioned on the map`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         val unpositioned = map.landmarks.values.filter { it.coordinate == null }
         assertTrue(unpositioned.isEmpty(),
@@ -116,7 +120,7 @@ class DemoDataLoaderTest {
 
     @Test
     fun `all landmarks belong to a group`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         val ungrouped = map.landmarks.values.filter { it.groupId == null }
         assertTrue(ungrouped.isEmpty(),
@@ -125,7 +129,7 @@ class DemoDataLoaderTest {
 
     @Test
     fun `all landmarks have a description`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         val noDesc = map.landmarks.values.filter { it.description.isNullOrBlank() }
         assertTrue(noDesc.isEmpty(),
@@ -134,14 +138,14 @@ class DemoDataLoaderTest {
 
     @Test
     fun `map has 10 connections`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(10, map.connections.size, "Expected 10 connections")
     }
 
     @Test
     fun `all connection paths are non-empty and start and end at landmark tiles`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         map.connections.values.forEach { conn ->
             assertTrue(conn.path.isNotEmpty(), "Connection '${conn.name}' has empty path")
@@ -156,7 +160,7 @@ class DemoDataLoaderTest {
 
     @Test
     fun `no connection path passes through an intermediate landmark tile`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         val landmarkCoords = map.landmarks.values.mapNotNull { it.coordinate }.toSet()
         map.connections.values.forEach { conn ->
@@ -171,14 +175,14 @@ class DemoDataLoaderTest {
 
     @Test
     fun `map has 2 processes`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(2, map.processes.size, "Expected 2 processes")
     }
 
     @Test
     fun `each process has at least 2 stages`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         map.processes.values.forEach { process ->
             assertTrue(process.stages.size >= 2,
@@ -188,7 +192,7 @@ class DemoDataLoaderTest {
 
     @Test
     fun `collaborator matrix has entries for all 15 landmarks`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         val landmarkIds = map.landmarks.keys
         val matrixIds   = map.collaboratorMatrix.entries.keys
@@ -199,14 +203,14 @@ class DemoDataLoaderTest {
 
     @Test
     fun `map has 3 chore lists`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(3, map.choreLists.size, "Expected 3 chore lists")
     }
 
     @Test
     fun `monthly audit chore list covers all 15 landmarks`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         val audit = map.choreLists.values.first { it.title == "Monthly Infection-Control Audit" }
         assertEquals(15, audit.entries.size, "Audit list must have an entry for each of the 15 landmarks")
@@ -214,7 +218,7 @@ class DemoDataLoaderTest {
 
     @Test
     fun `chore list entries reference valid landmark ids`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         map.choreLists.values.forEach { list ->
             list.entries.keys.forEach { landmarkId ->
@@ -226,14 +230,14 @@ class DemoDataLoaderTest {
 
     @Test
     fun `map has 3 greenkeeping rotations`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
         assertEquals(3, map.greenkeepingRotations.size, "Expected 3 greenkeeping rotations")
     }
 
     @Test
     fun `greenkeeping rotations reference valid groups and collaborators`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
 
         map.greenkeepingRotations.values.forEach { rotation ->
@@ -253,7 +257,7 @@ class DemoDataLoaderTest {
 
     @Test
     fun `greenkeeping rotations include progressed demo state`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!
 
         val clinicalRotation = map.greenkeepingRotations.values.first { it.name == "Clinical Hygiene Steward" }
@@ -267,10 +271,10 @@ class DemoDataLoaderTest {
 
     @Test
     fun `loader is idempotent – running twice does not throw and does not duplicate data`() {
-        loader.run(DefaultApplicationArguments())
+        loader.run(event)
         val countAfterFirst = mapPort.findById(DEMO_MAP_ID)!!.landmarks.size
 
-        assertDoesNotThrow { loader.run(DefaultApplicationArguments()) }
+        assertDoesNotThrow { loader.run(event) }
 
         val countAfterSecond = mapPort.findById(DEMO_MAP_ID)!!.landmarks.size
         assertEquals(countAfterFirst, countAfterSecond,

@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.session.metrics
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
@@ -12,7 +12,7 @@ import team.dedica.porthole.domain.QualityLevel
 import java.net.URI
 import java.util.UUID
 
-@Component
+@Singleton
 class SetLandmarkMetricUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,

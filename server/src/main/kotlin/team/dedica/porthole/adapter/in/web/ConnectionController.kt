@@ -1,8 +1,17 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Patch
+import io.micronaut.http.annotation.PathVariable
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
+import io.micronaut.http.annotation.QueryValue
 import jakarta.validation.Valid
 import team.dedica.porthole.adapter.`in`.web.dto.*
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
@@ -10,23 +19,22 @@ import team.dedica.porthole.application.session.landscaping.*
 import team.dedica.porthole.domain.ConnectionType
 import java.util.UUID
 
-@RestController
-@RequestMapping("/api/sessions/{id}/connections")
+@Controller("/api/sessions/{id}/connections")
 class ConnectionController(
     private val createConnectionUseCase: CreateConnectionUseCase,
     private val editConnectionUseCase: EditConnectionUseCase,
     private val removeConnectionUseCase: RemoveConnectionUseCase,
 ) {
-    @PostMapping
+    @Post
     fun createConnection(
         @PathVariable id: String,
-        @Valid @RequestBody request: CreateConnectionRequest,
+        @Valid @Body request: CreateConnectionRequest,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> {
+    ): HttpResponse<*> {
         val type = runCatching { ConnectionType.valueOf(request.type.uppercase()) }.getOrElse {
-            return ResponseEntity.badRequest().body("Unknown connection type: ${request.type}")
+            return HttpResponse.badRequest("Unknown connection type: ${request.type}")
         }
-        return ResponseEntity.ok(
+        return HttpResponse.ok(
             createConnectionUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(request.fromTowerId),
@@ -39,19 +47,19 @@ class ConnectionController(
         )
     }
 
-    @PatchMapping("/{connectionId}")
+    @Patch("/{connectionId}")
     fun editConnection(
         @PathVariable id: String,
         @PathVariable connectionId: String,
-        @Valid @RequestBody request: EditConnectionRequest,
+        @Valid @Body request: EditConnectionRequest,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> {
+    ): HttpResponse<*> {
         val type = request.type?.let {
             runCatching { ConnectionType.valueOf(it.uppercase()) }.getOrElse {
-                return ResponseEntity.badRequest().body("Unknown connection type: $it")
+                return HttpResponse.badRequest("Unknown connection type: $it")
             }
         }
-        return ResponseEntity.ok(
+        return HttpResponse.ok(
             editConnectionUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(connectionId),
@@ -65,13 +73,13 @@ class ConnectionController(
         )
     }
 
-    @DeleteMapping("/{connectionId}")
+    @Delete("/{connectionId}")
     fun removeConnection(
         @PathVariable id: String,
         @PathVariable connectionId: String,
         @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<Any> =
-        ResponseEntity.ok(
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             removeConnectionUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(connectionId),

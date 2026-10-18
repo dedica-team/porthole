@@ -1,36 +1,35 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Patch
+import team.dedica.porthole.adapter.`in`.web.security.AuthenticationPrincipal
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.port.UserPort
 
 data class ChangeUsernameRequest(val username: String)
 data class ChangeUsernameResponse(val username: String)
 
-@RestController
-@RequestMapping("/api/users")
+@Controller("/api/users")
 class UserController(private val userRepository: UserPort) {
 
-    @PatchMapping("/me/username")
+    @Patch("/me/username")
     fun changeUsername(
         @AuthenticationPrincipal principal: PortholePrincipal?,
-        @RequestBody request: ChangeUsernameRequest,
-    ): ResponseEntity<ChangeUsernameResponse> {
-        principal ?: return ResponseEntity.status(401).build()
+        @Body request: ChangeUsernameRequest,
+    ): HttpResponse<*> {
+        principal ?: return HttpResponse.unauthorized<Any>()
         val trimmed = request.username.trim()
         require(trimmed.length >= 3) { "Username must be at least 3 characters" }
         val existing = userRepository.findByUsername(trimmed)
         if (existing != null && existing.id != principal.userId) {
-            return ResponseEntity.status(409).build()
+            return HttpResponse.status<Any>(HttpStatus.CONFLICT)
         }
         val user = userRepository.findById(principal.userId)
-            ?: return ResponseEntity.status(401).build()
+            ?: return HttpResponse.unauthorized<Any>()
         userRepository.save(user.copy(username = trimmed))
-        return ResponseEntity.ok(ChangeUsernameResponse(trimmed))
+        return HttpResponse.ok(ChangeUsernameResponse(trimmed))
     }
 }

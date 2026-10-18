@@ -1,12 +1,12 @@
 package team.dedica.porthole.adapter.out.repository
 
-import org.springframework.stereotype.Repository
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-@Repository
+@Singleton
 class SessionStateRepository : SessionStatePort {
     private val maps = ConcurrentHashMap<UUID, SessionState>()
 

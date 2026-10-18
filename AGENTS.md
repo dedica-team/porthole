@@ -1,5 +1,5 @@
 ---
-description: 'Guidelines for building Spring Boot base applications'
+description: 'Guidelines for building Micronaut base applications'
 applyTo: '**/*.java, **/*.kt, **/*.ts, **/*.tsx'
 ---
 
@@ -28,7 +28,7 @@ applyTo: '**/*.java, **/*.kt, **/*.ts, **/*.tsx'
 
 - use maven
 - use react with three.js for the client side
-- use spring boot for the server side
+- use micronaut for the server side
 
 
 ## Domain rules

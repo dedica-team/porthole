@@ -1,12 +1,12 @@
 package team.dedica.porthole.adapter.out.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.micronaut.context.annotation.Property
+import io.micronaut.scheduling.annotation.Scheduled
 import jakarta.annotation.PreDestroy
+import jakarta.inject.Named
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.domain.SessionState
 import java.nio.file.Files
@@ -30,11 +30,11 @@ import java.util.concurrent.ConcurrentHashMap
  * - `@PreDestroy` flushes all remaining dirty maps immediately on shutdown.
  * - Writes are atomic (write to `.tmp` file, then rename).
  */
-@Component
+@Singleton
 class JsonStore(
-    @param:Qualifier("persistenceObjectMapper") private val mapper: ObjectMapper,
-    @Value("\${porthole.storage.path:data/json}") storagePath: String,
-    @param:Value("\${porthole.storage.debounce-ms:5000}") private val debounceMs: Long,
+    @param:Named("persistenceObjectMapper") private val mapper: ObjectMapper,
+    @Property(name = "porthole.storage.path", defaultValue = "data/json") storagePath: String,
+    @param:Property(name = "porthole.storage.debounce-ms", defaultValue = "5000") private val debounceMs: Long,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -120,7 +120,7 @@ class JsonStore(
 
     // ── Scheduled flush (every 1 s, checks debounce window) ──────────────────
 
-    @Scheduled(fixedDelayString = "\${porthole.storage.flush-interval-ms:1000}")
+    @Scheduled(fixedDelay = "\${porthole.storage.flush-interval-ms:1000}ms")
     fun scheduledFlush() = flushDueMaps()
 
     // ── Shutdown hook ─────────────────────────────────────────────────────────

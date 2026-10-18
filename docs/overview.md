@@ -78,7 +78,7 @@ Porthole gives your team a **single, collaborative, always-up-to-date map** of y
 Browser (React + Three.js)
   │  real-time updates via WebSocket
   ▼
-Spring Boot Server (Kotlin)
+Micronaut Server (Kotlin)
   │  persists state with EclipseStore
   ▼
 JSON / EclipseStore persistence layer

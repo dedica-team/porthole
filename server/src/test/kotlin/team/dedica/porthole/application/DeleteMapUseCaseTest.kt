@@ -38,7 +38,7 @@ class DeleteMapUseCaseTest {
     @Test
     fun `non-admin throws AccessDeniedException`() {
         val otherId = UUID.randomUUID()
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             useCase.execute(state.id, otherId)
         }
     }
