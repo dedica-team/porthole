@@ -1,6 +1,7 @@
 package team.dedica.porthole.adapter.out.persistence
 
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.env.Environment
 import io.micronaut.context.event.StartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import jakarta.inject.Singleton
@@ -51,7 +52,10 @@ import kotlin.math.abs
  *   - saving [UserRecord]s (users come from auth providers; there is no "create user" use case).
  */
 @Singleton
-@Requires(property = "porthole.demo.enabled", value = "true")
+// Never load demo data in tests: the test environment is hermetic and must not be
+// affected by an ambient PORTHOLE_DEMO_ENABLED=true. Tests that exercise the loader
+// construct it directly (see DemoDataLoaderTest).
+@Requires(property = "porthole.demo.enabled", value = "true", notEnv = [Environment.TEST])
 class DemoDataLoader(
     // Infrastructure ports (direct access only where no use case exists)
     private val sessionStatePort: SessionStatePort,
