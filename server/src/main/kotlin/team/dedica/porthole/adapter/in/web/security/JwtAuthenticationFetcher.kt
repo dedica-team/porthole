@@ -7,6 +7,7 @@ import io.micronaut.security.authentication.Authentication
 import io.micronaut.security.filters.AuthenticationFetcher
 import jakarta.inject.Singleton
 import org.reactivestreams.Publisher
+import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
 
 /**
@@ -31,7 +32,9 @@ class JwtAuthenticationFetcher(
 
     override fun fetchAuthentication(request: HttpRequest<*>): Publisher<Authentication> {
         val token = resolveToken(request) ?: return Mono.empty()
-        val claims = runCatching { jwtTokenProvider.getTokenClaims(token) }.getOrNull()
+        val claims = runCatching { jwtTokenProvider.getTokenClaims(token) }
+            .onFailure { log.debug("Ignoring unusable JWT", it) }
+            .getOrNull()
             ?: return Mono.empty()
 
         return Mono.just(
@@ -53,5 +56,6 @@ class JwtAuthenticationFetcher(
 
     private companion object {
         const val BEARER_PREFIX = "Bearer "
+        val log = LoggerFactory.getLogger(JwtAuthenticationFetcher::class.java)
     }
 }
