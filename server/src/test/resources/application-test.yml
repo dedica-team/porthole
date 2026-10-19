@@ -1,5 +1,9 @@
 micronaut:
   server:
+    # Use an ephemeral port so multiple @MicronautTest classes that boot the full
+    # server cannot collide on the default 8080 when run in the same build.
+    # Tests read the actual port from EmbeddedServer.port.
+    port: 0
     cors:
       enabled: true
       configurations:

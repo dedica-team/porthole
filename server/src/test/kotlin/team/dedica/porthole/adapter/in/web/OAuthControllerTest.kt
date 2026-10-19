@@ -124,7 +124,7 @@ class OAuthControllerTest {
     @Test
     fun `session returns authenticated user profile`() {
         val id = UUID.nameUUIDFromBytes("u1".toByteArray())
-        whenever(userRepository.findByUsername("alice"))
+        whenever(userRepository.findById(id))
             .thenReturn(UserRecord(id = id, username = "alice", avatarUrl = "https://avatar.url"))
 
         val response = controller.session(PortholePrincipal(id, "alice"))
