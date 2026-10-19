@@ -59,6 +59,7 @@ class OAuthController(
         return HttpResponse.ok(OAuthStartResponse(authorizationUrl)).cookie(stateCookie(state))
     }
 
+    @io.micronaut.scheduling.annotation.ExecuteOn(io.micronaut.scheduling.TaskExecutors.BLOCKING)
     @Post("/github/callback")
     fun githubCallback(
         @QueryValue code: String,
