@@ -4,6 +4,7 @@ import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
@@ -53,6 +54,7 @@ class StompWebSocketEndpointTest {
 
         val destination = "/topic/map/${UUID.randomUUID()}"
         webSocket.sendText("SUBSCRIBE\nid:sub-0\ndestination:$destination\n\n\u0000", true).join()
+        webSocket.sendText("SUBSCRIBE\nid:sub-1\ndestination:$destination\n\n\u0000", true).join()
 
         // Give the SUBSCRIBE frame a moment to register before publishing.
         Thread.sleep(200)
@@ -63,6 +65,20 @@ class StompWebSocketEndpointTest {
         assertTrue(message!!.startsWith("MESSAGE"), "expected MESSAGE, got: $message")
         assertTrue(message.contains("destination:$destination"), "missing destination header: $message")
         assertTrue(message.contains("\"value\":42"), "missing payload body: $message")
+        val secondMessage = received.poll(10, TimeUnit.SECONDS)
+        assertNotNull(secondMessage, "expected a MESSAGE frame for the second subscription")
+
+        webSocket.sendText("UNSUBSCRIBE\nid:sub-0\n\n\u0000", true).join()
+        Thread.sleep(200)
+        broker.publish(destination, mapOf("value" to 43))
+        val remainingMessage = received.poll(10, TimeUnit.SECONDS)
+        assertNotNull(remainingMessage, "expected the second subscription to remain active")
+        assertTrue(remainingMessage!!.contains("subscription:sub-1"), "expected only sub-1 to remain: $remainingMessage")
+
+        webSocket.sendText("UNSUBSCRIBE\nid:sub-1\n\n\u0000", true).join()
+        Thread.sleep(200)
+        broker.publish(destination, mapOf("value" to 44))
+        assertNull(received.poll(500, TimeUnit.MILLISECONDS), "expected no message after all subscriptions are removed")
 
         webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "done").join()
     }

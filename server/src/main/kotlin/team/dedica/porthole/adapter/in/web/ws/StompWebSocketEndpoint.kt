@@ -67,7 +67,7 @@ class StompWebSocketEndpoint(private val broker: StompBroker) {
                 broker.subscribe(destination, session, headers["id"] ?: destination)
             }
 
-            "UNSUBSCRIBE" -> headers["destination"]?.let { broker.unsubscribe(it, session) }
+            "UNSUBSCRIBE" -> headers["id"]?.let { broker.unsubscribe(it, session) }
 
             "DISCONNECT" -> {
                 headers["receipt"]?.let { send(session, receiptFrame(it)) }

@@ -23,25 +23,24 @@ class StompBroker(private val objectMapper: ObjectMapper) {
 
     private val log = LoggerFactory.getLogger(StompBroker::class.java)
 
-    /** destination -> (session -> subscription id supplied by the client's SUBSCRIBE frame). */
-    private val subscriptions = ConcurrentHashMap<String, MutableMap<WebSocketSession, String>>()
+    /** session -> (subscription id -> destination supplied by the client's SUBSCRIBE frame). */
+    private val subscriptions = ConcurrentHashMap<WebSocketSession, MutableMap<String, String>>()
 
     fun subscribe(destination: String, session: WebSocketSession, subscriptionId: String) {
-        subscriptions.computeIfAbsent(destination) { ConcurrentHashMap() }[session] = subscriptionId
+        subscriptions.computeIfAbsent(session) { ConcurrentHashMap() }[subscriptionId] = destination
     }
 
-    fun unsubscribe(destination: String, session: WebSocketSession) {
-        subscriptions[destination]?.remove(session)
+    fun unsubscribe(subscriptionId: String, session: WebSocketSession) {
+        subscriptions[session]?.remove(subscriptionId)
     }
 
     fun removeSession(session: WebSocketSession) {
-        subscriptions.values.forEach { it.remove(session) }
+        subscriptions.remove(session)
     }
 
     /** Serializes [payload] and fans it out to every session subscribed to [destination]. */
     fun publish(destination: String, payload: Any) {
-        val subscribers = subscriptions[destination]
-        if (subscribers.isNullOrEmpty()) return
+        if (subscriptions.isEmpty()) return
 
         val body = try {
             objectMapper.writeValueAsString(payload)
@@ -50,12 +49,16 @@ class StompBroker(private val objectMapper: ObjectMapper) {
             return
         }
 
-        subscribers.forEach { (session, subscriptionId) ->
+        subscriptions.forEach { (session, destinationsBySubscription) ->
             if (session.isOpen) {
-                try {
-                    session.sendAsync(buildMessageFrame(destination, subscriptionId, body), MediaType.TEXT_PLAIN_TYPE)
-                } catch (e: Exception) {
-                    log.warn("Failed to publish to {} (session {}): {}", destination, session.id, e.message)
+                destinationsBySubscription.forEach { (subscriptionId, subscribedDestination) ->
+                    if (subscribedDestination == destination) {
+                        try {
+                            session.sendAsync(buildMessageFrame(destination, subscriptionId, body), MediaType.TEXT_PLAIN_TYPE)
+                        } catch (e: Exception) {
+                            log.warn("Failed to publish to {} (session {}): {}", destination, session.id, e.message)
+                        }
+                    }
                 }
             }
         }
