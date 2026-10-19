@@ -37,6 +37,12 @@
         <micronaut.test.resources.version>2.10.1</micronaut.test.resources.version>
         <micronaut.test.resources.enabled>false</micronaut.test.resources.enabled>
         <exec.mainClass>team.dedica.porthole.PortholeApplicationKt</exec.mainClass>
+
+        <!-- GraalVM native image (version matches what micronaut-platform 4.10.21 tests with) -->
+        <native.maven.plugin.version>0.11.3</native.maven.plugin.version>
+        <graalvm.metadata-repository.enabled>true</graalvm.metadata-repository.enabled>
+        <resources.autodetection.enabled>true</resources.autodetection.enabled>
+        <resources.autodetection.ignoreExistingResourcesConfig>true</resources.autodetection.ignoreExistingResourcesConfig>
     </properties>
 
     <repositories>
@@ -95,6 +101,28 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>3.6.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>${native.maven.plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <imageName>porthole-server</imageName>
+                        <mainClass>${exec.mainClass}</mainClass>
+                        <buildArgs>
+                            <buildArg>--no-fallback</buildArg>
+                            <!-- Statically link everything but libc (incl. zlib) so the binary
+                                 runs on a distroless base with no extra shared libraries. -->
+                            <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                            <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
+                        </buildArgs>
+                        <metadataRepository>
+                            <enabled>${graalvm.metadata-repository.enabled}</enabled>
+                        </metadataRepository>
+                        <isDetectionEnabled>${resources.autodetection.enabled}</isDetectionEnabled>
+                        <ignoreExistingResourcesConfig>${resources.autodetection.ignoreExistingResourcesConfig}</ignoreExistingResourcesConfig>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

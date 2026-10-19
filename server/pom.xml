@@ -319,4 +319,51 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!-- GraalVM native image: ./mvnw -pl server -Pnative package
+             Kept opt-in so the regular JVM fat-jar build stays untouched. -->
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <!-- native-image must not run against the shaded fat jar: it would see the
+                         project classes twice (thin classes + dependency jars) and pick up
+                         dependency native-image configs twice, which breaks class init. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default</id>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-resource-config</id>
+                                <phase>process-classes</phase>
+                                <goals>
+                                    <goal>generateResourceConfig</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>build-native</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
