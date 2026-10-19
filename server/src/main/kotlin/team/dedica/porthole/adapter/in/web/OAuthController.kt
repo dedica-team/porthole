@@ -97,7 +97,7 @@ class OAuthController(
     @Get("/session")
     fun session( user: PortholePrincipal?): HttpResponse<AuthResponse> {
         val authenticatedUser = user ?: return HttpResponse.unauthorized()
-        val userRecord = userRepository.findByUsername(authenticatedUser.username)
+        val userRecord = userRepository.findById(authenticatedUser.userId)
             ?: return HttpResponse.unauthorized()
         return HttpResponse.ok(
             AuthResponse(
