@@ -59,6 +59,7 @@ class OAuthController(
         return HttpResponse.ok(OAuthStartResponse(authorizationUrl)).cookie(stateCookie(state))
     }
 
+    @io.micronaut.scheduling.annotation.ExecuteOn(io.micronaut.scheduling.TaskExecutors.BLOCKING)
     @Post("/github/callback")
     fun githubCallback(
         @QueryValue code: String,
@@ -97,7 +98,7 @@ class OAuthController(
     @Get("/session")
     fun session( user: PortholePrincipal?): HttpResponse<AuthResponse> {
         val authenticatedUser = user ?: return HttpResponse.unauthorized()
-        val userRecord = userRepository.findByUsername(authenticatedUser.username)
+        val userRecord = userRepository.findById(authenticatedUser.userId)
             ?: return HttpResponse.unauthorized()
         return HttpResponse.ok(
             AuthResponse(
