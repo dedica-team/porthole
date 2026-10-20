@@ -221,10 +221,10 @@ export default function GreenkeepingRotationsView() {
                           return (
                             <div key={entry.id} className="flex items-center gap-1.5">
                               <div
-                                className={`rounded border px-2 py-1 ${isActive ? 'border-secondary-foreground' : 'border-border'}`}
+                                className={`rounded border px-2 py-1 w-20 min-w-20 shrink-0 ${isActive ? 'border-secondary-foreground' : 'border-border'}`}
                                 style={isActive ? { background: 'rgba(80,100,220,0.08)' } : undefined}
                               >
-                                <UserAvatar username={username} avatarUrl={collab?.avatarUrl} title={username} />
+                                <UserAvatar username={username} avatarUrl={collab?.avatarUrl} title={username} fullWidth={true} />
                               </div>
                               {isActive && canAdvance && (() => {
                                 const activeIdx = rotation.collaborators.findIndex((e) => e.id === activeEntry?.id);
