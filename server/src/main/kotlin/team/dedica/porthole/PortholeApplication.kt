@@ -1,9 +1,19 @@
 package team.dedica.porthole
 
-import io.micronaut.runtime.Micronaut
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.runApplication
+import org.springframework.scheduling.annotation.EnableAsync
+import org.springframework.scheduling.annotation.EnableScheduling
+import team.dedica.porthole.config.PortholeAuthProperties
 
+@SpringBootApplication
+@EnableAsync
+@EnableScheduling
+@EnableConfigurationProperties(PortholeAuthProperties::class)
 class PortholeApplication
 
 fun main(args: Array<String>) {
-    Micronaut.run(PortholeApplication::class.java, *args)
+    runApplication<PortholeApplication>(*args)
 }
+
