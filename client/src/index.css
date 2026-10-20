@@ -35,7 +35,7 @@
     --destructive:         0 80% 52%;
     --destructive-foreground: 0 0% 98%;
     --success:          142 60% 36%;
-    --warning:          222  55% 22%;    /* very dark blue     */
+    --warning:           24 95% 53%;    /* orange             */
     --info:             var(--holo-violet);
     --link:             196  85% 30%;    /* deep teal          */
     --link-hover:       196  85% 20%;

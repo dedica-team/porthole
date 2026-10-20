@@ -7,7 +7,7 @@ export const QUALITY_LEVEL_ORDER: QualityLevel[] = ['NONE', 'OK', 'WARNING', 'ER
 export const QUALITY_LEVEL_COLOR: Record<QualityLevel, string> = {
   NONE:    '#6b7280',
   OK:      '#22c55e',
-  WARNING: '#f59e0b',
+  WARNING: '#f97316',
   ERROR:   '#ef4444',
 };
 
