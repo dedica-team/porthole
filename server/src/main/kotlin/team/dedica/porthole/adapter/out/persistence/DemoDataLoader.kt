@@ -176,7 +176,7 @@ class DemoDataLoader(
             id = DEMO_MAP_ID,
             map = hexMap,
             name = "Happy Paws Pet Clinic",
-            description = "Demo landscape for the Happy Paws Pet Clinic. Shows the clinic layout with 15 landmarks, quality metrics and workflow processes.",
+            description = "Demo landscape for the Happy Paws Pet Clinic. Shows the clinic layout with 15 elements, quality metrics and workflow processes.",
             collaborationMode = CollaborationMode.OPEN,
             createdAt = Instant.parse("2026-01-15T09:00:00Z"),
         )
