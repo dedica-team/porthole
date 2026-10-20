@@ -222,16 +222,19 @@ export default function ChoreListsView() {
                                                             </div>
                                                         </td>
                                                     )}
-                                                    <td className="p-2 sticky z-10 data-sticky-cell" style={{ left: '1rem' }}>
+                                                    <td className="p-0 sticky z-10 data-sticky-cell" style={{ left: '1rem' }}>
                                                         <LandmarkInfoPopover
                                                             landmark={landmark}
                                                             onEditLandmark={onEditLandmark}
                                                             onRemoveLandmark={onRemoveLandmark}
                                                             loading={loading}
                                                         >
-                                                            <Button variant="ghost" fullWidth={true} title={landmark.description} className="h-full w-full overflow-hidden justify-start px-3 py-2 text-md">
-                                                                <span className="truncate">{landmark.name}</span>
-                                                            </Button>
+                                                            <div
+                                                                className="flex items-center px-3 py-2 overflow-hidden text-sm"
+                                                                title={landmark.description || landmark.name}
+                                                            >
+                                                                <span className="truncate font-medium text-foreground">{landmark.name}</span>
+                                                            </div>
                                                         </LandmarkInfoPopover>
                                                     </td>
                                                     {sortedLists.map((list) => {

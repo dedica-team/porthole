@@ -835,30 +835,20 @@ export default function MetricsView() {
                             )}
                             {/* Landmark name + overall badge */}
                             <td className="metrics-landmark-cell p-0 sticky z-20 data-sticky-cell" style={{ left: '1rem' }}>
-                              <div className=" px-1 sm:px-2 py-2 overflow-hidden">
-                                  {(() => {
-                                    const nameEl =
-                                      <Button
-                                        variant="ghost" size="sm"
-                                        fullWidth={true}
-                                        title={landmark.description}
-                                        className="overflow-hidden"
-                                      >
-                                        <StatusIndicator status={qualityLevelToStatus[lmWorst]} /><span className="truncate">{landmark.name}</span>
-                                      </Button>
-
-                                    return (
-                                      <LandmarkInfoPopover
-                                        landmark={landmark}
-                                        onEditLandmark={onEditLandmark}
-                                        onRemoveLandmark={onRemoveLandmark}
-                                        loading={loading}
-                                      >
-                                        {nameEl}
-                                      </LandmarkInfoPopover>
-                                    );
-                                  })()}
-                              </div>
+                              <LandmarkInfoPopover
+                                landmark={landmark}
+                                onEditLandmark={onEditLandmark}
+                                onRemoveLandmark={onRemoveLandmark}
+                                loading={loading}
+                              >
+                                <div
+                                  className="flex items-center gap-2 px-3 py-2 overflow-hidden text-sm"
+                                  title={landmark.description || landmark.name}
+                                >
+                                  <StatusIndicator status={qualityLevelToStatus[lmWorst]} />
+                                  <span className="truncate font-medium text-foreground">{landmark.name}</span>
+                                </div>
+                              </LandmarkInfoPopover>
                             </td>
                             {/* One cell per metric */}
                             {visibleMetrics.map((m) => {

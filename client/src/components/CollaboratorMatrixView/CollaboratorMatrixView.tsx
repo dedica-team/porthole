@@ -296,8 +296,11 @@ export default function CollaboratorMatrixView() {
                               onRemoveLandmark={onRemoveLandmark}
                               loading={loading}
                             >
-                              <Button variant="ghost" fullWidth={true} title={landmark.name} className="!whitespace-normal flex-col !items-start m-2 py-2">
-                                {landmark.name}
+                              <div
+                                className="flex flex-col items-start gap-1 px-3 py-2 overflow-hidden text-sm"
+                                title={landmark.description || landmark.name}
+                              >
+                                <span className="truncate font-medium text-foreground w-full">{landmark.name}</span>
                                 <span className="flex flex-wrap gap-0.5">
                               {([...collaborators]
                                       .map((c) => ({ c, lvl: getLevel(landmark.id, c.id) }))
@@ -314,7 +317,7 @@ export default function CollaboratorMatrixView() {
                                 );
                               })}
                             </span>
-                              </Button>
+                              </div>
                             </LandmarkInfoPopover>
                           </td>
                           {/* One cell per collaborator */}
