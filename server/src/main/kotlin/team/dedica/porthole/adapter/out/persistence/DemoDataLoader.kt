@@ -12,7 +12,11 @@ import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.application.session.greenkeeping.AdvanceGreenkeepingRotationUseCase
 import team.dedica.porthole.application.session.greenkeeping.CreateGreenkeepingRotationUseCase
+import team.dedica.porthole.application.session.greenkeeping.GreenkeepingChecklistItemPatch
 import team.dedica.porthole.application.session.greenkeeping.GreenkeepingRotationCollaboratorPatch
+import team.dedica.porthole.application.session.greenkeeping.GreenkeepingTaskTemplateItemPatch
+import team.dedica.porthole.application.session.greenkeeping.StartGreenkeepingChecklistUseCase
+import team.dedica.porthole.application.session.greenkeeping.UpdateGreenkeepingChecklistUseCase
 import team.dedica.porthole.application.session.landscaping.CreateConnectionUseCase
 import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
 import team.dedica.porthole.application.session.landscaping.PlaceLandmarkUseCase
@@ -76,6 +80,8 @@ class DemoDataLoader(
     private val updateChoreEntryUseCase: UpdateChoreEntryUseCase,
     private val createGreenkeepingRotationUseCase: CreateGreenkeepingRotationUseCase,
     private val advanceGreenkeepingRotationUseCase: AdvanceGreenkeepingRotationUseCase,
+    private val startGreenkeepingChecklistUseCase: StartGreenkeepingChecklistUseCase,
+    private val updateGreenkeepingChecklistUseCase: UpdateGreenkeepingChecklistUseCase,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -240,7 +246,7 @@ class DemoDataLoader(
     private fun placeLandmarks() {
         val OK = QualityLevel.OK
         val W = QualityLevel.WARNING
-        val E = QualityLevel.ERROR;
+        val E = QualityLevel.ERROR
         val N = QualityLevel.NONE
 
         place(
@@ -710,6 +716,12 @@ class DemoDataLoader(
             link = "https://wiki.petclinic.demo/greenkeeping/clinical-hygiene",
             groupIds = listOf(groupClinical),
             collaborators = listOf(USER_DR_SARAH, USER_DR_JAMES, USER_NURSE_ANNA),
+            taskTemplates = listOf(
+                "Autoclave sterilisation cycles & biological indicator verification",
+                "Surgical scrub station & PPE dispenser restocking",
+                "Biohazard waste container inspection and sealing",
+                "ICU emergency oxygen manifold and backup level check",
+            ),
         )
         val diagnosticsRotationId = createGreenkeepingRotation(
             name = "Diagnostics Equipment Steward",
@@ -717,6 +729,11 @@ class DemoDataLoader(
             link = "https://wiki.petclinic.demo/greenkeeping/diagnostics-steward",
             groupIds = listOf(groupSupport),
             collaborators = listOf(USER_TECH_MARC, USER_NURSE_ANNA, USER_DR_JAMES),
+            taskTemplates = listOf(
+                "Centrifuge and hematology analyser daily calibration check",
+                "Digital X-Ray sensor plate cleaning and alignment verification",
+                "Microbiology incubator temperature logging",
+            ),
         )
         val facilitiesRotationId = createGreenkeepingRotation(
             name = "Front-of-House Readiness",
@@ -724,12 +741,66 @@ class DemoDataLoader(
             link = "https://wiki.petclinic.demo/greenkeeping/front-of-house",
             groupIds = listOf(groupFacilities),
             collaborators = listOf(USER_ADMIN_PETRA, USER_NURSE_ANNA, USER_TECH_MARC),
+            taskTemplates = listOf(
+                "Hand-sanitiser station check at main entrance and waiting room",
+                "Waiting area separate canine/feline seating zone inspection",
+                "Reception appointment kiosk and check-in terminal check",
+            ),
         )
 
         advanceGreenkeepingRotationUseCase.execute(DEMO_MAP_ID, clinicalRotationId, USER_ADMIN_PETRA)
         advanceGreenkeepingRotationUseCase.execute(DEMO_MAP_ID, diagnosticsRotationId, USER_ADMIN_PETRA)
         advanceGreenkeepingRotationUseCase.execute(DEMO_MAP_ID, diagnosticsRotationId, USER_ADMIN_PETRA)
         advanceGreenkeepingRotationUseCase.execute(DEMO_MAP_ID, facilitiesRotationId, USER_ADMIN_PETRA)
+
+        // Instantiate active checklist for Clinical Hygiene Steward to showcase checklist progress
+        startGreenkeepingChecklistUseCase.execute(
+            sessionId = DEMO_MAP_ID,
+            rotationId = clinicalRotationId,
+            title = "Weekly Sterilisation Walk-Through",
+            callerId = USER_DR_JAMES,
+        )
+
+        val session = sessionStatePort.findById(DEMO_MAP_ID)!!
+        val currentChecklist = session.greenkeepingRotations[clinicalRotationId]?.currentChecklist
+        if (currentChecklist != null) {
+            val itemPatches = currentChecklist.items.mapIndexed { index, item ->
+                when (index) {
+                    0 -> GreenkeepingChecklistItemPatch(
+                        id = item.id,
+                        title = item.title,
+                        done = true,
+                        note = "Autoclave log verified – all cycles passed sterilization parameters.",
+                    )
+                    1 -> GreenkeepingChecklistItemPatch(
+                        id = item.id,
+                        title = item.title,
+                        done = true,
+                        note = "Restocked PPE and scrub supplies in Theatre 1 & 2.",
+                    )
+                    2 -> GreenkeepingChecklistItemPatch(
+                        id = item.id,
+                        title = item.title,
+                        done = false,
+                        note = "Pickup scheduled for 16:30 today.",
+                    )
+                    else -> GreenkeepingChecklistItemPatch(
+                        id = item.id,
+                        title = item.title,
+                        done = false,
+                        note = null,
+                    )
+                }
+            }
+
+            updateGreenkeepingChecklistUseCase.execute(
+                sessionId = DEMO_MAP_ID,
+                rotationId = clinicalRotationId,
+                title = currentChecklist.title,
+                items = itemPatches,
+                callerId = USER_DR_JAMES,
+            )
+        }
     }
 
     private fun createGreenkeepingRotation(
@@ -738,6 +809,7 @@ class DemoDataLoader(
         link: String?,
         groupIds: List<UUID>,
         collaborators: List<UUID>,
+        taskTemplates: List<String> = emptyList(),
     ): UUID =
         createGreenkeepingRotationUseCase.execute(
             sessionId = DEMO_MAP_ID,
@@ -747,6 +819,9 @@ class DemoDataLoader(
             groupIds = groupIds,
             collaborators = collaborators.map { collaboratorId ->
                 GreenkeepingRotationCollaboratorPatch(collaboratorId = collaboratorId)
+            },
+            taskTemplates = taskTemplates.map { title ->
+                GreenkeepingTaskTemplateItemPatch(title = title)
             },
             callerId = USER_ADMIN_PETRA,
         ).first { it.name == name }.id

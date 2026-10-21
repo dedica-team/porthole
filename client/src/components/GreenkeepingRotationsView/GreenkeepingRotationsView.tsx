@@ -179,12 +179,13 @@ export default function GreenkeepingRotationsView() {
                 return (
                   <tr
                     key={rotation.id}
-                    className={isCollaborator ? 'cursor-pointer' : undefined}
-                    onClick={() => { if (isCollaborator) { setActionError(''); setEditingRotation(rotation); } }}
+
                   >
                     {/* Left: rotation metadata */}
                     <td className="px-4 py-3 align-top border-b border-border">
-                      <div className="font-semibold text-foreground text-lg">{rotation.name}</div>
+                      <div className="font-semibold text-lg cursor-pointer text-link-hover"
+                           onClick={() => { if (isCollaborator) { setActionError(''); setEditingRotation(rotation); } }}
+                      >{rotation.name}</div>
                       {rotation.description && (
                         <p className="mt-0.5 text-sm text-muted-foreground">{rotation.description}</p>
                       )}
@@ -239,12 +240,8 @@ export default function GreenkeepingRotationsView() {
                               disabled={!canAdvance || isBusy}
                               aria-label={canAdvance ? `Advance rotation ${rotation.name}` : `Current greenkeeper ${username}`}
                               title={canAdvance ? `Current: ${username}. Click to advance to next.` : username}
-                              className={`rounded border px-2 py-1 w-24 min-w-24 flex items-center justify-center transition-all ${
-                                canAdvance
-                                  ? 'cursor-pointer hover:border-secondary-foreground hover:bg-secondary/40 border-secondary-foreground'
-                                  : 'border-border opacity-90 cursor-default'
-                              }`}
-                              style={{ background: 'rgba(80,100,220,0.08)' }}
+                              className={` px-2 py-1 w-24 min-w-24 flex items-center justify-center tr`}
+
                             >
                               <UserAvatar username={username} avatarUrl={collab?.avatarUrl} title={username} fullWidth={true} />
                             </button>

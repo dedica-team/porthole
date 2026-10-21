@@ -12,6 +12,8 @@ import team.dedica.porthole.application.NoOpBroadcastPort
 import team.dedica.porthole.application.lobby.JoinMapUseCase
 import team.dedica.porthole.application.session.greenkeeping.AdvanceGreenkeepingRotationUseCase
 import team.dedica.porthole.application.session.greenkeeping.CreateGreenkeepingRotationUseCase
+import team.dedica.porthole.application.session.greenkeeping.StartGreenkeepingChecklistUseCase
+import team.dedica.porthole.application.session.greenkeeping.UpdateGreenkeepingChecklistUseCase
 import team.dedica.porthole.application.session.landscaping.CreateConnectionUseCase
 import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
 import team.dedica.porthole.application.session.landscaping.PlaceLandmarkUseCase
@@ -55,6 +57,8 @@ class DemoDataLoaderTest {
         updateChoreEntryUseCase = UpdateChoreEntryUseCase(mapPort, broadcast, authPort),
         createGreenkeepingRotationUseCase = CreateGreenkeepingRotationUseCase(mapPort, broadcast, authPort),
         advanceGreenkeepingRotationUseCase = AdvanceGreenkeepingRotationUseCase(mapPort, broadcast, authPort),
+        startGreenkeepingChecklistUseCase = StartGreenkeepingChecklistUseCase(mapPort, broadcast, authPort),
+        updateGreenkeepingChecklistUseCase = UpdateGreenkeepingChecklistUseCase(mapPort, broadcast, authPort),
     )
 
     private val event = StartupEvent(mock<BeanContext>())
@@ -267,6 +271,38 @@ class DemoDataLoaderTest {
         assertEquals(listOf(true, false, false), clinicalRotation.collaborators.map { it.done })
         assertEquals(listOf(true, true, false), diagnosticsRotation.collaborators.map { it.done })
         assertEquals(listOf(true, false, false), facilitiesRotation.collaborators.map { it.done })
+    }
+
+    @Test
+    fun `greenkeeping rotations have task templates configured`() {
+        loader.run(event)
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+
+        val clinicalRotation = map.greenkeepingRotations.values.first { it.name == "Clinical Hygiene Steward" }
+        val diagnosticsRotation = map.greenkeepingRotations.values.first { it.name == "Diagnostics Equipment Steward" }
+        val facilitiesRotation = map.greenkeepingRotations.values.first { it.name == "Front-of-House Readiness" }
+
+        assertEquals(4, clinicalRotation.taskTemplates.size, "Expected 4 task templates on clinical rotation")
+        assertEquals(3, diagnosticsRotation.taskTemplates.size, "Expected 3 task templates on diagnostics rotation")
+        assertEquals(3, facilitiesRotation.taskTemplates.size, "Expected 3 task templates on facilities rotation")
+    }
+
+    @Test
+    fun `clinical hygiene steward rotation has active checklist with progress`() {
+        loader.run(event)
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+
+        val clinicalRotation = map.greenkeepingRotations.values.first { it.name == "Clinical Hygiene Steward" }
+        val checklist = clinicalRotation.currentChecklist
+        assertNotNull(checklist, "Clinical rotation must have an active checklist")
+        assertEquals("Weekly Sterilisation Walk-Through", checklist?.title)
+        assertEquals(4, checklist?.items?.size)
+        assertEquals(2, checklist?.items?.count { it.done })
+        assertEquals(listOf(true, true, false, false), checklist?.items?.map { it.done })
+        assertNotNull(checklist?.items?.get(0)?.note)
+        assertNotNull(checklist?.items?.get(1)?.note)
+        assertNotNull(checklist?.items?.get(2)?.note)
+        assertNull(checklist?.items?.get(3)?.note)
     }
 
     @Test

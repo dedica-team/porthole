@@ -98,7 +98,7 @@ class EditGreenkeepingRotationUseCaseTest {
         val existingTask = GreenkeepingTaskTemplateItem(title = "Task 1")
         rotation.taskTemplates += existingTask
 
-        val result = useCase.execute(
+        useCase.execute(
             sessionId = state.id,
             rotationId = rotation.id,
             name = null,
