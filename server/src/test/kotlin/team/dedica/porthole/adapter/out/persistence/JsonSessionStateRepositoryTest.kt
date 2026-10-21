@@ -724,4 +724,17 @@ class JsonSessionStateRepositoryTest {
 
     // ── Chore Lists persistence ────────────────────────────────────────────────
     // tests in ChoreListPersistenceTest.kt
+
+    @Nested
+    inner class HexDeserialization {
+        @Test
+        fun `deserialises HexTile and HexCoordinate via mixin creators without reflective field mutation`() {
+            val json = """{"coordinate":{"q":3,"r":-2},"elevation":4,"terrain":"FOREST"}"""
+            val tile = mapper.readValue(json, HexTile::class.java)
+
+            assertEquals(HexCoordinate(3, -2), tile.coordinate)
+            assertEquals(4, tile.elevation)
+            assertEquals(Terrain.FOREST, tile.terrain)
+        }
+    }
 }
