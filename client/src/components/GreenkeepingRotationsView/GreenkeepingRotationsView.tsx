@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, ExternalLink, FastForward, HelpCircle, Plus, Sprout } from 'lucide-react';
+import { ChevronRight, ExternalLink, FastForward, HelpCircle, ListChecks, Plus, Sprout } from 'lucide-react';
 import { Popup } from '@/components/ui/popup';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   getActiveGreenkeepingEntry,
 } from '@/types/greenkeeping';
 import CreateEditGreenkeepingRotationDialog from './CreateEditGreenkeepingRotationDialog';
+import GreenkeepingTasklistDialog from './GreenkeepingTasklistDialog';
 
 export default function GreenkeepingRotationsView() {
   const currentMap = useMapStore((s) => s.currentMap);
@@ -28,6 +29,7 @@ export default function GreenkeepingRotationsView() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingRotation, setEditingRotation] = useState<GreenkeepingRotation | null>(null);
+  const [tasklistRotation, setTasklistRotation] = useState<GreenkeepingRotation | null>(null);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [actionError, setActionError] = useState('');
   const [busyRotationId, setBusyRotationId] = useState<string | null>(null);
@@ -207,6 +209,28 @@ export default function GreenkeepingRotationsView() {
                           ))}
                         </div>
                       )}
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="default"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTasklistRotation(rotation);
+                          }}
+                          className="h-6 text-xs gap-1 px-2 text-foreground cursor-pointer"
+                          aria-label={`Open checklist for ${rotation.name}`}
+                          title="Run checklist"
+                        >
+                          <ListChecks className="h-3 w-3" />
+                          {rotation.currentChecklist ? 'Checklist (Active)' : 'Checklist'}
+                        </Button>
+                        {rotation.currentChecklist && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {rotation.currentChecklist.items.filter((i) => i.done).length}/{rotation.currentChecklist.items.length} done
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Right: assignee chain + advance */}
@@ -288,6 +312,14 @@ export default function GreenkeepingRotationsView() {
             setGreenkeepingRotations(greenkeepingRotations.filter((r) => r.id !== rotationId));
             setEditingRotation(null);
           }}
+        />
+      )}
+
+      {tasklistRotation && (
+        <GreenkeepingTasklistDialog
+          open={!!tasklistRotation}
+          onOpenChange={(open) => { if (!open) setTasklistRotation(null); }}
+          rotation={tasklistRotation}
         />
       )}
     </div>

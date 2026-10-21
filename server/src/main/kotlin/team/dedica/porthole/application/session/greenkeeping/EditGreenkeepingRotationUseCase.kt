@@ -6,6 +6,7 @@ import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.GreenkeepingRotation
 import team.dedica.porthole.domain.GreenkeepingRotationCollaborator
+import team.dedica.porthole.domain.GreenkeepingTaskTemplateItem
 import team.dedica.porthole.domain.SessionRole
 import java.time.Instant
 import java.util.UUID
@@ -27,6 +28,7 @@ class EditGreenkeepingRotationUseCase(
         groupIds: List<UUID>?,
         collaborators: List<GreenkeepingRotationCollaboratorPatch>?,
         callerId: UUID,
+        taskTemplates: List<GreenkeepingTaskTemplateItemPatch>? = null,
     ): List<GreenkeepingRotation> {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val rotation = state.greenkeepingRotations[rotationId]
@@ -61,6 +63,23 @@ class EditGreenkeepingRotationUseCase(
             }
             rotation.collaborators.clear()
             rotation.collaborators += reordered
+        }
+        if (taskTemplates != null) {
+            val existingById = rotation.taskTemplates.associateBy { it.id }
+            val updatedTemplates = taskTemplates.map { patch ->
+                val existing = patch.id?.let(existingById::get)
+                if (existing != null) {
+                    existing.title = normalizeTaskTemplateTitle(patch.title)
+                    existing
+                } else {
+                    GreenkeepingTaskTemplateItem(
+                        id = patch.id ?: UUID.randomUUID(),
+                        title = normalizeTaskTemplateTitle(patch.title),
+                    )
+                }
+            }
+            rotation.taskTemplates.clear()
+            rotation.taskTemplates += updatedTemplates
         }
 
         rotation.updatedAt = Instant.now()

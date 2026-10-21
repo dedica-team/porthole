@@ -6,9 +6,11 @@ import org.junit.jupiter.api.Test
 import team.dedica.porthole.domain.AccessDeniedException
 import team.dedica.porthole.application.session.greenkeeping.EditGreenkeepingRotationUseCase
 import team.dedica.porthole.application.session.greenkeeping.GreenkeepingRotationCollaboratorPatch
+import team.dedica.porthole.application.session.greenkeeping.GreenkeepingTaskTemplateItemPatch
 import team.dedica.porthole.domain.Collaborator
 import team.dedica.porthole.domain.GreenkeepingRotation
 import team.dedica.porthole.domain.GreenkeepingRotationCollaborator
+import team.dedica.porthole.domain.GreenkeepingTaskTemplateItem
 import team.dedica.porthole.domain.HexMap
 import team.dedica.porthole.domain.LandmarkGroup
 import team.dedica.porthole.domain.SessionState
@@ -89,6 +91,57 @@ class EditGreenkeepingRotationUseCaseTest {
         assertEquals(collaboratorId, saved.updatedBy)
         assertTrue(saved.updatedAt.isAfter(Instant.EPOCH))
         assertEquals(listOf("Renamed Weekly"), result.map { it.name })
+    }
+
+    @Test
+    fun `updates task templates with reordering and additions`() {
+        val existingTask = GreenkeepingTaskTemplateItem(title = "Task 1")
+        rotation.taskTemplates += existingTask
+
+        val result = useCase.execute(
+            sessionId = state.id,
+            rotationId = rotation.id,
+            name = null,
+            description = null,
+            clearDescription = false,
+            link = null,
+            clearLink = false,
+            groupIds = null,
+            collaborators = null,
+            taskTemplates = listOf(
+                GreenkeepingTaskTemplateItemPatch(id = null, title = "New Task 2"),
+                GreenkeepingTaskTemplateItemPatch(id = existingTask.id, title = "Task 1 Updated"),
+            ),
+            callerId = collaboratorId,
+        )
+
+        val saved = mapStatePort.findById(state.id)!!.greenkeepingRotations[rotation.id]!!
+        assertEquals(2, saved.taskTemplates.size)
+        assertEquals("New Task 2", saved.taskTemplates[0].title)
+        assertEquals(existingTask.id, saved.taskTemplates[1].id)
+        assertEquals("Task 1 Updated", saved.taskTemplates[1].title)
+    }
+
+    @Test
+    fun `clears task templates when empty list provided`() {
+        rotation.taskTemplates += GreenkeepingTaskTemplateItem(title = "Task 1")
+
+        useCase.execute(
+            sessionId = state.id,
+            rotationId = rotation.id,
+            name = null,
+            description = null,
+            clearDescription = false,
+            link = null,
+            clearLink = false,
+            groupIds = null,
+            collaborators = null,
+            taskTemplates = emptyList(),
+            callerId = collaboratorId,
+        )
+
+        val saved = mapStatePort.findById(state.id)!!.greenkeepingRotations[rotation.id]!!
+        assertTrue(saved.taskTemplates.isEmpty())
     }
 
     @Test

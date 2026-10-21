@@ -145,6 +145,14 @@ describe('GreenkeepingRotationsView', () => {
     expect(screen.getByRole('button', { name: /confirm delete/i })).toBeInTheDocument();
   });
 
+  it('opens the checklist dialog when Checklist button is clicked', async () => {
+    render(<GreenkeepingRotationsView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open checklist for weekly core duty/i }));
+
+    expect(await screen.findByText('Weekly Core Duty – Checklist')).toBeInTheDocument();
+  });
+
   it('advances the active collaborator and updates the overview', async () => {
     vi.mocked(mapApi.advanceGreenkeepingRotation).mockResolvedValue({
       ...baseRotation,

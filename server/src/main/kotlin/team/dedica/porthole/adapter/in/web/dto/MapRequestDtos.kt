@@ -227,12 +227,20 @@ data class GreenkeepingRotationCollaboratorRequest(
 )
 
 @Introspected
+data class GreenkeepingTaskTemplateItemRequest(
+    @param:JsonSerialize(using = UUIDSerializer::class)
+    val id: UUID? = null,
+    @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val title: String,
+)
+
+@Introspected
 data class CreateGreenkeepingRotationRequest(
     @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val name: String,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
     val groupIds: List<String> = emptyList(),
     val collaborators: List<GreenkeepingRotationCollaboratorRequest> = emptyList(),
+    val taskTemplates: List<GreenkeepingTaskTemplateItemRequest> = emptyList(),
 )
 
 @Introspected
@@ -244,6 +252,27 @@ data class EditGreenkeepingRotationRequest(
     val clearLink: Boolean = false,
     val groupIds: List<String>? = null,
     val collaborators: List<GreenkeepingRotationCollaboratorRequest>? = null,
+    val taskTemplates: List<GreenkeepingTaskTemplateItemRequest>? = null,
+)
+
+@Introspected
+data class GreenkeepingChecklistItemRequest(
+    @param:JsonSerialize(using = UUIDSerializer::class)
+    val id: UUID? = null,
+    @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val title: String,
+    val done: Boolean = false,
+    @field:Size(max = DESCRIPTION_MAX_LENGTH) val note: String? = null,
+)
+
+@Introspected
+data class StartGreenkeepingChecklistRequest(
+    @field:Size(max = NAME_MAX_LENGTH) val title: String? = null,
+)
+
+@Introspected
+data class UpdateGreenkeepingChecklistRequest(
+    @field:Size(max = NAME_MAX_LENGTH) val title: String? = null,
+    val items: List<GreenkeepingChecklistItemRequest>? = null,
 )
 
 

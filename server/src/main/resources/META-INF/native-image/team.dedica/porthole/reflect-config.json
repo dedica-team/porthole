@@ -450,6 +450,12 @@
     "allDeclaredFields": true
   },
   {
+    "name": "team.dedica.porthole.adapter.in.web.dto.GreenkeepingTaskTemplateItemRequest",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
     "name": "team.dedica.porthole.adapter.in.web.dto.MapRequestDtosKt",
     "allDeclaredConstructors": true,
     "allDeclaredMethods": true,
@@ -1188,6 +1194,18 @@
     "allDeclaredFields": true
   },
   {
+    "name": "team.dedica.porthole.domain.GreenkeepingChecklist",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "team.dedica.porthole.domain.GreenkeepingChecklistItem",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
     "name": "team.dedica.porthole.domain.GreenkeepingRotation",
     "allDeclaredConstructors": true,
     "allDeclaredMethods": true,
@@ -1195,6 +1213,12 @@
   },
   {
     "name": "team.dedica.porthole.domain.GreenkeepingRotationCollaborator",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "team.dedica.porthole.domain.GreenkeepingTaskTemplateItem",
     "allDeclaredConstructors": true,
     "allDeclaredMethods": true,
     "allDeclaredFields": true

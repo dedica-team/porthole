@@ -9,11 +9,32 @@ data class GreenkeepingRotationCollaboratorPatch(
     val collaboratorId: UUID,
 )
 
+data class GreenkeepingTaskTemplateItemPatch(
+    val id: UUID? = null,
+    val title: String
+)
+
+data class GreenkeepingChecklistItemPatch(
+    val id: UUID? = null,
+    val title: String,
+    val done: Boolean = false,
+    val note: String? = null,
+)
+
 internal fun normalizeGreenkeepingName(name: String): String {
     val trimmed = name.trim()
     require(trimmed.isNotBlank()) { "Greenkeeping rotation name must not be blank" }
     return trimmed
 }
+
+internal fun normalizeTaskTemplateTitle(title: String): String {
+    val trimmed = title.trim()
+    require(trimmed.isNotBlank()) { "Task template title must not be blank" }
+    return trimmed
+}
+
+internal fun normalizeOptionalNote(note: String?): String? =
+    note?.trim()?.takeIf { it.isNotBlank() }
 
 internal fun normalizeOptionalDescription(description: String?): String? =
     description?.trim()?.takeIf { it.isNotBlank() }
