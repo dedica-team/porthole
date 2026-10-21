@@ -175,19 +175,11 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-background"
-      style={{
-        backgroundImage:
-          'linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px)',
-        backgroundSize: '40px 40px',
-      }}
-    >
+    <div className="w-full h-full flex items-center justify-center bg-background">
       {/* Passkey modal */}
       {showPasskeyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="relative flex flex-col gap-4 bg-card border w-full max-w-sm mx-4 p-6"
-            style={{ boxShadow: '0 0 40px rgba(0,240,255,0.15)', borderColor: 'hsl(185,100%,22%)' }}
-          >
+          <div className="relative flex flex-col gap-4 bg-card border border-border shadow-lg rounded-lg w-full max-w-sm mx-4 p-6">
             <button
               className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               onClick={() => { setShowPasskeyModal(false); setPasskeyError(null); }}
@@ -234,12 +226,7 @@ export default function AuthPage() {
         </div>
       )}
 
-      <div className="flex flex-col items-center gap-8 p-6 sm:p-10 bg-card border border-border shadow-2xl w-full max-w-sm mx-4 sm:mx-0"
-        style={{
-          boxShadow: '0 0 40px rgba(0,240,255,0.15), inset 0 0 0 1px rgba(0,240,255,0.07)',
-          borderColor: 'hsl(185,100%,22%)',
-        }}
-      >
+      <div className="flex flex-col items-center gap-8 p-6 sm:p-10 bg-card border border-border shadow-lg rounded-lg w-full max-w-sm mx-4 sm:mx-0">
         {/* Tron hexagonal emblem */}
         <div className="flex flex-col items-center gap-4">
           <img
@@ -247,18 +234,17 @@ export default function AuthPage() {
             alt="Tron hexagonal emblem"
             width={72}
             height={72}
-            style={{ filter: 'drop-shadow(0 0 12px hsl(185,100%,54%))' }}
           />
           <div className="flex flex-col items-center gap-1">
             <h1 className="tron-logo text-2xl">Porthole</h1>
-            <p className="text-sm tracking-widest uppercase text-center leading-relaxed" style={{ color: 'hsl(185,60%,38%)' }}>
+            <p className="text-sm tracking-widest uppercase text-center leading-relaxed text-muted-foreground">
               <strong>{tagline}</strong>
             </p>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="w-full h-px" style={{ background: 'linear-gradient(to right, transparent, hsl(185,100%,22%), transparent)' }} />
+        <div className="w-full h-px bg-border" />
 
         <div className="flex flex-col w-full gap-3">
           {githubEnabled && (
@@ -266,14 +252,6 @@ export default function AuthPage() {
               onClick={handleGitHubLogin}
               className="w-full gap-2 uppercase tracking-widest text-sm h-11"
               size="lg"
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(0,240,255,0.10)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(0,240,255,0.5), inset 0 0 14px rgba(0,240,255,0.10)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 10px rgba(0,240,255,0.3), inset 0 0 10px rgba(0,240,255,0.06)';
-              }}
             >
               <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
@@ -287,20 +265,6 @@ export default function AuthPage() {
               onClick={handleKeycloakLogin}
               className="w-full gap-2 uppercase tracking-widest text-sm h-11"
               size="lg"
-              style={{
-                background: 'transparent',
-                border: '1px solid hsl(25,100%,54%)',
-                color: 'hsl(25,100%,65%)',
-                boxShadow: '0 0 10px rgba(255,120,0,0.25), inset 0 0 10px rgba(255,120,0,0.06)',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(255,120,0,0.10)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(255,120,0,0.45), inset 0 0 14px rgba(255,120,0,0.10)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 10px rgba(255,120,0,0.25), inset 0 0 10px rgba(255,120,0,0.06)';
-              }}
             >
               🔐 Access via Keycloak
             </Button>
@@ -312,20 +276,6 @@ export default function AuthPage() {
               disabled={passkeyLoading}
               className="w-full gap-2 uppercase tracking-widest text-sm h-11"
               size="lg"
-              style={{
-                background: 'transparent',
-                border: '1px solid hsl(270,80%,60%)',
-                color: 'hsl(270,80%,75%)',
-                boxShadow: '0 0 10px rgba(160,80,255,0.25), inset 0 0 10px rgba(160,80,255,0.05)',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(160,80,255,0.10)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(160,80,255,0.45), inset 0 0 14px rgba(160,80,255,0.10)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 10px rgba(160,80,255,0.25), inset 0 0 10px rgba(160,80,255,0.05)';
-              }}
             >
               🔑 Sign in with Passkey
             </Button>
