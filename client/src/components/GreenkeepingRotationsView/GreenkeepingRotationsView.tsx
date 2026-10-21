@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, ExternalLink, FastForward, HelpCircle, ListChecks, Plus, Sprout } from 'lucide-react';
+import { ExternalLink, FastForward, HelpCircle, ListChecks, Plus, Sprout } from 'lucide-react';
 import { Popup } from '@/components/ui/popup';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Button } from '@/components/ui/button';
@@ -165,7 +165,8 @@ export default function GreenkeepingRotationsView() {
             <thead className="sticky top-0 z-10">
               <tr>
                 <th className="text-left px-4 py-2 font-medium data-sticky-header w-2/5">Rotation</th>
-                <th className="text-left px-4 py-2 font-medium data-sticky-header">Assignees</th>
+                <th className="text-left px-4 py-2 font-medium data-sticky-header">Greenkeeper</th>
+                <th className="text-left px-4 py-2 font-medium data-sticky-header">Checklist</th>
               </tr>
             </thead>
             <tbody>
@@ -193,7 +194,7 @@ export default function GreenkeepingRotationsView() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1 mt-1 text-xs text-[hsl(var(--link))] hover:underline min-w-0"
+                          className="flex items-center gap-1 mt-1 text-xs text-link hover:underline min-w-0"
                         >
                           <ExternalLink className="h-3 w-3 shrink-0" />
                           <span className="truncate min-w-0">{rotation.link}</span>
@@ -209,81 +210,85 @@ export default function GreenkeepingRotationsView() {
                           ))}
                         </div>
                       )}
-                      <div className="mt-2 flex items-center gap-1.5">
+                    </td>
+
+                    {/* Middle: current greenkeeper with advance on click */}
+                    <td className="px-4 py-3 align-middle border-b border-border" onClick={(e) => e.stopPropagation()}>
+                      {activeEntry ? (() => {
+                        const collab = collaboratorMap[activeEntry.collaboratorId];
+                        const username = collab?.username ?? 'Unknown';
+                        const activeIdx = rotation.collaborators.findIndex((e) => e.id === activeEntry.id);
+                        const nextEntry = rotation.collaborators[(activeIdx + 1) % rotation.collaborators.length];
+                        const nextCollab = collaboratorMap[nextEntry?.collaboratorId];
+                        const nextUsername = nextCollab?.username ?? 'Unknown';
+
+                        return (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (canAdvance) {
+                                  setPendingAdvance({
+                                    rotationId: rotation.id,
+                                    rotationName: rotation.name,
+                                    nextUsername,
+                                    nextAvatarUrl: nextCollab?.avatarUrl,
+                                  });
+                                }
+                              }}
+                              disabled={!canAdvance || isBusy}
+                              aria-label={canAdvance ? `Advance rotation ${rotation.name}` : `Current greenkeeper ${username}`}
+                              title={canAdvance ? `Current: ${username}. Click to advance to next.` : username}
+                              className={`rounded border px-2 py-1 w-24 min-w-24 flex items-center justify-center transition-all ${
+                                canAdvance
+                                  ? 'cursor-pointer hover:border-secondary-foreground hover:bg-secondary/40 border-secondary-foreground'
+                                  : 'border-border opacity-90 cursor-default'
+                              }`}
+                              style={{ background: 'rgba(80,100,220,0.08)' }}
+                            >
+                              <UserAvatar username={username} avatarUrl={collab?.avatarUrl} title={username} fullWidth={true} />
+                            </button>
+                          </div>
+                        );
+                      })() : (
+                        <span className="text-xs text-muted-foreground italic">No assignees</span>
+                      )}
+                    </td>
+
+                    {/* Right: current checklist or button to create one */}
+                    <td className="px-4 py-3 align-middle border-b border-border" onClick={(e) => e.stopPropagation()}>
+                      {rotation.currentChecklist ? (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="default"
+                            onClick={() => setTasklistRotation(rotation)}
+                            className="h-7 text-xs gap-1.5 px-2.5 text-foreground cursor-pointer"
+                            aria-label={`Open checklist for ${rotation.name}`}
+                            title={`Checklist: ${rotation.currentChecklist.title}`}
+                          >
+                            <ListChecks className="h-3.5 w-3.5" />
+                            {rotation.currentChecklist.title || 'Checklist (Active)'}
+                          </Button>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {rotation.currentChecklist.items.filter((i) => i.done).length}/{rotation.currentChecklist.items.length} done
+                          </span>
+                        </div>
+                      ) : (
                         <Button
                           type="button"
                           size="sm"
                           variant="default"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTasklistRotation(rotation);
-                          }}
-                          className="h-6 text-xs gap-1 px-2 text-foreground cursor-pointer"
+                          onClick={() => setTasklistRotation(rotation)}
+                          className="h-7 text-xs gap-1.5 px-2.5 text-foreground cursor-pointer"
                           aria-label={`Open checklist for ${rotation.name}`}
-                          title="Run checklist"
+                          title="Create checklist"
                         >
-                          <ListChecks className="h-3 w-3" />
-                          {rotation.currentChecklist ? 'Checklist (Active)' : 'Checklist'}
+                          <Plus className="h-3.5 w-3.5" />
+                          Create checklist
                         </Button>
-                        {rotation.currentChecklist && (
-                          <span className="text-[11px] text-muted-foreground">
-                            {rotation.currentChecklist.items.filter((i) => i.done).length}/{rotation.currentChecklist.items.length} done
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Right: assignee chain + advance */}
-                    <td className="px-4 py-3 align-middle border-b border-border" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {rotation.collaborators.map((entry, idx) => {
-                          const collab = collaboratorMap[entry.collaboratorId];
-                          const username = collab?.username ?? 'Unknown';
-                          const isActive = activeEntry?.id === entry.id;
-                          const isLast = idx === rotation.collaborators.length - 1;
-
-                          return (
-                            <div key={entry.id} className="flex items-center gap-1.5">
-                              <div
-                                className={`rounded border px-2 py-1 w-20 min-w-20 shrink-0 ${isActive ? 'border-secondary-foreground' : 'border-border'}`}
-                                style={isActive ? { background: 'rgba(80,100,220,0.08)' } : undefined}
-                              >
-                                <UserAvatar username={username} avatarUrl={collab?.avatarUrl} title={username} fullWidth={true} />
-                              </div>
-                              {isActive && canAdvance && (() => {
-                                const activeIdx = rotation.collaborators.findIndex((e) => e.id === activeEntry?.id);
-                                const nextEntry = rotation.collaborators[(activeIdx + 1) % rotation.collaborators.length];
-                                const nextCollab = collaboratorMap[nextEntry?.collaboratorId];
-                                const nextUsername = nextCollab?.username ?? 'Unknown';
-                                return (
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPendingAdvance({
-                                        rotationId: rotation.id,
-                                        rotationName: rotation.name,
-                                        nextUsername,
-                                        nextAvatarUrl: nextCollab?.avatarUrl,
-                                      });
-                                    }}
-                                    disabled={isBusy}
-                                    aria-label={`Advance rotation ${rotation.name}`}
-                                    title="Advance to next"
-                                    className="h-9 w-9"
-                                  >
-                                    <FastForward className="h-5 w-5" />
-                                  </Button>
-                                );
-                              })()}
-                              {!isActive && !isLast && (
-                                <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                      )}
                     </td>
                   </tr>
                 );
