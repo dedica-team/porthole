@@ -1,9 +1,11 @@
 ---
-description: 'Guidelines for building Micronaut base applications'
+description: 'Guidelines for building Porthole features'
 applyTo: '**/*.java, **/*.kt, **/*.ts, **/*.tsx'
 ---
 
 # Architecture and Design Principles
+
+The system is a tool to design landscapes that are hexagonal maps.
 
 - client / server architecture
 - REST API design
@@ -15,6 +17,7 @@ applyTo: '**/*.java, **/*.kt, **/*.ts, **/*.tsx'
 - use JWT tokens for secure communication between client and server
 - implement unit and integration tests to ensure code quality and reliability
 - extract business logic into separate classes to improve maintainability and testability
+- the user interface should be intuitive and easy to navigate, with clear buttons
 
 ## General Instructions
 
@@ -29,18 +32,6 @@ applyTo: '**/*.java, **/*.kt, **/*.ts, **/*.tsx'
 - use maven
 - use react with three.js for the client side
 - use micronaut for the server side
-
-
-## Domain rules
-
-- The system is a tool to design landscapes that are hexagonal maps. The hex tiles do not have terrain, but elevation.
-- Towers can be placed on the map and connections can be drawn between towers.
-
-
-## Appearance
-- tiles are hexagonal and appear with blue glowing edges
-- towers are represented as 3D models that can be placed on top of the hexagonal
-- the user interface should be intuitive and easy to navigate, with clear buttons for placing towers,
 
 ## Code Reviews
 - review code before merging to ensure it adheres to the architecture and design principles outlined above
