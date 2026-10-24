@@ -26,6 +26,7 @@ import {
 import {ProcessArrowRenderer} from './ProcessArrowRenderer';
 import type {StageConnectionEntry} from './ProcessArrowRenderer';
 import {CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import {computeTileHeatmapColor, resolveStatusElements} from './heatmapUtils';
 
 
 function makeXrayLabel(text: string): HTMLDivElement {
@@ -835,21 +836,36 @@ export default function HexGrid({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [highlightConnectionIds, activeStageConnectionIds, activeStageName, hideDecorations, map.connections]);
 
-    // ── Stage tile highlight (lighter grey for active-stage tiles in process mode) ──
+    // ── Stage tile highlight & status heatmaps in process (xray) mode ─────────
     // Extracted as a plain function so it can be called both after geometry rebuild
-    // and whenever stageHighlightTiles changes — avoiding the ordering race.
+    // and whenever stageHighlightTiles / landmarks / metricOverlayEntries change.
     const applyTileHighlights = (tiles = map.map?.tiles ?? []) => {
         const topInfo = topColBufRef.current;
         const sideInfo = sideColBufRef.current;
         if (!topInfo || !sideInfo || !hideDecorations) return;
         const highlighted = stageHighlightTilesRef.current;
-        // When no set is provided the stage-specific highlight feature is inactive —
-        // reset everything to uniform process grey.
+        const statusElements = resolveStatusElements(map.landmarks, metricOverlayEntries);
+
         tiles.forEach((_tile, idx) => {
             const key = `${_tile.coordinate.q},${_tile.coordinate.r}`;
             const isHighlighted = highlighted != null && highlighted.has(key);
-            const [tr, tg, tb] = isHighlighted ? STAGE_TOP_RGB : PROCESS_TOP_RGB;
-            const [sr, sg, sb] = isHighlighted ? STAGE_SIDE_RGB : PROCESS_SIDE_RGB;
+
+            const heatmap = computeTileHeatmapColor(_tile.coordinate.q, _tile.coordinate.r, statusElements);
+
+            let tr: number, tg: number, tb: number;
+            let sr: number, sg: number, sb: number;
+
+            if (heatmap) {
+                [tr, tg, tb] = heatmap.topRGB;
+                [sr, sg, sb] = heatmap.sideRGB;
+            } else if (isHighlighted) {
+                [tr, tg, tb] = STAGE_TOP_RGB;
+                [sr, sg, sb] = STAGE_SIDE_RGB;
+            } else {
+                [tr, tg, tb] = PROCESS_TOP_RGB;
+                [sr, sg, sb] = PROCESS_SIDE_RGB;
+            }
+
             const tBase = idx * topInfo.vertsPerTile * 3;
             for (let v = 0; v < topInfo.vertsPerTile; v++) {
                 topInfo.buf.array[tBase + v * 3] = tr;
@@ -867,13 +883,13 @@ export default function HexGrid({
         sideInfo.buf.needsUpdate = true;
     };
 
-    // Re-apply highlights whenever the set changes (geometry already exists)
+    // Re-apply highlights and heatmaps whenever stage, landmarks, or metric overlays change
     useEffect(() => {
         stageHighlightTilesRef.current = stageHighlightTiles;
         applyTileHighlights();
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [stageHighlightTiles]);
+    }, [stageHighlightTiles, map.landmarks, metricOverlayEntries, hideDecorations]);
 
     // ── CSS2D metric overlay renderer toggle ───────────────────────────────────
     useEffect(() => {

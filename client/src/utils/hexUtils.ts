@@ -13,4 +13,13 @@ export function hexToWorld(
   return { x, z };
 }
 
+/**
+ * Calculates the axial hex distance between two coordinates (q1, r1) and (q2, r2).
+ */
+export function hexDistance(q1: number, r1: number, q2: number, r2: number): number {
+  const dq = q1 - q2;
+  const dr = r1 - r2;
+  return (Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr)) / 2;
+}
+
 
