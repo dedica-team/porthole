@@ -11,8 +11,6 @@ export const TRON_CYAN_DIM = 0x006070;
 export const TRON_BLACK    = 0x2a2a2a;
 /** Scene backdrop – matches the docs-site dark gray base. */
 export const SCENE_BACKGROUND = 0x2a2a2a;
-/** Subtle backdrop for process / xray mode – slightly darker than off-white hexes. */
-export const PROCESS_SCENE_BACKGROUND = 0xd0d0d0;
 export const EDGE_COLOR      = TRON_CYAN;
 /** Darker edge colour used for water and swamp tiles. */
 export const EDGE_COLOR_DARK = 0x004455;
