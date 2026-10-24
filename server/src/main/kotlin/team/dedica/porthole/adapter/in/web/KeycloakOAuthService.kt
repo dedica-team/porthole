@@ -23,6 +23,9 @@ class KeycloakOAuthService(
 ) {
     /**
      * Looks up or creates a [UserRecord] based on the given [KeycloakUserInfo].
+     * If a user exists by keycloakId, their email/avatar are updated.
+     * If a user exists by username without a keycloakId or with matching email, the keycloakId is linked to that user.
+     * If a username collision occurs with a different Keycloak account, a numeric suffix is appended.
      */
     fun upsertUser(info: KeycloakUserInfo): UserRecord =
         userRepository.findByKeycloakId(info.keycloakId)?.let { existing ->
@@ -35,6 +38,20 @@ class KeycloakOAuthService(
         } ?: run {
             val baseUsername = info.username.lowercase().replace(Regex("[^a-z0-9_-]"), "-")
                 .ifBlank { "user" }
+            val existingByUsername = userRepository.findByUsername(baseUsername)
+            if (existingByUsername != null && (
+                existingByUsername.keycloakId == null ||
+                existingByUsername.keycloakId == info.keycloakId ||
+                (info.email != null && existingByUsername.email.equals(info.email, ignoreCase = true))
+            )) {
+                val updated = existingByUsername.copy(
+                    keycloakId = info.keycloakId,
+                    email = info.email ?: existingByUsername.email,
+                    avatarUrl = info.avatarUrl ?: existingByUsername.avatarUrl,
+                )
+                userRepository.save(updated)
+                return updated
+            }
             var candidate = baseUsername
             var suffix = 1
             while (userRepository.findByUsername(candidate) != null) {

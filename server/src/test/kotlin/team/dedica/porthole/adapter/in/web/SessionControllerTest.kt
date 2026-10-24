@@ -55,16 +55,16 @@ class SessionControllerTest {
 
     @BeforeEach
     fun setup() {
-        if (userPort.findByUsername("testuser") == null) {
+        if (userPort.findByUsername("sessionuser") == null) {
             userPort.save(
                 UserRecord(
                     id = UUID.nameUUIDFromBytes("test-uid-001".toByteArray()),
-                    username = "testuser",
+                    username = "sessionuser",
                     githubId = "gh-test"
                 )
             )
         }
-        val user = userPort.findByUsername("testuser")!!
+        val user = userPort.findByUsername("sessionuser")!!
         token = jwtTokenProvider.generateToken(user.id, user.username)
 
         if (userPort.findByUsername("viewer") == null) {

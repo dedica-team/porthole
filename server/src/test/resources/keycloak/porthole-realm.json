@@ -1,0 +1,41 @@
+{
+  "realm": "porthole",
+  "enabled": true,
+  "registrationAllowed": false,
+  "users": [
+    {
+      "id": "2ef4d7eb-572d-4b92-a1c5-243c39b26526",
+      "username": "testuser",
+      "enabled": true,
+      "email": "testuser@example.com",
+      "firstName": "Test",
+      "lastName": "User",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "porthole-client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "porthole-secret",
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect"
+    }
+  ]
+}

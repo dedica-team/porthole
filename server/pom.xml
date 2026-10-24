@@ -158,6 +158,20 @@
             <version>5.4.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Testcontainers Keycloak for integration testing -->
+        <dependency>
+            <groupId>com.github.dasniko</groupId>
+            <artifactId>testcontainers-keycloak</artifactId>
+            <version>3.9.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>1.20.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -251,8 +265,23 @@
                             <annotationProcessorPaths>
                                 <annotationProcessorPath>
                                     <groupId>io.micronaut</groupId>
+                                    <artifactId>micronaut-core</artifactId>
+                                    <version>${micronaut.core.version}</version>
+                                </annotationProcessorPath>
+                                <annotationProcessorPath>
+                                    <groupId>io.micronaut</groupId>
+                                    <artifactId>micronaut-core-processor</artifactId>
+                                    <version>${micronaut.core.version}</version>
+                                </annotationProcessorPath>
+                                <annotationProcessorPath>
+                                    <groupId>io.micronaut</groupId>
                                     <artifactId>micronaut-inject-java</artifactId>
                                     <version>${micronaut.core.version}</version>
+                                </annotationProcessorPath>
+                                <annotationProcessorPath>
+                                    <groupId>io.micronaut.validation</groupId>
+                                    <artifactId>micronaut-validation-processor</artifactId>
+                                    <version>${micronaut.validation.version}</version>
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
                         </configuration>
