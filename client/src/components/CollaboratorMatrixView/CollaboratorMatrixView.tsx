@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StatusIndicator } from '@/components/ui/status-badge';
-import { Check, X, AlertTriangle, HelpCircle, Users, Bus } from 'lucide-react';
+import {Check, X, AlertTriangle, HelpCircle, Users, Bus, UserPlus, Pen} from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,7 @@ import LandmarkInfoPopover from "@/components/LandmarkInfoPopover/LandmarkInfoPo
 import { useMapActions } from '@/pages/MapPage/MapActionsContext';
 import { Popup } from '@/components/ui/popup';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
+import EditCollaboratorMatrixDialog from './EditCollaboratorMatrixDialog';
 
 
 // ── Cell-edit dialog ──────────────────────────────────────────────────────────
@@ -89,6 +90,7 @@ const EMPTY_LANDMARKS: Record<string, never> = {};
 export default function CollaboratorMatrixView() {
   const {
     handleSetMatrixEntry: onSetEntry,
+    handleEditCollaboratorMatrix: onEditMatrix,
     handleEditLandmark: onEditLandmark,
     handleRemoveLandmark: onRemoveLandmark,
     handleCreateGroup: onCreateGroup,
@@ -110,13 +112,17 @@ export default function CollaboratorMatrixView() {
   const [cellEdit, setCellEdit] = useState<CellEditState | null>(null);
   const [showGroupsDialog, setShowGroupsDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { hiddenGroups, setHiddenGroups, filterOpen, setFilterOpen, filterBtnRef, filterPopoverRef } =
     useGroupFilter('landmarks.matrix.hiddenGroups');
 
   if (!currentMap) return null;
 
   const matrix = collaboratorMatrix;
-  const collaborators: Collaborator[] = currentMap.collaborators;
+  const matrixCollaboratorIds = matrix?.collaborators ?? [];
+  const collaborators: Collaborator[] = matrixCollaboratorIds
+    .map((id) => currentMap.collaborators.find((c) => c.id === id))
+    .filter((c): c is Collaborator => c != null);
   const groups = currentMap.groups ?? {};
 
   const landmarks = Object.values(landmarksMap)
@@ -176,7 +182,7 @@ export default function CollaboratorMatrixView() {
         <div className="flex items-stretch border-b border-border shrink-0">
           <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
             <Bus className="h-3.5 w-3.5 text-muted-foreground" />
-            Bus Matrix
+            {matrix?.name || 'Bus Matrix'}
           </div>
           <button className={cardBtnCls} onClick={() => setShowHelpDialog(true)}>
             <HelpCircle className="h-3.5 w-3.5" /> Help
@@ -184,6 +190,11 @@ export default function CollaboratorMatrixView() {
           <button className={cardBtnCls} onClick={() => setShowGroupsDialog(true)}>
             <Users className="h-3.5 w-3.5" /> Groups
           </button>
+          {isCollaborator && (
+            <button className={cardBtnCls} onClick={() => setShowEditDialog(true)} title="Edit users in the matrix">
+              <Pen className="h-3.5 w-3.5" /> Edit
+            </button>
+          )}
         </div>
 
         {/* ── Error alert ────────────────────────────────────────────────── */}
@@ -211,8 +222,19 @@ export default function CollaboratorMatrixView() {
           </div>
         )}
 
+        {landmarks.length > 0 && collaborators.length === 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground text-sm gap-2">
+            <p>No collaborators added to the matrix yet.</p>
+            {isCollaborator && (
+              <Button size="sm" variant="secondary" onClick={() => setShowEditDialog(true)} className="gap-1.5">
+                <UserPlus className="h-3.5 w-3.5" /> Add Users
+              </Button>
+            )}
+          </div>
+        )}
+
       {/* ── Table ────────────────────────────────────────────────────────────── */}
-      {landmarks.length > 0 && (
+      {landmarks.length > 0 && collaborators.length > 0 && (
         <div className="overflow-x-auto">
           <div className="min-w-max">
             <table className="data-display-table w-full text-sm border-separate border-spacing-0">
@@ -357,6 +379,16 @@ export default function CollaboratorMatrixView() {
       </div>{/* end card */}
 
       {/* ── Dialogs ──────────────────────────────────────────────────────────── */}
+
+      <EditCollaboratorMatrixDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        matrix={matrix}
+        mapCollaborators={currentMap.collaborators}
+        onSave={async (name, selectedCollaboratorIds) => {
+          await onEditMatrix(name, selectedCollaboratorIds);
+        }}
+      />
 
       <MatrixCellEditDialog
         state={cellEdit}

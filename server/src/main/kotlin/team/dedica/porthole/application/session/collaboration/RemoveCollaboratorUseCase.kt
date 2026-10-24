@@ -27,9 +27,12 @@ class RemoveCollaboratorUseCase(
 
         val removed = state.collaborators.removeIf { it.id == collaboratorId }
         if (!removed) throw NoSuchElementException("Collaborator $collaboratorId not found in session $sessionId")
+        state.collaboratorMatrix.collaborators.remove(collaboratorId)
+        state.collaboratorMatrix.entries.values.forEach { it.remove(collaboratorId) }
         removeCollaboratorFromGreenkeepingRotationsUseCase.execute(state, collaboratorId)
         sessionStatePort.save(state)
         broadcastPort.send(sessionId, state)
+        broadcastPort.sendMatrix(sessionId, state.collaboratorMatrix)
         broadcastPort.sendGreenkeepingRotations(sessionId, state.greenkeepingRotations)
         return state
     }

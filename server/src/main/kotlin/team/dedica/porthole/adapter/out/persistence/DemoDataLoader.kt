@@ -22,6 +22,7 @@ import team.dedica.porthole.application.session.landscaping.EditLandmarkUseCase
 import team.dedica.porthole.application.session.landscaping.PlaceLandmarkUseCase
 import team.dedica.porthole.application.session.metrics.CreateGroupUseCase
 import team.dedica.porthole.application.session.metrics.CreateMetricUseCase
+import team.dedica.porthole.application.session.metrics.EditCollaboratorMatrixUseCase
 import team.dedica.porthole.application.session.metrics.SetLandmarkMetricUseCase
 import team.dedica.porthole.application.session.metrics.SetMatrixEntryUseCase
 import team.dedica.porthole.application.session.chorelists.CreateChoreListUseCase
@@ -72,6 +73,7 @@ class DemoDataLoader(
     private val editLandmarkUseCase: EditLandmarkUseCase,
     private val setLandmarkMetricUseCase: SetLandmarkMetricUseCase,
     private val createConnectionUseCase: CreateConnectionUseCase,
+    private val editCollaboratorMatrixUseCase: EditCollaboratorMatrixUseCase,
     private val setMatrixEntryUseCase: SetMatrixEntryUseCase,
     private val createProcessUseCase: CreateProcessUseCase,
     private val addProcessStageUseCase: AddProcessStageUseCase,
@@ -536,6 +538,13 @@ class DemoDataLoader(
     // NONE entries are skipped (SetMatrixEntryUseCase would write them but they add no information).
 
     private fun populateMatrix() {
+        editCollaboratorMatrixUseCase.execute(
+            sessionId = DEMO_MAP_ID,
+            callerId = USER_ADMIN_PETRA,
+            collaborators = listOf(
+                USER_DR_SARAH, USER_DR_JAMES, USER_NURSE_ANNA, USER_ADMIN_PETRA, USER_TECH_MARC
+            )
+        )
         val H = MatrixLevel.HIGH
         val M = MatrixLevel.MEDIUM
         val L = MatrixLevel.LOW

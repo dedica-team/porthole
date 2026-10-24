@@ -21,6 +21,7 @@ class SetMatrixEntryUseCase(
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.landmarks.containsKey(landmarkId)) { "Landmark $landmarkId not found" }
         require(state.collaborators.any { it.id == collaboratorId }) { "Collaborator $collaboratorId not found" }
+        require(state.collaboratorMatrix.collaborators.contains(collaboratorId)) { "Collaborator $collaboratorId is not in the matrix" }
         val byLandmark = state.collaboratorMatrix.entries.getOrPut(landmarkId) { ConcurrentHashMap() }
         byLandmark[collaboratorId] = CollaboratorMatrixEntry(level)
         sessionStatePort.save(state)

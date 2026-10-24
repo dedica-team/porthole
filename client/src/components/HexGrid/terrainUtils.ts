@@ -8,7 +8,7 @@ import { hexToWorld } from '@/utils/hexUtils.ts';
 // ── Tron palette ──────────────────────────────────────────────────────────────
 export const TRON_CYAN     = 0x00f0ff;
 export const TRON_CYAN_DIM = 0x006070;
-export const TRON_BLACK    = 0x040810;
+export const TRON_BLACK    = 0x2a2a2a;
 /** Scene backdrop – matches the docs-site dark gray base. */
 export const SCENE_BACKGROUND = 0x2a2a2a;
 export const EDGE_COLOR      = TRON_CYAN;

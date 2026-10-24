@@ -129,7 +129,8 @@ data class PositionLandmarkRequest(
 
 @Introspected
 data class EditCollaboratorMatrixRequest(
-    @field:Size(max = NAME_MAX_LENGTH) val name: String?,
+    @field:Size(max = NAME_MAX_LENGTH) val name: String? = null,
+    val collaborators: List<UUID>? = null,
 )
 
 @Introspected

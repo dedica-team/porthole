@@ -49,6 +49,7 @@ class DemoDataLoaderTest {
         editLandmarkUseCase     = EditLandmarkUseCase(mapPort, broadcast, authPort),
         setLandmarkMetricUseCase= SetLandmarkMetricUseCase(mapPort, broadcast, authPort),
         createConnectionUseCase = CreateConnectionUseCase(mapPort, broadcast, authPort),
+        editCollaboratorMatrixUseCase = EditCollaboratorMatrixUseCase(mapPort, broadcast, authPort),
         setMatrixEntryUseCase   = SetMatrixEntryUseCase(mapPort, broadcast, authPort),
         createProcessUseCase    = CreateProcessUseCase(mapPort, authPort),
         addProcessStageUseCase  = AddProcessStageUseCase(mapPort, authPort),

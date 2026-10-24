@@ -31,8 +31,15 @@ class CollaboratorMatrixController(
          user: PortholePrincipal
     ): HttpResponse<*> {
         val name = request.name?.trim()
-        if (name.isNullOrBlank()) return HttpResponse.badRequest("Matrix name must not be blank")
-        return HttpResponse.ok(editCollaboratorMatrixUseCase.execute(UUID.fromString(id), user.userId, name))
+        if (request.name != null && name.isNullOrBlank()) return HttpResponse.badRequest("Matrix name must not be blank")
+        return HttpResponse.ok(
+            editCollaboratorMatrixUseCase.execute(
+                UUID.fromString(id),
+                user.userId,
+                name,
+                request.collaborators,
+            )
+        )
     }
 
     @Put("/landmarks/{landmarkId}/collaborators/{collaboratorId}")

@@ -25,6 +25,7 @@ class CollaboratorMatrixUseCaseTest {
         state = SessionState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
         state.collaborators.add(Collaborator(id = callerId, username = "Alice"))
         state.collaborators.add(Collaborator(id = targetId, username = "Bob"))
+        state.collaboratorMatrix.collaborators.addAll(listOf(callerId, targetId))
         val landmark = Landmark(id = landmarkId, ownerId = callerId, coordinate = HexCoordinate(0, 0))
         state.landmarks[landmarkId] = landmark
         mapStatePort.save(state)
@@ -38,6 +39,17 @@ class CollaboratorMatrixUseCaseTest {
         val useCase = SetMatrixEntryUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
         val result = useCase.execute(state.id, callerId, landmarkId, targetId, MatrixLevel.HIGH)
         assertEquals(MatrixLevel.HIGH, result.collaboratorMatrix.entries[landmarkId]!![targetId]!!.level)
+    }
+
+    @Test
+    fun `set matrix entry for collaborator not in matrix throws IllegalArgumentException`() {
+        val nonMatrixCollab = UUID.nameUUIDFromBytes("p3".toByteArray())
+        state.collaborators.add(Collaborator(id = nonMatrixCollab, username = "Charlie"))
+        mapStatePort.save(state)
+        val useCase = SetMatrixEntryUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.execute(state.id, callerId, landmarkId, nonMatrixCollab, MatrixLevel.HIGH)
+        }
     }
 
     @Test
@@ -59,7 +71,7 @@ class CollaboratorMatrixUseCaseTest {
     @Test
     fun `set matrix entry non-collaborator throws AccessDeniedException`() {
         val useCase = SetMatrixEntryUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
+        assertThrows(AccessDeniedException::class.java) {
             useCase.execute(state.id, UUID.randomUUID(), landmarkId, targetId, MatrixLevel.HIGH)
         }
     }
@@ -119,8 +131,30 @@ class CollaboratorMatrixUseCaseTest {
     @Test
     fun `edit matrix name non-collaborator throws AccessDeniedException`() {
         val useCase = EditCollaboratorMatrixUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
+        assertThrows(AccessDeniedException::class.java) {
             useCase.execute(state.id, UUID.randomUUID(), "Name")
+        }
+    }
+
+    @Test
+    fun `edit matrix collaborators updates collaborator list and preserves existing entries`() {
+        val setUseCase = SetMatrixEntryUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        setUseCase.execute(state.id, callerId, landmarkId, targetId, MatrixLevel.HIGH)
+        assertEquals(MatrixLevel.HIGH, state.collaboratorMatrix.entries[landmarkId]!![targetId]!!.level)
+
+        val useCase = EditCollaboratorMatrixUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        val result = useCase.execute(state.id, callerId, "Updated Matrix", listOf(callerId))
+        assertEquals("Updated Matrix", result.collaboratorMatrix.name)
+        assertEquals(listOf(callerId), result.collaboratorMatrix.collaborators)
+        assertEquals(MatrixLevel.HIGH, result.collaboratorMatrix.entries[landmarkId]!![targetId]!!.level)
+    }
+
+    @Test
+    fun `edit matrix with collaborator not belonging to session throws IllegalArgumentException`() {
+        val nonSessionUser = UUID.randomUUID()
+        val useCase = EditCollaboratorMatrixUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.execute(state.id, callerId, "Matrix", listOf(callerId, nonSessionUser))
         }
     }
 }

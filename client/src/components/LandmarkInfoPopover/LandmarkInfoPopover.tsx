@@ -109,7 +109,9 @@ export default function LandmarkInfoPopover({
   const lmWorstLevel = worstLevel(Object.values(landmarkMetricEntries));
   const matrixEntriesForLandmark: { collaborator: (typeof currentMap.collaborators)[0]; level: MatrixLevel }[] =
     collaboratorMatrix
-      ? currentMap.collaborators
+      ? (collaboratorMatrix.collaborators ?? [])
+          .map((id) => currentMap.collaborators.find((c) => c.id === id))
+          .filter((c): c is (typeof currentMap.collaborators)[0] => c != null)
           .map((c) => ({
             collaborator: c,
             level: (collaboratorMatrix.entries[landmark.id]?.[c.id]?.level ?? 'NONE') as MatrixLevel,

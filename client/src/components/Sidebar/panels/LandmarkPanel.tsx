@@ -97,7 +97,9 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const lmWorstLevel = worstLevel(Object.values(landmarkMetricEntries));
   const matrixEntriesForLandmark: { collaborator: (typeof currentMap.collaborators)[0]; level: MatrixLevel }[] =
     collaboratorMatrix
-      ? currentMap.collaborators
+      ? (collaboratorMatrix.collaborators ?? [])
+          .map((cId) => currentMap.collaborators.find((c) => c.id === cId))
+          .filter((c): c is (typeof currentMap.collaborators)[0] => c != null)
           .map((c) => ({
             collaborator: c,
             level: (collaboratorMatrix.entries[selectedLandmark.id]?.[c.id]?.level ?? 'NONE') as MatrixLevel,

@@ -21,6 +21,7 @@ class MapStateBroadcaster(private val broker: StompBroker) : BroadcastPort {
     override fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix) {
         val snapshot = CollaboratorMatrix(
             name = matrix.name,
+            collaborators = matrix.collaborators.toMutableList(),
             entries = matrix.entries.entries.associate { (k, v) -> k to v.toMap().toMutableMap() }.toMutableMap(),
         )
         broker.publish("/topic/map/$sessionId/matrix", snapshot)

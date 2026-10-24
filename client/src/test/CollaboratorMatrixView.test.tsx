@@ -17,6 +17,7 @@ const COLLAB1 = { id: 'c1', username: 'Alice' };
 
 const mockActions = {
   handleSetMatrixEntry: vi.fn(),
+  handleEditCollaboratorMatrix: vi.fn(),
   handleEditLandmark: vi.fn(),
   handleRemoveLandmark: vi.fn(),
   actionLoading: false,
@@ -24,13 +25,13 @@ const mockActions = {
   setError: vi.fn(),
 };
 
-function setup() {
+function setup(matrixCollaborators: string[] = ['c1']) {
   useAuthStore.setState({ userId: 'c1', username: 'Alice', token: 'tok', isAuthenticated: true });
   useMapStore.setState({
     currentMap: {
       id: 'map1',
       createdAt: '',
-      collaborators: [COLLAB1],
+      collaborators: [COLLAB1, { id: 'c2', username: 'Bob' }],
       landmarks: { [LM1.id]: LM1 },
       connections: {},
       groups: {},
@@ -38,6 +39,7 @@ function setup() {
     },
     collaboratorMatrix: {
       name: 'test',
+      collaborators: matrixCollaborators,
       entries: {},
     },
   });
@@ -57,10 +59,37 @@ describe('CollaboratorMatrixView', () => {
     );
   });
 
-  it('renders landmark names', () => {
+  it('renders landmark names and collaborator columns', () => {
     setup();
     render(<CollaboratorMatrixView />);
     expect(screen.getByText('Tower 1')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.queryByText('Bob')).not.toBeInTheDocument();
+  });
+
+  it('allows opening edit matrix dialog and saving changes', () => {
+    setup(['c1']);
+    render(<CollaboratorMatrixView />);
+
+    const editBtn = screen.getByRole('button', { name: /edit|users/i });
+    fireEvent.click(editBtn);
+
+    expect(screen.getByText('Edit Collaborator Matrix')).toBeInTheDocument();
+    expect(screen.getByLabelText('Bob')).toBeInTheDocument();
+
+    // Check Bob to add him to matrix
+    fireEvent.click(screen.getByLabelText('Bob'));
+
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    expect(mockActions.handleEditCollaboratorMatrix).toHaveBeenCalledWith('test', ['c1', 'c2']);
+  });
+
+  it('renders empty collaborator message when no collaborators in matrix', () => {
+    setup([]);
+    render(<CollaboratorMatrixView />);
+    expect(screen.getByText('No collaborators added to the matrix yet.')).toBeInTheDocument();
   });
 
   it('clicking landmark name opens LandmarkInfoPopover and allows removal', () => {

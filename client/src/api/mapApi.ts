@@ -578,11 +578,15 @@ export async function positionLandmark(
 
 // ── Collaborator Matrix ──────────────────────────────────────────────────────
 
-export async function editCollaboratorMatrix(mapId: string, name: string): Promise<SessionState> {
+export async function editCollaboratorMatrix(
+  mapId: string,
+  name?: string,
+  collaborators?: string[],
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/collaborator-matrix`, {
     method: 'PATCH',
     headers: authHeaders(),
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, collaborators }),
   });
   return handleResponse<SessionState>(res);
 }

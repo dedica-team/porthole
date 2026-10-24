@@ -324,6 +324,7 @@ const MATRIX_LANDMARK_ID = landmark.id; // 'tower-abc123'
 
 const MATRIX: CollaboratorMatrix = {
   name: 'Bus Matrix',
+  collaborators: ['player-1', 'player-2'],
   entries: {
     [MATRIX_LANDMARK_ID]: {
       'player-1': { level: 'HIGH' },
@@ -379,6 +380,7 @@ describe('LandmarkPanel – collaborator matrix section', () => {
   it('does not render matrix section when all entries are NONE', () => {
     setupWithMatrix({
       name: 'Bus Matrix',
+      collaborators: ['player-1', 'player-2'],
       entries: {
         [MATRIX_LANDMARK_ID]: {
           'player-1': { level: 'NONE' },
@@ -415,6 +417,7 @@ describe('LandmarkPanel – collaborator matrix section', () => {
   it('does not render collaborators whose level is NONE', () => {
     setupWithMatrix({
       name: 'Bus Matrix',
+      collaborators: ['player-1', 'player-2'],
       entries: {
         [MATRIX_LANDMARK_ID]: {
           'player-1': { level: 'HIGH' },
@@ -475,6 +478,7 @@ describe('LandmarkPanel – collaborator matrix section', () => {
       },
       collaboratorMatrix: {
         name: 'Bus Matrix',
+        collaborators: ['player-1'],
         entries: { [MATRIX_LANDMARK_ID]: { 'player-1': { level: 'MEDIUM' } } },
       },
       mainView: 'landmark',

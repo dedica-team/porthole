@@ -14,6 +14,7 @@ import {worstLevel} from '@/types/landmark';
 import type {LandmarkMetricEntry} from '@/types/landmark';
 import {fetchChoreLists, fetchGreenkeepingRotations, fetchCollaboratorMatrix} from '@/api/mapApi';
 import {useMapStore, useAuthStore} from '@/store/mapStore';
+import type {Collaborator} from '@/types/session';
 import type {GreenkeepingRotation} from '@/types/greenkeeping';
 import {getActiveGreenkeepingEntry} from '@/types/greenkeeping';
 
@@ -123,7 +124,11 @@ function BusMatrixSummary({}: { sessionId: string }) {
 
     if (!currentMap) return <p className="text-sm text-muted-foreground">No data.</p>;
 
-    const collaborators = [...currentMap.collaborators].sort((a, b) => a.username.localeCompare(b.username));
+    const matrixCollaboratorIds = collaboratorMatrix?.collaborators ?? [];
+    const collaborators = matrixCollaboratorIds
+        .map((id) => currentMap.collaborators.find((c) => c.id === id))
+        .filter((c): c is Collaborator => c != null)
+        .sort((a, b) => a.username.localeCompare(b.username));
     const landmarks = Object.values(currentMap.landmarks).sort((a, b) => a.name.localeCompare(b.name));
 
     if (collaborators.length === 0) return <p className="text-sm text-muted-foreground">No collaborators.</p>;
