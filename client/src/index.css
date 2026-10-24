@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HOLOGRAPHIC INTERFACE THEME
-   White grid / electric indigo / clean-light sci-fi
+   TRON INTERFACE THEME
+   Dark gray grid / electric cyan / clean-dark sci-fi (matches docs-site)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer base {
   :root {
-    /* Core palette – bright base, indigo/violet accents */
-    --holo-indigo:    192  48% 48%;    /* electric indigo    */
-    --holo-violet:    255  80% 62%;    /* soft violet        */
-    --holo-ink:       224  35% 12%;    /* very dark navy     */
-    --holo-ink-soft:  220  18% 46%;    /* secondary text     */
-    --holo-bg:        218  0%  70%;    /* near-white blue    */
-    --holo-surface:   216  40% 98%;    /* lightest surface   */
-    --holo-panel:     218  28% 92%;    /* panel background   */
-    --holo-line:      220  40% 80%;    /* border colour      */
-    --holo-glow:      232  88% 58%;    /* glow colour        */
+    /* Core palette – dark gray base, cyan accents */
+    --holo-indigo:    184  86% 54%;    /* electric cyan      */
+    --holo-violet:    140  80% 45%;    /* green highlight    */
+    --holo-ink:       185  55% 94%;    /* primary text       */
+    --holo-ink-soft:  185  35% 68%;    /* secondary text     */
+    --holo-bg:          0   0% 16%;    /* dark gray base     */
+    --holo-surface:     0   0% 24%;    /* raised surface     */
+    --holo-panel:       0   0% 24%;    /* panel background   */
+    --holo-line:      185 100% 22%;    /* dim cyan border    */
+    --holo-glow:      184  86% 54%;    /* glow colour        */
 
     --background:        var(--holo-bg);
     --foreground:        var(--holo-ink);
@@ -25,20 +25,20 @@
     --popover:           var(--holo-surface);
     --popover-foreground:var(--holo-ink);
     --primary:           var(--holo-indigo);
-    --primary-foreground:216 40% 98%;
+    --primary-foreground:  0   0% 10%;
     --secondary:         var(--holo-panel);
     --secondary-foreground: var(--holo-ink);
     --muted:             var(--holo-panel);
     --muted-foreground:  var(--holo-ink-soft);
-    --accent:            232 60% 92%;
+    --accent:            185  50% 22%;
     --accent-foreground: var(--holo-ink);
     --destructive:         0 80% 52%;
     --destructive-foreground: 0 0% 98%;
-    --success:          142 60% 36%;
+    --success:          140 80% 45%;
     --warning:           24 95% 53%;    /* orange             */
     --info:             var(--holo-violet);
-    --link:             196  85% 30%;    /* deep teal          */
-    --link-hover:       196  85% 20%;
+    --link:             184  86% 64%;    /* bright cyan        */
+    --link-hover:       184  86% 76%;
     --border:            var(--holo-line);
     --input:             var(--holo-line);
     --ring:              var(--holo-indigo);
@@ -96,8 +96,8 @@ html, body, #root {
     to bottom,
     transparent 0px,
     transparent 3px,
-    rgba(100, 110, 220, 0.018) 3px,
-    rgba(100, 110, 220, 0.018) 4px
+    rgba(0, 240, 255, 0.02) 3px,
+    rgba(0, 240, 255, 0.02) 4px
   );
 }
 
@@ -132,7 +132,7 @@ header[class*="bg-card"] {
   background: hsl(var(--holo-surface) / 0.88) !important;
   backdrop-filter: blur(12px) saturate(1.4);
   -webkit-backdrop-filter: blur(12px) saturate(1.4);
-  box-shadow: 0 2px 16px rgba(80, 100, 180, 0.10) !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.40) !important;
   border: none !important;
   color: hsl(var(--holo-ink)) !important;
 }
@@ -142,7 +142,7 @@ header[class*="bg-card"] *:not([class*="text-primary"]) {
 }
 header[class] [class*="text-muted-foreground"],
 header[class*="bg-card"] [class*="text-muted-foreground"] {
-  color: hsl(220 20% 42%) !important;
+  color: hsl(var(--holo-ink-soft)) !important;
 }
 header[class] [class*="text-primary"],
 header[class*="bg-card"] [class*="text-primary"] {
@@ -152,7 +152,7 @@ header[class*="bg-card"] [class*="text-primary"] {
 /* Sidebar */
 aside {
   background: hsl(var(--holo-surface)) !important;
-  box-shadow: 2px 0 16px rgba(80, 100, 220, 0.06);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.30);
 }
 
 /* Cards / popovers */
@@ -162,8 +162,8 @@ aside {
 [class*="bg-card"] {
   background: hsl(var(--holo-surface)) !important;
   border: none !important;
-  box-shadow: 0 4px 24px rgba(80, 100, 220, 0.10);
-  color: hsl(224 40% 5%) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.40);
+  color: hsl(var(--holo-ink)) !important;
 }
 
 /* Inputs */
@@ -173,11 +173,11 @@ input, textarea, select {
   border-color: hsl(var(--holo-line)) !important;
   caret-color: hsl(var(--holo-indigo));
   outline: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 input:focus, textarea:focus, select:focus {
   border-color: hsl(var(--holo-indigo)) !important;
-  box-shadow: 0 0 0 2px rgba(80, 100, 220, 0.18) !important;
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.18) !important;
 }
 input::placeholder,
 textarea::placeholder {
@@ -185,20 +185,20 @@ textarea::placeholder {
   opacity: 0.85;
 }
 
-/* Primary buttons – solid indigo */
+/* Primary buttons – solid cyan */
 button[class*="bg-primary"],
 [class*="btn-primary"] {
   background: hsl(var(--holo-indigo)) !important;
-  color: hsl(216 40% 98%) !important;
+  color: hsl(var(--primary-foreground)) !important;
   border: 1px solid hsl(var(--holo-indigo)) !important;
-  box-shadow: 0 2px 10px rgba(80, 100, 220, 0.30);
+  box-shadow: 0 2px 10px rgba(0, 240, 255, 0.25);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 button[class*="bg-primary"]:hover,
 [class*="btn-primary"]:hover {
-  background: hsl(232 88% 48%) !important;
-  box-shadow: 0 4px 18px rgba(80, 100, 220, 0.45);
+  background: hsl(184 86% 44%) !important;
+  box-shadow: 0 4px 18px rgba(0, 240, 255, 0.40);
 }
 
 /* Scrollbars */
@@ -214,7 +214,7 @@ button[class*="bg-primary"]:hover,
 
 /* Selection */
 ::selection {
-  background: rgba(80, 100, 220, 0.20);
+  background: rgba(0, 240, 255, 0.20);
   color: hsl(var(--holo-ink));
 }
 
@@ -251,7 +251,7 @@ thead th {
   font-size: 0.65rem;
 }
 tr:hover td:not(.group-stripe) {
-  background: rgba(80, 100, 220, 0.05) !important;
+  background: rgba(0, 240, 255, 0.06) !important;
 }
 
 /* Dense data areas */
@@ -269,7 +269,7 @@ tr:hover td:not(.group-stripe) {
 }
 
 .data-display-table tbody tr:hover td:not(.group-stripe) {
-  background: rgba(80, 100, 220, 0.05) !important;
+  background: rgba(0, 240, 255, 0.06) !important;
 }
 
 .data-display-table .data-sticky-cell,
@@ -327,7 +327,7 @@ tr:hover td:not(.group-stripe) {
 
 .metrics-view .metrics-help-trigger:hover,
 .metrics-view .metrics-toolbar-button:hover {
-  text-shadow: 0 0 10px rgba(80, 100, 220, 0.22);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
 }
 
 .metrics-view .metrics-metric-header-cell {
@@ -405,12 +405,12 @@ tr:hover td:not(.group-stripe) {
 [class*="alert-destructive"],
 [data-variant="destructive"] {
   border-color: hsl(0 80% 52% / 0.5) !important;
-  background: hsl(0 80% 96%) !important;
+  background: hsl(0 60% 16%) !important;
 }
 
 /* Holo glow on logo text */
 .tron-logo {
-  text-shadow: 0 0 12px rgba(80, 100, 220, 0.35);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.40);
   color: hsl(var(--holo-indigo));
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -418,20 +418,20 @@ tr:hover td:not(.group-stripe) {
 
 /* Active nav / sidebar items */
 [class*="bg-accent"] {
-  background: rgba(80, 100, 220, 0.10) !important;
+  background: rgba(0, 240, 255, 0.10) !important;
   border-left: 2px solid hsl(var(--holo-indigo));
 }
 button[class*="hover:bg-accent"]:not([class*="border-input"]) {
   border-left: none;
 }
 button[class*="hover:bg-accent"]:hover {
-  background: rgba(80, 100, 220, 0.12) !important;
+  background: rgba(0, 240, 255, 0.14) !important;
 }
 
 /* Code / mono spans */
 code, .font-mono {
   color: hsl(var(--holo-indigo));
-  background: rgba(80, 100, 220, 0.07);
+  background: rgba(0, 240, 255, 0.08);
 }
 
 
