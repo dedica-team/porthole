@@ -904,7 +904,7 @@ export default function MetricsView() {
                                     </div>
                                   ) : (
                                       <span className="data-empty text-sm italic transition-colors group-hover:text-muted-foreground">
-                                      not set
+                                      -
                                     </span>
                                   )}
                                 </td>

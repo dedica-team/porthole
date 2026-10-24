@@ -137,12 +137,12 @@ export default function RegularMapView() {
 
 
       {isCollaborator && (
-        <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
+        <div className="absolute top-2 left-3 sm:left-6 flex flex-row gap-1.5 z-10">
           <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} placeholder="Locate…" />
         </div>
       )}
       {!isCollaborator && (
-        <div className="absolute top-2 left-2 z-10">
+        <div className="absolute top-2 left-3 sm:left-6 z-10">
           <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} placeholder="Locate…" />
         </div>
       )}

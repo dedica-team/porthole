@@ -785,7 +785,7 @@ describe('MapPage – landmark search field', () => {
     vi.mocked(mapApi.fetchProcesses).mockResolvedValue([]);
   });
 
-  it('search input is visible in normal mode', async () => {
+  it('search input is visible in normal mode with left margin matching navbar', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
@@ -793,10 +793,14 @@ describe('MapPage – landmark search field', () => {
     });
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));
-    expect(screen.getByPlaceholderText('Locate…')).toBeInTheDocument();
+    const locateInput = screen.getByPlaceholderText('Locate…');
+    expect(locateInput).toBeInTheDocument();
+    const container = locateInput.closest('.absolute');
+    expect(container?.className).toContain('left-3');
+    expect(container?.className).toContain('sm:left-6');
   });
 
-  it('search input is visible in process mode', async () => {
+  it('search input is visible in process mode with left margin matching navbar', async () => {
     useMapStore.setState({
       currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
       connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
@@ -804,6 +808,10 @@ describe('MapPage – landmark search field', () => {
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => expect(screen.getByPlaceholderText('Locate…')).toBeInTheDocument());
+    const locateInput = screen.getByPlaceholderText('Locate…');
+    const container = locateInput.closest('.absolute');
+    expect(container?.className).toContain('left-3');
+    expect(container?.className).toContain('sm:left-6');
   });
 
   it('typing filters landmarks and shows dropdown', async () => {
