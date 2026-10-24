@@ -33,15 +33,15 @@ export const choreStateToStatus: Record<ChoreEntryState, BadgeStatus> = {
 // ── StatusBadge ──────────────────────────────────────────────────────────────
 
 const badgeVariants = cva(
-  "inline-flex items-center border px-2.5 py-0.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       status: {
-        GOOD:    "bg-success/5 text-success border-success/50",
-        WARNING: "bg-warning/5 text-warning border-warning/50",
-        BAD:     "bg-destructive/5 text-destructive border-destructive/50",
-        NONE:    "bg-muted text-muted-foreground border-border",
-        ONGOING: "bg-info/5 text-info border-info/50",
+        GOOD:    "bg-success/20 text-success border-success/60",
+        WARNING: "bg-warning/20 text-warning border-warning/60",
+        BAD:     "bg-destructive/20 text-destructive border-destructive/60",
+        NONE:    "bg-muted/80 text-muted-foreground border-border",
+        ONGOING: "bg-info/20 text-info border-info/60",
       },
     },
     defaultVariants: { status: "NONE" },
@@ -54,7 +54,13 @@ interface StatusBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function StatusBadge({ status, className, ...props }: StatusBadgeProps) {
-  return <div className={cn(badgeVariants({ status }), className)} {...props} />
+  return (
+    <div
+      data-status-badge=""
+      className={cn("status-badge", badgeVariants({ status }), className)}
+      {...props}
+    />
+  )
 }
 
 // ── StatusIndicator ──────────────────────────────────────────────────────────

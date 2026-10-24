@@ -243,6 +243,12 @@ table {
 th, td {
   border-color: hsl(var(--holo-line)) !important;
 }
+table .status-badge,
+table [data-status-badge] {
+  min-width: 5.25rem;
+  text-align: center;
+  justify-content: center;
+}
 thead th {
   background: hsl(var(--holo-panel)) !important;
   color: hsl(var(--holo-indigo)) !important;
