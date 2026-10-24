@@ -34,6 +34,7 @@ export default function ProcessPanel() {
     const setProcessesFetched = useMapStore((s) => s.setProcessesFetched);
     const setProcessesLoading = useMapStore((s) => s.setProcessesLoading);
     const setProcessesError = useMapStore((s) => s.setProcessesError);
+    const setActiveProcessId = useMapStore((s) => s.setActiveProcessId);
     const setActiveStageId = useMapStore((s) => s.setActiveStageId);
     const pickingConnection = useMapStore((s) => s.pickingConnection);
     const setPickingConnection = useMapStore((s) => s.setPickingConnection);
@@ -120,6 +121,7 @@ export default function ProcessPanel() {
     const handleDeleteProcess = async () => {
         if (!activeProcessId) return;
         await withAction(() => removeProcess(mapId, activeProcessId));
+        setActiveProcessId(null);
     };
 
     const handleAddStage = async () => {

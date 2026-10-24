@@ -764,6 +764,107 @@ describe('MapPage – process mode: processRenderMode', () => {
     });
     expect(mapApi.addConnectionToStage).not.toHaveBeenCalled();
   });
+
+  it('lists existing processes in the process view overlay box with title, None option, and create button', async () => {
+    vi.mocked(mapApi.fetchProcesses).mockResolvedValue([
+      { id: 'proc-1', name: 'Order Processing', stages: [] },
+      { id: 'proc-2', name: 'Delivery Pipeline', stages: [] },
+    ]);
+    useMapStore.setState({
+      currentMap: MAP_WITH_CONNECTION, maps: [], selectedTile: null, selectedLandmark: null,
+      connectingFromLandmarkId: null, editorMode: false, editorTool: 'RAISE',
+      editorTerrain: 'GRASS', mainView: 'idle', confirmPending: false,
+    });
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await waitFor(() => {
+      expect(screen.getByText('Processes')).toBeInTheDocument();
+      expect(screen.getByText('Order Processing')).toBeInTheDocument();
+      expect(screen.getByText('Delivery Pipeline')).toBeInTheDocument();
+      expect(screen.getByTitle('Create process')).toBeInTheDocument();
+    });
+
+    const processesBox = screen.getByText('Processes').closest('.flex-col')!;
+    const noneBtn = Array.from(processesBox.querySelectorAll('button')).find((b) => b.textContent?.includes('None'))!;
+    expect(noneBtn).toBeInTheDocument();
+    expect(noneBtn.className).toContain('text-primary');
+
+    const procBtn = screen.getByText('Order Processing').closest('button')!;
+    fireEvent.click(procBtn);
+    expect(useMapStore.getState().activeProcessId).toBe('proc-1');
+
+    fireEvent.click(noneBtn);
+    expect(useMapStore.getState().activeProcessId).toBeNull();
+
+    fireEvent.click(screen.getByTitle('Create process'));
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Process name')).toBeInTheDocument();
+    });
+  });
+
+  it('renders layers in the process view overlay box with None option and toggles selection', async () => {
+    useMapStore.setState({
+      currentMap: MAP_WITH_CONNECTION,
+      maps: [],
+      metrics: {
+        'm-1': { id: 'm-1', name: 'Security Rating', description: 'Security level' },
+        'm-2': { id: 'm-2', name: 'Latency', description: 'Network latency' },
+      },
+      selectedTile: null,
+      selectedLandmark: null,
+      connectingFromLandmarkId: null,
+      editorMode: false,
+      editorTool: 'RAISE',
+      editorTerrain: 'GRASS',
+      mainView: 'idle',
+      confirmPending: false,
+    });
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await waitFor(() => {
+      expect(screen.getByText('Layers')).toBeInTheDocument();
+      expect(screen.getByText('Security Rating')).toBeInTheDocument();
+      expect(screen.getByText('Latency')).toBeInTheDocument();
+    });
+
+    const layersBox = screen.getByText('Layers').closest('.flex-col')!;
+    const noneBtn = Array.from(layersBox.querySelectorAll('button')).find((b) => b.textContent?.includes('None'))!;
+    expect(noneBtn).toBeInTheDocument();
+    expect(noneBtn.className).toContain('text-primary');
+
+    const securityBtn = screen.getByText('Security Rating').closest('button')!;
+    fireEvent.click(securityBtn);
+    expect(securityBtn.className).toContain('text-primary');
+    expect(noneBtn.className).not.toContain('text-primary');
+
+    // Clicking None deselects metric
+    fireEvent.click(noneBtn);
+    expect(noneBtn.className).toContain('text-primary');
+    expect(securityBtn.className).not.toContain('text-primary');
+  });
+
+  it('renders "None" option in layers box when metrics are empty', async () => {
+    useMapStore.setState({
+      currentMap: MAP_WITH_CONNECTION,
+      maps: [],
+      metrics: {},
+      selectedTile: null,
+      selectedLandmark: null,
+      connectingFromLandmarkId: null,
+      editorMode: false,
+      editorTool: 'RAISE',
+      editorTerrain: 'GRASS',
+      mainView: 'idle',
+      confirmPending: false,
+    });
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await waitFor(() => {
+      expect(screen.getByText('Layers')).toBeInTheDocument();
+    });
+
+    const layersBox = screen.getByText('Layers').closest('.flex-col')!;
+    const noneBtn = Array.from(layersBox.querySelectorAll('button')).find((b) => b.textContent?.includes('None'))!;
+    expect(noneBtn).toBeInTheDocument();
+    expect(noneBtn.className).toContain('text-primary');
+  });
 });
 
 // ── MapPage – landmark search field ──────────────────────────────────────────
@@ -897,6 +998,8 @@ describe('ProcessMapView – visibleLandmarkLabelIds', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ token: 'tok', userId: COLLABORATOR_ID, username: 'test', isAuthenticated: true });
+    vi.mocked(mapApi.getMap).mockResolvedValue(makeMap({ landmarks: PROCESS_LANDMARKS, connections: PROCESS_CONNECTIONS }));
+    vi.mocked(mapApi.fetchProcesses).mockResolvedValue(PROCESSES);
     useMapStore.setState({
       currentMap: makeMap({ landmarks: PROCESS_LANDMARKS, connections: PROCESS_CONNECTIONS }),
       maps: [],

@@ -49,7 +49,7 @@ function makeXrayLabel(text: string): HTMLDivElement {
 /** Slightly off-white hex surface for process (xray) mode. */
 const PROCESS_TOP_RGB: [number, number, number] = [0.91, 0.91, 0.91];
 const PROCESS_SIDE_RGB: [number, number, number] = [0.78, 0.78, 0.78];
-const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({color: 0x999999, transparent: false});
+const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({color: 0xd0d0d0, transparent: false});
 
 /** Blue-tinted tiles for the active stage. */
 const STAGE_TOP_RGB: [number, number, number] = [0.86, 0.91, 1.0];
@@ -750,13 +750,13 @@ export default function HexGrid({
     // ── Connection highlight / dim / hide in process mode ────────────────────────────────
     useEffect(() => {
         if (hideDecorations) {
-            // Xray mode: three levels — active stage (black), rest of process (dark grey), unrelated (grey).
+            // Xray mode: three levels — active stage (white), rest of process (dark grey), unrelated (grey).
             const hasProcess = !!highlightConnectionIds;
             const hasStage   = !!activeStageConnectionIds;
             connectionXrayMatRef.current.forEach((mat, connId) => {
                 const inStage   = activeStageConnectionIds?.has(connId) ?? false;
                 const inProcess = highlightConnectionIds?.has(connId) ?? false;
-                const color = (hasStage && inStage) ? 0x111111
+                const color = (hasStage && inStage) ? 0xffffff
                             : (hasProcess && inProcess) ? 0x555555
                             : 0x888888;
                 mat.color.set(color);
@@ -799,7 +799,7 @@ export default function HexGrid({
                         'background: #111111', 'padding: 2px 8px',
                         'border-radius: 4px', 'pointer-events: none',
                         'white-space: nowrap', 'user-select: none',
-                        'letter-spacing: 0.05em', 'text-transform: uppercase',
+                        'letter-spacing: 0.05em',
                     ].join(';');
                     const lbl = new CSS2DObject(el);
                     lbl.position.set(cx / count, cy / count, cz / count);
@@ -1039,7 +1039,7 @@ export default function HexGrid({
                     const { x: mx, z: mz } = hexToWorld(mid.q, mid.r, HEX_SIZE);
                     const my = tileHeight(midTile?.elevation ?? 1) + 0.15;
                     const el = makeXrayLabel(text);
-                    el.style.borderLeft = '3px solid #38bdf8';
+                    el.style.borderLeft = '3px solid #ffffff';
                     const lbl = new CSS2DObject(el);
                     lbl.position.set(mx, my, mz);
                     scene.add(lbl);

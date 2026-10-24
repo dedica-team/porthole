@@ -368,3 +368,86 @@ describe('Sidebar – ProcessLandmarkView "Used in processes" coverage', () => {
   });
 });
 
+// ── Sidebar visibility in process mode ───────────────────────────────────────
+
+describe('Sidebar – Process mode visibility', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('hides sidebar when no landmark, connection, or process is active', () => {
+    useAuthStore.setState({ userId: 'p1', username: 'alice', token: 'tok', isAuthenticated: true });
+    useMapStore.setState({
+      currentMap: MAP_BASE,
+      processes: PROCESS_WITH_STAGES,
+      processesFetched: true,
+      processesLoading: false,
+      processesError: null,
+      activeProcessId: null,
+      activeStageId: null,
+      mainView: 'idle',
+      selectedLandmark: null,
+      selectedConnectionId: null,
+      processSidebarHidden: false,
+    });
+    const { container } = renderSidebarInProcessRoute();
+    expect(container.querySelector('aside')).toBeNull();
+  });
+
+  it('shows sidebar when a process is active and not hidden', () => {
+    useAuthStore.setState({ userId: 'p1', username: 'alice', token: 'tok', isAuthenticated: true });
+    useMapStore.setState({
+      currentMap: MAP_BASE,
+      processes: PROCESS_WITH_STAGES,
+      processesFetched: true,
+      processesLoading: false,
+      processesError: null,
+      activeProcessId: 'proc-1',
+      activeStageId: null,
+      mainView: 'idle',
+      selectedLandmark: null,
+      selectedConnectionId: null,
+      processSidebarHidden: false,
+    });
+    const { container } = renderSidebarInProcessRoute();
+    expect(container.querySelector('aside')).not.toBeNull();
+    expect(screen.getByText('Alpha Flow')).toBeInTheDocument();
+  });
+
+  it('hides sidebar when process is active but processSidebarHidden is true and nothing selected', () => {
+    useAuthStore.setState({ userId: 'p1', username: 'alice', token: 'tok', isAuthenticated: true });
+    useMapStore.setState({
+      currentMap: MAP_BASE,
+      processes: PROCESS_WITH_STAGES,
+      processesFetched: true,
+      processesLoading: false,
+      processesError: null,
+      activeProcessId: 'proc-1',
+      activeStageId: null,
+      mainView: 'idle',
+      selectedLandmark: null,
+      selectedConnectionId: null,
+      processSidebarHidden: true,
+    });
+    const { container } = renderSidebarInProcessRoute();
+    expect(container.querySelector('aside')).toBeNull();
+  });
+
+  it('shows sidebar when a connection is selected', () => {
+    useAuthStore.setState({ userId: 'p1', username: 'alice', token: 'tok', isAuthenticated: true });
+    useMapStore.setState({
+      currentMap: MAP_BASE,
+      processes: PROCESS_WITH_STAGES,
+      processesFetched: true,
+      processesLoading: false,
+      processesError: null,
+      activeProcessId: null,
+      activeStageId: null,
+      mainView: 'idle',
+      selectedLandmark: null,
+      selectedConnectionId: 'c1',
+      processSidebarHidden: false,
+    });
+    const { container } = renderSidebarInProcessRoute();
+    expect(container.querySelector('aside')).not.toBeNull();
+  });
+});
+
