@@ -8,8 +8,8 @@ import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
+import org.junit.jupiter.api.condition.EnabledIf
+import org.testcontainers.DockerClientFactory
 import team.dedica.porthole.application.port.UserPort
 import java.net.CookieManager
 import java.net.CookiePolicy
@@ -27,9 +27,11 @@ import java.util.regex.Pattern
  * Uses Testcontainers to spin up a Keycloak instance configured with the Porthole realm,
  * executes the full OAuth2 authorization code flow via Micronaut Security, and verifies
  * that a valid Porthole session is established.
+ *
+ * Automatically skipped when Docker is not available (e.g., in CI environments without Docker support).
  */
 @MicronautTest
-@Testcontainers
+@EnabledIf("isDockerAvailable")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class KeycloakLoginIntegrationTest : TestPropertyProvider {
 
@@ -40,17 +42,27 @@ class KeycloakLoginIntegrationTest : TestPropertyProvider {
     lateinit var userPort: UserPort
 
     companion object {
-        @Container
-        private val keycloak: KeycloakContainer = KeycloakContainer("quay.io/keycloak/keycloak:26.1.3")
-            .withRealmImportFile("keycloak/porthole-realm.json")
+        @JvmStatic
+        fun isDockerAvailable(): Boolean = try {
+            DockerClientFactory.instance().isDockerAvailable
+        } catch (e: Throwable) {
+            false
+        }
 
-        init {
-            keycloak.start()
+        private val keycloak: KeycloakContainer? by lazy {
+            if (isDockerAvailable()) {
+                KeycloakContainer("quay.io/keycloak/keycloak:26.1.3")
+                    .withRealmImportFile("keycloak/porthole-realm.json")
+                    .apply { start() }
+            } else {
+                null
+            }
         }
     }
 
     override fun getProperties(): Map<String, String> {
-        val issuerUri = "${keycloak.authServerUrl.trimEnd('/')}/realms/porthole"
+        val kc = keycloak ?: return emptyMap()
+        val issuerUri = "${kc.authServerUrl.trimEnd('/')}/realms/porthole"
         return mapOf(
             "porthole.auth.keycloak.client-id" to "porthole-client",
             "porthole.auth.keycloak.client-secret" to "porthole-secret",
