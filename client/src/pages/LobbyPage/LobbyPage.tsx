@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, LogIn, Eye, AlertCircle, Mountain, Waves, Layers, X, Trash2 } from 'lucide-react';
+import { Plus, Users, LogIn, Eye, AlertCircle, Mountain, Waves, Layers, Trash2 } from 'lucide-react';
 import { listMaps, createMap, joinMap, requestJoin, deleteMap, adminJoinMap } from '@/api/mapApi';
 import type { MapType, MapSize } from '@/api/mapApi';
 import type { CollaborationMode } from '@/types/session';
@@ -10,8 +10,8 @@ import { setDefaultSessionId } from '@/utils/sessionCookies';
 import AppShell from '@/components/AppShell/AppShell';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Popup } from '@/components/ui/popup';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 // ── tiny inline map-type picker dialog ───────────────────────────────────────
 
@@ -50,10 +50,12 @@ const MAP_SIZE_OPTIONS: { size: MapSize; label: string; detail: string }[] = [
 ];
 
 function NewSessionDialog({
+  open,
   onConfirm,
   onClose,
   loading,
 }: {
+  open: boolean;
   onConfirm: (type: MapType, size: MapSize, mode: CollaborationMode) => void;
   onClose: () => void;
   loading: boolean;
@@ -63,32 +65,24 @@ function NewSessionDialog({
   const [mode, setMode]         = useState<CollaborationMode>('OPEN');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="relative flex flex-col gap-4 bg-card border border-border shadow-2xl w-full max-w-md mx-4 p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
-        style={{ boxShadow: '0 4px 32px rgba(80,100,220,0.14), inset 0 0 0 1px rgba(80,100,220,0.08)' }}
-      >
-        {/* close */}
-        <button
-          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div>
-          <h2 className="text-base font-semibold text-foreground tron-logo">New Session</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Choose a map type and size to initialise</p>
-        </div>
+    <Popup
+      title="New Session"
+      open={open}
+      onOpenChange={(v) => { if (!v) onClose(); }}
+      className="max-w-md"
+    >
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground -mt-1">Choose a map type and size to initialise</p>
 
         {/* type cards */}
         <div className="grid grid-cols-3 gap-2">
           {MAP_TYPE_OPTIONS.map((opt) => (
             <button
               key={opt.type}
+              type="button"
               onClick={() => setSelected(opt.type)}
               className={[
-                'flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors focus:outline-none cursor-pointer',
+                'flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors focus:outline-none cursor-pointer',
                 selected === opt.type
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-muted/30 text-muted-foreground hover:border-border/70 hover:bg-muted/50',
@@ -110,16 +104,17 @@ function NewSessionDialog({
             {MAP_SIZE_OPTIONS.map((opt) => (
               <button
                 key={opt.size}
+                type="button"
                 onClick={() => setSize(opt.size)}
-              className={[
-                'flex flex-col items-center gap-0.5 rounded-lg border py-2.5 text-center transition-colors focus:outline-none cursor-pointer',
-                size === opt.size
+                className={[
+                  'flex flex-col items-center gap-0.5 rounded-lg border py-2 text-center transition-colors focus:outline-none cursor-pointer',
+                  size === opt.size
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border bg-muted/30 text-muted-foreground hover:border-border/70 hover:bg-muted/50',
                 ].join(' ')}
               >
                 <span className="text-sm font-semibold">{opt.label}</span>
-                <span className="text-sm opacity-70">{opt.detail}</span>
+                <span className="text-xs opacity-70">{opt.detail}</span>
               </button>
             ))}
           </div>
@@ -141,7 +136,7 @@ function NewSessionDialog({
           </select>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-2">
           <Button size="sm" variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
@@ -151,45 +146,39 @@ function NewSessionDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </Popup>
   );
 }
 
 // ── Join Request confirmation dialog ─────────────────────────────────────────
 
 function JoinRequestDialog({
+  open,
   mapName,
   onConfirm,
   onClose,
   loading,
 }: {
+  open: boolean;
   mapName: string;
   onConfirm: () => void;
   onClose: () => void;
   loading: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="relative flex flex-col gap-4 bg-card border border-border shadow-2xl w-full max-w-sm mx-4 p-6"
-        style={{ boxShadow: '0 4px 32px rgba(80,100,220,0.14), inset 0 0 0 1px rgba(80,100,220,0.08)' }}
-      >
-        <button
-          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <Popup
+      title="Request to Join"
+      open={open}
+      onOpenChange={(v) => { if (!v) onClose(); }}
+      className="max-w-sm"
+    >
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-foreground">{mapName}</strong> requires approval from a collaborator.
+          Send a join request to the map owner?
+        </p>
 
-        <div>
-          <h2 className="text-base font-semibold text-foreground">Request to Join</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            <strong className="text-foreground">{mapName}</strong> requires approval from a collaborator.
-            Send a join request to the map owner?
-          </p>
-        </div>
-
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-2">
           <Button size="sm" variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
@@ -199,11 +188,13 @@ function JoinRequestDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </Popup>
   );
 }
 
 // ── LobbyPage ────────────────────────────────────────────────────────────────
+
+const cardBtnCls = 'flex items-center gap-1.5 px-3 text-xs text-foreground bg-secondary/70 hover:text-muted-foreground hover:bg-secondary border-l border-border transition-colors cursor-pointer shrink-0';
 
 export default function LobbyPage() {
   const [loading, setLoading] = useState(false);
@@ -334,94 +325,112 @@ export default function LobbyPage() {
 
   return (
     <AppShell>
-      {showDialog && (
-        <NewSessionDialog
-          onConfirm={handleCreate}
-          onClose={() => setShowDialog(false)}
-          loading={loading}
-        />
-      )}
+      <NewSessionDialog
+        open={showDialog}
+        onConfirm={handleCreate}
+        onClose={() => setShowDialog(false)}
+        loading={loading}
+      />
 
-      {joinRequestMap && (
-        <JoinRequestDialog
-          mapName={joinRequestMap.name}
-          onConfirm={handleSendJoinRequest}
-          onClose={() => setJoinRequestMap(null)}
-          loading={loading}
-        />
-      )}
+      <JoinRequestDialog
+        open={!!joinRequestMap}
+        mapName={joinRequestMap?.name ?? ''}
+        onConfirm={handleSendJoinRequest}
+        onClose={() => setJoinRequestMap(null)}
+        loading={loading}
+      />
 
-      <div className="flex flex-col h-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 gap-4 sm:gap-6">
-        {/* Header row */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-foreground tron-logo">Sessions</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Connect to an active session or initialise a new one.
-            </p>
+      <div className="flex flex-col h-full overflow-y-auto">
+        <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3">
+          {/* Card header */}
+          <div className="flex items-stretch border-b border-border shrink-0">
+            <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
+              <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+              Sessions
+            </div>
+            <button
+              className={cardBtnCls}
+              onClick={() => setShowDialog(true)}
+              disabled={loading}
+              title="New Session"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Session
+            </button>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setShowDialog(true)}
-            disabled={loading}
-            className="gap-1.5 uppercase tracking-widest text-sm"
-          >
-            <Plus className="h-4 w-4" />
-            New Session
-          </Button>
-        </div>
 
-        <Separator className="bg-border" />
+          {pollError && (
+            <div className="px-4 py-3 shrink-0">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>Lost connection to server. Session list may be outdated.</AlertDescription>
+              </Alert>
+            </div>
+          )}
 
-        {pollError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Lost connection to server. Session list may be outdated.</AlertDescription>
-          </Alert>
-        )}
+          {error && (
+            <div className="px-4 py-3 shrink-0">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          )}
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {maps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center flex-1 gap-3 text-muted-foreground">
-            <img
-              src="/logo.svg"
-              alt="Porthole logo"
-              width={48}
-              height={48}
-              style={{ filter: 'drop-shadow(0 0 8px hsl(var(--holo-indigo)))' }}
-            />
-            <p className="tron-logo text-sm">No sessions initialised. Create one to enter the grid.</p>
-          </div>
-        ) : (
-          <ScrollArea className="flex-1">
-            <div className="flex flex-col w-full">
+          {maps.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
+              <img
+                src="/logo.svg"
+                alt="Porthole logo"
+                width={48}
+                height={48}
+                style={{ filter: 'drop-shadow(0 0 8px hsl(var(--holo-indigo)))' }}
+              />
+              <p className="tron-logo text-sm">No sessions initialised. Create one to enter the grid.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
               {maps.map((map) => {
                 const isMember = map.collaborators.some((c) => c.id === userId);
                 return (
                   <div
                     key={map.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-3 border-b border-border last:border-0"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3.5 gap-3 hover:bg-muted/10 transition-colors"
                   >
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="font-semibold text-foreground text-lg">
-                        {map.name ?? 'Unnamed session'}
-                      </span>
-                      {map.description && (
-                        <span className="text-sm text-muted-foreground">{map.description}</span>
-                      )}
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {map.collaborators.length} collaborator{map.collaborators.length !== 1 ? 's' : ''}
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground text-base">
+                          {map.name ?? 'Unnamed session'}
                         </span>
+                        {map.collaborationMode && (
+                          <span className="text-xs px-1.5 py-0.5 rounded border border-border text-muted-foreground bg-muted/20">
+                            {COLLABORATION_MODE_LABELS[map.collaborationMode] ?? map.collaborationMode}
+                          </span>
+                        )}
                       </div>
+                      {map.description && (
+                        <p className="text-sm text-muted-foreground">{map.description}</p>
+                      )}
+                      {map.collaborators.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+
+                          {map.collaborators.map((c) => (
+                            <UserAvatar
+                              key={c.id}
+                              username={c.username}
+                              avatarUrl={c.avatarUrl}
+                              title={c.username}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          <span>0 collaborators</span>
+                        </div>
+                      )}
                     </div>
+
                     <div className="flex items-center flex-wrap gap-2 shrink-0">
                       {/* Admin: delete session */}
                       {isAdmin && (
@@ -498,8 +507,8 @@ export default function LobbyPage() {
                 );
               })}
             </div>
-          </ScrollArea>
-        )}
+          )}
+        </div>
       </div>
     </AppShell>
   );

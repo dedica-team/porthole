@@ -69,29 +69,29 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
   it('shows Edit and Create Connection buttons when owner', () => {
     setup('player-1');
     render(<LandmarkPanel {...defaultProps} />);
-    expect(screen.getByTitle('Edit Landmark')).toBeInTheDocument();
+    expect(screen.getByTitle('Edit Element')).toBeInTheDocument();
     expect(screen.getByText('Create Connection')).toBeInTheDocument();
   });
 
   it('shows edit button and Create Connection for any collaborator', () => {
     setup('other-user');
     render(<LandmarkPanel {...defaultProps} />);
-    expect(screen.getByTitle('Edit Landmark')).toBeInTheDocument();
+    expect(screen.getByTitle('Edit Element')).toBeInTheDocument();
     expect(screen.getByText('Create Connection')).toBeInTheDocument();
   });
 
   it('shows Remove Landmark button when owner', () => {
     setup('player-1');
     render(<LandmarkPanel {...defaultProps} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
-    expect(screen.getByText('Remove Landmark')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit Element'));
+    expect(screen.getByText('Remove Element')).toBeInTheDocument();
   });
 
   it('shows Remove Landmark button for any collaborator', () => {
     setup('other-user');
     render(<LandmarkPanel {...defaultProps} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
-    expect(screen.getByText('Remove Landmark')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit Element'));
+    expect(screen.getByText('Remove Element')).toBeInTheDocument();
   });
 
   it('calls onStartConnection when Create Connection is clicked', () => {
@@ -107,7 +107,7 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
     setup();
     const onEditLandmark = vi.fn();
     render(<LandmarkPanel {...defaultProps} onEditLandmark={onEditLandmark} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     fireEvent.click(screen.getByText('Save'));
     expect(onEditLandmark).toHaveBeenCalledWith('tower-abc123', 'Iron Keep', 'KEEP', undefined, undefined, false, undefined, false);
   });
@@ -116,8 +116,8 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
     setup();
     const onRemove = vi.fn();
     render(<LandmarkPanel {...defaultProps} onRemoveLandmark={onRemove} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
-    fireEvent.click(screen.getByText('Remove Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
+    fireEvent.click(screen.getByText('Remove Element'));
     fireEvent.click(screen.getByText('Yes, remove'));
     expect(onRemove).toHaveBeenCalledOnce();
   });
@@ -127,7 +127,7 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
   it('description textarea is visible in edit mode', () => {
     setup();
     render(<LandmarkPanel {...defaultProps} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     expect(screen.getByPlaceholderText('Description (optional)')).toBeInTheDocument();
   });
 
@@ -135,7 +135,7 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
     setup();
     const onEditLandmark = vi.fn();
     render(<LandmarkPanel {...defaultProps} onEditLandmark={onEditLandmark} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     fireEvent.change(screen.getByPlaceholderText('Description (optional)'), {
       target: { value: 'A great keep' },
     });
@@ -148,7 +148,7 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
   it('ID is displayed as not editable in edit mode', () => {
     setup();
     render(<LandmarkPanel {...defaultProps} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     expect(screen.getByText('ID (not editable):')).toBeInTheDocument();
     expect(screen.getAllByText('tower-abc123').length).toBeGreaterThan(0);
     // Must not be an input
@@ -158,7 +158,7 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
   it('group dropdown is populated from currentMap.groups', () => {
     setup();
     render(<LandmarkPanel {...defaultProps} />);
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
     expect(screen.getByText('— No group —')).toBeInTheDocument();
     expect(screen.getByText('Alpha Squad')).toBeInTheDocument();
   });
@@ -324,6 +324,7 @@ const MATRIX_LANDMARK_ID = landmark.id; // 'tower-abc123'
 
 const MATRIX: CollaboratorMatrix = {
   name: 'Bus Matrix',
+  collaborators: ['player-1', 'player-2'],
   entries: {
     [MATRIX_LANDMARK_ID]: {
       'player-1': { level: 'HIGH' },
@@ -379,6 +380,7 @@ describe('LandmarkPanel – collaborator matrix section', () => {
   it('does not render matrix section when all entries are NONE', () => {
     setupWithMatrix({
       name: 'Bus Matrix',
+      collaborators: ['player-1', 'player-2'],
       entries: {
         [MATRIX_LANDMARK_ID]: {
           'player-1': { level: 'NONE' },
@@ -415,6 +417,7 @@ describe('LandmarkPanel – collaborator matrix section', () => {
   it('does not render collaborators whose level is NONE', () => {
     setupWithMatrix({
       name: 'Bus Matrix',
+      collaborators: ['player-1', 'player-2'],
       entries: {
         [MATRIX_LANDMARK_ID]: {
           'player-1': { level: 'HIGH' },
@@ -475,6 +478,7 @@ describe('LandmarkPanel – collaborator matrix section', () => {
       },
       collaboratorMatrix: {
         name: 'Bus Matrix',
+        collaborators: ['player-1'],
         entries: { [MATRIX_LANDMARK_ID]: { 'player-1': { level: 'MEDIUM' } } },
       },
       mainView: 'landmark',

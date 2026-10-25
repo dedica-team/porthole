@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.lobby
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.domain.Collaborator
@@ -8,7 +8,7 @@ import team.dedica.porthole.domain.HexMap
 import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
-@Component
+@Singleton
 class CreateMapUseCase(
     private val sessionStatePort: SessionStatePort,
     private val userPort: UserPort,

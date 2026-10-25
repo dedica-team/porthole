@@ -1,8 +1,30 @@
-spring:
-  security:
-    oauth2:
-      client:
-        registration: {}
+micronaut:
+  server:
+    # Use an ephemeral port so multiple @MicronautTest classes that boot the full
+    # server cannot collide on the default 8080 when run in the same build.
+    # Tests read the actual port from EmbeddedServer.port.
+    port: 0
+    cors:
+      enabled: true
+      configurations:
+        default:
+          allowed-origins:
+            - http://localhost:5173
+          allowed-methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          allow-credentials: true
+
+endpoints:
+  all:
+    enabled: false
+  health:
+    enabled: true
+    sensitive: false
 
 porthole:
   auth:
@@ -22,7 +44,6 @@ porthole:
       redirect-uri: "http://localhost:5173/auth/github/callback"
     allowed-origins: "http://localhost:5173"
   storage:
-    path: ${porthole.test.storage.path:${java.io.tmpdir}/porthole-test-storage}
-
-
-
+    # Relative to the module working directory; lives under target/ so it is cleaned
+    # by `mvn clean` and never pollutes the source tree.
+    path: ${porthole.test.storage.path:target/porthole-test-storage}

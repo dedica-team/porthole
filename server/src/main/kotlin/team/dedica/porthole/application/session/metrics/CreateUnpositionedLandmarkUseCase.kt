@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.session.metrics
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -13,7 +13,7 @@ import java.util.UUID
 /**
  * Creates a new landmark without a map position (UUID id).
  */
-@Component
+@Singleton
 class CreateUnpositionedLandmarkUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,

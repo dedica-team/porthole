@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.session.metrics
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -11,7 +11,7 @@ import team.dedica.porthole.domain.MatrixLevel
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-@Component
+@Singleton
 class SetMatrixEntryUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
@@ -21,6 +21,7 @@ class SetMatrixEntryUseCase(
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         require(state.landmarks.containsKey(landmarkId)) { "Landmark $landmarkId not found" }
         require(state.collaborators.any { it.id == collaboratorId }) { "Collaborator $collaboratorId not found" }
+        require(state.collaboratorMatrix.collaborators.contains(collaboratorId)) { "Collaborator $collaboratorId is not in the matrix" }
         val byLandmark = state.collaboratorMatrix.entries.getOrPut(landmarkId) { ConcurrentHashMap() }
         byLandmark[collaboratorId] = CollaboratorMatrixEntry(level)
         sessionStatePort.save(state)

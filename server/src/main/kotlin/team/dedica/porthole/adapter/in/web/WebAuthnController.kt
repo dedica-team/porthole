@@ -2,39 +2,25 @@ package team.dedica.porthole.adapter.`in`.web
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.yubico.webauthn.FinishAssertionOptions
-import com.yubico.webauthn.FinishRegistrationOptions
-import com.yubico.webauthn.RelyingParty
-import com.yubico.webauthn.StartAssertionOptions
-import com.yubico.webauthn.StartRegistrationOptions
-import com.yubico.webauthn.data.AuthenticatorAssertionResponse
-import com.yubico.webauthn.data.AuthenticatorAttestationResponse
-import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
+import com.yubico.webauthn.*
+import com.yubico.webauthn.data.*
 import com.yubico.webauthn.data.ByteArray
-import com.yubico.webauthn.data.ClientAssertionExtensionOutputs
-import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs
-import com.yubico.webauthn.data.PublicKeyCredential
-import com.yubico.webauthn.data.RelyingPartyIdentity
-import com.yubico.webauthn.data.ResidentKeyRequirement
-import com.yubico.webauthn.data.UserIdentity
-import com.yubico.webauthn.data.UserVerificationRequirement
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Post
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpHeaders
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
-import team.dedica.porthole.config.PortholeAuthProperties
-import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.adapter.out.repository.YubicoCredentialRepository
 import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.config.PortholeAuthProperties
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -118,8 +104,7 @@ private const val SESSION_TTL_MS = 5 * 60 * 1_000L
 
 // ── Controller ────────────────────────────────────────────────────────────────
 
-@RestController
-@RequestMapping("/api/auth/webauthn")
+@Controller("/api/auth/webauthn")
 class WebAuthnController(
     private val userRepository: UserPort,
     private val jwtTokenProvider: JwtTokenProvider,
@@ -147,12 +132,12 @@ class WebAuthnController(
 
     // ── Register ──────────────────────────────────────────────────────────────
 
-    @PostMapping("/register/start")
-    fun registerStart(@RequestBody req: RegisterStartRequest): ResponseEntity<RegisterStartResponse> {
+    @Post("/register/start")
+    fun registerStart(@Body req: RegisterStartRequest): HttpResponse<*> {
         val username = req.username.trim().lowercase()
-        if (username.isBlank()) return ResponseEntity.badRequest().build()
-        if (!USERNAME_PATTERN.matches(username)) return ResponseEntity.badRequest().build()
-        if (userRepository.findByUsername(username) != null) return ResponseEntity.badRequest().build()
+        if (username.isBlank()) return HttpResponse.badRequest<Any>()
+        if (!USERNAME_PATTERN.matches(username)) return HttpResponse.badRequest<Any>()
+        if (userRepository.findByUsername(username) != null) return HttpResponse.badRequest<Any>()
 
         evictExpired()
 
@@ -183,7 +168,7 @@ class WebAuthnController(
             pendingUsername = username,
         )
 
-        return ResponseEntity.ok(
+        return HttpResponse.ok(
             RegisterStartResponse(
                 sessionId = sessionId,
                 challenge = options.challenge.base64Url,
@@ -201,16 +186,16 @@ class WebAuthnController(
         )
     }
 
-    @PostMapping("/register/finish")
-    fun registerFinish(@RequestBody req: RegisterFinishRequest): ResponseEntity<AuthResponse> {
+    @Post("/register/finish")
+    fun registerFinish(@Body req: RegisterFinishRequest): HttpResponse<*> {
         evictExpired()
         val pending = pendingRegistrations.remove(req.sessionId) ?: run {
             log.warn("WebAuthn register/finish: unknown sessionId={}", req.sessionId)
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
         if (isExpired(pending.createdAt)) {
             log.warn("WebAuthn register/finish: expired session")
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
 
         val pkc: PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs> =
@@ -218,7 +203,7 @@ class WebAuthnController(
                 PublicKeyCredential.parseRegistrationResponseJson(buildRegistrationJson(req))
             }.getOrElse { e ->
                 log.warn("WebAuthn register/finish: failed to parse registration JSON: {}", e.message)
-                return ResponseEntity.status(401).build()
+                return HttpResponse.unauthorized<Any>()
             }
 
         val result = runCatching {
@@ -230,7 +215,7 @@ class WebAuthnController(
             )
         }.getOrElse { e ->
             log.warn("WebAuthn register/finish: finishRegistration failed: {}", e.message, e)
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
 
         val credential = PasskeyCredential(
@@ -242,7 +227,7 @@ class WebAuthnController(
 
         // Re-check that the username is still available (guards against race between start/finish)
         val existing = userRepository.findByUsername(pending.pendingUsername)
-        if (existing != null) return ResponseEntity.status(409).build()
+        if (existing != null) return HttpResponse.status<Any>(HttpStatus.CONFLICT)
 
         val userRecord = UserRecord(
             id = pending.pendingUserId,
@@ -252,20 +237,19 @@ class WebAuthnController(
         userRepository.save(userRecord)
 
         val token = jwtTokenProvider.generateToken(userRecord.id, userRecord.username)
-        return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString())
-            .body(AuthResponse(userRecord.id, userRecord.username, userRecord.avatarUrl, isAdmin = adminService.isAdmin(userRecord.id)))
+        return HttpResponse.ok(AuthResponse(userRecord.id, userRecord.username, userRecord.avatarUrl, isAdmin = adminService.isAdmin(userRecord.id)))
+            .cookie(authCookieService.createAuthCookie(token))
     }
 
     // ── Authenticate ──────────────────────────────────────────────────────────
 
-    @PostMapping("/authenticate/start")
-    fun authStart(@RequestBody req: AuthStartRequest): ResponseEntity<AuthStartResponse> {
+    @Post("/authenticate/start")
+    fun authStart(@Body req: AuthStartRequest): HttpResponse<*> {
         evictExpired()
 
         val normalizedUsername = req.username?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
         if (normalizedUsername != null && !USERNAME_PATTERN.matches(normalizedUsername)) {
-            return ResponseEntity.badRequest().build()
+            return HttpResponse.badRequest<Any>()
         }
 
         val startOptions = StartAssertionOptions.builder()
@@ -282,7 +266,7 @@ class WebAuthnController(
             .map { creds -> creds.map { AllowCredential(type = "public-key", id = it.id.base64Url) } }
             .orElseGet { emptyList() }
 
-        return ResponseEntity.ok(
+        return HttpResponse.ok(
             AuthStartResponse(
                 sessionId = sessionId,
                 challenge = assertionRequest.publicKeyCredentialRequestOptions.challenge.base64Url,
@@ -293,17 +277,17 @@ class WebAuthnController(
         )
     }
 
-    @PostMapping("/authenticate/finish")
-    fun authFinish(@RequestBody req: AuthFinishRequest): ResponseEntity<AuthResponse> {
-        if (!webAuthnEnabled) return ResponseEntity.status(404).build()
+    @Post("/authenticate/finish")
+    fun authFinish(@Body req: AuthFinishRequest): HttpResponse<*> {
+        if (!webAuthnEnabled) return HttpResponse.notFound<Any>()
         evictExpired()
         val pending = pendingAssertions.remove(req.sessionId) ?: run {
             log.warn("WebAuthn auth/finish: unknown sessionId={}", req.sessionId)
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
         if (isExpired(pending.createdAt)) {
             log.warn("WebAuthn auth/finish: expired session")
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
 
         val assertionJson = buildAssertionJson(req)
@@ -312,7 +296,7 @@ class WebAuthnController(
                 PublicKeyCredential.parseAssertionResponseJson(assertionJson)
             }.getOrElse { e ->
                 log.warn("WebAuthn auth/finish: failed to parse assertion JSON: {}", e.message)
-                return ResponseEntity.status(401).build()
+                return HttpResponse.unauthorized<Any>()
             }
 
         val result = runCatching {
@@ -324,22 +308,22 @@ class WebAuthnController(
             )
         }.getOrElse { e ->
             log.warn("WebAuthn auth/finish: finishAssertion failed: {}", e.message, e)
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
 
         if (!result.isSuccess) {
             log.warn("WebAuthn auth/finish: assertion result not successful")
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
 
         if (pending.expectedUsername != null && result.username != pending.expectedUsername) {
             log.warn("WebAuthn auth/finish: assertion username mismatch")
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
 
         val user = userRepository.findByUsername(result.username) ?: run {
             log.warn("WebAuthn auth/finish: user not found for username={}", result.username)
-            return ResponseEntity.status(401).build()
+            return HttpResponse.unauthorized<Any>()
         }
         val updatedCred = user.passkeyCredential?.copy(signCount = result.signatureCount)
         if (updatedCred != null) {
@@ -347,9 +331,8 @@ class WebAuthnController(
         }
 
         val token = jwtTokenProvider.generateToken(user.id, user.username)
-        return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString())
-            .body(AuthResponse(user.id, user.username, user.avatarUrl, isAdmin = adminService.isAdmin(user.id)))
+        return HttpResponse.ok(AuthResponse(user.id, user.username, user.avatarUrl, isAdmin = adminService.isAdmin(user.id)))
+            .cookie(authCookieService.createAuthCookie(token))
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -135,7 +135,7 @@ function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose
                 </Button>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <span className="text-sm text-destructive">Remove «{metric.name}»? This clears all landmark values.</span>
+                  <span className="text-sm text-destructive">Remove «{metric.name}»? This clears all element values.</span>
                   <div className="flex justify-end gap-2">
                     <Button type="button" size="sm" variant="flat" onClick={() => setConfirmDelete(false)}>Cancel</Button>
                     <Button type="button" size="sm" variant="destructive" disabled={loading} onClick={() => onDelete(metric.id)}>
@@ -338,7 +338,7 @@ function LandmarkEditDialog({ landmark, groups, loading, onSave, onRemove, onClo
   const sortedGroups = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <Popup title="Edit Landmark" open={!!landmark} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
+    <Popup title="Edit Element" open={!!landmark} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
       {landmark && (
         <div>
             {!confirmDelete ? (
@@ -627,11 +627,11 @@ export default function MetricsView() {
       <Popup title="How to use Metrics" open={showHelpDialog} onOpenChange={setShowHelpDialog} className="max-w-sm">
         <div className="flex flex-col gap-2 text-sm text-muted-foreground leading-relaxed">
           <p><span className="text-foreground font-medium">Metrics</span> are quality dimensions you define (e.g. "Test Coverage", "Uptime"). Click <span className="text-foreground font-medium">Add Metric</span> to create one from a template or from scratch.</p>
-          <p><span className="text-foreground font-medium">Landmarks</span> are the things being measured. Create unpositioned ones here with <span className="text-foreground font-medium">Create Landmark</span>, or place them directly on the map.</p>
+          <p><span className="text-foreground font-medium">Elements</span> are the things being measured. Create unpositioned ones here with <span className="text-foreground font-medium">Create Element</span>, or place them directly on the map.</p>
           <p>Click any <span className="text-foreground font-medium">cell</span> in the table to set a quality level (✓ Good, ~ Partial, ✗ Bad) plus an optional value, link, or badge images.</p>
           <p>Click a <span className="text-foreground font-medium">metric name</span> to edit or remove it.</p>
-          <p>Click a <span className="text-foreground font-medium">landmark name</span> to edit its name, type, group, description, or link.</p>
-          <p>Use <span className="text-foreground font-medium">Groups</span> to organise landmarks into colour-coded sections. The funnel icon filters visible groups.</p>
+          <p>Click a <span className="text-foreground font-medium">element name</span> to edit its name, type, group, description, or link.</p>
+          <p>Use <span className="text-foreground font-medium">Groups</span> to organise elements into colour-coded sections. The funnel icon filters visible groups.</p>
         </div>
       </Popup>
 
@@ -652,8 +652,8 @@ export default function MetricsView() {
           </button>
           {isCollaborator && (
             <>
-              <button className={cardBtnCls} onClick={() => setShowCreateLandmarkDialog(true)} title="Create a new landmark without position">
-                <Plus className="h-3.5 w-3.5" /> Landmark
+              <button className={cardBtnCls} onClick={() => setShowCreateLandmarkDialog(true)} title="Create a new element without position">
+                <Plus className="h-3.5 w-3.5" /> Element
               </button>
               <button className={cardBtnCls} onClick={() => setShowTemplateSelector(true)} title="Add metric">
                 <Plus className="h-3.5 w-3.5" /> Metric
@@ -835,30 +835,20 @@ export default function MetricsView() {
                             )}
                             {/* Landmark name + overall badge */}
                             <td className="metrics-landmark-cell p-0 sticky z-20 data-sticky-cell" style={{ left: '1rem' }}>
-                              <div className=" px-1 sm:px-2 py-2 overflow-hidden">
-                                  {(() => {
-                                    const nameEl =
-                                      <Button
-                                        variant="ghost" size="sm"
-                                        fullWidth={true}
-                                        title={landmark.description}
-                                        className="overflow-hidden"
-                                      >
-                                        <StatusIndicator status={qualityLevelToStatus[lmWorst]} /><span className="truncate">{landmark.name}</span>
-                                      </Button>
-
-                                    return (
-                                      <LandmarkInfoPopover
-                                        landmark={landmark}
-                                        onEditLandmark={onEditLandmark}
-                                        onRemoveLandmark={onRemoveLandmark}
-                                        loading={loading}
-                                      >
-                                        {nameEl}
-                                      </LandmarkInfoPopover>
-                                    );
-                                  })()}
-                              </div>
+                              <LandmarkInfoPopover
+                                landmark={landmark}
+                                onEditLandmark={onEditLandmark}
+                                onRemoveLandmark={onRemoveLandmark}
+                                loading={loading}
+                              >
+                                <div
+                                  className="flex items-center gap-2 px-3 py-2 overflow-hidden text-sm"
+                                  title={landmark.description || landmark.name}
+                                >
+                                  <StatusIndicator status={qualityLevelToStatus[lmWorst]} />
+                                  <span className="truncate font-medium text-foreground">{landmark.name}</span>
+                                </div>
+                              </LandmarkInfoPopover>
                             </td>
                             {/* One cell per metric */}
                             {visibleMetrics.map((m) => {
@@ -914,7 +904,7 @@ export default function MetricsView() {
                                     </div>
                                   ) : (
                                       <span className="data-empty text-sm italic transition-colors group-hover:text-muted-foreground">
-                                      not set
+                                      -
                                     </span>
                                   )}
                                 </td>

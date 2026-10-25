@@ -1,48 +1,51 @@
 package team.dedica.porthole.adapter.`in`.web
-import java.util.UUID
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.micronaut.runtime.server.EmbeddedServer
+import io.micronaut.test.annotation.MockBean
+import io.micronaut.test.extensions.junit5.annotation.MicronautTest
+import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.BDDMockito.given
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Import
-import org.springframework.http.MediaType
-import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import team.dedica.porthole.adapter.`in`.web.security.*
+import org.mockito.kotlin.whenever
+import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.GetMetricTemplatesPort
 import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.config.PortholeAuthProperties
 import team.dedica.porthole.domain.MetricTemplate
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.util.UUID
 
-@WebMvcTest(MetricTemplateController::class)
-@Import(SecurityConfig::class, JwtAuthenticationFilter::class, JwtTokenProvider::class,
-    AuthCookieService::class, KeycloakClientRegistrationConfig::class,
-    MetricTemplateControllerTest.TestConfig::class)
-@ActiveProfiles("test")
+@MicronautTest
 class MetricTemplateControllerTest {
 
-    @TestConfiguration
-    @EnableConfigurationProperties(PortholeAuthProperties::class)
-    class TestConfig
+    @Inject
+    lateinit var server: EmbeddedServer
 
-    @Autowired lateinit var mockMvc: MockMvc
-    @Autowired lateinit var objectMapper: ObjectMapper
-    @Autowired lateinit var jwtTokenProvider: JwtTokenProvider
+    @Inject
+    lateinit var objectMapper: ObjectMapper
 
-    @MockitoBean
+    @Inject
+    lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @Inject
     lateinit var getMetricTemplatesPort: GetMetricTemplatesPort
 
-    @MockitoBean
+    @Inject
     lateinit var userPort: UserPort
+
+    @MockBean(GetMetricTemplatesPort::class)
+    fun getMetricTemplatesPort(): GetMetricTemplatesPort = org.mockito.kotlin.mock()
+
+    @MockBean(UserPort::class)
+    fun userPort(): UserPort = org.mockito.kotlin.mock()
+
+    private val http: HttpClient = HttpClient.newBuilder()
+        .followRedirects(HttpClient.Redirect.NEVER)
+        .build()
 
     private val allTemplates = listOf(
         // 12-factor
@@ -78,87 +81,86 @@ class MetricTemplateControllerTest {
 
     private fun token(): String {
         val testUserId = UUID.nameUUIDFromBytes("test-user-id".toByteArray())
-        given(userPort.findById(testUserId)).willReturn(UserRecord(id = testUserId, username = "testuser"))
+        whenever(userPort.findById(testUserId)).thenReturn(UserRecord(id = testUserId, username = "testuser"))
         return jwtTokenProvider.generateToken(testUserId, "testuser")
     }
 
+    private fun get(path: String, bearer: String? = null): HttpResponse<String> {
+        val builder = HttpRequest.newBuilder(URI.create("http://localhost:${server.port}$path"))
+        if (bearer != null) builder.header("Authorization", "Bearer $bearer")
+        builder.method("GET", HttpRequest.BodyPublishers.noBody())
+        return http.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+    }
+
+    private fun authedGet(): HttpResponse<String> = get("/api/metric-templates", token())
+
     @Test
     fun `GET metric-templates returns 200 with correct content type`() {
-        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
+        whenever(getMetricTemplatesPort.getTemplates()).thenReturn(allTemplates)
 
-        mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
-            .andExpect(status().isOk)
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        val response = authedGet()
+        assertTrue(response.statusCode() == 200)
+        assertTrue(response.headers().firstValue("Content-Type").orElse("").contains("application/json"))
     }
 
     @Test
     fun `GET metric-templates returns all 27 templates`() {
-        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
+        whenever(getMetricTemplatesPort.getTemplates()).thenReturn(allTemplates)
 
-        mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.length()").value(27))
+        val response = authedGet()
+        assertTrue(response.statusCode() == 200)
+        assertTrue(objectMapper.readTree(response.body()).size() == 27)
     }
 
     @Test
     fun `GET metric-templates each entry has id name and description`() {
-        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
+        whenever(getMetricTemplatesPort.getTemplates()).thenReturn(allTemplates)
 
-        mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$[0].id").isString)
-            .andExpect(jsonPath("$[0].name").isString)
-            .andExpect(jsonPath("$[0].description").isString)
+        val tree = objectMapper.readTree(authedGet().body())
+        assertTrue(tree[0]["id"].isTextual)
+        assertTrue(tree[0]["name"].isTextual)
+        assertTrue(tree[0]["description"].isTextual)
     }
 
     @Test
     fun `GET metric-templates contains all 12-factor ids`() {
-        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
+        whenever(getMetricTemplatesPort.getTemplates()).thenReturn(allTemplates)
 
-        val result = mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
-            .andExpect(status().isOk)
-            .andReturn()
-
-        val body = result.response.contentAsString
+        val body = authedGet().body()
         listOf(
             "codebase", "dependencies", "config", "backing-services",
             "build-release-run", "processes", "port-binding", "concurrency",
             "disposability", "dev-prod-parity", "logs", "admin-processes",
-        ).forEach { id -> assert(body.contains("\"$id\"")) { "Missing 12-factor id: $id" } }
+        ).forEach { id -> assertTrue(body.contains("\"$id\"")) { "Missing 12-factor id: $id" } }
     }
 
     @Test
     fun `GET metric-templates contains all NFR ids`() {
-        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
+        whenever(getMetricTemplatesPort.getTemplates()).thenReturn(allTemplates)
 
-        val result = mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
-            .andExpect(status().isOk)
-            .andReturn()
-
-        val body = result.response.contentAsString
+        val body = authedGet().body()
         listOf(
             "availability", "response-time", "throughput", "error-rate",
             "scalability", "recoverability", "mttr", "security",
             "observability", "api-stability", "data-consistency",
             "test-coverage", "deployment-frequency", "slo-compliance", "documentation",
-        ).forEach { id -> assert(body.contains("\"$id\"")) { "Missing NFR id: $id" } }
+        ).forEach { id -> assertTrue(body.contains("\"$id\"")) { "Missing NFR id: $id" } }
     }
 
     @Test
     fun `GET metric-templates does not set a custom max-age cache header`() {
-        given(getMetricTemplatesPort.getTemplates()).willReturn(allTemplates)
+        whenever(getMetricTemplatesPort.getTemplates()).thenReturn(allTemplates)
 
-        // Spring Security always adds Cache-Control: no-cache, no-store.
-        // We verify our controller does NOT override this with a permissive max-age.
-        mockMvc.perform(get("/api/metric-templates").header("Authorization", "Bearer ${token()}"))
-            .andExpect(status().isOk)
-            .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("max-age=3600"))))
+        val response = authedGet()
+        assertTrue(response.statusCode() == 200)
+        val cacheControl = response.headers().firstValue("Cache-Control").orElse("")
+        assertTrue(!cacheControl.contains("max-age=3600"),
+            "Controller must not set a permissive max-age cache header, got: $cacheControl")
     }
 
     @Test
     fun `GET metric-templates without auth returns 401 or 403`() {
-        val status = mockMvc.perform(get("/api/metric-templates"))
-            .andReturn().response.status
+        val status = get("/api/metric-templates").statusCode()
         assertTrue(status == 401 || status == 403)
     }
 }

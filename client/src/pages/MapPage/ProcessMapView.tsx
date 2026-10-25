@@ -5,7 +5,9 @@
  * for the active process / stage.  Owns all process-specific memos,
  * connection-click handler, and the "New Connection" overlay.
  */
-import { useRef, useCallback, useMemo, useState, useEffect } from 'react';import { Layers, GitBranch, HelpCircle } from 'lucide-react';import { Button } from '@/components/ui/button';
+import { useRef, useCallback, useMemo, useState, useEffect } from 'react';
+import { Layers, GitBranch, HelpCircle, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
@@ -82,7 +84,10 @@ export default function ProcessMapView() {
       const updated = await createProcess(currentMap.id, newProcName.trim(), newProcDesc.trim() || undefined);
       setProcesses(updated);
       const created = updated.find((p) => p.name === newProcName.trim());
-      if (created) setActiveProcessId(created.id);
+      if (created) {
+        setActiveProcessId(created.id);
+        setProcessSidebarHidden(false);
+      }
       setNewProcPopoverOpen(false);
       setNewProcName('');
       setNewProcDesc('');
@@ -314,7 +319,7 @@ export default function ProcessMapView() {
 
 
       {/* Left toolbar */}
-      <div className="absolute top-2 left-2 flex flex-row gap-1.5 z-10">
+      <div className="absolute top-2 left-3 sm:left-6 flex flex-row gap-1.5 z-10">
         <LandmarkSearchField landmarks={positionedLandmarks} onSelect={handleLandmarkSearch} placeholder="Locate…" />
         <Popover>
           <PopoverTrigger asChild>
@@ -339,20 +344,20 @@ export default function ProcessMapView() {
 
       <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
 
-      {/* Right-side column: Layers → process buttons → New Process */}
+      {/* Right-side column: Layers box + Processes box */}
       {(() => {
         const allMetrics = Object.values(metrics);
-        const selectedMetric = selectedMetricId ? metrics[selectedMetricId] : null;
         const newProcPopover = (
           <Popover open={newProcPopoverOpen} onOpenChange={(o) => { setNewProcPopoverOpen(o); if (!o) { setNewProcName(''); setNewProcDesc(''); setNewProcError(''); } }}>
             <PopoverTrigger asChild>
               <Button
-                size="sm"
+                size="icon"
                 variant="ghost"
-                className="h-8 px-3 rounded-lg shadow-lg border gap-2 bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card"
+                className="h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-accent shrink-0"
+                title="Create process"
+                aria-label="Create process"
               >
-                <GitBranch className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-sm">New Process</span>
+                <Plus className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72 p-4" side="bottom" align="end">
@@ -395,78 +400,102 @@ export default function ProcessMapView() {
           </Popover>
         );
         return (
-          <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
-            {allMetrics.length > 0 && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    size="sm"
-                    className={`h-9 px-3 rounded-lg shadow-lg border gap-2 ${
-                      selectedMetricId
-                        ? 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/15'
-                        : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
-                    }`}
-                    variant="ghost"
-                  >
-                    <Layers className="h-4 w-4 shrink-0" />
-                    <span className="text-sm">{selectedMetric ? selectedMetric.name : 'Layers'}</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-52 p-1" side="bottom" align="end">
-                  <button
-                    className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm transition-colors ${
-                      !selectedMetricId ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
-                    }`}
-                    onClick={() => setSelectedMetricId(null)}
-                  >
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
-                    None
-                  </button>
-                  {allMetrics.map((m) => (
-                    <button
-                      key={m.id}
-                      className={`flex items-center gap-2 w-full rounded px-2 py-1.5 text-sm transition-colors ${
-                        selectedMetricId === m.id ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50'
-                      }`}
-                      onClick={() => setSelectedMetricId(m.id)}
-                      title={m.description}
-                    >
-                      <span className="h-2 w-2 rounded-full shrink-0 border border-primary/60" />
-                      {m.name}
-                    </button>
-                  ))}
-                </PopoverContent>
-              </Popover>
-            )}
-            {processes.map((p) => {
-              const isActive = p.id === activeProcessId;
-              return (
+          <div className="absolute top-2 right-3 sm:right-6 flex flex-col items-end gap-2 z-10">
+            {/* Layers box */}
+            <div className="flex flex-col rounded-lg shadow-lg border border-border bg-card/80 backdrop-blur-xs min-w-44 max-w-64 overflow-hidden">
+              <div className="flex items-center  gap-2 px-3 py-2">
+                <Layers className="h-3.5 w-3.5 shrink-0" /><span className="text-sm font-semibold text-foreground">Layers</span>
+              </div>
+              <div className="flex flex-col p-1.5 gap-1 max-h-72 overflow-y-auto">
                 <Button
-                  key={p.id}
                   size="sm"
                   variant="ghost"
-                  className={`h-8 px-3 rounded-lg shadow-lg border gap-2 ${
-                    isActive
-                      ? 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/15'
-                      : 'bg-card/80 text-muted-foreground border-border hover:text-foreground hover:bg-card'
+                  className={`w-full justify-start h-8 px-2.5 rounded-md gap-2 text-left ${
+                    selectedMetricId === null
+                      ? 'bg-primary/10 text-primary border border-primary/40 hover:bg-primary/15'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
+                  onClick={() => setSelectedMetricId(null)}
+                >
+                  <span className="text-sm truncate">None</span>
+                </Button>
+                {allMetrics.map((m) => {
+                  const isActive = m.id === selectedMetricId;
+                  return (
+                    <Button
+                      key={m.id}
+                      size="sm"
+                      variant="ghost"
+                      className={`w-full justify-start h-8 px-2.5 rounded-md gap-2 text-left ${
+                        isActive
+                          ? 'bg-primary/10 text-primary border border-primary/40 hover:bg-primary/15'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                      }`}
+                      onClick={() => {
+                        setSelectedMetricId(isActive ? null : m.id);
+                      }}
+                      title={m.description}
+                    >
+                      <span className="text-sm truncate">{m.name}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Processes box */}
+            <div className="flex flex-col rounded-lg shadow-lg border border-border bg-card/80 backdrop-blur-xs min-w-44 max-w-64 overflow-hidden">
+              <div className="flex items-center justify-between gap-2 px-3  ">
+                <div className="flex items-center gap-2 py-2 "><GitBranch className="h-3.5 w-3.5 shrink-0" /> <span className="text-sm font-semibold text-foreground">Processes</span></div>
+                {isCollaborator && newProcPopover}
+              </div>
+              <div className="flex flex-col p-1.5 gap-1 max-h-72 overflow-y-auto">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={`w-full justify-start h-8 px-2.5 rounded-md gap-2 text-left ${
+                    activeProcessId === null
+                      ? 'bg-primary/10 text-primary border border-primary/40 hover:bg-primary/15'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                   }`}
                   onClick={() => {
-                    if (isActive) {
-                      setActiveProcessId(null);
-                      setProcessSidebarHidden(true);
-                    } else {
-                      setActiveProcessId(p.id);
-                      setActiveStageId(null);
-                      setProcessSidebarHidden(false);
-                    }
+                    setActiveProcessId(null);
+                    setActiveStageId(null);
+                    setProcessSidebarHidden(true);
                   }}
                 >
-                  <GitBranch className="h-3.5 w-3.5 shrink-0" />
-                  <span className="text-sm">{p.name}</span>
+
+                  <span className="text-sm truncate">None</span>
                 </Button>
-              );
-            })}
-            {isCollaborator && newProcPopover}
+                {processes.map((p) => {
+                  const isActive = p.id === activeProcessId;
+                  return (
+                    <Button
+                      key={p.id}
+                      size="sm"
+                      variant="ghost"
+                      className={`w-full justify-start h-8 px-2.5 rounded-md gap-2 text-left ${
+                        isActive
+                          ? 'bg-primary/10 text-primary border border-primary/40 hover:bg-primary/15'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                      }`}
+                      onClick={() => {
+                        if (isActive) {
+                          setActiveProcessId(null);
+                          setProcessSidebarHidden(true);
+                        } else {
+                          setActiveProcessId(p.id);
+                          setActiveStageId(null);
+                          setProcessSidebarHidden(false);
+                        }
+                      }}
+                    >
+                      <span className="text-sm truncate">{p.name}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         );
       })()}

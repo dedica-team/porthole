@@ -17,11 +17,11 @@ import {tileHeight} from './terrainUtils';
 
 const HEX_SIZE      = 1;
 const LIFT            = 0.10;
-const SHAFT_WIDTH     = 0.18;
-const TIP_HALF_WIDTH  = HEX_SIZE * 0.25;   // half of "half tile side edge" (0.5 / 2)
+const SHAFT_WIDTH     = 0.36;
+const TIP_HALF_WIDTH  = HEX_SIZE * 0.50;   // doubled from HEX_SIZE * 0.25
 const HEAD_WORLD_LEN  = 0.50;
 const TILE_INRADIUS   = HEX_SIZE * 0.87;
-const PROCESS_COLOR   = 0x38bdf8;
+const PROCESS_COLOR   = 0xffffff;
 
 export interface StageConnectionEntry {
   stageConn: StageConnection;

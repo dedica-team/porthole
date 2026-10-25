@@ -26,6 +26,7 @@ import {
 import {ProcessArrowRenderer} from './ProcessArrowRenderer';
 import type {StageConnectionEntry} from './ProcessArrowRenderer';
 import {CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import {computeTileHeatmapColor, resolveStatusElements} from './heatmapUtils';
 
 
 function makeXrayLabel(text: string): HTMLDivElement {
@@ -49,7 +50,7 @@ function makeXrayLabel(text: string): HTMLDivElement {
 /** Slightly off-white hex surface for process (xray) mode. */
 const PROCESS_TOP_RGB: [number, number, number] = [0.91, 0.91, 0.91];
 const PROCESS_SIDE_RGB: [number, number, number] = [0.78, 0.78, 0.78];
-const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({color: 0x999999, transparent: false});
+const PROCESS_EDGE_MAT = new THREE.LineBasicMaterial({color: 0xd0d0d0, transparent: false});
 
 /** Blue-tinted tiles for the active stage. */
 const STAGE_TOP_RGB: [number, number, number] = [0.86, 0.91, 1.0];
@@ -750,13 +751,13 @@ export default function HexGrid({
     // ── Connection highlight / dim / hide in process mode ────────────────────────────────
     useEffect(() => {
         if (hideDecorations) {
-            // Xray mode: three levels — active stage (black), rest of process (dark grey), unrelated (grey).
+            // Xray mode: three levels — active stage (white), rest of process (dark grey), unrelated (grey).
             const hasProcess = !!highlightConnectionIds;
             const hasStage   = !!activeStageConnectionIds;
             connectionXrayMatRef.current.forEach((mat, connId) => {
                 const inStage   = activeStageConnectionIds?.has(connId) ?? false;
                 const inProcess = highlightConnectionIds?.has(connId) ?? false;
-                const color = (hasStage && inStage) ? 0x111111
+                const color = (hasStage && inStage) ? 0xffffff
                             : (hasProcess && inProcess) ? 0x555555
                             : 0x888888;
                 mat.color.set(color);
@@ -799,7 +800,7 @@ export default function HexGrid({
                         'background: #111111', 'padding: 2px 8px',
                         'border-radius: 4px', 'pointer-events: none',
                         'white-space: nowrap', 'user-select: none',
-                        'letter-spacing: 0.05em', 'text-transform: uppercase',
+                        'letter-spacing: 0.05em',
                     ].join(';');
                     const lbl = new CSS2DObject(el);
                     lbl.position.set(cx / count, cy / count, cz / count);
@@ -835,21 +836,36 @@ export default function HexGrid({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [highlightConnectionIds, activeStageConnectionIds, activeStageName, hideDecorations, map.connections]);
 
-    // ── Stage tile highlight (lighter grey for active-stage tiles in process mode) ──
+    // ── Stage tile highlight & status heatmaps in process (xray) mode ─────────
     // Extracted as a plain function so it can be called both after geometry rebuild
-    // and whenever stageHighlightTiles changes — avoiding the ordering race.
+    // and whenever stageHighlightTiles / landmarks / metricOverlayEntries change.
     const applyTileHighlights = (tiles = map.map?.tiles ?? []) => {
         const topInfo = topColBufRef.current;
         const sideInfo = sideColBufRef.current;
         if (!topInfo || !sideInfo || !hideDecorations) return;
         const highlighted = stageHighlightTilesRef.current;
-        // When no set is provided the stage-specific highlight feature is inactive —
-        // reset everything to uniform process grey.
+        const statusElements = resolveStatusElements(map.landmarks, metricOverlayEntries);
+
         tiles.forEach((_tile, idx) => {
             const key = `${_tile.coordinate.q},${_tile.coordinate.r}`;
             const isHighlighted = highlighted != null && highlighted.has(key);
-            const [tr, tg, tb] = isHighlighted ? STAGE_TOP_RGB : PROCESS_TOP_RGB;
-            const [sr, sg, sb] = isHighlighted ? STAGE_SIDE_RGB : PROCESS_SIDE_RGB;
+
+            const heatmap = computeTileHeatmapColor(_tile.coordinate.q, _tile.coordinate.r, statusElements);
+
+            let tr: number, tg: number, tb: number;
+            let sr: number, sg: number, sb: number;
+
+            if (heatmap) {
+                [tr, tg, tb] = heatmap.topRGB;
+                [sr, sg, sb] = heatmap.sideRGB;
+            } else if (isHighlighted) {
+                [tr, tg, tb] = STAGE_TOP_RGB;
+                [sr, sg, sb] = STAGE_SIDE_RGB;
+            } else {
+                [tr, tg, tb] = PROCESS_TOP_RGB;
+                [sr, sg, sb] = PROCESS_SIDE_RGB;
+            }
+
             const tBase = idx * topInfo.vertsPerTile * 3;
             for (let v = 0; v < topInfo.vertsPerTile; v++) {
                 topInfo.buf.array[tBase + v * 3] = tr;
@@ -867,13 +883,13 @@ export default function HexGrid({
         sideInfo.buf.needsUpdate = true;
     };
 
-    // Re-apply highlights whenever the set changes (geometry already exists)
+    // Re-apply highlights and heatmaps whenever stage, landmarks, or metric overlays change
     useEffect(() => {
         stageHighlightTilesRef.current = stageHighlightTiles;
         applyTileHighlights();
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [stageHighlightTiles]);
+    }, [stageHighlightTiles, map.landmarks, metricOverlayEntries, hideDecorations]);
 
     // ── CSS2D metric overlay renderer toggle ───────────────────────────────────
     useEffect(() => {
@@ -1039,7 +1055,7 @@ export default function HexGrid({
                     const { x: mx, z: mz } = hexToWorld(mid.q, mid.r, HEX_SIZE);
                     const my = tileHeight(midTile?.elevation ?? 1) + 0.15;
                     const el = makeXrayLabel(text);
-                    el.style.borderLeft = '3px solid #38bdf8';
+                    el.style.borderLeft = '3px solid #ffffff';
                     const lbl = new CSS2DObject(el);
                     lbl.position.set(mx, my, mz);
                     scene.add(lbl);

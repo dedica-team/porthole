@@ -17,6 +17,7 @@ export interface CollaboratorMatrixEntry {
 
 export interface CollaboratorMatrix {
   name: string;
+  collaborators: string[];
   entries: Record<string, Record<string, CollaboratorMatrixEntry>>;
 }
 

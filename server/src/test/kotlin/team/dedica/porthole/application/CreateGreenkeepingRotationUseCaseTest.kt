@@ -3,9 +3,10 @@ package team.dedica.porthole.application
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.security.access.AccessDeniedException
+import team.dedica.porthole.domain.AccessDeniedException
 import team.dedica.porthole.application.session.greenkeeping.CreateGreenkeepingRotationUseCase
 import team.dedica.porthole.application.session.greenkeeping.GreenkeepingRotationCollaboratorPatch
+import team.dedica.porthole.application.session.greenkeeping.GreenkeepingTaskTemplateItemPatch
 import team.dedica.porthole.domain.Collaborator
 import team.dedica.porthole.domain.HexMap
 import team.dedica.porthole.domain.LandmarkGroup
@@ -37,7 +38,8 @@ class CreateGreenkeepingRotationUseCaseTest {
     }
 
     @Test
-    fun `creates a rotation with optional description and link`() {
+    fun `creates a rotation with optional description, link, and task templates`() {
+        val templateId1 = UUID.randomUUID()
         val result = useCase.execute(
             sessionId = state.id,
             name = " Weekly Core Duty ",
@@ -47,6 +49,10 @@ class CreateGreenkeepingRotationUseCaseTest {
             collaborators = listOf(
                 GreenkeepingRotationCollaboratorPatch(collaboratorId = collaboratorId),
                 GreenkeepingRotationCollaboratorPatch(collaboratorId = collaborator2Id),
+            ),
+            taskTemplates = listOf(
+                GreenkeepingTaskTemplateItemPatch(id = templateId1, title = " Check logs "),
+                GreenkeepingTaskTemplateItemPatch(id = null, title = "Verify backups"),
             ),
             callerId = collaboratorId,
         )
@@ -59,6 +65,27 @@ class CreateGreenkeepingRotationUseCaseTest {
         assertEquals(listOf(groupId), created.groupIds)
         assertEquals(listOf(collaboratorId, collaborator2Id), created.collaborators.map { it.collaboratorId })
         assertTrue(created.collaborators.none { it.done })
+        assertEquals(2, created.taskTemplates.size)
+        assertEquals(templateId1, created.taskTemplates[0].id)
+        assertEquals("Check logs", created.taskTemplates[0].title)
+        assertNotNull(created.taskTemplates[1].id)
+        assertEquals("Verify backups", created.taskTemplates[1].title)
+    }
+
+    @Test
+    fun `blank task template title throws`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.execute(
+                sessionId = state.id,
+                name = "Weekly",
+                description = null,
+                link = null,
+                groupIds = listOf(groupId),
+                collaborators = listOf(GreenkeepingRotationCollaboratorPatch(collaboratorId = collaboratorId)),
+                taskTemplates = listOf(GreenkeepingTaskTemplateItemPatch(title = "   ")),
+                callerId = collaboratorId,
+            )
+        }
     }
 
     @Test

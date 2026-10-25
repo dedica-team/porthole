@@ -1,12 +1,12 @@
 package team.dedica.porthole.application.session.greenkeeping
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.domain.GreenkeepingRotation
 import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
-@Component
+@Singleton
 class ListGreenkeepingRotationsUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {

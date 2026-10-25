@@ -1,7 +1,7 @@
 package team.dedica.porthole.adapter.out.persistence
 
-import org.springframework.context.annotation.Primary
-import org.springframework.stereotype.Repository
+import io.micronaut.context.annotation.Primary
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.SessionState
 import java.util.UUID
@@ -18,7 +18,7 @@ import kotlin.concurrent.withLock
  * edit the same map concurrently.
  */
 @Primary
-@Repository
+@Singleton
 class JsonSessionStateRepository(private val store: JsonStore) : SessionStatePort {
 
     private val mapLocks = ConcurrentHashMap<UUID, ReentrantLock>()

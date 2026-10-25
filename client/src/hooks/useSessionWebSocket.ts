@@ -6,7 +6,7 @@ import type { CollaboratorMatrix } from '../types/matrix';
 import type { GreenkeepingRotation } from '../types/greenkeeping';
 import type { QualityMetric } from '../types/landmark';
 import { useMapStore } from '../store/mapStore';
-import { getMap, fetchMetrics, fetchChoreLists, fetchCollaboratorMatrix, fetchGreenkeepingRotations } from '../api/mapApi';
+import { getMap, fetchMetrics, fetchChoreLists, fetchCollaboratorMatrix, fetchGreenkeepingRotations, fetchProcesses } from '../api/mapApi';
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -25,6 +25,8 @@ export function useSessionWebSocket(mapId: string | undefined) {
   const setGreenkeepingRotationsFetched = useMapStore((s) => s.setGreenkeepingRotationsFetched);
   const setCollaboratorMatrix = useMapStore((s) => s.setCollaboratorMatrix);
   const setMetrics = useMapStore((s) => s.setMetrics);
+  const setProcesses = useMapStore((s) => s.setProcesses);
+  const setProcessesFetched = useMapStore((s) => s.setProcessesFetched);
   const updateMapRef = useRef(updateMap);
   const setCurrentMapRef = useRef(setCurrentMap);
   const setChoreListsRef = useRef(setChoreLists);
@@ -33,6 +35,8 @@ export function useSessionWebSocket(mapId: string | undefined) {
   const setGreenkeepingRotationsFetchedRef = useRef(setGreenkeepingRotationsFetched);
   const setCollaboratorMatrixRef = useRef(setCollaboratorMatrix);
   const setMetricsRef = useRef(setMetrics);
+  const setProcessesRef = useRef(setProcesses);
+  const setProcessesFetchedRef = useRef(setProcessesFetched);
   useEffect(() => { updateMapRef.current = updateMap; }, [updateMap]);
   useEffect(() => { setCurrentMapRef.current = setCurrentMap; }, [setCurrentMap]);
   useEffect(() => { setChoreListsRef.current = setChoreLists; }, [setChoreLists]);
@@ -41,6 +45,8 @@ export function useSessionWebSocket(mapId: string | undefined) {
   useEffect(() => { setGreenkeepingRotationsFetchedRef.current = setGreenkeepingRotationsFetched; }, [setGreenkeepingRotationsFetched]);
   useEffect(() => { setCollaboratorMatrixRef.current = setCollaboratorMatrix; }, [setCollaboratorMatrix]);
   useEffect(() => { setMetricsRef.current = setMetrics; }, [setMetrics]);
+  useEffect(() => { setProcessesRef.current = setProcesses; }, [setProcesses]);
+  useEffect(() => { setProcessesFetchedRef.current = setProcessesFetched; }, [setProcessesFetched]);
 
   useEffect(() => {
     if (!mapId) return;
@@ -72,6 +78,10 @@ export function useSessionWebSocket(mapId: string | undefined) {
       runIfPromise(fetchGreenkeepingRotations(mapId), (rotations) => {
         setGreenkeepingRotationsRef.current(rotations);
         setGreenkeepingRotationsFetchedRef.current(true);
+      });
+      runIfPromise(fetchProcesses(mapId), (processes) => {
+        setProcessesRef.current(processes);
+        setProcessesFetchedRef.current(true);
       });
     };
 

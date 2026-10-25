@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 import {
-  tileHeight, seed, lcgNext, LineBatcher, PointsBatcher, ROCK_EDGE_MAT,
+  tileHeight, seed, lcgNext, LineBatcher, PointsBatcher, ROCK_EDGE_MAT, TRON_BLACK,
   type TileColors, type TerrainRenderer,
 } from '../terrainUtils';
 
@@ -84,11 +84,11 @@ const DEBRIS_MAT = new THREE.ShaderMaterial({
 DEBRIS_MAT.onBeforeRender = () => { debrisUniforms.uTime.value = performance.now() / 1000; };
 
 const SCORCHED_TILE_COLORS: TileColors = {
-  topColor:      0x040810,
+  topColor:      TRON_BLACK,
   topEmissive:   new THREE.Color(0x3a0c00).multiplyScalar(0.05),
   topRoughness:  1.0,
   topMetalness:  0.0,
-  sideColor:     0x040810,
+  sideColor:     TRON_BLACK,
   sideEmissive:  new THREE.Color(0x280800).multiplyScalar(0.03),
   sideRoughness: 1.0,
   sideMetalness: 0.0,

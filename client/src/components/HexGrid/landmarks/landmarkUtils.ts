@@ -306,7 +306,7 @@ function _getStatusMat(level: QualityLevel): THREE.ShaderMaterial {
  *
  * NONE    → hidden (opacity 0)
  * OK      → steady green
- * WARNING → slow blink (1 Hz) amber
+ * WARNING → slow blink (1 Hz) orange
  * ERROR   → fast blink (2 Hz) red
  */
 export function statusLight(level: QualityLevel, x = 0.35, y = 1.1, z = 0.0): THREE.Mesh {

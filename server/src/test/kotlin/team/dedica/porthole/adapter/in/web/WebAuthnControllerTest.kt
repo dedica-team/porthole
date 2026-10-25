@@ -1,18 +1,22 @@
 package team.dedica.porthole.adapter.`in`.web
-import java.util.UUID
 
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
+import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
 import java.time.Instant
+import java.util.UUID
 
 class WebAuthnControllerTest {
 
@@ -35,12 +39,20 @@ class WebAuthnControllerTest {
         whenever(jwtTokenProvider.generateToken(any(), any())).thenAnswer { "token-${it.arguments[1]}" }
     }
 
+    private val HttpResponse<*>.code: Int get() = status.code
+
+    private fun registerBody(response: HttpResponse<*>): RegisterStartResponse =
+        response.body.get() as RegisterStartResponse
+
+    private fun authBody(response: HttpResponse<*>): AuthStartResponse =
+        response.body.get() as AuthStartResponse
+
     // ── register/start ────────────────────────────────────────────────────────
 
     @Test
     fun `register start returns 400 when username is blank`() {
         val response = controller.registerStart(RegisterStartRequest("   "))
-        assertEquals(400, response.statusCode.value())
+        assertEquals(400, response.code)
     }
 
     @Test
@@ -48,42 +60,42 @@ class WebAuthnControllerTest {
         whenever(userRepository.findByUsername("alice"))
             .thenReturn(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice"))
         val response = controller.registerStart(RegisterStartRequest("alice"))
-        assertEquals(400, response.statusCode.value())
+        assertEquals(400, response.code)
     }
 
     @Test
     fun `register start returns 400 for invalid username with special chars`() {
         val response = controller.registerStart(RegisterStartRequest("bob@evil"))
-        assertEquals(400, response.statusCode.value())
+        assertEquals(400, response.code)
     }
 
     @Test
     fun `register start returns 400 for username with spaces`() {
         val response = controller.registerStart(RegisterStartRequest("bob smith"))
-        assertEquals(400, response.statusCode.value())
+        assertEquals(400, response.code)
     }
 
     @Test
     fun `register start returns 400 for username exceeding max length`() {
         val long = "a".repeat(40)
         val response = controller.registerStart(RegisterStartRequest(long))
-        assertEquals(400, response.statusCode.value())
+        assertEquals(400, response.code)
     }
 
     @Test
     fun `register start normalises username to lowercase`() {
         whenever(userRepository.findByUsername("bob")).thenReturn(null)
         val response = controller.registerStart(RegisterStartRequest("BoB"))
-        assertEquals(200, response.statusCode.value())
-        assertEquals("bob", response.body!!.user.name)
+        assertEquals(200, response.code)
+        assertEquals("bob", registerBody(response).user.name)
     }
 
     @Test
     fun `register start returns creation options with challenge and rp info`() {
         whenever(userRepository.findByUsername("bob")).thenReturn(null)
         val response = controller.registerStart(RegisterStartRequest("bob"))
-        assertEquals(200, response.statusCode.value())
-        val body = response.body!!
+        assertEquals(200, response.code)
+        val body = registerBody(response)
         assertEquals("localhost", body.rp.id)
         assertEquals("Landmarks Test", body.rp.name)
         assertEquals("bob", body.user.name)
@@ -100,7 +112,7 @@ class WebAuthnControllerTest {
         val r1 = controller.registerStart(RegisterStartRequest("carol"))
         val r2 = controller.registerStart(RegisterStartRequest("carol"))
         // Two calls → two different session IDs
-        assertNotEquals(r1.body!!.sessionId, r2.body!!.sessionId)
+        assertNotEquals(registerBody(r1).sessionId, registerBody(r2).sessionId)
     }
 
     // ── register/finish ───────────────────────────────────────────────────────
@@ -109,7 +121,7 @@ class WebAuthnControllerTest {
     fun `register finish returns 401 when session id unknown`() {
         val req = buildRegisterFinishRequest(sessionId = "unknown-session")
         val response = controller.registerFinish(req)
-        assertEquals(401, response.statusCode.value())
+        assertEquals(401, response.code)
     }
 
     // ── authenticate/start ────────────────────────────────────────────────────
@@ -117,8 +129,8 @@ class WebAuthnControllerTest {
     @Test
     fun `auth start returns empty allowCredentials for discoverable flow`() {
         val response = controller.authStart(AuthStartRequest(username = null))
-        assertEquals(200, response.statusCode.value())
-        assertTrue(response.body!!.allowCredentials.isEmpty())
+        assertEquals(200, response.code)
+        assertTrue(authBody(response).allowCredentials.isEmpty())
     }
 
     @Test
@@ -127,8 +139,8 @@ class WebAuthnControllerTest {
         whenever(userRepository.findByUsername("alice"))
             .thenReturn(UserRecord(id = UUID.nameUUIDFromBytes("u1".toByteArray()), username = "alice", passkeyCredential = cred))
         val response = controller.authStart(AuthStartRequest(username = "alice"))
-        assertEquals(200, response.statusCode.value())
-        assertTrue(response.body!!.allowCredentials.isEmpty())
+        assertEquals(200, response.code)
+        assertTrue(authBody(response).allowCredentials.isEmpty())
     }
 
     @Test
@@ -136,22 +148,22 @@ class WebAuthnControllerTest {
         whenever(userRepository.findByUsername("nokey"))
             .thenReturn(UserRecord(id = UUID.nameUUIDFromBytes("u2".toByteArray()), username = "nokey"))
         val response = controller.authStart(AuthStartRequest(username = "nokey"))
-        assertEquals(200, response.statusCode.value())
-        assertTrue(response.body!!.allowCredentials.isEmpty())
+        assertEquals(200, response.code)
+        assertTrue(authBody(response).allowCredentials.isEmpty())
     }
 
     @Test
     fun `auth start returns generic discoverable response for unknown username`() {
         whenever(userRepository.findByUsername("ghost")).thenReturn(null)
         val response = controller.authStart(AuthStartRequest(username = "ghost"))
-        assertEquals(200, response.statusCode.value())
-        assertTrue(response.body!!.allowCredentials.isEmpty())
+        assertEquals(200, response.code)
+        assertTrue(authBody(response).allowCredentials.isEmpty())
     }
 
     @Test
     fun `auth start returns 400 for invalid username`() {
         val response = controller.authStart(AuthStartRequest(username = "bad user"))
-        assertEquals(400, response.statusCode.value())
+        assertEquals(400, response.code)
     }
 
     // ── authenticate/finish ───────────────────────────────────────────────────
@@ -160,7 +172,7 @@ class WebAuthnControllerTest {
     fun `auth finish returns 401 when session id unknown`() {
         val req = buildAuthFinishRequest(sessionId = "unknown-session")
         val response = controller.authFinish(req)
-        assertEquals(401, response.statusCode.value())
+        assertEquals(401, response.code)
     }
 
     // ── UserRecord model ──────────────────────────────────────────────────────
@@ -240,4 +252,3 @@ class WebAuthnControllerTest {
         type = "public-key",
     )
 }
-

@@ -97,7 +97,9 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const lmWorstLevel = worstLevel(Object.values(landmarkMetricEntries));
   const matrixEntriesForLandmark: { collaborator: (typeof currentMap.collaborators)[0]; level: MatrixLevel }[] =
     collaboratorMatrix
-      ? currentMap.collaborators
+      ? (collaboratorMatrix.collaborators ?? [])
+          .map((cId) => currentMap.collaborators.find((c) => c.id === cId))
+          .filter((c): c is (typeof currentMap.collaborators)[0] => c != null)
           .map((c) => ({
             collaborator: c,
             level: (collaboratorMatrix.entries[selectedLandmark.id]?.[c.id]?.level ?? 'NONE') as MatrixLevel,
@@ -188,9 +190,9 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
       <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setConfirmDelete(false); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-sm">Edit Landmark</DialogTitle>
+            <DialogTitle className="text-sm">Edit Element</DialogTitle>
             <DialogDescription>
-              Update the selected landmark details, or remove the landmark from the map.
+              Update the selected element details, or remove the element from the map.
             </DialogDescription>
           </DialogHeader>
           {!confirmDelete ? (
@@ -235,7 +237,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                 <Button type="button" size="sm" variant="flat" className="h-8 px-3 text-sm" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
               </div>
               <Button type="button" size="sm" variant="destructive" className="w-full gap-2 h-8 text-sm" disabled={loading} onClick={() => setConfirmDelete(true)}>
-                <Trash2 className="h-3.5 w-3.5" />Remove Landmark
+                <Trash2 className="h-3.5 w-3.5" />Remove Element
               </Button>
             </DialogFooter>
           )}
@@ -301,7 +303,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
       <div className="flex flex-col gap-4 p-5 min-w-0 relative">
         {isCollaborator && (
           <button className="absolute top-3 right-3 flex items-center justify-center h-6 w-6 rounded-md border border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
-            title="Edit Landmark" disabled={loading} onClick={startEdit}>
+            title="Edit Element" disabled={loading} onClick={startEdit}>
             <MoreHorizontal className="h-3.5 w-3.5" />
           </button>
         )}

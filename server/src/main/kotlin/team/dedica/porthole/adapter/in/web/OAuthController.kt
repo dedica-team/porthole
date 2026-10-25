@@ -1,24 +1,19 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.http.HttpHeaders
-import org.springframework.http.ResponseCookie
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.cookie.Cookie
+import io.micronaut.http.cookie.SameSite
+import team.dedica.porthole.adapter.`in`.web.security.*
 import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.adapter.`in`.web.security.AdminService
-import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
-import team.dedica.porthole.adapter.`in`.web.security.GitHubOAuthStateService
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.config.PortholeAuthProperties
-import jakarta.servlet.http.HttpServletRequest
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 
 data class AuthResponse(
     val userId: UUID,
@@ -39,8 +34,7 @@ data class AuthFeatures(
 
 data class OAuthStartResponse(val authorizationUrl: String)
 
-@RestController
-@RequestMapping("/api/auth")
+@Controller("/api/auth")
 class OAuthController(
     private val gitHubOAuthService: GitHubOAuthService,
     private val gitHubOAuthStateService: GitHubOAuthStateService,
@@ -55,62 +49,58 @@ class OAuthController(
     private val webAuthnEnabled: Boolean get() = props.webauthn.isEnabled()
     private val githubRedirectUri: String get() = props.github.redirectUri
 
-    @GetMapping("/config")
+    @Get("/config")
     fun config(): AuthFeatures = AuthFeatures(githubEnabled, keycloakEnabled, webAuthnEnabled, props.tagline)
 
-    @PostMapping("/github/start")
-    fun githubStart(): ResponseEntity<OAuthStartResponse> {
+    @Post("/github/start")
+    fun githubStart(): HttpResponse<OAuthStartResponse> {
         val state = gitHubOAuthStateService.issueState()
         val authorizationUrl = gitHubOAuthService.buildAuthorizationUrl(state, githubRedirectUri)
-        return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, stateCookie(state).toString())
-            .body(OAuthStartResponse(authorizationUrl))
+        return HttpResponse.ok(OAuthStartResponse(authorizationUrl)).cookie(stateCookie(state))
     }
 
-    @PostMapping("/github/callback")
+    @io.micronaut.scheduling.annotation.ExecuteOn(io.micronaut.scheduling.TaskExecutors.BLOCKING)
+    @Post("/github/callback")
     fun githubCallback(
-        @RequestParam code: String,
-        @RequestParam state: String?,
-        request: HttpServletRequest,
-    ): ResponseEntity<AuthResponse> {
-        val clearStateCookie = clearStateCookie().toString()
-        val expectedState = request.cookies
-            ?.firstOrNull { it.name == GitHubOAuthStateService.STATE_COOKIE_NAME }
-            ?.value
+        @QueryValue code: String,
+        @QueryValue state: String?,
+        request: HttpRequest<*>,
+    ): HttpResponse<AuthResponse> {
+        val clearStateCookie = clearStateCookie()
+        val expectedState = request.cookies.findCookie(GitHubOAuthStateService.STATE_COOKIE_NAME)
+            .map { it.value }
+            .orElse(null)
 
         if (!gitHubOAuthStateService.isValidCallbackState(expectedState, state)) {
-            return ResponseEntity.status(401)
-                .header(HttpHeaders.SET_COOKIE, clearStateCookie)
-                .build()
+            return HttpResponse.status<AuthResponse>(HttpStatus.UNAUTHORIZED).cookie(clearStateCookie)
         }
 
         val accessToken = gitHubOAuthService.exchangeCodeForToken(code, githubRedirectUri)
-            ?: return ResponseEntity.status(401).header(HttpHeaders.SET_COOKIE, clearStateCookie).build()
+            ?: return HttpResponse.status<AuthResponse>(HttpStatus.UNAUTHORIZED).cookie(clearStateCookie)
         val userInfo = gitHubOAuthService.fetchUserInfo(accessToken)
-            ?: return ResponseEntity.status(401).header(HttpHeaders.SET_COOKIE, clearStateCookie).build()
+            ?: return HttpResponse.status<AuthResponse>(HttpStatus.UNAUTHORIZED).cookie(clearStateCookie)
         val user = gitHubOAuthService.upsertUser(userInfo)
         val token = jwtTokenProvider.generateToken(user.id, user.username)
-        return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, clearStateCookie)
-            .header(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString())
-            .body(
-                AuthResponse(
-                    user.id,
-                    user.username,
-                    user.avatarUrl,
-                    isAdmin = adminService.isAdmin(user.id),
-                    githubEnabled = githubEnabled,
-                    keycloakEnabled = keycloakEnabled
-                )
+        return HttpResponse.ok(
+            AuthResponse(
+                user.id,
+                user.username,
+                user.avatarUrl,
+                isAdmin = adminService.isAdmin(user.id),
+                githubEnabled = githubEnabled,
+                keycloakEnabled = keycloakEnabled
             )
+        )
+            .cookie(clearStateCookie)
+            .cookie(authCookieService.createAuthCookie(token))
     }
 
-    @GetMapping("/session")
-    fun session(@AuthenticationPrincipal user: UserDetails?): ResponseEntity<AuthResponse> {
-        val authenticatedUser = user ?: return ResponseEntity.status(401).build()
-        val userRecord = userRepository.findByUsername(authenticatedUser.username)
-            ?: return ResponseEntity.status(401).build()
-        return ResponseEntity.ok(
+    @Get("/session")
+    fun session( user: PortholePrincipal?): HttpResponse<AuthResponse> {
+        val authenticatedUser = user ?: return HttpResponse.unauthorized()
+        val userRecord = userRepository.findById(authenticatedUser.userId)
+            ?: return HttpResponse.unauthorized()
+        return HttpResponse.ok(
             AuthResponse(
                 userRecord.id,
                 userRecord.username,
@@ -122,27 +112,23 @@ class OAuthController(
         )
     }
 
-    @PostMapping("/logout")
-    fun logout(): ResponseEntity<Void> =
-        ResponseEntity.noContent()
-            .header(HttpHeaders.SET_COOKIE, authCookieService.clearAuthCookie().toString())
-            .build()
+    @Post("/logout")
+    fun logout(): HttpResponse<*> =
+        HttpResponse.noContent<Any>().cookie(authCookieService.clearAuthCookie())
 
-    private fun stateCookie(state: String): ResponseCookie =
-        ResponseCookie.from(GitHubOAuthStateService.STATE_COOKIE_NAME, state)
+    private fun stateCookie(state: String): Cookie =
+        Cookie.of(GitHubOAuthStateService.STATE_COOKIE_NAME, state)
             .httpOnly(true)
             .secure(githubRedirectUri.startsWith("https://"))
-            .sameSite("Lax")
+            .sameSite(SameSite.Lax)
             .path(GitHubOAuthStateService.STATE_COOKIE_PATH)
             .maxAge(Duration.ofSeconds(GitHubOAuthStateService.STATE_TTL_SECONDS))
-            .build()
 
-    private fun clearStateCookie(): ResponseCookie =
-        ResponseCookie.from(GitHubOAuthStateService.STATE_COOKIE_NAME, "")
+    private fun clearStateCookie(): Cookie =
+        Cookie.of(GitHubOAuthStateService.STATE_COOKIE_NAME, "")
             .httpOnly(true)
             .secure(githubRedirectUri.startsWith("https://"))
-            .sameSite("Lax")
+            .sameSite(SameSite.Lax)
             .path(GitHubOAuthStateService.STATE_COOKIE_PATH)
             .maxAge(Duration.ZERO)
-            .build()
 }

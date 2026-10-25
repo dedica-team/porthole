@@ -240,6 +240,8 @@ export default function Sidebar({
   const relocatingLandmarkId = useMapStore((s) => s.relocatingLandmarkId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
   const processSidebarHidden = useMapStore((s) => s.processSidebarHidden);
+  const processes = useMapStore((s) => s.processes);
+  const activeProcessId = useMapStore((s) => s.activeProcessId);
   const processMode = !!useMatch('/session/:id/processes');
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -263,11 +265,15 @@ export default function Sidebar({
   };
   const onHandlePointerUp = () => { dragRef.current = null; };
 
-  // Hide sidebar when nothing is selected and not in process mode
-  const isVisible = (processMode && !processSidebarHidden)
-    || (mainView !== 'idle')
-    || !!connectingFromLandmarkId
-    || !!relocatingLandmarkId;
+  // Hide sidebar when nothing is selected and not in process mode (or process mode has no active content)
+  const hasProcessContent =
+    !!selectedLandmark ||
+    !!selectedConnectionId ||
+    (!processSidebarHidden && !!activeProcessId && processes.some((p) => p.id === activeProcessId));
+
+  const isVisible = processMode
+    ? hasProcessContent
+    : (mainView !== 'idle' || !!connectingFromLandmarkId || !!relocatingLandmarkId);
   if (!isVisible) return null;
 
   const handleClose = () => {
@@ -310,7 +316,7 @@ export default function Sidebar({
       {/* Connecting-Banner – hide in process mode */}
       {connectingFromLandmarkId && !processMode && (
         <div className="flex items-center justify-between px-4 py-2.5 bg-primary/10 border-b border-primary/30 shrink-0">
-          <span className="text-sm text-primary">Click a target landmark to connect</span>
+          <span className="text-sm text-primary">Click a target element to connect</span>
           <Button
             size="sm"
             variant="ghost"

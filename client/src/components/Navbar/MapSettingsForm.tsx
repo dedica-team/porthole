@@ -156,7 +156,7 @@ export function MapSettingsForm({ onClose }: Props) {
                 {c.id === userId && <span className="text-sm text-muted-foreground shrink-0">(you)</span>}
                 {isAdmin && c.id !== userId && (
                   <Button
-                    variant="ghost"
+                    variant="destructive"
                     size="icon"
                     className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
                     title={`Remove ${c.username} from session`}

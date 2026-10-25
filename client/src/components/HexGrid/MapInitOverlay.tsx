@@ -40,7 +40,7 @@ export default function MapInitOverlay({ tileCount, landmarkCount, onDismiss }: 
         <span className="text-sm text-muted-foreground/60 tracking-widest uppercase">{LOADING_COPY.render}</span>
         <div className="flex gap-4 text-sm text-muted-foreground/40">
           <span>{tileCount.toLocaleString()} tiles</span>
-          <span>{landmarkCount.toLocaleString()} landmarks</span>
+          <span>{landmarkCount.toLocaleString()} elements</span>
         </div>
       </div>
     </div>

@@ -241,8 +241,8 @@ export function useMapPageActions() {
 
   // ── Matrix handlers ──────────────────────────────────────────────────────────
 
-  const handleEditCollaboratorMatrix = useCallback((name: string) => {
-    withAction(() => editCollaboratorMatrix(currentMap!.id, name));
+  const handleEditCollaboratorMatrix = useCallback((name?: string, collaborators?: string[]) => {
+    withAction(() => editCollaboratorMatrix(currentMap!.id, name, collaborators));
   }, [currentMap, withAction]);
 
   const handleSetMatrixEntry = useCallback((landmarkId: string, collaboratorId: string, level: MatrixLevel) => {

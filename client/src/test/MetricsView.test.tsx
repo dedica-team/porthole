@@ -694,7 +694,7 @@ describe('MetricsView', () => {
     fireEvent.click(screen.getByText('Ghost'));
 
     // Click the "Edit Landmark" pencil button in the popover
-    fireEvent.click(screen.getByTitle('Edit Landmark'));
+    fireEvent.click(screen.getByTitle('Edit Element'));
 
     // Click "Remove" button
     fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
@@ -717,7 +717,7 @@ describe('MetricsView', () => {
     fireEvent.click(screen.getByText('Keep'));
 
     // Click "Edit" icon (pencil) to go to edit state
-    const editBtn = screen.getByTitle('Edit Landmark');
+    const editBtn = screen.getByTitle('Edit Element');
     fireEvent.click(editBtn);
 
     // Click "Remove Landmark" button
@@ -738,7 +738,7 @@ describe('MetricsView', () => {
     render(<MetricsView />);
 
     fireEvent.click(screen.getByText('Keep'));
-    const editBtn = screen.getByTitle('Edit Landmark');
+    const editBtn = screen.getByTitle('Edit Element');
     fireEvent.click(editBtn);
 
     fireEvent.click(screen.getByRole('button', { name: /remove/i }));

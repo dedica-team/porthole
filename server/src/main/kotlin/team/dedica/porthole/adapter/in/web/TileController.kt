@@ -1,33 +1,34 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Patch
+import io.micronaut.http.annotation.PathVariable
 import team.dedica.porthole.adapter.`in`.web.dto.EditTileRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.landscaping.EditTileUseCase
 import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.Terrain
-import java.util.UUID
+import java.util.*
 
-@RestController
-@RequestMapping("/api/sessions/{id}/tiles")
+@Controller("/api/sessions/{id}/tiles")
 class TileController(
     private val editTileUseCase: EditTileUseCase,
 ) {
-    @PatchMapping("/{q}/{r}")
+    @Patch("/{q}/{r}")
     fun editTile(
         @PathVariable id: String,
         @PathVariable q: Int,
         @PathVariable r: Int,
-        @RequestBody request: EditTileRequest,
-        @AuthenticationPrincipal user: PortholePrincipal,
-    ): ResponseEntity<Any> {
+        @Body request: EditTileRequest,
+         user: PortholePrincipal,
+    ): HttpResponse<*> {
         val terrain = request.terrain?.let {
             runCatching { Terrain.valueOf(it.uppercase()) }
-                .getOrElse { return ResponseEntity.badRequest().body("Unknown terrain: $it") }
+                .getOrElse { return HttpResponse.badRequest("Unknown terrain: $it") }
         }
-        return ResponseEntity.ok(
+        return HttpResponse.ok(
             editTileUseCase.execute(
                 UUID.fromString(id),
                 user.userId,

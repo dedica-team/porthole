@@ -1,63 +1,70 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import java.util.UUID
-
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
+import io.micronaut.runtime.server.EmbeddedServer
+import io.micronaut.test.extensions.junit5.annotation.MicronautTest
+import jakarta.inject.Inject
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
-import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.adapter.out.repository.UserRecord
-import team.dedica.porthole.domain.*
-import org.springframework.test.context.ContextConfiguration
-import team.dedica.porthole.TestStorageCleaner
+import team.dedica.porthole.domain.Collaborator
+import team.dedica.porthole.domain.HexCoordinate
+import team.dedica.porthole.domain.HexMap
+import team.dedica.porthole.domain.Landmark
+import team.dedica.porthole.domain.LandmarkGroup
+import team.dedica.porthole.domain.SessionState
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.util.UUID
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test", "dev")
-@ContextConfiguration(initializers = [TestStorageCleaner::class])
+/**
+ * End-to-end integration tests for the session/map REST API, migrated from the
+ * former Spring `MockMvc` test to a real embedded Micronaut server.
+ */
+@MicronautTest
 class SessionControllerTest {
 
-    @Autowired
-    lateinit var mockMvc: MockMvc
-    @Autowired
-    lateinit var objectMapper: ObjectMapper
-    @Autowired
+    @Inject
+    lateinit var server: EmbeddedServer
+
+    @Inject
     lateinit var jwtTokenProvider: JwtTokenProvider
-    @Autowired
+
+    @Inject
     lateinit var sessionStatePort: SessionStatePort
-    @Autowired
+
+    @Inject
     lateinit var userPort: UserPort
+
+    private val objectMapper = ObjectMapper()
 
     private lateinit var token: String
     private lateinit var viewerToken: String
     private lateinit var mapId: UUID
 
+    private val http: HttpClient = HttpClient.newBuilder()
+        .followRedirects(HttpClient.Redirect.NEVER)
+        .build()
+
     @BeforeEach
     fun setup() {
-        // Ensure test user exists
-        if (userPort.findByUsername("testuser") == null) {
+        if (userPort.findByUsername("sessionuser") == null) {
             userPort.save(
                 UserRecord(
                     id = UUID.nameUUIDFromBytes("test-uid-001".toByteArray()),
-                    username = "testuser",
+                    username = "sessionuser",
                     githubId = "gh-test"
                 )
             )
         }
-        val user = userPort.findByUsername("testuser")!!
+        val user = userPort.findByUsername("sessionuser")!!
         token = jwtTokenProvider.generateToken(user.id, user.username)
 
         if (userPort.findByUsername("viewer") == null) {
@@ -72,7 +79,6 @@ class SessionControllerTest {
         val viewer = userPort.findByUsername("viewer")!!
         viewerToken = jwtTokenProvider.generateToken(viewer.id, viewer.username)
 
-        // Create a fresh map for each test
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
         val state = SessionState(map = map).also {
             it.collaborators.add(Collaborator(id = user.id, username = user.username))
@@ -81,87 +87,100 @@ class SessionControllerTest {
         mapId = state.id
     }
 
+    // ── HTTP helpers ─────────────────────────────────────────────────────────
+
+    private fun send(
+        method: String,
+        path: String,
+        body: Any? = null,
+        bearer: String? = token,
+    ): HttpResponse<String> {
+        val builder = HttpRequest.newBuilder(URI.create("http://localhost:${server.port}$path"))
+        if (bearer != null) builder.header("Authorization", "Bearer $bearer")
+        builder.header("X-Requested-With", "XMLHttpRequest")
+        if (body != null) {
+            builder.header("Content-Type", "application/json")
+            builder.method(method, HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+        } else {
+            builder.method(method, HttpRequest.BodyPublishers.noBody())
+        }
+        return http.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+    }
+
+    private fun get(path: String, bearer: String? = token) = send("GET", path, null, bearer)
+    private fun post(path: String, body: Any? = null, bearer: String? = token) = send("POST", path, body, bearer)
+    private fun patch(path: String, body: Any?, bearer: String? = token) = send("PATCH", path, body, bearer)
+    private fun put(path: String, body: Any?, bearer: String? = token) = send("PUT", path, body, bearer)
+    private fun delete(path: String, bearer: String? = token) = send("DELETE", path, null, bearer)
+
+    private fun json(response: HttpResponse<String>): JsonNode = objectMapper.readTree(response.body())
+
+    private fun isNullOrMissing(node: JsonNode?): Boolean = node == null || node.isNull || node.isMissingNode
+
+    // ── Map retrieval ────────────────────────────────────────────────────────
+
     @Test
     fun `GET maps returns 200`() {
-        mockMvc.perform(get("/api/sessions").header("Authorization", "Bearer $token"))
-            .andExpect(status().isOk)
+        assertEquals(200, get("/api/sessions").statusCode())
     }
 
     @Test
     fun `GET map by id returns 200`() {
-        mockMvc.perform(get("/api/sessions/$mapId").header("Authorization", "Bearer $token"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.id").value(mapId.toString()))
+        val response = get("/api/sessions/$mapId")
+        assertEquals(200, response.statusCode())
+        assertEquals(mapId.toString(), json(response)["id"].asText())
     }
 
     @Test
     fun `GET map with unknown id returns 404`() {
-        mockMvc.perform(get("/api/sessions/" + UUID.randomUUID()).header("Authorization", "Bearer $token"))
-            .andExpect(status().isNotFound)
+        assertEquals(404, get("/api/sessions/${UUID.randomUUID()}").statusCode())
     }
 
     @Test
     fun `GET export returns 200 for collaborators`() {
-        mockMvc.perform(get("/api/sessions/$mapId/export").header("Authorization", "Bearer $token"))
-            .andExpect(status().isOk)
-            .andExpect(header().string("Content-Disposition", "attachment; filename=\"session-$mapId.json\""))
-            .andExpect(jsonPath("$.id").value(mapId.toString()))
+        val response = get("/api/sessions/$mapId/export")
+        assertEquals(200, response.statusCode())
+        assertEquals(
+            "attachment; filename=\"session-$mapId.json\"",
+            response.headers().firstValue("Content-Disposition").orElse(null)
+        )
+        assertEquals(mapId.toString(), json(response)["id"].asText())
     }
 
     @Test
     fun `GET export returns 403 for viewers`() {
-        mockMvc.perform(get("/api/sessions/$mapId/export").header("Authorization", "Bearer $viewerToken"))
-            .andExpect(status().isForbidden)
+        assertEquals(403, get("/api/sessions/$mapId/export", bearer = viewerToken).statusCode())
     }
+
+    // ── Landmarks ──────────────────────────────────────────────────────────────
 
     @Test
     fun `POST landmark places landmark and returns 200`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Iron Keep", "type" to "KEEP")
-        val result = mockMvc.perform(
-            post("/api/sessions/$mapId/landmarks")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-            .andReturn()
+        val response = post("/api/sessions/$mapId/landmarks", body)
+        assertEquals(200, response.statusCode())
+
         val state = sessionStatePort.findById(mapId)!!
         val lm = state.landmarks.values.first { it.name == "Iron Keep" }
-        val key = lm.id.toString()
-        val tree = objectMapper.readTree(result.response.contentAsString)
-        assertEquals("Iron Keep", tree["landmarks"][key]["name"].asText())
+        assertEquals("Iron Keep", json(response)["landmarks"][lm.id.toString()]["name"].asText())
     }
 
     @Test
     fun `POST landmark with unknown type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Test", "type" to "DRAGON_LAIR")
-        mockMvc.perform(
-            post("/api/sessions/$mapId/landmarks")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isBadRequest)
+        assertEquals(400, post("/api/sessions/$mapId/landmarks", body).statusCode())
     }
 
     @Test
     fun `POST landmark with removed WELL type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Old Well", "type" to "WELL")
-        mockMvc.perform(
-            post("/api/sessions/$mapId/landmarks")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isBadRequest)
+        assertEquals(400, post("/api/sessions/$mapId/landmarks", body).statusCode())
     }
 
     @Test
     fun `POST landmark with DEPRECATED_WELL type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Old Well", "type" to "DEPRECATED_WELL")
-        mockMvc.perform(
-            post("/api/sessions/$mapId/landmarks")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isBadRequest)
+        assertEquals(400, post("/api/sessions/$mapId/landmarks", body).statusCode())
     }
 
     @Test
@@ -173,13 +192,7 @@ class SessionControllerTest {
             "groupId" to null,
             "link" to null,
         )
-
-        mockMvc.perform(
-            post("/api/sessions/$mapId/landmarks/unpositioned")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
+        assertEquals(200, post("/api/sessions/$mapId/landmarks/unpositioned", body).statusCode())
 
         val landmark = sessionStatePort.findById(mapId)!!.landmarks.values.first { it.name == "Floating Tower" }
         assertNull(landmark.coordinate)
@@ -200,13 +213,7 @@ class SessionControllerTest {
             "groupId" to groupId.toString(),
             "link" to "https://example.test/ops-buffer",
         )
-
-        mockMvc.perform(
-            post("/api/sessions/$mapId/landmarks/unpositioned")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
+        assertEquals(200, post("/api/sessions/$mapId/landmarks/unpositioned", body).statusCode())
 
         val landmark = sessionStatePort.findById(mapId)!!.landmarks.values.first { it.name == "Ops Buffer" }
         assertEquals(groupId, landmark.groupId)
@@ -215,355 +222,226 @@ class SessionControllerTest {
     }
 
     @Test
-    fun `PATCH tile changes elevation`() {
-        val body = mapOf("elevation" to 4, "terrain" to null)
-        mockMvc.perform(
-            patch("/api/sessions/$mapId/tiles/0/0")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-    }
-
-    @Test
-    fun `PATCH tile with unknown terrain returns 400`() {
-        val body = mapOf("elevation" to null, "terrain" to "LAVA")
-        mockMvc.perform(
-            patch("/api/sessions/$mapId/tiles/0/0")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isBadRequest)
-    }
-
-    @Test
-    fun `POST group creates group`() {
-        val body = mapOf("name" to "Alpha Team", "color" to "#ff0000")
-        mockMvc.perform(
-            post("/api/sessions/$mapId/groups")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-    }
-
-    @Test
-    fun `unauthenticated request returns 401 or 403`() {
-        val status = mockMvc.perform(get("/api/sessions"))
-            .andReturn().response.status
-        assertTrue(status == 401 || status == 403) { "Expected 401 or 403 but got $status" }
-    }
-
-    @Test
     fun `DELETE landmark removes it`() {
-        // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("my-tower".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "My Tower", coordinate = HexCoordinate(1, 0))
         sessionStatePort.save(state)
 
-        mockMvc.perform(
-            delete("/api/sessions/$mapId/landmarks/$lmId")
-                .header("Authorization", "Bearer $token")
-        ).andExpect(status().isOk)
+        assertEquals(200, delete("/api/sessions/$mapId/landmarks/$lmId").statusCode())
     }
+
+    // ── Tiles ──────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `PATCH tile changes elevation`() {
+        val body = mapOf("elevation" to 4, "terrain" to null)
+        assertEquals(200, patch("/api/sessions/$mapId/tiles/0/0", body).statusCode())
+    }
+
+    @Test
+    fun `PATCH tile with unknown terrain returns 400`() {
+        val body = mapOf("elevation" to null, "terrain" to "LAVA")
+        assertEquals(400, patch("/api/sessions/$mapId/tiles/0/0", body).statusCode())
+    }
+
+    // ── Groups ─────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `POST group creates group`() {
+        val body = mapOf("name" to "Alpha Team", "color" to "#ff0000")
+        assertEquals(200, post("/api/sessions/$mapId/groups", body).statusCode())
+    }
+
+    // ── Map editing ────────────────────────────────────────────────────────────
 
     @Test
     fun `PATCH map sets name and description`() {
         val body = mapOf("name" to "My Campaign", "description" to "A great adventure")
-        mockMvc.perform(
-            patch("/api/sessions/$mapId")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.name").value("My Campaign"))
-            .andExpect(jsonPath("$.description").value("A great adventure"))
+        val response = patch("/api/sessions/$mapId", body)
+        assertEquals(200, response.statusCode())
+        val tree = json(response)
+        assertEquals("My Campaign", tree["name"].asText())
+        assertEquals("A great adventure", tree["description"].asText())
     }
 
     @Test
     fun `PATCH map with null description clears it`() {
-        // Set initial values
         sessionStatePort.save(
             sessionStatePort.findById(mapId)!!.copy(name = "Old Name", description = "Old Desc")
         )
         val body = mapOf("name" to "New Name", "description" to null)
-        mockMvc.perform(
-            patch("/api/sessions/$mapId")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.name").value("New Name"))
-            .andExpect(jsonPath("$.description").doesNotExist())
+        val response = patch("/api/sessions/$mapId", body)
+        assertEquals(200, response.statusCode())
+        val tree = json(response)
+        assertEquals("New Name", tree["name"].asText())
+        assertTrue(isNullOrMissing(tree["description"]))
     }
 
     @Test
     fun `PATCH map with blank name stores null`() {
         val body = mapOf("name" to "   ", "description" to null)
-        mockMvc.perform(
-            patch("/api/sessions/$mapId")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.name").doesNotExist())
+        val response = patch("/api/sessions/$mapId", body)
+        assertEquals(200, response.statusCode())
+        assertTrue(isNullOrMissing(json(response)["name"]))
     }
 
-    @Test
-    fun `PATCH map unauthenticated returns 401 or 403`() {
-        val body = mapOf("name" to "Hacked", "description" to null)
-        val status = mockMvc.perform(
-            patch("/api/sessions/$mapId")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andReturn().response.status
-        assertTrue(status == 401 || status == 403) { "Expected 401 or 403 but got $status" }
-    }
-
-    // ── Quality Metrics ────────────────────────────────────────────────────────
+    // ── Quality metrics ────────────────────────────────────────────────────────
 
     @Test
     fun `POST metric creates metric and returns 200`() {
         val body = mapOf("name" to "Availability", "description" to "Uptime percentage")
-        mockMvc.perform(
-            post("/api/sessions/$mapId/metrics")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-            .andExpect(jsonPath("$.metrics").isNotEmpty)
+        val response = post("/api/sessions/$mapId/metrics", body)
+        assertEquals(200, response.statusCode())
+        assertTrue(json(response)["metrics"].size() > 0)
     }
 
     @Test
     fun `PATCH metric updates name`() {
-        // create
         val createBody = mapOf("name" to "Latency", "description" to "Response time")
-        val createResult = mockMvc.perform(
-            post("/api/sessions/$mapId/metrics")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createBody))
-        ).andExpect(status().isOk).andReturn()
-        val tree = objectMapper.readTree(createResult.response.contentAsString)
-        val metricId = tree["metrics"].fieldNames().next()
+        val createResponse = post("/api/sessions/$mapId/metrics", createBody)
+        assertEquals(200, createResponse.statusCode())
+        val metricId = json(createResponse)["metrics"].fieldNames().next()
 
         val editBody = mapOf("name" to "P99 Latency", "description" to null)
-        mockMvc.perform(
-            patch("/api/sessions/$mapId/metrics/$metricId")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(editBody))
-        ).andExpect(status().isOk)
+        assertEquals(200, patch("/api/sessions/$mapId/metrics/$metricId", editBody).statusCode())
     }
 
     @Test
     fun `DELETE metric removes it`() {
-        // create
         val createBody = mapOf("name" to "Error Rate", "description" to "Errors per second")
-        val createResult = mockMvc.perform(
-            post("/api/sessions/$mapId/metrics")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createBody))
-        ).andExpect(status().isOk).andReturn()
-        val tree = objectMapper.readTree(createResult.response.contentAsString)
-        val metricId = tree["metrics"].fieldNames().next()
+        val createResponse = post("/api/sessions/$mapId/metrics", createBody)
+        assertEquals(200, createResponse.statusCode())
+        val metricId = json(createResponse)["metrics"].fieldNames().next()
 
-        mockMvc.perform(
-            delete("/api/sessions/$mapId/metrics/$metricId")
-                .header("Authorization", "Bearer $token")
-        ).andExpect(status().isOk)
-            .andExpect(jsonPath("$.metrics").isEmpty)
+        val response = delete("/api/sessions/$mapId/metrics/$metricId")
+        assertEquals(200, response.statusCode())
+        assertEquals(0, json(response)["metrics"].size())
     }
 
     @Test
     fun `PUT landmark metric sets entry and returns 200`() {
-        // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("guard-tower".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Guard Tower", coordinate = HexCoordinate(0, 0))
         sessionStatePort.save(state)
 
-        // create metric
         val metricBody = mapOf("name" to "Availability", "description" to "Uptime")
-        val metricResult = mockMvc.perform(
-            post("/api/sessions/$mapId/metrics")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(metricBody))
-        ).andExpect(status().isOk).andReturn()
-        val metricId = objectMapper.readTree(metricResult.response.contentAsString)["metrics"].fieldNames().next()
+        val metricResponse = post("/api/sessions/$mapId/metrics", metricBody)
+        assertEquals(200, metricResponse.statusCode())
+        val metricId = json(metricResponse)["metrics"].fieldNames().next()
 
-        // set landmark metric
         val entryBody = mapOf("value" to null, "level" to "NONE", "link" to "https://example.com/report", "linkText" to "Report")
-        mockMvc.perform(
-            put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(entryBody))
-        ).andExpect(status().isOk)
-            .andExpect(jsonPath("$.landmarks.$lmId.metrics.$metricId.link").value("https://example.com/report"))
-            .andExpect(jsonPath("$.landmarks.$lmId.metrics.$metricId.linkText").value("Report"))
+        val response = put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", entryBody)
+        assertEquals(200, response.statusCode())
+        val entry = json(response)["landmarks"][lmId.toString()]["metrics"][metricId]
+        assertEquals("https://example.com/report", entry["link"].asText())
+        assertEquals("Report", entry["linkText"].asText())
     }
 
     @Test
     fun `PUT landmark metric with unknown level returns 400`() {
-        // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("beacon".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Beacon", coordinate = HexCoordinate(1, 1))
         sessionStatePort.save(state)
 
         val metricBody = mapOf("name" to "SLA", "description" to "Service level")
-        val metricResult = mockMvc.perform(
-            post("/api/sessions/$mapId/metrics")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(metricBody))
-        ).andReturn()
-        val metricId = objectMapper.readTree(metricResult.response.contentAsString)["metrics"].fieldNames().next()
+        val metricResponse = post("/api/sessions/$mapId/metrics", metricBody)
+        val metricId = json(metricResponse)["metrics"].fieldNames().next()
 
         val entryBody = mapOf("value" to "99 %", "level" to "CRITICAL")
-        mockMvc.perform(
-            put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(entryBody))
-        ).andExpect(status().isBadRequest)
+        assertEquals(400, put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", entryBody).statusCode())
     }
 
     @Test
     fun `DELETE landmark metric clears entry`() {
-        // Insert landmark directly into the store with a known UUID
         val lmId = UUID.nameUUIDFromBytes("scout-post".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Scout Post", coordinate = HexCoordinate(0, 1))
         sessionStatePort.save(state)
 
-        // create + assign metric
         val metricBody = mapOf("name" to "Health", "description" to "Health check")
-        val metricResult = mockMvc.perform(
-            post("/api/sessions/$mapId/metrics")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(metricBody))
-        ).andReturn()
-        val metricId = objectMapper.readTree(metricResult.response.contentAsString)["metrics"].fieldNames().next()
+        val metricResponse = post("/api/sessions/$mapId/metrics", metricBody)
+        val metricId = json(metricResponse)["metrics"].fieldNames().next()
 
-        mockMvc.perform(
-            put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(mapOf("value" to "ok", "level" to "OK")))
-        ).andExpect(status().isOk)
-
-        // clear
-        mockMvc.perform(
-            delete("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId")
-                .header("Authorization", "Bearer $token")
-        ).andExpect(status().isOk)
+        assertEquals(200, put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", mapOf("value" to "ok", "level" to "OK")).statusCode())
+        assertEquals(200, delete("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId").statusCode())
     }
 
-    // ── POST /api/sessions – mapType and mapSize ──────────────────────────────────
+    // ── POST /api/sessions – mapType and mapSize ───────────────────────────────
 
     @Test
     fun `POST maps with no body creates LAND MEDIUM map`() {
-        val result = mockMvc.perform(
-            post("/api/sessions")
-                .header("Authorization", "Bearer $token")
-        ).andExpect(status().isOk)
-            .andReturn()
-        val tiles = objectMapper.readTree(result.response.contentAsString)["map"]["tiles"]
+        val response = post("/api/sessions")
+        assertEquals(200, response.statusCode())
+        val tiles = json(response)["map"]["tiles"]
         assertEquals(2500, tiles.size())
     }
 
     @Test
     fun `POST maps with BLANK type creates all-grass map`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "SMALL")
-        val result = mockMvc.perform(
-            post("/api/sessions")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-            .andReturn()
-        val tiles = objectMapper.readTree(result.response.contentAsString)["map"]["tiles"]
+        val response = post("/api/sessions", body)
+        assertEquals(200, response.statusCode())
+        val tiles = json(response)["map"]["tiles"]
         assertEquals(625, tiles.size())
-        tiles.forEach { tile ->
-            assertEquals("GRASS", tile["terrain"].asText())
-        }
+        tiles.forEach { tile -> assertEquals("GRASS", tile["terrain"].asText()) }
     }
 
     @Test
     fun `POST maps with SMALL size creates 625-tile map`() {
         val body = mapOf("mapType" to "LAND", "mapSize" to "SMALL")
-        val result = mockMvc.perform(
-            post("/api/sessions")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-            .andReturn()
-        val tiles = objectMapper.readTree(result.response.contentAsString)["map"]["tiles"]
-        assertEquals(625, tiles.size())
+        val response = post("/api/sessions", body)
+        assertEquals(200, response.statusCode())
+        assertEquals(625, json(response)["map"]["tiles"].size())
     }
 
     @Test
     fun `POST maps with MEDIUM size creates 2500-tile map`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "MEDIUM")
-        val result = mockMvc.perform(
-            post("/api/sessions")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-            .andReturn()
-        val tiles = objectMapper.readTree(result.response.contentAsString)["map"]["tiles"]
-        assertEquals(2500, tiles.size())
+        val response = post("/api/sessions", body)
+        assertEquals(200, response.statusCode())
+        assertEquals(2500, json(response)["map"]["tiles"].size())
     }
 
     @Test
     fun `POST maps with LARGE size creates 6400-tile map`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "LARGE")
-        val result = mockMvc.perform(
-            post("/api/sessions")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-            .andReturn()
-        val tiles = objectMapper.readTree(result.response.contentAsString)["map"]["tiles"]
-        assertEquals(6400, tiles.size())
+        val response = post("/api/sessions", body)
+        assertEquals(200, response.statusCode())
+        assertEquals(6400, json(response)["map"]["tiles"].size())
     }
 
     @Test
     fun `POST maps with SEA type creates mostly-water map`() {
         val body = mapOf("mapType" to "SEA", "mapSize" to "SMALL")
-        val result = mockMvc.perform(
-            post("/api/sessions")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andExpect(status().isOk)
-            .andReturn()
-        val tiles = objectMapper.readTree(result.response.contentAsString)["map"]["tiles"]
+        val response = post("/api/sessions", body)
+        assertEquals(200, response.statusCode())
+        val tiles = json(response)["map"]["tiles"]
         val waterCount = tiles.count { it["terrain"].asText() == "WATER" }
         assertTrue(waterCount > tiles.size() / 2, "Sea map should be mostly water")
+    }
+
+    // ── Unauthenticated access ─────────────────────────────────────────────────
+
+    @Test
+    fun `unauthenticated request returns 401 or 403`() {
+        val status = get("/api/sessions", bearer = null).statusCode()
+        assertTrue(status == 401 || status == 403) { "Expected 401 or 403 but got $status" }
+    }
+
+    @Test
+    fun `PATCH map unauthenticated returns 401 or 403`() {
+        val body = mapOf("name" to "Hacked", "description" to null)
+        val status = patch("/api/sessions/$mapId", body, bearer = null).statusCode()
+        assertTrue(status == 401 || status == 403) { "Expected 401 or 403 but got $status" }
     }
 
     @Test
     fun `POST maps unauthenticated returns 401 or 403`() {
         val body = mapOf("mapType" to "BLANK", "mapSize" to "SMALL")
-        val status = mockMvc.perform(
-            post("/api/sessions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(body))
-        ).andReturn().response.status
+        val status = post("/api/sessions", body, bearer = null).statusCode()
         assertTrue(status == 401 || status == 403)
     }
 }
-

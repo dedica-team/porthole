@@ -3,7 +3,7 @@ import { Outlet, useParams, useMatch } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import { fetchProcesses } from '@/api/mapApi';
-import { useMapStore, useAuthStore } from '@/store/mapStore';
+import { useMapStore } from '@/store/mapStore';
 import { useSessionWebSocket } from '@/hooks/useSessionWebSocket';
 import AppShell from '@/components/AppShell/AppShell';
 import Sidebar from '@/components/Sidebar/Sidebar';
@@ -19,18 +19,14 @@ export default function MapPage() {
   const {
     currentMap,
     pendingView,
-    processes, setProcesses, setProcessesFetched, setProcessesLoading,
+    processes, setProcesses, setProcessesFetched,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     pendingView: s.pendingView,
     processes: s.processes,
     setProcesses: s.setProcesses,
     setProcessesFetched: s.setProcessesFetched,
-    setProcessesLoading: s.setProcessesLoading,
   })));
-
-  const userId = useAuthStore((s) => s.userId);
-  const isCollaborator = !!(currentMap && userId && currentMap.collaborators.some((c) => c.id === userId));
 
   // All shared CRUD handlers + actionLoading/error state
   const actions = useMapPageActions();
@@ -38,17 +34,6 @@ export default function MapPage() {
 
   // WS hook: connects, subscribes to all topics and seeds all store slices on connect
   useSessionWebSocket(id);
-
-  // ── Viewer: eagerly fetch processes so arrows are visible ─────────────────
-  useEffect(() => {
-    if (!currentMap || isCollaborator) return;
-    setProcessesLoading(true);
-    fetchProcesses(currentMap.id)
-      .then((data) => { setProcesses(data); setProcessesFetched(true); })
-      .catch(() => { /* arrows simply won't show */ })
-      .finally(() => setProcessesLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMap?.id, isCollaborator]);
 
   // ── Cascade refetch when a connection is removed ──────────────────────────
   const prevConnectionKeysRef = useRef<Set<string>>(new Set());

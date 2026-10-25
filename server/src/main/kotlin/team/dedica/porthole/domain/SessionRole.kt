@@ -1,7 +1,5 @@
 package team.dedica.porthole.domain
 
-import org.springframework.security.access.AccessDeniedException
-
 enum class SessionRole {
     VIEWER,           // no relationship to the map
     REQUEST_PENDING,  // has a pending join request

@@ -3,16 +3,15 @@ package team.dedica.porthole.adapter.`in`.web.security
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.config.PortholeAuthProperties
 import java.nio.charset.StandardCharsets
-import java.util.Date
-import java.util.UUID
+import java.util.*
 import javax.crypto.SecretKey
 
 data class AuthTokenClaims(val userId: UUID, val username: String)
 
-@Component
+@Singleton
 class JwtTokenProvider(props: PortholeAuthProperties) {
 
 

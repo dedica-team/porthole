@@ -1,63 +1,71 @@
 package team.dedica.porthole.config
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.bind.DefaultValue
+import io.micronaut.context.annotation.ConfigurationProperties
+import io.micronaut.core.annotation.Introspected
 
-@ConfigurationProperties(prefix = "porthole.auth")
-class PortholeAuthProperties(
-    var cookie: Cookie = Cookie(),
-    var jwt: Jwt,
-    @DefaultValue("http://localhost:5173,http://localhost:8080")
-    var allowedOrigins: String = "http://localhost:5173,http://localhost:8080",
-    var github: GitHub = GitHub(),
-    var keycloak: Keycloak = Keycloak(),
-    var webauthn: WebAuthn = WebAuthn(),
-    @DefaultValue("for teams") var tagline: String = "for teams",
-) {
-    class Cookie(
-        @DefaultValue("porthole_auth") var cookieName: String = "porthole_auth",
-        @DefaultValue("/") var cookiePath: String = "/",
-        @DefaultValue("Lax") var cookieSameSite: String = "Lax",
-        @DefaultValue("false") var cookieSecure: Boolean = false,
-    )
+@ConfigurationProperties("porthole.auth")
+@Introspected
+class PortholeAuthProperties {
+    var cookie: Cookie = Cookie()
+    var jwt: Jwt = Jwt()
+    var allowedOrigins: String = "http://localhost:5173,http://localhost:8080"
+    var github: GitHub = GitHub()
+    var keycloak: Keycloak = Keycloak()
+    var webauthn: WebAuthn = WebAuthn()
+    var tagline: String = "for teams"
 
-    class Jwt(
-        var secret: String,
-        @DefaultValue("86400000") var expirationMs: Long = 86_400_000L,
-        @DefaultValue("porthole") var issuer: String = "porthole",
-        @DefaultValue("porthole-api") var audience: String = "porthole-api",
-    ) {
+    @Introspected
+    @ConfigurationProperties("cookie")
+    class Cookie {
+        var cookieName: String = "porthole_auth"
+        var cookiePath: String = "/"
+        var cookieSameSite: String = "Lax"
+        var cookieSecure: Boolean = false
+    }
+
+    @Introspected
+    @ConfigurationProperties("jwt")
+    class Jwt {
+        var secret: String = INSECURE_DEFAULT
+        var expirationMs: Long = 86_400_000L
+        var issuer: String = "porthole"
+        var audience: String = "porthole-api"
+
+        fun isUsingDefaultSecret(): Boolean = secret.trim() == INSECURE_DEFAULT
+
         companion object {
             const val INSECURE_DEFAULT = "change-me-in-production-this-is-not-a-real-secret!!"
         }
-
-        fun isUsingDefaultSecret(): Boolean = secret.trim() == INSECURE_DEFAULT
     }
 
-    class GitHub(
-        @DefaultValue("") var clientId: String = "",
-        @DefaultValue("") var clientSecret: String = "",
-        @DefaultValue("http://localhost:5173/auth/github/callback")
-        var redirectUri: String = "http://localhost:5173/auth/github/callback",
-    ) {
+    @Introspected
+    @ConfigurationProperties("github")
+    class GitHub {
+        var clientId: String = ""
+        var clientSecret: String = ""
+        var redirectUri: String = "http://localhost:5173/auth/github/callback"
+
         fun isEnabled(): Boolean = clientId.isNotBlank() && clientSecret.isNotBlank()
     }
 
-    class Keycloak(
-        @DefaultValue("") var clientId: String = "",
-        @DefaultValue("") var clientSecret: String = "",
-        @DefaultValue("") var issuerUri: String = "",
-        @DefaultValue("http://localhost:5173/auth/keycloak/callback")
-        var redirectUri: String = "http://localhost:5173/auth/keycloak/callback",
-    ) {
+    @Introspected
+    @ConfigurationProperties("keycloak")
+    class Keycloak {
+        var clientId: String = ""
+        var clientSecret: String = ""
+        var issuerUri: String = ""
+        var redirectUri: String = "http://localhost:5173/auth/keycloak/callback"
+
         fun isEnabled(): Boolean = clientId.isNotBlank() && issuerUri.isNotBlank()
     }
 
-    class WebAuthn(
-        @DefaultValue("") var rpId: String = "",
-        @DefaultValue("porthole") var rpName: String = "porthole",
-        @DefaultValue("http://localhost:5173") var origin: String = "http://localhost:5173",
-    ) {
+    @Introspected
+    @ConfigurationProperties("webauthn")
+    class WebAuthn {
+        var rpId: String = ""
+        var rpName: String = "porthole"
+        var origin: String = "http://localhost:5173"
+
         fun isEnabled(): Boolean = rpId.isNotEmpty() && rpName.isNotBlank()
     }
 }

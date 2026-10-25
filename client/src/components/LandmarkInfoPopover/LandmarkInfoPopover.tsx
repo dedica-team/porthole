@@ -109,7 +109,9 @@ export default function LandmarkInfoPopover({
   const lmWorstLevel = worstLevel(Object.values(landmarkMetricEntries));
   const matrixEntriesForLandmark: { collaborator: (typeof currentMap.collaborators)[0]; level: MatrixLevel }[] =
     collaboratorMatrix
-      ? currentMap.collaborators
+      ? (collaboratorMatrix.collaborators ?? [])
+          .map((id) => currentMap.collaborators.find((c) => c.id === id))
+          .filter((c): c is (typeof currentMap.collaborators)[0] => c != null)
           .map((c) => ({
             collaborator: c,
             level: (collaboratorMatrix.entries[landmark.id]?.[c.id]?.level ?? 'NONE') as MatrixLevel,
@@ -252,7 +254,7 @@ export default function LandmarkInfoPopover({
 
           {isCollaborator && (
             <div className="pt-1 content-right flex justify-end">
-              <Button variant="ghost" title="Edit Landmark" onClick={startEdit}>
+              <Button variant="ghost" title="Edit Element" onClick={startEdit}>
                 <Pencil className="h-3 w-3" />
                 Edit
               </Button>
@@ -415,7 +417,7 @@ export default function LandmarkInfoPopover({
       </Popup>
 
       {/* ── Landmark edit popup ──────────────────────────────────────────── */}
-      <Popup title="Edit Landmark" open={editOpen} onOpenChange={setEditOpen} className="max-w-md">
+      <Popup title="Edit Element" open={editOpen} onOpenChange={setEditOpen} className="max-w-md">
         <form onSubmit={handleSave} className="flex flex-col gap-2.5">
           <Input
             autoFocus

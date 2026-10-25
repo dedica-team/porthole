@@ -1,31 +1,135 @@
-server:
-  port: 8080
-
-management:
+micronaut:
   server:
-    port: 8081
+    port: 8080
+    cors:
+      enabled: true
+      configurations:
+        default:
+          allowed-origins: ${PORTHOLE_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
+          allowed-methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+            - OPTIONS
+          allow-credentials: true
+  router:
+    static-resources:
+      default:
+        paths: classpath:static
+        mapping: /**
   security:
-    enabled: false
-  endpoints:
-    web:
-      exposure:
-        include: health
-  endpoint:
-    health:
-      probes:
-        enabled: true
-      show-details: always
-
-spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientWebMvcSecurityConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
-  security:
+    # Static assets / SPA routes and public API must resolve to 404/200, not 401.
+    reject-not-found: false
+    # First matching pattern wins, so public rules must come before "/**".
+    intercept-url-map:
+      - pattern: /actuator/**
+        access:
+          - isAnonymous()
+      - pattern: /health
+        access:
+          - isAnonymous()
+      - pattern: /api/auth/**
+        access:
+          - isAnonymous()
+      - pattern: /oauth2/**
+        access:
+          - isAnonymous()
+      - pattern: /login/oauth2/**
+        access:
+          - isAnonymous()
+      - pattern: /
+        access:
+          - isAnonymous()
+      - pattern: /index.html
+        access:
+          - isAnonymous()
+      - pattern: /favicon.ico
+        access:
+          - isAnonymous()
+      - pattern: /assets/**
+        access:
+          - isAnonymous()
+      - pattern: /fonts/**
+        access:
+          - isAnonymous()
+      - pattern: '/*.js'
+        access:
+          - isAnonymous()
+      - pattern: '/*.css'
+        access:
+          - isAnonymous()
+      - pattern: '/*.svg'
+        access:
+          - isAnonymous()
+      - pattern: '/*.ico'
+        access:
+          - isAnonymous()
+      - pattern: '/*.png'
+        access:
+          - isAnonymous()
+      - pattern: '/*.webmanifest'
+        access:
+          - isAnonymous()
+      - pattern: '/*.map'
+        access:
+          - isAnonymous()
+      - pattern: '/*.woff'
+        access:
+          - isAnonymous()
+      - pattern: '/*.woff2'
+        access:
+          - isAnonymous()
+      - pattern: /auth/**
+        access:
+          - isAnonymous()
+      - pattern: /lobby
+        access:
+          - isAnonymous()
+      - pattern: /lobby/**
+        access:
+          - isAnonymous()
+      - pattern: /map/**
+        access:
+          - isAnonymous()
+      - pattern: /**
+        access:
+          - isAuthenticated()
     oauth2:
-      client:
-        registration: {}
+      # Preserve the Spring OAuth2 URLs the client relies on.
+      login-uri: /oauth2/authorization{/provider}
+      callback-uri: /login/oauth2/code{/provider}
+      clients:
+        keycloak:
+          client-id: ${PORTHOLE_KEYCLOAK_CLIENT_ID:}
+          client-secret: ${PORTHOLE_KEYCLOAK_CLIENT_SECRET:}
+          openid:
+            issuer: ${PORTHOLE_KEYCLOAK_ISSUER_URI:}
+    token:
+      jwt:
+        # The OAuth2 OpenID response handler in micronaut-security-oauth2 is
+        # @Requires(configuration = "io.micronaut.security.token.jwt"), so this prefix must
+        # be present for the Keycloak authorization-code callback to be wired up. Porthole
+        # authenticates requests with its own cookie JWT (see JwtAuthenticationFetcher), so
+        # Micronaut's own JWT machinery is deliberately kept disabled.
+        enabled: false
+
+jackson:
+  # Use reflection + jackson-module-kotlin for (de)serialization so Kotlin
+  # default parameter values are honored; @Introspected is still used for validation.
+  bean-introspection-module: false
+  # Spring's default is to serialise empty collections/maps too; keep that contract.
+  serialization-inclusion: ALWAYS
+
+endpoints:
+  # Match Spring's management exposure: health only.
+  all:
+    enabled: false
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: ANONYMOUS
 
 porthole:
   auth:
@@ -62,4 +166,3 @@ porthole:
     debounce-ms: 5000
   admin:
     user-ids: ${PORTHOLE_ADMIN_USER_IDS:}
-

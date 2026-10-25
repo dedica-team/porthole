@@ -1,12 +1,12 @@
 package team.dedica.porthole.application.session.metrics
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.domain.CollaboratorMatrix
 import team.dedica.porthole.domain.SessionRole
 import java.util.UUID
 
-@Component
+@Singleton
 class GetCollaboratorMatrixUseCase(
     private val authorizationPort: AuthorizationPort,
 ) {

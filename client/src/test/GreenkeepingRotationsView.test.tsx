@@ -89,16 +89,15 @@ describe('GreenkeepingRotationsView', () => {
     });
   });
 
-  it('renders the rotation overview as cards for collaborators', () => {
+  it('renders the rotation overview as cards for collaborators with only current greenkeeper', () => {
     render(<GreenkeepingRotationsView />);
 
     expect(screen.getByText('Weekly Core Duty')).toBeInTheDocument();
     expect(screen.getByText('Shared care of the core systems')).toBeInTheDocument();
     expect(screen.getByText('https://example.com/weekly-core-duty')).toBeInTheDocument();
     expect(screen.getAllByText('alice').length).toBeGreaterThan(0);
-    expect(screen.getByText('bob')).toBeInTheDocument();
+    expect(screen.queryByText('bob')).not.toBeInTheDocument();
     expect(screen.getAllByTitle('alice').length).toBeGreaterThan(0);
-    expect(screen.getByTitle('bob')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^rotation$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /advance rotation weekly core duty/i })).toBeInTheDocument();
   });
@@ -143,6 +142,50 @@ describe('GreenkeepingRotationsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
 
     expect(screen.getByRole('button', { name: /confirm delete/i })).toBeInTheDocument();
+  });
+
+  it('renders table headers including Rotation, Greenkeeper, and Checklist', () => {
+    render(<GreenkeepingRotationsView />);
+
+    expect(screen.getByRole('columnheader', { name: /^rotation$/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^greenkeeper$/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^checklist$/i })).toBeInTheDocument();
+  });
+
+  it('renders Create checklist button in the third column when no active checklist exists', () => {
+    render(<GreenkeepingRotationsView />);
+
+    expect(screen.getByRole('button', { name: /open checklist for weekly core duty/i })).toHaveTextContent('Create checklist');
+  });
+
+  it('renders active checklist with title and progress in the third column when active checklist exists', () => {
+    useMapStore.setState({
+      greenkeepingRotations: [{
+        ...baseRotation,
+        currentChecklist: {
+          id: 'chk-1',
+          title: '2026-10-21 Checklist',
+          createdAt: new Date().toISOString(),
+          items: [
+            { id: 'item-1', title: 'Task 1', done: true },
+            { id: 'item-2', title: 'Task 2', done: false },
+          ],
+        },
+      }],
+    });
+
+    render(<GreenkeepingRotationsView />);
+
+    expect(screen.getByText('2026-10-21 Checklist')).toBeInTheDocument();
+    expect(screen.getByText('1/2 done')).toBeInTheDocument();
+  });
+
+  it('opens the checklist dialog when Checklist button is clicked', async () => {
+    render(<GreenkeepingRotationsView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open checklist for weekly core duty/i }));
+
+    expect(await screen.findByText('Weekly Core Duty – Checklist')).toBeInTheDocument();
   });
 
   it('advances the active collaborator and updates the overview', async () => {

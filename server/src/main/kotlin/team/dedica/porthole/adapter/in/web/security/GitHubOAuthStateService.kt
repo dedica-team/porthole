@@ -1,11 +1,11 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
-import org.springframework.stereotype.Service
+import jakarta.inject.Singleton
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.util.Base64
+import java.util.*
 
-@Service
+@Singleton
 class GitHubOAuthStateService {
     private val secureRandom = SecureRandom()
 

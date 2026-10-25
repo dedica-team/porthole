@@ -1,15 +1,16 @@
 package team.dedica.porthole.application.lobby
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
+import team.dedica.porthole.domain.AccessDeniedException
 import team.dedica.porthole.domain.CollaborationMode
 import team.dedica.porthole.domain.SessionRole
 import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
-@Component
+@Singleton
 class GetMapUseCase(
     private val sessionStatePort: SessionStatePort,
     private val userPort: UserPort,
@@ -21,7 +22,7 @@ class GetMapUseCase(
 
         // Private map visibility check
         if (state.collaborationMode == CollaborationMode.PRIVATE) {
-            if (callerId == null) throw org.springframework.security.access.AccessDeniedException("Authentication required")
+            if (callerId == null) throw AccessDeniedException("Authentication required")
             authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         }
 

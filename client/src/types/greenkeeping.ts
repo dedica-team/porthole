@@ -4,6 +4,47 @@ export interface GreenkeepingRotationCollaborator {
   done: boolean;
 }
 
+export interface GreenkeepingTaskTemplateItem {
+  id: string;
+  title: string;
+}
+
+export interface GreenkeepingChecklistItem {
+  id: string;
+  title: string;
+  done: boolean;
+  note?: string | null;
+}
+
+export interface GreenkeepingChecklist {
+  id: string;
+  title: string;
+  createdAt: string;
+  createdBy?: string | null;
+  finishedAt?: string | null;
+  finishedBy?: string | null;
+  items: GreenkeepingChecklistItem[];
+}
+
+export interface GreenkeepingTaskItem {
+  id: string;
+  title: string;
+  done: boolean;
+  note?: string;
+}
+
+export interface GreenkeepingTasklistExport {
+  rotationId: string;
+  rotationName: string;
+  title: string;
+  createdAt: string;
+  tasks: Array<{
+    done: boolean;
+    title: string;
+    note?: string;
+  }>;
+}
+
 export interface GreenkeepingRotation {
   id: string;
   name: string;
@@ -11,6 +52,9 @@ export interface GreenkeepingRotation {
   link?: string;
   groupIds: string[];
   collaborators: GreenkeepingRotationCollaborator[];
+  taskTemplates?: GreenkeepingTaskTemplateItem[];
+  currentChecklist?: GreenkeepingChecklist | null;
+  completedChecklists?: GreenkeepingChecklist[];
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -27,6 +71,10 @@ export interface CreateGreenkeepingRotationPayload {
   link?: string;
   groupIds: string[];
   collaborators: GreenkeepingRotationCollaboratorPatch[];
+  taskTemplates?: Array<{
+    id?: string;
+    title: string;
+  }>;
 }
 
 export interface EditGreenkeepingRotationPayload {
@@ -37,6 +85,20 @@ export interface EditGreenkeepingRotationPayload {
   clearLink?: boolean;
   groupIds?: string[];
   collaborators?: GreenkeepingRotationCollaboratorPatch[];
+  taskTemplates?: Array<{
+    id?: string;
+    title: string;
+  }>;
+}
+
+export interface UpdateGreenkeepingChecklistPayload {
+  title?: string;
+  items?: Array<{
+    id?: string;
+    title: string;
+    done: boolean;
+    note?: string | null;
+  }>;
 }
 
 export function getActiveGreenkeepingEntry(rotation: GreenkeepingRotation): GreenkeepingRotationCollaborator | null {

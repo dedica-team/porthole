@@ -43,6 +43,7 @@ export default function CreateEditGreenkeepingRotationDialog({
     const [link, setLink] = useState('');
     const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(new Set());
     const [collaboratorRows, setCollaboratorRows] = useState<GreenkeepingRotationCollaboratorPatch[]>([]);
+    const [templateTaskRows, setTemplateTaskRows] = useState<Array<{ id?: string; title: string }>>([]);
     const [saving, setSaving] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState('');
@@ -57,6 +58,10 @@ export default function CreateEditGreenkeepingRotationDialog({
             id: entry.id,
             collaboratorId: entry.collaboratorId,
             done: entry.done,
+        })) ?? []);
+        setTemplateTaskRows(rotation?.taskTemplates?.map((task) => ({
+            id: task.id,
+            title: task.title,
         })) ?? []);
         setConfirmDelete(false);
         setError('');
@@ -101,12 +106,38 @@ export default function CreateEditGreenkeepingRotationDialog({
         });
     };
 
+    const updateTemplateTask = (index: number, title: string) => {
+        setTemplateTaskRows((rows) => rows.map((row, rIdx) => {
+            if (rIdx !== index) return row;
+            return { ...row, title };
+        }));
+    };
+
+    const moveTemplateTask = (index: number, direction: -1 | 1) => {
+        setTemplateTaskRows((rows) => {
+            const target = index + direction;
+            if (target < 0 || target >= rows.length) return rows;
+            const next = [...rows];
+            [next[index], next[target]] = [next[target], next[index]];
+            return next;
+        });
+    };
+
     const handleSave = async () => {
         const trimmedName = name.trim();
         const trimmedDescription = description.trim();
         const trimmedLink = link.trim();
         const normalizedRows = collaboratorRows.filter((row) => row.collaboratorId);
         const collaboratorIds = normalizedRows.map((row) => row.collaboratorId);
+
+        const populatedTemplateRows = templateTaskRows
+            .map((r) => ({ id: r.id, title: r.title.trim() }))
+            .filter((r) => r.title.length > 0);
+
+        const normalizedTemplates = populatedTemplateRows.map((r) => ({
+            id: r.id,
+            title: r.title,
+        }));
 
         if (!trimmedName) {
             setError('Name must not be blank.');
@@ -141,6 +172,7 @@ export default function CreateEditGreenkeepingRotationDialog({
                     clearLink: !trimmedLink,
                     groupIds: [...selectedGroupIds],
                     collaborators: normalizedRows,
+                    taskTemplates: normalizedTemplates,
                 })
                 : await createGreenkeepingRotation(currentMap.id, {
                     name: trimmedName,
@@ -148,6 +180,7 @@ export default function CreateEditGreenkeepingRotationDialog({
                     link: trimmedLink || undefined,
                     groupIds: [...selectedGroupIds],
                     collaborators: normalizedRows,
+                    taskTemplates: normalizedTemplates,
                 });
             onSaved(rotations);
             onOpenChange(false);
@@ -215,7 +248,7 @@ export default function CreateEditGreenkeepingRotationDialog({
                                         type="checkbox"
                                         checked={selectedGroupIds.has(group.id)}
                                         onChange={() => toggleGroup(group.id)}
-                                        className="accent-[hsl(var(--primary))]"
+                                        className="accent-primary"
                                     />
                                     <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
                                           style={{backgroundColor: group.color}}/>
@@ -227,7 +260,7 @@ export default function CreateEditGreenkeepingRotationDialog({
 
                     <div className="flex flex-col gap-1.5">
                         <div className="flex items-center justify-between gap-2">
-                            <Label className="text-sm">Collaborators</Label>
+                            <Label className="text-sm">Assignees</Label>
                             <Button
                                 type="button"
                                 size="sm"
@@ -238,7 +271,7 @@ export default function CreateEditGreenkeepingRotationDialog({
                                 Add
                             </Button>
                         </div>
-                        <div className="flex flex-col gap-2 rounded-md border border-input bg-background p-2">
+                        <div className="flex flex-col gap-2 rounded-md border border-input bg-background p-2 max-h-40 overflow-y-auto">
                             {collaboratorRows.length === 0 ? (
                                 <p className="text-sm text-muted-foreground px-1">No collaborators added yet.</p>
                             ) : collaboratorRows.map((row, index) => {
@@ -283,6 +316,67 @@ export default function CreateEditGreenkeepingRotationDialog({
                                     </div>
                                 );
                             })}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                            <Label className="text-sm">Recurring Tasks</Label>
+                            <Button
+                                type="button"
+                                size="sm"
+                                className="h-7 px-2 text-sm gap-1"
+                                onClick={() => setTemplateTaskRows((rows) => [...rows, {title: ''}])}
+                                aria-label="Add task"
+                            >
+                                <Plus className="h-3 w-3"/>
+                                Add task
+                            </Button>
+                        </div>
+                        <div className="flex flex-col gap-2 rounded-md border border-input bg-background p-2 max-h-48 overflow-y-auto">
+                            {templateTaskRows.length === 0 ? (
+                                <p className="text-sm text-muted-foreground px-1">No template tasks added yet.</p>
+                            ) : templateTaskRows.map((row, index) => (
+                                <div key={row.id ?? `template-${index}`}
+                                     className="flex items-center gap-1.5 rounded border border-border p-2">
+                                    <span className="text-sm text-muted-foreground w-5 text-center">{index + 1}</span>
+                                    <Input
+                                        value={row.title}
+                                        onChange={(e) => updateTemplateTask(index, e.target.value)}
+                                        placeholder="Task title…"
+                                        className="h-8 text-sm flex-1"
+                                    />
+                                    <Button
+                                        variant={"ghost"}
+                                        size="icon"
+                                        className="h-8"
+                                        onClick={() => moveTemplateTask(index, -1)}
+                                        disabled={index === 0}
+                                        title="Move up"
+                                    >
+                                        <ArrowUp className="h-3.5 w-3.5"/>
+                                    </Button>
+                                    <Button
+                                        variant={"ghost"}
+                                        size="icon"
+                                        className="h-8"
+                                        onClick={() => moveTemplateTask(index, 1)}
+                                        disabled={index === templateTaskRows.length - 1}
+                                        title="Move down"
+                                    >
+                                        <ArrowDown className="h-3.5 w-3.5"/>
+                                    </Button>
+                                    <Button
+                                        variant={"destructive"}
+                                        size="icon"
+                                        className="h-8 text-muted-foreground hover:text-destructive"
+                                        onClick={() => setTemplateTaskRows((rows) => rows.filter((_, rIdx) => rIdx !== index))}
+                                        title="Remove task"
+                                    >
+                                        <X className="h-3.5 w-3.5"/>
+                                    </Button>
+                                </div>
+                            ))}
                         </div>
                     </div>
 

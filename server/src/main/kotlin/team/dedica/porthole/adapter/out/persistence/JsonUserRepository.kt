@@ -1,7 +1,6 @@
 package team.dedica.porthole.adapter.out.persistence
 
-import org.springframework.context.annotation.Primary
-import org.springframework.stereotype.Repository
+import jakarta.inject.Singleton
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.UserPort
 import java.util.UUID
@@ -9,8 +8,7 @@ import java.util.UUID
 /**
  * [UserPort] implementation backed by [JsonStore].
  */
-@Primary
-@Repository
+@Singleton
 class JsonUserRepository(private val store: JsonStore) : UserPort {
 
     override fun findByUsername(username: String): UserRecord? =

@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.session.landscaping
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -19,7 +19,7 @@ import java.util.UUID
  * - The target tile must exist.
  * - No landmark may already occupy the tile.
  */
-@Component
+@Singleton
 class PlaceLandmarkUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,

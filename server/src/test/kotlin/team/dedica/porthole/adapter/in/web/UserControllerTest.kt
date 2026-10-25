@@ -1,5 +1,6 @@
 package team.dedica.porthole.adapter.`in`.web
 
+import io.micronaut.http.HttpStatus
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -25,14 +26,17 @@ class UserControllerTest {
         whenever(userRepository.findById(userId)).thenReturn(aliceRecord)
     }
 
+    private fun body(response: io.micronaut.http.HttpResponse<*>): ChangeUsernameResponse =
+        response.body.get() as ChangeUsernameResponse
+
     @Test
     fun `returns updated username on success`() {
         whenever(userRepository.findByUsername("alice2")).thenReturn(null)
 
         val response = controller.changeUsername(principal, ChangeUsernameRequest("alice2"))
 
-        assertEquals(200, response.statusCode.value())
-        assertEquals("alice2", response.body?.username)
+        assertEquals(HttpStatus.OK, response.status)
+        assertEquals("alice2", body(response).username)
         verify(userRepository).save(aliceRecord.copy(username = "alice2"))
     }
 
@@ -42,8 +46,8 @@ class UserControllerTest {
 
         val response = controller.changeUsername(principal, ChangeUsernameRequest("  alice2  "))
 
-        assertEquals(200, response.statusCode.value())
-        assertEquals("alice2", response.body?.username)
+        assertEquals(HttpStatus.OK, response.status)
+        assertEquals("alice2", body(response).username)
         verify(userRepository).save(aliceRecord.copy(username = "alice2"))
     }
 
@@ -53,7 +57,7 @@ class UserControllerTest {
 
         val response = controller.changeUsername(principal, ChangeUsernameRequest("alice"))
 
-        assertEquals(200, response.statusCode.value())
+        assertEquals(HttpStatus.OK, response.status)
         verify(userRepository).save(aliceRecord)
     }
 
@@ -64,7 +68,7 @@ class UserControllerTest {
 
         val response = controller.changeUsername(principal, ChangeUsernameRequest("alice2"))
 
-        assertEquals(409, response.statusCode.value())
+        assertEquals(HttpStatus.CONFLICT, response.status)
         verify(userRepository, never()).save(any())
     }
 
@@ -82,7 +86,7 @@ class UserControllerTest {
     fun `returns 401 when not authenticated`() {
         val response = controller.changeUsername(null, ChangeUsernameRequest("alice2"))
 
-        assertEquals(401, response.statusCode.value())
+        assertEquals(HttpStatus.UNAUTHORIZED, response.status)
         verify(userRepository, never()).save(any())
     }
 
@@ -93,7 +97,7 @@ class UserControllerTest {
 
         val response = controller.changeUsername(principal, ChangeUsernameRequest("alice2"))
 
-        assertEquals(401, response.statusCode.value())
+        assertEquals(HttpStatus.UNAUTHORIZED, response.status)
         verify(userRepository, never()).save(any())
     }
 }

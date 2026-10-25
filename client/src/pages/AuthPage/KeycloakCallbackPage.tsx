@@ -37,34 +37,19 @@ export default function KeycloakCallbackPage() {
       alt="Porthole logo"
       width={72}
       height={72}
-      style={{ filter: 'drop-shadow(0 0 12px hsl(185,100%,54%))' }}
     />
   );
-  const containerStyle = {
-    backgroundImage:
-      'linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px)',
-    backgroundSize: '40px 40px',
-  };
-  const cardStyle = {
-    boxShadow: '0 0 40px rgba(0,240,255,0.15), inset 0 0 0 1px rgba(0,240,255,0.07)',
-    borderColor: 'hsl(185,100%,22%)',
-  };
 
   if (error) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-background" style={containerStyle}>
-        <div className="flex flex-col items-center gap-6 p-8 bg-card border w-full max-w-sm" style={cardStyle}>
+      <div className="w-full h-full flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-6 p-8 bg-card border border-border shadow-lg rounded-lg w-full max-w-sm">
           {tronEmblem}
           <h1 className="tron-logo text-2xl">Porthole</h1>
           <p className="text-sm text-destructive text-center">{error}</p>
           <a
             href="/"
-            className="inline-flex items-center justify-center h-11 px-4 w-full text-center uppercase tracking-widest text-sm"
-            style={{
-              background: 'transparent',
-              border: '1px solid hsl(185,100%,54%)',
-              color: 'hsl(185,100%,54%)',
-            }}
+            className="inline-flex items-center justify-center h-11 px-4 w-full text-center uppercase tracking-widest text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
           >
             Back to Login
           </a>
@@ -74,11 +59,11 @@ export default function KeycloakCallbackPage() {
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-background" style={containerStyle}>
-      <div className="flex flex-col items-center gap-6 p-8 bg-card border w-full max-w-sm" style={cardStyle}>
+    <div className="w-full h-full flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-6 p-8 bg-card border border-border shadow-lg rounded-lg w-full max-w-sm">
         {tronEmblem}
         <h1 className="tron-logo text-2xl">Porthole</h1>
-        <p className="text-sm text-center" style={{ color: 'hsl(185,60%,55%)' }}>
+        <p className="text-sm text-center text-muted-foreground">
           Signing in with Keycloak…
         </p>
       </div>

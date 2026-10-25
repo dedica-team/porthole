@@ -1,11 +1,11 @@
 package team.dedica.porthole.application.session.greenkeeping
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.domain.SessionState
 import java.time.Instant
 import java.util.UUID
 
-@Component
+@Singleton
 class RemoveGroupFromGreenkeepingRotationsUseCase {
     fun execute(state: SessionState, groupId: UUID): Boolean {
         var changed = false

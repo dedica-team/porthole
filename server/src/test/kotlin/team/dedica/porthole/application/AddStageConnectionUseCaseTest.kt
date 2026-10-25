@@ -84,7 +84,7 @@ class AddStageConnectionUseCaseTest {
 
     @Test
     fun `non-collaborator throws AccessDeniedException`() {
-        assertThrows(org.springframework.security.access.AccessDeniedException::class.java) {
+        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
             useCase.execute(state.id, processId, stageId, connectionId, null, "FORWARD", collaborator2.id)
         }
     }

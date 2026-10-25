@@ -9,6 +9,7 @@ import type {
   GreenkeepingRotation,
   CreateGreenkeepingRotationPayload,
   EditGreenkeepingRotationPayload,
+  UpdateGreenkeepingChecklistPayload,
 } from '../types/greenkeeping';
 const BASE_URL = '/api';
 
@@ -577,11 +578,15 @@ export async function positionLandmark(
 
 // ── Collaborator Matrix ──────────────────────────────────────────────────────
 
-export async function editCollaboratorMatrix(mapId: string, name: string): Promise<SessionState> {
+export async function editCollaboratorMatrix(
+  mapId: string,
+  name?: string,
+  collaborators?: string[],
+): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/collaborator-matrix`, {
     method: 'PATCH',
     headers: authHeaders(),
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, collaborators }),
   });
   return handleResponse<SessionState>(res);
 }
@@ -906,6 +911,7 @@ export async function createGreenkeepingRotation(
       ...payload,
       description: payload.description ?? null,
       link: payload.link ?? null,
+      taskTemplates: payload.taskTemplates ?? [],
     }),
   });
   return handleResponse<GreenkeepingRotation[]>(res);
@@ -925,6 +931,7 @@ export async function editGreenkeepingRotation(
       link: patch.link ?? null,
       clearDescription: patch.clearDescription ?? false,
       clearLink: patch.clearLink ?? false,
+      taskTemplates: patch.taskTemplates !== undefined ? patch.taskTemplates : undefined,
     }),
   });
   return handleResponse<GreenkeepingRotation[]>(res);
@@ -944,6 +951,54 @@ export async function deleteGreenkeepingRotation(mapId: string, rotationId: stri
 export async function advanceGreenkeepingRotation(mapId: string, rotationId: string): Promise<GreenkeepingRotation> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}/advance`, {
     method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse<GreenkeepingRotation>(res);
+}
+
+export async function startGreenkeepingChecklist(
+  mapId: string,
+  rotationId: string,
+  title?: string,
+): Promise<GreenkeepingRotation> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}/checklist`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ title: title ?? null }),
+  });
+  return handleResponse<GreenkeepingRotation>(res);
+}
+
+export async function updateGreenkeepingChecklist(
+  mapId: string,
+  rotationId: string,
+  payload: UpdateGreenkeepingChecklistPayload,
+): Promise<GreenkeepingRotation> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}/checklist`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<GreenkeepingRotation>(res);
+}
+
+export async function finishGreenkeepingChecklist(
+  mapId: string,
+  rotationId: string,
+): Promise<GreenkeepingRotation> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}/checklist/finish`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  return handleResponse<GreenkeepingRotation>(res);
+}
+
+export async function discardGreenkeepingChecklist(
+  mapId: string,
+  rotationId: string,
+): Promise<GreenkeepingRotation> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/greenkeeping-rotations/${encodeURIComponent(rotationId)}/checklist`, {
+    method: 'DELETE',
     headers: authHeaders(),
   });
   return handleResponse<GreenkeepingRotation>(res);

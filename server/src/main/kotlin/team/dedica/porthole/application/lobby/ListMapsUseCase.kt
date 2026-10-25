@@ -1,12 +1,12 @@
 package team.dedica.porthole.application.lobby
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.CollaborationMode
 import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
-@Component
+@Singleton
 class ListMapsUseCase(
     private val sessionStatePort: SessionStatePort,
 ) {

@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
-import { TRON_BLACK } from './terrainUtils';
+import { SCENE_BACKGROUND } from './terrainUtils';
 import { resolveRendererQuality, type RendererQualityProfile } from './renderQuality';
 
 interface UseThreeSceneOptions {
@@ -64,7 +64,7 @@ export function useThreeScene({
     const initialHeight = Math.max(1, initialSize.height);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(TRON_BLACK);
+    scene.background = new THREE.Color(SCENE_BACKGROUND);
     const rendererQuality = resolveRendererQuality(qualityProfile);
 
     const ORTHO_HALF = 35;

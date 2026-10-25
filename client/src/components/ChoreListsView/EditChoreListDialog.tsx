@@ -147,7 +147,7 @@ export default function EditChoreListDialog({ open, onOpenChange, choreList, onS
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-sm">Landmarks</Label>
+              <Label className="text-sm">Elements</Label>
               <button
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 onClick={toggleAll}

@@ -2,8 +2,8 @@ package team.dedica.porthole.adapter.out.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.springframework.core.io.ClassPathResource
-import org.springframework.stereotype.Component
+import jakarta.inject.Named
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.GetMetricTemplatesPort
 import team.dedica.porthole.domain.MetricTemplate
 
@@ -12,14 +12,18 @@ import team.dedica.porthole.domain.MetricTemplate
  * `metricTemplates.json` on every request.
  *
  * No in-memory snapshot is kept so that a recompile (e.g. during
- * spring-boot:run with devtools) is immediately reflected without
+ * mn:run) is immediately reflected without
  * a full server restart.
  */
-@Component
+@Singleton
 class JsonMetricTemplateRepository(
-    private val objectMapper: ObjectMapper,
+    @param:Named("persistenceObjectMapper") private val objectMapper: ObjectMapper,
 ) : GetMetricTemplatesPort {
 
-    override fun getTemplates(): List<MetricTemplate> =
-        objectMapper.readValue(ClassPathResource("metricTemplates.json").inputStream)
+    override fun getTemplates(): List<MetricTemplate> {
+        val resource = requireNotNull(javaClass.classLoader.getResourceAsStream("metricTemplates.json")) {
+            "metricTemplates.json not found on classpath"
+        }
+        return resource.use { objectMapper.readValue(it) }
+    }
 }

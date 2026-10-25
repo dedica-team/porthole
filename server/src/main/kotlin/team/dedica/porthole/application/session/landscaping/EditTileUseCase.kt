@@ -1,6 +1,6 @@
 package team.dedica.porthole.application.session.landscaping
 
-import org.springframework.stereotype.Component
+import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -10,7 +10,7 @@ import team.dedica.porthole.domain.HexCoordinate
 import team.dedica.porthole.domain.Terrain
 import java.util.UUID
 
-@Component
+@Singleton
 class EditTileUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,

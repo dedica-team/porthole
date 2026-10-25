@@ -52,7 +52,7 @@ function renderView() {
 beforeEach(() => {
   vi.mocked(mapApi.fetchChoreLists).mockResolvedValue([]);
   vi.mocked(mapApi.fetchGreenkeepingRotations).mockResolvedValue([]);
-  vi.mocked(mapApi.fetchCollaboratorMatrix).mockResolvedValue({ name: "test", entries: {} });
+  vi.mocked(mapApi.fetchCollaboratorMatrix).mockResolvedValue({ name: "test", collaborators: ['u1'], entries: {} });
   useMapStore.setState({
     currentMap: { ...BASE_MAP },
     metrics: {},
@@ -63,7 +63,7 @@ beforeEach(() => {
     greenkeepingRotations: [],
     greenkeepingRotationsFetched: true,
     greenkeepingRotationsLoading: false,
-    collaboratorMatrix: { name: "test", entries: {} },
+    collaboratorMatrix: { name: "test", collaborators: ['u1'], entries: {} },
   });
 });
 
@@ -165,7 +165,7 @@ describe('SessionOverviewView', () => {
           lm1: { id: 'lm1', name: 'Keep Alpha', ownerId: 'u1', type: 'KEEP' },
         },
       },
-      collaboratorMatrix: { name: "test", entries: {} },
+      collaboratorMatrix: { name: "test", collaborators: ['u1'], entries: {} },
     });
     renderView();
     expect(screen.getByText('Keep Alpha')).toBeInTheDocument();

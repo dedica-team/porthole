@@ -39,8 +39,8 @@ export function buildConnectionGroup(conn: Connection, tiles: HexTile[]): THREE.
 
 const HEX_SIZE       = 1;
 const XRAY_LIFT      = 0.04;
-const XRAY_SHAFT_HW  = 0.055;   // half-width of shaft ribbon
-const XRAY_ARROW_HW  = 0.20;    // half-width at arrowhead base
+const XRAY_SHAFT_HW  = 0.11;    // half-width of shaft ribbon (doubled from 0.055)
+const XRAY_ARROW_HW  = 0.40;    // half-width at arrowhead base (doubled from 0.20)
 const XRAY_ARROW_LEN = 0.30;    // length of arrowhead
 const XRAY_TRIM      = 0.44;    // clearance from landmark cylinder edge
 

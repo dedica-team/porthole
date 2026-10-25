@@ -10,6 +10,9 @@ data class GreenkeepingRotation(
     var link: String? = null,
     val groupIds: MutableList<UUID> = mutableListOf(),
     val collaborators: MutableList<GreenkeepingRotationCollaborator> = mutableListOf(),
+    val taskTemplates: MutableList<GreenkeepingTaskTemplateItem> = mutableListOf(),
+    var currentChecklist: GreenkeepingChecklist? = null,
+    val completedChecklists: MutableList<GreenkeepingChecklist> = mutableListOf(),
     var updatedAt: Instant = Instant.now(),
     var updatedBy: UUID? = null,
 )

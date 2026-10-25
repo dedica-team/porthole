@@ -1,76 +1,100 @@
 package team.dedica.porthole.adapter.`in`.web
 
+import io.micronaut.runtime.server.EmbeddedServer
+import io.micronaut.test.extensions.junit5.annotation.MicronautTest
+import jakarta.inject.Inject
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
-import team.dedica.porthole.adapter.`in`.web.security.JwtAuthenticationFilter
 import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
-import team.dedica.porthole.adapter.`in`.web.security.KeycloakClientRegistrationConfig
-import team.dedica.porthole.adapter.`in`.web.security.SecurityConfig
-import team.dedica.porthole.application.port.UserPort
-import team.dedica.porthole.config.PortholeAuthProperties
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.util.UUID
 
-@WebMvcTest(SpaController::class)
-@Import(SecurityConfig::class, JwtAuthenticationFilter::class, JwtTokenProvider::class,
-    AuthCookieService::class, KeycloakClientRegistrationConfig::class,
-    SpaControllerTest.TestConfig::class)
-@ActiveProfiles("test")
+/**
+ * Integration tests for the SPA fallback. Boots the real application on an embedded
+ * server (using the `static/index.html` and `static/assets/app.js` test resources) and
+ * verifies that client-side routes are served the SPA entry point while API, WebSocket
+ * and asset paths keep their normal behaviour.
+ */
+@MicronautTest
 class SpaControllerTest {
 
-    @TestConfiguration
-    @EnableConfigurationProperties(PortholeAuthProperties::class)
-    class TestConfig
+    @Inject
+    lateinit var server: EmbeddedServer
 
-    @Autowired
-    lateinit var mockMvc: MockMvc
+    @Inject
+    lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @MockitoBean
-    lateinit var userPort: UserPort
+    @Inject
+    lateinit var authCookieService: AuthCookieService
 
-    @Test
-    fun `root path forwards to index html`() {
-        mockMvc.perform(get("/"))
-            .andExpect(status().isOk)
-            .andExpect(forwardedUrl("/index.html"))
+    private val http: HttpClient = HttpClient.newBuilder()
+        .followRedirects(HttpClient.Redirect.NEVER)
+        .build()
+
+    private fun get(path: String, authCookie: String? = null): HttpResponse<String> {
+        val builder = HttpRequest.newBuilder(URI.create("http://localhost:${server.port}$path"))
+        authCookie?.let { builder.header("Cookie", it) }
+        return http.send(builder.GET().build(), HttpResponse.BodyHandlers.ofString())
+    }
+
+    private fun authCookieHeader(): String {
+        val token = jwtTokenProvider.generateToken(UUID.randomUUID(), "spa-tester")
+        val cookie = authCookieService.createAuthCookie(token)
+        return "${cookie.name}=${cookie.value}"
     }
 
     @Test
-    fun `lobby route forwards to index html`() {
-        mockMvc.perform(get("/lobby"))
-            .andExpect(status().isOk)
-            .andExpect(forwardedUrl("/index.html"))
+    fun `root serves the SPA entry point`() {
+        val response = get("/")
+        assertEquals(200, response.statusCode())
+        assertTrue(response.body().contains("porthole-spa-index"))
     }
 
     @Test
-    fun `map deep link forwards to index html`() {
-        mockMvc.perform(get("/map/abc-123"))
-            .andExpect(status().isOk)
-            .andExpect(forwardedUrl("/index.html"))
+    fun `single segment client route serves the SPA entry point`() {
+        val response = get("/lobby")
+        assertEquals(200, response.statusCode())
+        assertTrue(response.body().contains("porthole-spa-index"))
     }
 
     @Test
-    fun `auth callback route forwards to index html`() {
-        mockMvc.perform(get("/auth/github/callback"))
-            .andExpect(status().isOk)
-            .andExpect(forwardedUrl("/index.html"))
+    fun `deep client route serves the SPA entry point for authenticated requests`() {
+        val response = get("/session/${UUID.randomUUID()}/map", authCookieHeader())
+        assertEquals(200, response.statusCode())
+        assertTrue(response.body().contains("porthole-spa-index"))
     }
 
     @Test
-    fun `static js asset is NOT forwarded`() {
-        // In WebMvcTest there are no real static files, so the response is 404.
-        // The important assertion: it must never be forwarded to index.html.
-        mockMvc.perform(get("/assets/main.abc123.js"))
-            .andExpect(forwardedUrl(null))
+    fun `existing static asset is served unchanged`() {
+        val response = get("/assets/app.js")
+        assertEquals(200, response.statusCode())
+        assertTrue(response.body().contains("porthole-test-asset"))
+    }
+
+    @Test
+    fun `missing asset is not rewritten to the SPA entry point`() {
+        val response = get("/assets/missing.js")
+        assertEquals(404, response.statusCode())
+        assertFalse(response.body().contains("porthole-spa-index"))
+    }
+
+    @Test
+    fun `unknown api path is not rewritten to the SPA entry point`() {
+        val response = get("/api/auth/does-not-exist")
+        assertEquals(404, response.statusCode())
+        assertFalse(response.body().contains("porthole-spa-index"))
+    }
+
+    @Test
+    fun `api routes still win over the SPA catch-all`() {
+        val response = get("/api/auth/config")
+        assertEquals(200, response.statusCode())
+        assertTrue(response.body().contains("keycloakEnabled"))
     }
 }
-

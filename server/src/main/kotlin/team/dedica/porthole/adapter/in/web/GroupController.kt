@@ -1,28 +1,29 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.*
 import jakarta.validation.Valid
-import team.dedica.porthole.adapter.`in`.web.dto.*
+import team.dedica.porthole.adapter.`in`.web.dto.CreateGroupRequest
+import team.dedica.porthole.adapter.`in`.web.dto.EditGroupRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
-import team.dedica.porthole.application.session.metrics.*
-import java.util.UUID
+import team.dedica.porthole.application.session.metrics.CreateGroupUseCase
+import team.dedica.porthole.application.session.metrics.EditGroupUseCase
+import team.dedica.porthole.application.session.metrics.RemoveGroupUseCase
+import java.util.*
 
-@RestController
-@RequestMapping("/api/sessions/{id}/groups")
+@Controller("/api/sessions/{id}/groups")
 class GroupController(
     private val createGroupUseCase: CreateGroupUseCase,
     private val editGroupUseCase: EditGroupUseCase,
     private val removeGroupUseCase: RemoveGroupUseCase,
 ) {
-    @PostMapping
+    @Post
     fun createGroup(
         @PathVariable id: String,
-        @Valid @RequestBody request: CreateGroupRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<*> =
-        ResponseEntity.ok(
+        @Valid @Body request: CreateGroupRequest,
+         user: PortholePrincipal
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             createGroupUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
@@ -33,14 +34,14 @@ class GroupController(
             )
         )
 
-    @PatchMapping("/{groupId}")
+    @Patch("/{groupId}")
     fun editGroup(
         @PathVariable id: String,
         @PathVariable groupId: String,
-        @Valid @RequestBody request: EditGroupRequest,
-        @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<*> =
-        ResponseEntity.ok(
+        @Valid @Body request: EditGroupRequest,
+         user: PortholePrincipal
+    ): HttpResponse<*> =
+        HttpResponse.ok(
             editGroupUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
@@ -54,13 +55,13 @@ class GroupController(
             )
         )
 
-    @DeleteMapping("/{groupId}")
+    @Delete("/{groupId}")
     fun removeGroup(
         @PathVariable id: String,
         @PathVariable groupId: String,
-        @AuthenticationPrincipal user: PortholePrincipal
-    ): ResponseEntity<*> =
-        ResponseEntity.ok(removeGroupUseCase.execute(
+         user: PortholePrincipal
+    ): HttpResponse<*> =
+        HttpResponse.ok(removeGroupUseCase.execute(
             UUID.fromString(id),
             user.userId,
             UUID.fromString(groupId)
