@@ -294,6 +294,15 @@ describe('MapPage – landscape editor', () => {
     await waitFor(() => expect(mapApi.editTile).toHaveBeenCalledWith(MAP_ID, 1, 0, undefined, 'FOREST'));
   });
 
+  it('NONE tool makes mouse clicks do nothing', async () => {
+    useMapStore.setState({ editorMode: true, editorTool: 'NONE', mainView: 'idle' });
+    renderMapPage();
+    await waitFor(() => screen.getByTestId('hex-grid'));
+    expect(screen.queryByTestId('brush-down-A')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('tile-empty'));
+    expect(mapApi.editTile).not.toHaveBeenCalled();
+  });
+
   it('normal mode is unaffected when editor is off', async () => {
     renderMapPage();
     await waitFor(() => screen.getByTestId('hex-grid'));

@@ -53,12 +53,13 @@ export default function RegularMapView() {
     const landmark = landmarkByCoord.get(`${q},${r}`);
 
     if (editorMode) {
+      if (editorTool === 'NONE') return;
       const tile = tileByCoord.get(`${q},${r}`);
       if (!tile) return;
       setSelectedTile({ q, r });
       if (editorTool === 'RAISE')      fireEditTile(q, r, Math.min(5, tile.elevation + 1), undefined, patchTileRef);
       else if (editorTool === 'LOWER') fireEditTile(q, r, Math.max(0, tile.elevation - 1), undefined, patchTileRef);
-      else                              fireEditTile(q, r, undefined, editorTerrain, patchTileRef);
+      else if (editorTool === 'TERRAIN') fireEditTile(q, r, undefined, editorTerrain, patchTileRef);
       return;
     }
 
@@ -126,7 +127,7 @@ export default function RegularMapView() {
             map={currentMap}
             onTileClick={handleTileClick}
             fpsRef={fpsRef}
-            brushMode={editorMode}
+            brushMode={editorMode && editorTool !== 'NONE'}
             crosshairCursor={!!connectingFromLandmarkId || !!relocatingLandmarkId}
             patchTileRef={patchTileRef}
             hideDecorations={false}

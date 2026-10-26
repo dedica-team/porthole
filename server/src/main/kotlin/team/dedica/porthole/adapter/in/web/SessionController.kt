@@ -39,6 +39,7 @@ class SessionController(
     private val acceptJoinRequestUseCase: AcceptJoinRequestUseCase,
     private val declineJoinRequestUseCase: DeclineJoinRequestUseCase,
     private val removeCollaboratorUseCase: RemoveCollaboratorUseCase,
+    private val regenerateMapTerrainUseCase: RegenerateMapTerrainUseCase,
     private val authorizationPort: AuthorizationPort,
 ) {
     @Post
@@ -102,6 +103,22 @@ class SessionController(
         @Valid @Body request: EditMapRequest,
          user: PortholePrincipal,
     ) = HttpResponse.ok(editMapUseCase.execute(UUID.fromString(id), user.userId, request.name, request.description))
+
+    @Post("/{id}/regenerate-terrain")
+    fun regenerateTerrain(
+        @PathVariable id: String,
+        @Body request: RegenerateTerrainRequest?,
+        user: PortholePrincipal,
+    ) = HttpResponse.ok(
+        regenerateMapTerrainUseCase.execute(
+            sessionId = UUID.fromString(id),
+            callerId = user.userId,
+            mapSize = request?.mapSize,
+            cols = request?.cols,
+            rows = request?.rows,
+            seed = request?.seed,
+        )
+    )
 
     @Post("/{id}/join")
     fun joinMap(

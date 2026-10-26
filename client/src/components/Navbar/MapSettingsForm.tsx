@@ -141,10 +141,12 @@ export function MapSettingsForm({ onClose }: Props) {
         </div>
       </div>
       {isCollaborator && (
-        <Button variant="ghost" size="sm" className="h-8 justify-start gap-2 px-2 text-sm" onClick={handleExport}>
-          <Download className="h-3.5 w-3.5" />
-          Export session JSON
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Button variant="ghost" size="sm" className="h-8 justify-start gap-2 px-2 text-sm" onClick={handleExport}>
+            <Download className="h-3.5 w-3.5" />
+            Export session JSON
+          </Button>
+        </div>
       )}
       {currentMap.collaborators.length > 0 && (
         <div className="flex flex-col gap-1.5">
