@@ -108,12 +108,13 @@ micronaut:
             issuer: ${PORTHOLE_KEYCLOAK_ISSUER_URI:}
     token:
       jwt:
-        # The OAuth2 OpenID response handler in micronaut-security-oauth2 is
-        # @Requires(configuration = "io.micronaut.security.token.jwt"), so this prefix must
-        # be present for the Keycloak authorization-code callback to be wired up. Porthole
-        # authenticates requests with its own cookie JWT (see JwtAuthenticationFetcher), so
-        # Micronaut's own JWT machinery is deliberately kept disabled.
-        enabled: false
+        # JWT must be enabled for Micronaut OAuth2 OpenID response validation
+        # (DefaultReactiveOpenIdTokenResponseValidator requires JwtTokenValidator).
+        enabled: true
+        signatures:
+          secret:
+            generator:
+              secret: ${PORTHOLE_JWT_SECRET:${porthole.auth.jwt.secret}}
 
 jackson:
   # Use reflection + jackson-module-kotlin for (de)serialization so Kotlin

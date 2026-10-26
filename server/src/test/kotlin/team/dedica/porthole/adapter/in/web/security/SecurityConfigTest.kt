@@ -23,6 +23,9 @@ class SecurityConfigTest {
     @Inject
     lateinit var server: EmbeddedServer
 
+    @Inject
+    lateinit var jwtTokenValidator: io.micronaut.security.token.jwt.validator.ReactiveJsonWebTokenValidator<*, *>
+
     private val http: HttpClient = HttpClient.newBuilder()
         .followRedirects(HttpClient.Redirect.NEVER)
         .build()
@@ -36,6 +39,11 @@ class SecurityConfigTest {
         headers.forEach { (name, value) -> builder.header(name, value) }
         builder.method(method, HttpRequest.BodyPublishers.noBody())
         return http.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+    }
+
+    @Test
+    fun `jwtTokenValidator bean is present for oauth2 openid validation`() {
+        assertNotNull(jwtTokenValidator)
     }
 
     // Regression: the WebSocket endpoint must not be blocked with 403.

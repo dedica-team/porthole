@@ -71,8 +71,6 @@ class KeycloakLoginIntegrationTest : TestPropertyProvider {
             "micronaut.security.oauth2.clients.keycloak.client-id" to "porthole-client",
             "micronaut.security.oauth2.clients.keycloak.client-secret" to "porthole-secret",
             "micronaut.security.oauth2.clients.keycloak.openid.issuer" to issuerUri,
-            "micronaut.security.token.jwt.enabled" to "true",
-            "micronaut.security.token.jwt.signatures.secret.generator.secret" to "pleaseChangeThisSecretForANewOne1234567890",
         )
     }
 
