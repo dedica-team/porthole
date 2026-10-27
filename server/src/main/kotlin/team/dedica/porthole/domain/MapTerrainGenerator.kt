@@ -66,7 +66,9 @@ object MapTerrainGenerator {
         val maxR = existingTiles.maxOf { it.coordinate.r }
 
         val totalCols = (maxQ - minQ + 1).coerceAtLeast(10)
-        val totalRows = (maxR - minR + 1).coerceAtLeast(10)
+        val minOffsetRow = existingTiles.minOf { it.coordinate.r + (it.coordinate.q - (it.coordinate.q and 1)) / 2 }
+        val maxOffsetRow = existingTiles.maxOf { it.coordinate.r + (it.coordinate.q - (it.coordinate.q and 1)) / 2 }
+        val totalRows = (maxOffsetRow - minOffsetRow + 1).coerceAtLeast(10)
 
         // Map center in Cartesian coordinates
         val centerQ = (minQ + maxQ) / 2
