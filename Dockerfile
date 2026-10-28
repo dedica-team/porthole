@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # --- Stage 1: Build frontend ---
 FROM node:22 AS frontend
 WORKDIR /app/client
@@ -17,7 +19,8 @@ WORKDIR /app
 COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY gradle gradle
 COPY server/build.gradle.kts server/
-RUN ./gradlew :server:dependencies --no-daemon
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:dependencies --no-daemon
 
 # Copy sources, run tests explicitly, then build the uberjar
 COPY server/src server/src
@@ -26,9 +29,11 @@ COPY server/src server/src
 COPY --from=frontend /app/client/dist server/src/main/resources/static
 
 # Explicit test gate (fails build if tests fail)
-RUN ./gradlew :server:test --no-daemon
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:test --no-daemon
 
-RUN ./gradlew :server:shadowJar -x test --no-daemon
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:shadowJar -x test --no-daemon
 
 # --- Runtime Stage ---
 FROM eclipse-temurin:25-jre-alpine
