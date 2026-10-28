@@ -297,10 +297,9 @@ object MapTerrainGenerator {
             }
 
             for ((idx, lm) in lmsToPlace.withIndex()) {
-                val assignedCoord = assignedCoords.getOrNull(idx) ?: lm.coordinate
-                if (assignedCoord != null) {
-                    usedCoordinates.add(assignedCoord)
-                }
+                val assignedCoord = assignedCoords.getOrNull(idx)
+                    ?: throw IllegalArgumentException("Not enough land tiles to place all landmarks; choose a larger map")
+                usedCoordinates.add(assignedCoord)
                 updatedLandmarks[lm.id] = lm.copy(coordinate = assignedCoord)
             }
         }
