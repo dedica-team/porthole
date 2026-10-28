@@ -10,7 +10,7 @@ CYAN  := \033[36m
 ROOT        := $(shell pwd)
 SERVER_DIR  := $(ROOT)/server
 CLIENT_DIR  := $(ROOT)/client
-MVN         := $(shell [ -f "$(ROOT)/mvnw" ] && echo "$(ROOT)/mvnw" || echo "mvn")
+GRADLE      := $(ROOT)/gradlew
 NPM         := npm
 
 # ── GraalVM ───────────────────────────────────────────────────────────────────
@@ -19,8 +19,8 @@ NPM         := npm
 GRAALVM_SDK_VERSION ?= 25.4.4.1+1-graalce
 # Image used by 'make build-native-binary-docker' (brings its own C toolchain, so no
 # GraalVM/gcc install is needed on the host).
-NATIVE_IMAGE        ?= ghcr.io/graalvm/native-image-community:21
-NATIVE_M2_CACHE     ?= $(HOME)/.m2
+NATIVE_IMAGE        ?= ghcr.io/graalvm/native-image-community:25
+NATIVE_GRADLE_CACHE ?= $(HOME)/.gradle
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 IMAGE_NAME  := porthole
@@ -34,6 +34,16 @@ ifneq (,$(wildcard $(ENV_FILE)))
   export $(shell sed 's/=.*//' $(ENV_FILE) | grep -v '^#' | grep -v '^$$')
 endif
 
+# Ensure JAVA_HOME points to a Java 25+ JDK for Gradle invocations
+ifeq ($(GRAALVM_HOME),)
+  SDKMAN_JAVA25 := $(shell ls -d $(HOME)/.sdkman/candidates/java/25* $(HOME)/.sdkman/candidates/java/*-graalce 2>/dev/null | sort -V | tail -1)
+  ifneq ($(SDKMAN_JAVA25),)
+    export JAVA_HOME := $(SDKMAN_JAVA25)
+  endif
+else
+  export JAVA_HOME := $(GRAALVM_HOME)
+endif
+
 # ── Help ──────────────────────────────────────────────────────────────────────
 .PHONY: help
 help:
@@ -42,7 +52,7 @@ help:
 	@echo ""
 	@echo "  $(GREEN)Setup$(RESET)"
 	@echo "    make setup          Install all dependencies (server + client)"
-	@echo "    make setup-server   Install Maven wrapper & resolve dependencies"
+	@echo "    make setup-server   Resolve Gradle dependencies"
 	@echo "    make setup-client   npm install in client"
 	@echo "    make setup-graal    Detect/install GraalVM and persist GRAALVM_HOME"
 	@echo ""
@@ -53,16 +63,16 @@ help:
 	@echo ""
 	@echo "  $(GREEN)Testing$(RESET)"
 	@echo "    make test           Run all tests (server + client)"
-	@echo "    make test-server    Run Maven tests"
+	@echo "    make test-server    Run Gradle tests"
 	@echo "    make test-client    Run client-side tests"
 	@echo ""
 	@echo "  $(GREEN)Build$(RESET)"
 	@echo "    make build          Build server JAR + client dist"
-	@echo "    make build-server   Maven package (skip tests)"
+	@echo "    make build-server   Build server uber-JAR (skip tests)"
 	@echo "    make build-client   Vite production build"
-	@echo "    make build-native   Native executable via host GraalVM (needs gcc/zlib) -> server/target/porthole-server"
+	@echo "    make build-native   Native executable via host GraalVM (needs gcc/zlib) -> server/build/native/nativeCompile/porthole-server"
 	@echo "    make build-native-in-docker  Native Docker image $(IMAGE_NAME):native (Docker only, no host toolchain)"
-	@echo "    make build-native-binary-docker  Native executable in the GraalVM container -> server/target/porthole-server"
+	@echo "    make build-native-binary-docker  Native executable in the GraalVM container -> server/build/native/nativeCompile/porthole-server"
 	@echo "    make native-metadata  Regenerate native-image reflection config (after DTO changes)"
 	@echo ""
 	@echo "  $(GREEN)Docker$(RESET)"
@@ -90,10 +100,7 @@ setup: setup-server setup-client
 .PHONY: setup-server
 setup-server:
 	@echo "$(BOLD)→ Setting up server…$(RESET)"
-	@if [ ! -f "$(ROOT)/mvnw" ] && command -v mvn >/dev/null 2>&1; then \
-		cd $(ROOT) && mvn -N wrapper:wrapper -q && echo "  Maven wrapper created"; \
-	fi
-	cd $(ROOT) && $(MVN) dependency:resolve --quiet
+	cd $(ROOT) && $(GRADLE) :server:dependencies --quiet
 
 .PHONY: setup-client
 setup-client:
@@ -162,7 +169,7 @@ dev:
 dev-server:
 	@echo "$(BOLD)→ Starting Micronaut dev server…$(RESET)"
 	cd $(ROOT) && PORTHOLE_JWT_SECRET=$${PORTHOLE_JWT_SECRET:-porthole-super-secret-key-change-in-production-must-be-256-bits!!} \
-	  $(MVN) mn:run -pl server
+	  $(GRADLE) :server:run
 
 .PHONY: dev-client
 dev-client:
@@ -179,7 +186,7 @@ test: test-server test-client
 .PHONY: test-server
 test-server:
 	@echo "$(BOLD)→ Running server tests…$(RESET)"
-	cd $(ROOT) && $(MVN) test
+	cd $(ROOT) && $(GRADLE) :server:test --rerun
 
 .PHONY: test-client
 test-client:
@@ -196,7 +203,7 @@ build: build-server build-client
 .PHONY: build-server
 build-server:
 	@echo "$(BOLD)→ Building server JAR…$(RESET)"
-	cd $(ROOT) && $(MVN) package -DskipTests
+	cd $(ROOT) && $(GRADLE) :server:shadowJar -x test
 
 .PHONY: build-client
 build-client:
@@ -212,12 +219,12 @@ build-native:
 	  echo "  native-image not found – run 'make setup-graal' (detects/installs GraalVM and sets GRAALVM_HOME)."; \
 	  exit 1; \
 	fi
-	cd $(ROOT) && $(MVN) -pl server -Pnative package -DskipTests
+	cd $(ROOT) && $(GRADLE) :server:nativeCompile -x test
 
 .PHONY: native-metadata
 native-metadata:
 	@echo "$(BOLD)→ Regenerating native-image reflection config…$(RESET)"
-	cd $(ROOT) && $(MVN) -q -pl server compile -DskipTests
+	cd $(ROOT) && $(GRADLE) :server:classes
 	python3 $(ROOT)/scripts/generate-native-reflect-config.py
 
 # Builds the native Docker image ($(IMAGE_NAME):native): multi-stage build (client +
@@ -230,19 +237,19 @@ build-native-in-docker:
 	@echo "$(GREEN)✓ Image built: $(IMAGE_NAME):native$(RESET)"
 
 # Raw native executable built inside the GraalVM container: same output as 'build-native'
-# (server/target/porthole-server) but works on hosts without GraalVM or a C toolchain.
+# (server/build/native/nativeCompile/porthole-server) but works on hosts without GraalVM or a C toolchain.
 .PHONY: build-native-binary-docker
 build-native-binary-docker:
 	@echo "$(BOLD)→ Building native executable in $(NATIVE_IMAGE)…$(RESET)"
-	@mkdir -p "$(NATIVE_M2_CACHE)"
+	@mkdir -p "$(NATIVE_GRADLE_CACHE)"
 	docker run --rm --entrypoint /bin/bash \
 	  --user "$$(id -u):$$(id -g)" \
 	  -e HOME=/tmp/home -e LANG=C.UTF-8 \
 	  -v "$(ROOT)":/work -w /work \
-	  -v "$(NATIVE_M2_CACHE)":/tmp/home/.m2 \
+	  -v "$(NATIVE_GRADLE_CACHE)":/tmp/home/.gradle \
 	  $(NATIVE_IMAGE) \
-	  -c './mvnw -B -pl server -Pnative clean package -Dmaven.test.skip=true'
-	@echo "$(GREEN)✓ Native executable: server/target/porthole-server$(RESET)"
+	  -c './gradlew :server:nativeCompile -x test --no-daemon'
+	@echo "$(GREEN)✓ Native executable: server/build/native/nativeCompile/porthole-server$(RESET)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Utilities
@@ -255,7 +262,7 @@ lint-client:
 .PHONY: clean
 clean:
 	@echo "$(BOLD)→ Cleaning build artefacts…$(RESET)"
-	cd $(ROOT) && $(MVN) clean
+	cd $(ROOT) && $(GRADLE) clean
 	rm -rf $(CLIENT_DIR)/dist $(CLIENT_DIR)/node_modules/.vite
 	@echo "$(GREEN)✓ Clean complete$(RESET)"
 
@@ -317,4 +324,3 @@ docker-stop-native:
 	docker stop $(CONTAINER)-native 2>/dev/null || true
 	docker rm   $(CONTAINER)-native 2>/dev/null || true
 	@echo "$(GREEN)✓ Native container stopped & removed$(RESET)"
-

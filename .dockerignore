@@ -1,8 +1,8 @@
 client/node_modules
 client/dist
 client/@
-server/target
+server/build
+.gradle
 data
 .git
 **/*.md
-

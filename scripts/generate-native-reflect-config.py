@@ -10,7 +10,7 @@ Run this after adding/renaming DTO/domain/persistence classes:
 
     make native-metadata
 
-It scans server/target/classes and rewrites
+It scans server/build/classes/kotlin/main and rewrites
 server/src/main/resources/META-INF/native-image/team.dedica/porthole/reflect-config.json.
 The file is committed so a native build does not depend on this script.
 """
@@ -21,7 +21,7 @@ import re
 from glob import glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLASSES = os.path.join(ROOT, "server", "target", "classes")
+CLASSES = os.path.join(ROOT, "server", "build", "classes", "kotlin", "main")
 OUTPUT = os.path.join(
     ROOT,
     "server",

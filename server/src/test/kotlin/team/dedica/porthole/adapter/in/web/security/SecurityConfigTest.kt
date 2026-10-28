@@ -9,6 +9,9 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.net.http.WebSocket
+import java.net.http.WebSocketHandshakeException
+import java.util.concurrent.CompletionException
 
 /**
  * Integration tests for the Micronaut security configuration.
@@ -51,8 +54,17 @@ class SecurityConfigTest {
     // ever reaching the WebSocket protocol handler.
     @Test
     fun `ws-native anonymous handshake is rejected with 401 rather than 403`() {
-        val status = exchange("GET", "/ws-native").statusCode()
-        assertEquals(401, status, "/ws-native should reject anonymous handshakes with 401")
+        val failure = assertThrows(CompletionException::class.java) {
+            http.newWebSocketBuilder()
+                .buildAsync(
+                    URI.create("ws://localhost:${server.port}/ws-native"),
+                    object : WebSocket.Listener {},
+                )
+                .join()
+        }
+        val handshakeFailure = failure.cause as WebSocketHandshakeException
+        val response: HttpResponse<*> = handshakeFailure.response
+        assertEquals(401, response.statusCode())
     }
 
     @Test

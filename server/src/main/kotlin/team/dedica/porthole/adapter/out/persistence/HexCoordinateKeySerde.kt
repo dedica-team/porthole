@@ -1,18 +1,18 @@
 package team.dedica.porthole.adapter.out.persistence
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.KeyDeserializer
-import com.fasterxml.jackson.databind.SerializerProvider
+import tools.jackson.core.JsonGenerator
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.KeyDeserializer
+import tools.jackson.databind.SerializationContext
+import tools.jackson.databind.ValueSerializer
 import team.dedica.porthole.domain.HexCoordinate
 
 /**
  * Serialises a [HexCoordinate] map key as the compact string "q:r".
  */
-class HexCoordinateKeySerializer : JsonSerializer<HexCoordinate>() {
-    override fun serialize(value: HexCoordinate, gen: JsonGenerator, serializers: SerializerProvider) {
-        gen.writeFieldName("${value.q}:${value.r}")
+class HexCoordinateKeySerializer : ValueSerializer<HexCoordinate>() {
+    override fun serialize(value: HexCoordinate, gen: JsonGenerator, ctxt: SerializationContext) {
+        gen.writeName("${value.q}:${value.r}")
     }
 }
 
@@ -30,4 +30,3 @@ class HexCoordinateKeyDeserializer : KeyDeserializer() {
         return HexCoordinate(q, r)
     }
 }
-

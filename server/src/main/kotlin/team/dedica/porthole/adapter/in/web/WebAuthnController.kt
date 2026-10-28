@@ -1,7 +1,7 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.yubico.webauthn.*
 import com.yubico.webauthn.data.*
 import com.yubico.webauthn.data.ByteArray
@@ -393,4 +393,3 @@ class WebAuthnController(
         val USERNAME_PATTERN = Regex("^[a-z0-9](?:[a-z0-9._-]{0,37}[a-z0-9])?\$")
     }
 }
-

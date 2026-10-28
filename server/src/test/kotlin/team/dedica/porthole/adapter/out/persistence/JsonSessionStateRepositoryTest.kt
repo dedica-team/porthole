@@ -2,7 +2,7 @@ package team.dedica.porthole.adapter.out.persistence
 
 import java.util.UUID
 
-import com.fasterxml.jackson.module.kotlin.readValue
+import tools.jackson.module.kotlin.readValue
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -354,7 +354,7 @@ class JsonSessionStateRepositoryTest {
                 append(""""collaborators":[],"landmarks":{"$lmUuid":{"id":"$lmUuid","name":"lm1",""")
                 append(""""ownerId":"$ownerUuid","coordinate":{"q":0,"r":0},"type":"WATERMILL",""")
                 append(""""metrics":{}}},"connections":{},"groups":{},"metrics":{},""")
-                append(""""createdAt":"2024-01-01T00:00:00Z"}}""")
+                append(""""createdAt":"2024-01-01T00:00:00Z"}""")
             }
             mapsDir.resolve("map-id-1.json").toFile().writeText(rawJson)
 

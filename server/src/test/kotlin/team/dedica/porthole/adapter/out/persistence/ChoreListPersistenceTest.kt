@@ -16,7 +16,7 @@ import java.util.UUID
 class ChoreListPersistenceTest {
     @TempDir
     lateinit var dir: Path
-    private lateinit var mapper: com.fasterxml.jackson.databind.ObjectMapper
+    private lateinit var mapper: tools.jackson.databind.ObjectMapper
     @BeforeEach
     fun setUp() {
         mapper = JsonPersistenceConfig().persistenceObjectMapper()

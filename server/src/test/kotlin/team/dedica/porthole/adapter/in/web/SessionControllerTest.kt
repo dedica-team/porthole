@@ -1,7 +1,7 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import jakarta.inject.Inject
@@ -301,7 +301,7 @@ class SessionControllerTest {
         val createBody = mapOf("name" to "Latency", "description" to "Response time")
         val createResponse = post("/api/sessions/$mapId/metrics", createBody)
         assertEquals(200, createResponse.statusCode())
-        val metricId = json(createResponse)["metrics"].fieldNames().next()
+        val metricId = json(createResponse)["metrics"].propertyNames().first()
 
         val editBody = mapOf("name" to "P99 Latency", "description" to null)
         assertEquals(200, patch("/api/sessions/$mapId/metrics/$metricId", editBody).statusCode())
@@ -312,7 +312,7 @@ class SessionControllerTest {
         val createBody = mapOf("name" to "Error Rate", "description" to "Errors per second")
         val createResponse = post("/api/sessions/$mapId/metrics", createBody)
         assertEquals(200, createResponse.statusCode())
-        val metricId = json(createResponse)["metrics"].fieldNames().next()
+        val metricId = json(createResponse)["metrics"].propertyNames().first()
 
         val response = delete("/api/sessions/$mapId/metrics/$metricId")
         assertEquals(200, response.statusCode())
@@ -329,14 +329,14 @@ class SessionControllerTest {
         val metricBody = mapOf("name" to "Availability", "description" to "Uptime")
         val metricResponse = post("/api/sessions/$mapId/metrics", metricBody)
         assertEquals(200, metricResponse.statusCode())
-        val metricId = json(metricResponse)["metrics"].fieldNames().next()
+        val metricId = json(metricResponse)["metrics"].propertyNames().first()
 
         val entryBody = mapOf("value" to null, "level" to "NONE", "link" to "https://example.com/report", "linkText" to "Report")
         val response = put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", entryBody)
         assertEquals(200, response.statusCode())
         val entry = json(response)["landmarks"][lmId.toString()]["metrics"][metricId]
-        assertEquals("https://example.com/report", entry["link"].asText())
-        assertEquals("Report", entry["linkText"].asText())
+        assertEquals("https://example.com/report", entry["link"].stringValue())
+        assertEquals("Report", entry["linkText"].stringValue())
     }
 
     @Test
@@ -348,7 +348,7 @@ class SessionControllerTest {
 
         val metricBody = mapOf("name" to "SLA", "description" to "Service level")
         val metricResponse = post("/api/sessions/$mapId/metrics", metricBody)
-        val metricId = json(metricResponse)["metrics"].fieldNames().next()
+        val metricId = json(metricResponse)["metrics"].propertyNames().first()
 
         val entryBody = mapOf("value" to "99 %", "level" to "CRITICAL")
         assertEquals(400, put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", entryBody).statusCode())
@@ -363,7 +363,7 @@ class SessionControllerTest {
 
         val metricBody = mapOf("name" to "Health", "description" to "Health check")
         val metricResponse = post("/api/sessions/$mapId/metrics", metricBody)
-        val metricId = json(metricResponse)["metrics"].fieldNames().next()
+        val metricId = json(metricResponse)["metrics"].propertyNames().first()
 
         assertEquals(200, put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", mapOf("value" to "ok", "level" to "OK")).statusCode())
         assertEquals(200, delete("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId").statusCode())

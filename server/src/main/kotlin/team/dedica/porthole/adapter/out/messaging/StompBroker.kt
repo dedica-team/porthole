@@ -1,6 +1,6 @@
 package team.dedica.porthole.adapter.out.messaging
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import io.micronaut.http.MediaType
 import io.micronaut.websocket.WebSocketSession
 import jakarta.inject.Singleton

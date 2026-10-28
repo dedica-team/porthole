@@ -1,7 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web.dto
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import com.fasterxml.jackson.databind.ser.std.UUIDSerializer
 import io.micronaut.core.annotation.Introspected
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -215,7 +213,6 @@ data class EditChoreListRequest(
 @Introspected
 data class UpdateChoreEntryRequest(
     val state: ChoreEntryState? = null,
-    @param:JsonSerialize(using = UUIDSerializer::class)
     val assigneeId: UUID? = null,
     val clearAssignee: Boolean = false,
     val link: String? = null,
@@ -228,16 +225,13 @@ data class UpdateChoreEntryRequest(
 
 @Introspected
 data class GreenkeepingRotationCollaboratorRequest(
-    @param:JsonSerialize(using = UUIDSerializer::class)
     val id: UUID? = null,
-    @param:JsonSerialize(using = UUIDSerializer::class)
     val collaboratorId: UUID,
     val done: Boolean = false,
 )
 
 @Introspected
 data class GreenkeepingTaskTemplateItemRequest(
-    @param:JsonSerialize(using = UUIDSerializer::class)
     val id: UUID? = null,
     @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val title: String,
 )
@@ -266,7 +260,6 @@ data class EditGreenkeepingRotationRequest(
 
 @Introspected
 data class GreenkeepingChecklistItemRequest(
-    @param:JsonSerialize(using = UUIDSerializer::class)
     val id: UUID? = null,
     @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val title: String,
     val done: Boolean = false,
@@ -283,6 +276,3 @@ data class UpdateGreenkeepingChecklistRequest(
     @field:Size(max = NAME_MAX_LENGTH) val title: String? = null,
     val items: List<GreenkeepingChecklistItemRequest>? = null,
 )
-
-
-
