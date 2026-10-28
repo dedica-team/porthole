@@ -1,7 +1,8 @@
 package team.dedica.porthole.adapter.`in`.web
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.kotlinModule
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import jakarta.inject.Inject
@@ -34,7 +35,7 @@ class GreenkeepingRotationControllerTest {
     @Inject
     lateinit var userPort: UserPort
 
-    private val objectMapper = ObjectMapper().findAndRegisterModules()
+    private val objectMapper = JsonMapper.builder().addModule(kotlinModule()).build()
 
     private lateinit var token: String
     private lateinit var viewerToken: String

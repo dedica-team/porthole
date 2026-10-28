@@ -29,7 +29,7 @@ The system is a tool to design landscapes that are hexagonal maps.
 
 ## Technical Stack
 
-- use maven
+- use Gradle
 - use react with three.js for the client side
 - use micronaut for the server side
 
