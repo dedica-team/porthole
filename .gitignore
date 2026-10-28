@@ -1,6 +1,7 @@
 .kotlin
 .gradle/
 server/data
+server/target
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

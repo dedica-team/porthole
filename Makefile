@@ -34,6 +34,16 @@ ifneq (,$(wildcard $(ENV_FILE)))
   export $(shell sed 's/=.*//' $(ENV_FILE) | grep -v '^#' | grep -v '^$$')
 endif
 
+# Ensure JAVA_HOME points to a Java 25+ JDK for Gradle invocations
+ifeq ($(GRAALVM_HOME),)
+  SDKMAN_JAVA25 := $(shell ls -d $(HOME)/.sdkman/candidates/java/25* $(HOME)/.sdkman/candidates/java/*-graalce 2>/dev/null | sort -V | tail -1)
+  ifneq ($(SDKMAN_JAVA25),)
+    export JAVA_HOME := $(SDKMAN_JAVA25)
+  endif
+else
+  export JAVA_HOME := $(GRAALVM_HOME)
+endif
+
 # ── Help ──────────────────────────────────────────────────────────────────────
 .PHONY: help
 help:
@@ -176,7 +186,7 @@ test: test-server test-client
 .PHONY: test-server
 test-server:
 	@echo "$(BOLD)→ Running server tests…$(RESET)"
-	cd $(ROOT) && $(GRADLE) :server:test
+	cd $(ROOT) && $(GRADLE) :server:test --rerun
 
 .PHONY: test-client
 test-client:

@@ -42,11 +42,22 @@ application {
     mainClass.set("team.dedica.porthole.PortholeApplicationKt")
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.github.javaparser" && requested.name.startsWith("javaparser-")) {
+            useVersion("3.28.1")
+            because("Micronaut 5 requires JavaParser >= 3.28.0 for 2-argument parseJavadoc method")
+        }
+    }
+}
+
 dependencies {
+    kapt("com.github.javaparser:javaparser-core:3.28.1")
     kapt("io.micronaut:micronaut-inject-java")
     kapt("io.micronaut.validation:micronaut-validation-processor")
     kapt("io.micronaut.security:micronaut-security-processor")
     kapt("io.micronaut:micronaut-graal")
+    kaptTest("com.github.javaparser:javaparser-core:3.28.1")
     kaptTest("io.micronaut:micronaut-inject-java")
     kaptTest("io.micronaut.validation:micronaut-validation-processor")
 
@@ -87,6 +98,10 @@ tasks.withType<Test>().configureEach {
     environment("DOCKER_API_VERSION", "1.44")
     systemProperty("api.version", "1.44")
     systemProperty("docker.api.version", "1.44")
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 graalvmNative {
