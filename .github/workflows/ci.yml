@@ -39,25 +39,25 @@ jobs:
         run: npm test
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # 2. Server tests (Maven / Kotlin)
+  # 2. Server tests (Gradle / Kotlin)
   # ─────────────────────────────────────────────────────────────────────────────
   test-server:
-    name: Server Tests (Maven)
+    name: Server Tests (Gradle)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Java 21
+      - name: Setup Java 25
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
+          java-version: '25'
+          cache: 'gradle'
 
       - name: Run server tests
-        run: mvn -pl server -am test -B -q
+        run: ./gradlew :server:test --no-daemon
 
   # ─────────────────────────────────────────────────────────────────────────────
   # 3. Build & push Docker image (only on push to default branch, after tests)
@@ -104,4 +104,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-

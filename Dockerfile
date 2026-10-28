@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # --- Stage 1: Build frontend ---
 FROM node:22 AS frontend
 WORKDIR /app/client
@@ -10,15 +12,15 @@ COPY client/ ./
 RUN npm run build
 
 # --- Build Stage ---
-FROM maven:3.9-eclipse-temurin-21-alpine AS backend
+FROM eclipse-temurin:25-jdk-alpine AS backend
 WORKDIR /app
 
-# Copy parent pom first for dependency caching
-COPY pom.xml ./
-COPY server/pom.xml server/
-
-# Download dependencies (go-offline is unreliable; resolve+resolve-plugins is more complete)
-RUN mvn -pl server -am dependency:resolve dependency:resolve-plugins -q
+# Copy Gradle configuration first for dependency caching.
+COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
+COPY gradle gradle
+COPY server/build.gradle.kts server/
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:dependencies --no-daemon
 
 # Copy sources, run tests explicitly, then build the uberjar
 COPY server/src server/src
@@ -27,17 +29,19 @@ COPY server/src server/src
 COPY --from=frontend /app/client/dist server/src/main/resources/static
 
 # Explicit test gate (fails build if tests fail)
-RUN mvn -pl server -am test -q
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:test --no-daemon
 
-RUN mvn -pl server -am package -DskipTests -q
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:shadowJar -x test --no-daemon
 
 # --- Runtime Stage ---
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 RUN addgroup -S app && adduser -S -G app app
 
-COPY --from=backend --chown=app:app /app/server/target/server-1.0-SNAPSHOT.jar app.jar
+COPY --from=backend --chown=app:app /app/server/build/libs/server-1.0-SNAPSHOT-all.jar app.jar
 
 EXPOSE 8080
 

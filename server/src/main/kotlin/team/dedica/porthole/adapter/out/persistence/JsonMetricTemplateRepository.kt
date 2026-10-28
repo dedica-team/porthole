@@ -1,7 +1,7 @@
 package team.dedica.porthole.adapter.out.persistence
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.module.kotlin.readValue
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.GetMetricTemplatesPort

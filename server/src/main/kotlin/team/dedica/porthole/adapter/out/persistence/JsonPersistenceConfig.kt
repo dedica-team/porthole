@@ -2,12 +2,12 @@ package team.dedica.porthole.adapter.out.persistence
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.kotlinModule
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.cfg.EnumFeature
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
+import tools.jackson.module.kotlin.kotlinModule
 import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
 import jakarta.inject.Named
@@ -40,19 +40,13 @@ class JsonPersistenceConfig {
             addDeserializer(LandmarkType::class.java, LandmarkTypeDeserializer())
         }
 
-        return ObjectMapper()
-            .registerModule(kotlinModule())
-            .registerModule(JavaTimeModule())
-            .registerModule(hexKeyModule)
+        return JsonMapper.builder()
+            .addModule(kotlinModule())
+            .addModule(hexKeyModule)
             .addMixIn(HexCoordinate::class.java, HexCoordinateMixin::class.java)
             .addMixIn(HexTile::class.java, HexTileMixin::class.java)
-            // Dates as ISO-8601 strings, not timestamps
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            // Enums as their name strings, not ordinal numbers
-            .enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING)
-            .enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING)
-            // Tolerate unknown fields (forward compatibility)
+            .enable(EnumFeature.WRITE_ENUMS_USING_TO_STRING, EnumFeature.READ_ENUMS_USING_TO_STRING)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build()
     }
 }
-

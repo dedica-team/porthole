@@ -3,7 +3,7 @@
 <section id="install" style="background:var(--surface);">
   <div class="container">
     <h2 class="section-title">Get started in minutes</h2>
-    <p class="section-sub">Prerequisites: Java 21, Node 22, Docker. At least one auth provider (GitHub OAuth, Keycloak OIDC, or Passkey) must be configured.</p>
+    <p class="section-sub">Prerequisites: Java 25, Node 22, Docker. At least one auth provider (GitHub OAuth, Keycloak OIDC, or Passkey) must be configured.</p>
     <style>
       .tabs { display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
       .tab-btn {
@@ -138,7 +138,7 @@ docker run -d --name porthole -p 8080:8080 -p 8081:8081 \
         <pre><code><span style="color:#8b949e"># Build server JAR + client dist</span>
 make build
 <span style="color:#8b949e"># Run the JAR directly</span>
-java -jar server/target/porthole-*.jar</code></pre>
+java -jar server/build/libs/server-1.0-SNAPSHOT-all.jar</code></pre>
         <p style="color:var(--muted); font-size:0.875rem; margin-top:0.75rem;">
           The client's <code>dist/</code> is automatically served by Micronaut from the JAR.
         </p>

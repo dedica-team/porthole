@@ -1,9 +1,7 @@
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
 .kotlin
+.gradle/
 server/data
+server/target
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

@@ -17,25 +17,24 @@ RUN npm run build
 # --- Stage 2: build the GraalVM native image ---
 # This image ships both GraalVM (native-image) and the C toolchain native-image needs,
 # so no GraalVM/gcc install is required on the host.
-FROM ghcr.io/graalvm/native-image-community:21 AS native-build
+FROM ghcr.io/graalvm/native-image-community:25 AS native-build
 WORKDIR /app
 
-COPY mvnw ./
-COPY .mvn .mvn
-COPY pom.xml ./
-COPY server/pom.xml server/
+COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
+COPY gradle gradle
+COPY server/build.gradle.kts server/
 
 # Warm the dependency cache (cache mount keeps it out of the layer, persists across builds)
-RUN --mount=type=cache,target=/root/.m2 \
-    ./mvnw -B -pl server -am dependency:resolve dependency:resolve-plugins -q
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:dependencies --no-daemon
 
 COPY server/src server/src
 
 # Embed the built frontend into the Micronaut static-resources folder (classpath:static)
 COPY --from=frontend /app/client/dist server/src/main/resources/static
 
-RUN --mount=type=cache,target=/root/.m2 \
-    ./mvnw -B -pl server -Pnative package -Dmaven.test.skip=true
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew :server:nativeCompile -x test --no-daemon
 
 # --- Stage 3: minimal runtime ---
 # The binary is static except for libc (-H:+StaticExecutableWithDynamicLibC), so a
@@ -44,10 +43,10 @@ RUN --mount=type=cache,target=/root/.m2 \
 FROM gcr.io/distroless/base-debian12:nonroot AS runtime
 WORKDIR /app
 
-COPY --from=native-build --chown=65532:65532 /app/server/target/porthole-server /app/porthole-server
+COPY --from=native-build --chown=65532:65532 /app/server/build/native/nativeCompile/porthole-server /app/porthole-server
 
 # Seed /data (placeholder) so the named volume inherits nonroot ownership.
-COPY --from=native-build --chown=65532:65532 /app/server/pom.xml /data/.keep
+COPY --from=native-build --chown=65532:65532 /app/server/build.gradle.kts /data/.keep
 
 ENV PORTHOLE_STORAGE_PATH=/data
 VOLUME /data

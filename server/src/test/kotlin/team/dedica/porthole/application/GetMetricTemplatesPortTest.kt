@@ -1,14 +1,14 @@
 package team.dedica.porthole.application
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.kotlinModule
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.adapter.out.persistence.JsonMetricTemplateRepository
 
 class GetMetricTemplatesPortTest {
 
-    private val objectMapper = ObjectMapper().registerKotlinModule()
+    private val objectMapper = JsonMapper.builder().addModule(kotlinModule()).build()
     private val useCase = JsonMetricTemplateRepository(objectMapper)
 
     @Test
@@ -31,4 +31,3 @@ class GetMetricTemplatesPortTest {
         }
     }
 }
-
