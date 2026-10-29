@@ -1,6 +1,11 @@
 /**
  * ProcessMapView  (X-ray process view)
  *
+ * Rules:
+ * 1. When a process is selected, show all highlighted connections and nodes of the process.
+ *    Do not show nodes or connections of other processes.
+ * 2. If a layer is active and a process is selected, show only process labels where nodes are visible.
+ *
  * Hides terrain decorations, highlights landmark rings and connection arrows
  * for the active process / stage.  Owns all process-specific memos,
  * connection-click handler, and the "New Connection" overlay.
@@ -208,26 +213,6 @@ export default function ProcessMapView() {
     return keys.size > 0 ? keys : undefined;
   }, [activeProcessId, activeStageId, processes, currentMap]);
 
-  /** Landmark IDs whose labels should be shown — only those involved in the active process/stage. */
-  const visibleLandmarkLabelIds = useMemo<Set<string> | undefined>(() => {
-    if (!activeProcessId || !currentMap) return undefined;
-    const proc = processes.find((p) => p.id === activeProcessId);
-    if (!proc) return undefined;
-    const stagesToCheck = activeStageId
-      ? proc.stages.filter((s) => s.id === activeStageId)
-      : proc.stages;
-    const ids = new Set<string>();
-    for (const stage of stagesToCheck) {
-      for (const sc of stage.connections) {
-        const conn = currentMap.connections?.[sc.connectionId];
-        if (!conn) continue;
-        ids.add(conn.originId);
-        ids.add(conn.targetId);
-      }
-    }
-    return ids.size > 0 ? ids : undefined;
-  }, [activeProcessId, activeStageId, processes, currentMap]);
-
   /**
    * Per-landmark metric values for the CSS2D overlay.
    * Only landmarks with a non-NONE entry for the selected metric are included.
@@ -246,6 +231,51 @@ export default function ProcessMapView() {
     });
     return result.size > 0 ? result : undefined;
   }, [selectedMetricId, currentMap]);
+
+  /** Landmark IDs (nodes) that should be visible — when a process is selected, only show nodes of the active process. */
+  const visibleLandmarkIds = useMemo<Set<string> | undefined>(() => {
+    if (!activeProcessId || !currentMap) return undefined;
+    const proc = processes.find((p) => p.id === activeProcessId);
+    if (!proc) return undefined;
+    const ids = new Set<string>();
+    for (const stage of proc.stages) {
+      for (const sc of stage.connections) {
+        const conn = currentMap.connections?.[sc.connectionId];
+        if (!conn) continue;
+        ids.add(conn.originId);
+        ids.add(conn.targetId);
+      }
+    }
+    return ids;
+  }, [activeProcessId, processes, currentMap]);
+
+  /**
+   * Landmark IDs whose labels should be shown.
+   * - Only those involved in the active process/stage.
+   * - If a layer (metric) is active and a process is selected, show only labels where nodes are visible (have active metric).
+   */
+  const visibleLandmarkLabelIds = useMemo<Set<string> | undefined>(() => {
+    if (!activeProcessId || !currentMap) return undefined;
+    const proc = processes.find((p) => p.id === activeProcessId);
+    if (!proc) return undefined;
+    const stagesToCheck = activeStageId
+      ? proc.stages.filter((s) => s.id === activeStageId)
+      : proc.stages;
+    const ids = new Set<string>();
+    for (const stage of stagesToCheck) {
+      for (const sc of stage.connections) {
+        const conn = currentMap.connections?.[sc.connectionId];
+        if (!conn) continue;
+        if (!selectedMetricId || metricOverlayEntries?.has(conn.originId)) {
+          ids.add(conn.originId);
+        }
+        if (!selectedMetricId || metricOverlayEntries?.has(conn.targetId)) {
+          ids.add(conn.targetId);
+        }
+      }
+    }
+    return ids.size > 0 ? ids : undefined;
+  }, [activeProcessId, activeStageId, processes, currentMap, selectedMetricId, metricOverlayEntries]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -312,6 +342,7 @@ export default function ProcessMapView() {
             stageHighlightTiles={stageHighlightTiles}
             metricOverlayEntries={metricOverlayEntries}
             visibleLandmarkLabelIds={visibleLandmarkLabelIds}
+            visibleLandmarkIds={visibleLandmarkIds}
             onConnectionClick={handleConnectionClick}
           />
         </ErrorBoundary>

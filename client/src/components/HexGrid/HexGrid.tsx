@@ -3,8 +3,8 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type {HexCoordinate, HexTile, Terrain} from '@/types/hex';
 import type {Landmark} from '@/types/landmark';
-import type {SessionState} from '@/types/session';
 import {worstLevel} from '@/types/landmark';
+import type {SessionState} from '@/types/session';
 import {hexToWorld} from '@/utils/hexUtils.ts';
 import {useMapStore} from '@/store/mapStore.ts';
 import {TERRAIN_RENDERER_MAP, tileHeight,} from './terrainRenderers';
@@ -15,16 +15,22 @@ import {buildConnectionGroup, buildXrayLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
 import type {RendererQualityProfile} from './renderQuality';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
-import { LOADING_COPY } from '@/components/ui/loadingCopy';
+import {LOADING_COPY} from '@/components/ui/loadingCopy';
 import {
     buildTileGeo,
-    EDGE_MAT, EDGE_MAT_VERT, EDGE_MAT_DARK,
-    TILE_TOP_MAT, TILE_SIDE_MAT,
-    TMPL_TOP_VERT_COUNT, TMPL_SIDE_VERT_COUNT,
-    SELECTION_COL_HEIGHT, SELECTION_GEO, SELECTION_MAT,
+    EDGE_MAT,
+    EDGE_MAT_DARK,
+    EDGE_MAT_VERT,
+    SELECTION_COL_HEIGHT,
+    SELECTION_GEO,
+    SELECTION_MAT,
+    TILE_SIDE_MAT,
+    TILE_TOP_MAT,
+    TMPL_SIDE_VERT_COUNT,
+    TMPL_TOP_VERT_COUNT,
 } from './tileGeometry';
-import {ProcessArrowRenderer} from './ProcessArrowRenderer';
 import type {StageConnectionEntry} from './ProcessArrowRenderer';
+import {ProcessArrowRenderer} from './ProcessArrowRenderer';
 import {CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import {computeTileHeatmapColor, resolveStatusElements} from './heatmapUtils';
 
@@ -105,6 +111,8 @@ interface Props {
     rendererQualityProfile?: RendererQualityProfile;
     /** When set, only these landmark IDs show their CSS2D label; others are hidden. */
     visibleLandmarkLabelIds?: Set<string>;
+    /** When set, only these landmark IDs (nodes) are visible on the map; others are hidden. */
+    visibleLandmarkIds?: Set<string>;
 }
 
 const HEX_SIZE = 1;
@@ -138,6 +146,7 @@ export default function HexGrid({
                                     hideDecorations = false,
                                     rendererQualityProfile,
                                     visibleLandmarkLabelIds,
+                                    visibleLandmarkIds,
                                 }: Props) {
     const mountRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
@@ -171,16 +180,6 @@ export default function HexGrid({
     useEffect(() => {
         stageHighlightTilesRef.current = stageHighlightTiles;
     }, [stageHighlightTiles]);
-
-    useEffect(() => {
-        if (!hideDecorations) return;
-        landmarkMeshMapRef.current.forEach((group, landmarkId) => {
-            const show = !visibleLandmarkLabelIds || visibleLandmarkLabelIds.has(landmarkId);
-            group.children.forEach((child) => {
-                if (child instanceof CSS2DObject) child.visible = show;
-            });
-        });
-    }, [visibleLandmarkLabelIds, hideDecorations]);
 
     const selectedTile = useMapStore((s) => s.selectedTile);
     const setSelectedTile = useMapStore((s) => s.setSelectedTile);
@@ -557,6 +556,20 @@ export default function HexGrid({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map.landmarks, map.map.tiles]);
 
+    // ── Landmark visibility in process mode ──────────────────────────────────────
+    useEffect(() => {
+        if (!hideDecorations) return;
+        landmarkMeshMapRef.current.forEach((group, landmarkId) => {
+            const showNode = !visibleLandmarkIds || visibleLandmarkIds.has(landmarkId);
+            const showLabel = showNode && (!visibleLandmarkLabelIds || visibleLandmarkLabelIds.has(landmarkId));
+            group.visible = showNode;
+            group.children.forEach((child) => {
+                if (child instanceof CSS2DObject) child.visible = showLabel;
+            });
+        });
+        requestRender();
+    }, [visibleLandmarkIds, visibleLandmarkLabelIds, hideDecorations]);
+
     // ── Highlight selected tile – infinity column ────────────────────────────
     useEffect(() => {
         const scene = threeRef.current?.scene;
@@ -729,15 +742,12 @@ export default function HexGrid({
             connectionMeshMapRef.current.set(conn.id, obj);
 
             if (hideDecorations && conn.name && conn.path.length >= 2) {
-                const first = conn.path[0];
-                const last  = conn.path[conn.path.length - 1];
-                const { x: ax, z: az } = hexToWorld(first.q, first.r, HEX_SIZE);
-                const { x: bx, z: bz } = hexToWorld(last.q,  last.r,  HEX_SIZE);
-                const firstTile = tileByCoordRef.current.get(`${first.q},${first.r}`);
-                const lastTile  = tileByCoordRef.current.get(`${last.q},${last.r}`);
-                const my = (tileHeight(firstTile?.elevation ?? 1) + tileHeight(lastTile?.elevation ?? 1)) * 0.5 + 0.15;
+                const mid = conn.path[Math.floor(conn.path.length / 2)];
+                const { x: mx, z: mz } = hexToWorld(mid.q, mid.r, HEX_SIZE);
+                const midTile = tileByCoordRef.current.get(`${mid.q},${mid.r}`);
+                const my = tileHeight(midTile?.elevation ?? 1) + 0.15;
                 const lbl = new CSS2DObject(makeXrayLabel(conn.name));
-                lbl.position.set((ax + bx) * 0.5, my, (az + bz) * 0.5);
+                lbl.position.set(mx, my, mz);
                 lbl.visible = false;
                 scene.add(lbl);
                 connectionLabelMapRef.current.set(conn.id, lbl);
@@ -751,7 +761,7 @@ export default function HexGrid({
     // ── Connection highlight / dim / hide in process mode ────────────────────────────────
     useEffect(() => {
         if (hideDecorations) {
-            // Xray mode: three levels — active stage (white), rest of process (dark grey), unrelated (grey).
+            // Xray mode: active stage (white), rest of process (dark grey), unrelated (hidden when a process is active, grey when no process is active).
             const hasProcess = !!highlightConnectionIds;
             const hasStage   = !!activeStageConnectionIds;
             connectionXrayMatRef.current.forEach((mat, connId) => {
@@ -762,11 +772,15 @@ export default function HexGrid({
                             : 0x888888;
                 mat.color.set(color);
             });
-            // Labels only appear on active-stage connections; hidden when nothing selected.
+            connectionMeshMapRef.current.forEach((obj, connId) => {
+                obj.visible = !hasProcess || (highlightConnectionIds?.has(connId) ?? false);
+            });
+            // Labels only appear on active-stage connections (or active process connections when no stage open); hidden when nothing selected or unrelated.
             connectionLabelMapRef.current.forEach((lbl, connId) => {
-                lbl.visible = hasStage
+                const inProcess = !hasProcess || (highlightConnectionIds?.has(connId) ?? false);
+                lbl.visible = inProcess && (hasStage
                     ? (activeStageConnectionIds?.has(connId) ?? false)
-                    : (highlightConnectionIds?.has(connId) ?? false);
+                    : (highlightConnectionIds?.has(connId) ?? false));
             });
             // Stage name label — positioned at the centroid of stage connection midpoints.
             const scene = threeRef.current?.scene;
@@ -781,14 +795,12 @@ export default function HexGrid({
                 activeStageConnectionIds.forEach((id) => {
                     const conn = conns[id];
                     if (!conn?.path || conn.path.length < 2) return;
-                    const first = conn.path[0], last = conn.path[conn.path.length - 1];
-                    const { x: ax, z: az } = hexToWorld(first.q, first.r, HEX_SIZE);
-                    const { x: bx, z: bz } = hexToWorld(last.q,  last.r,  HEX_SIZE);
-                    const firstTile = tileByCoordRef.current.get(`${first.q},${first.r}`);
-                    const lastTile  = tileByCoordRef.current.get(`${last.q},${last.r}`);
-                    cx += (ax + bx) * 0.5;
-                    cy += (tileHeight(firstTile?.elevation ?? 1) + tileHeight(lastTile?.elevation ?? 1)) * 0.5 + 0.4;
-                    cz += (az + bz) * 0.5;
+                    const mid = conn.path[Math.floor(conn.path.length / 2)];
+                    const { x: mx, z: mz } = hexToWorld(mid.q, mid.r, HEX_SIZE);
+                    const midTile = tileByCoordRef.current.get(`${mid.q},${mid.r}`);
+                    cx += mx;
+                    cy += tileHeight(midTile?.elevation ?? 1) + 0.4;
+                    cz += mz;
                     count++;
                 });
                 if (count > 0) {
@@ -844,7 +856,11 @@ export default function HexGrid({
         const sideInfo = sideColBufRef.current;
         if (!topInfo || !sideInfo || !hideDecorations) return;
         const highlighted = stageHighlightTilesRef.current;
-        const statusElements = resolveStatusElements(map.landmarks, metricOverlayEntries);
+        const statusElements = resolveStatusElements(
+            map.landmarks,
+            metricOverlayEntries,
+            hideDecorations ? visibleLandmarkIds : undefined,
+        );
 
         tiles.forEach((_tile, idx) => {
             const key = `${_tile.coordinate.q},${_tile.coordinate.r}`;
@@ -889,7 +905,7 @@ export default function HexGrid({
         applyTileHighlights();
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [stageHighlightTiles, map.landmarks, metricOverlayEntries, hideDecorations]);
+    }, [stageHighlightTiles, map.landmarks, metricOverlayEntries, hideDecorations, visibleLandmarkIds]);
 
     // ── CSS2D metric overlay renderer toggle ───────────────────────────────────
     useEffect(() => {
@@ -999,6 +1015,7 @@ export default function HexGrid({
         Object.values(map.landmarks ?? {}).forEach((landmark) => {
             const entry = metricOverlayEntries.get(landmark.id);
             if (!entry || !landmark.coordinate) return;
+            if (hideDecorations && visibleLandmarkIds && !visibleLandmarkIds.has(landmark.id)) return;
 
             const tile = tileByCoordRef.current.get(`${landmark.coordinate.q},${landmark.coordinate.r}`);
             const {x, z} = hexToWorld(landmark.coordinate.q, landmark.coordinate.r, HEX_SIZE);
@@ -1029,7 +1046,7 @@ export default function HexGrid({
 
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [metricOverlayEntries, map.landmarks, map.map.tiles]);
+    }, [metricOverlayEntries, map.landmarks, map.map.tiles, hideDecorations, visibleLandmarkIds]);
 
     // ── Process arrow overlay ─────────────────────────────────────────────────────
     useEffect(() => {

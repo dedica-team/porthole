@@ -17,11 +17,17 @@ import {tileHeight} from './terrainUtils';
 
 const HEX_SIZE      = 1;
 const LIFT            = 0.10;
-const SHAFT_WIDTH     = 0.36;
+const SHAFT_WIDTH     = 0.26;
 const TIP_HALF_WIDTH  = HEX_SIZE * 0.50;   // doubled from HEX_SIZE * 0.25
 const HEAD_WORLD_LEN  = 0.50;
 const TILE_INRADIUS   = HEX_SIZE * 0.87;
 const PROCESS_COLOR   = 0xffffff;
+/**
+ * Lateral offset perpendicular to the direction of travel (right-hand traffic rule).
+ * Displaces active process stage arrows to their right lane, allowing bidirectional
+ * and concurrent flows along shared paths to remain fully visible.
+ */
+export const PROCESS_LATERAL_OFFSET = 0.20;
 
 export interface StageConnectionEntry {
   stageConn: StageConnection;
@@ -82,13 +88,13 @@ function buildArrowRibbon(
   // so the arrow starts and ends at the tile edges adjacent to the landmark tiles.
   const rawPoints = pathData.map(({ cx, cz }) => new THREE.Vector3(cx, 0, cz));
 
-  let curvePoints: THREE.Vector3[];
+  let curve: THREE.Curve<THREE.Vector3>;
   if (rawPoints.length === 2) {
     // Direct neighbours: trim inward from both landmark tile centers
     const dir = rawPoints[1].clone().sub(rawPoints[0]).normalize();
     const startPt = rawPoints[0].clone().add(dir.clone().multiplyScalar(TILE_INRADIUS));
     const tipPt   = rawPoints[1].clone().sub(dir.clone().multiplyScalar(TILE_INRADIUS));
-    curvePoints = [startPt, tipPt];
+    curve = new THREE.LineCurve3(startPt, tipPt);
   } else {
     // General case: replace only the first and last control points with the
     // inradius-trimmed versions; keep ALL intermediate points for smooth curves.
@@ -99,10 +105,9 @@ function buildArrowRibbon(
     const dN = rawPoints[n].clone().sub(rawPoints[n - 1]).normalize();
     const tipPt = rawPoints[n].clone().sub(dN.clone().multiplyScalar(TILE_INRADIUS));
 
-    curvePoints = [startPt, ...rawPoints.slice(1, n), tipPt];
+    const curvePoints = [startPt, ...rawPoints.slice(1, n), tipPt];
+    curve = new THREE.CatmullRomCurve3(curvePoints);
   }
-
-  const curve = new THREE.CatmullRomCurve3(curvePoints);
 
   // Convert HEAD_WORLD_LEN to a t-fraction along the curve
   const arcLength = curve.getLength();
@@ -143,9 +148,13 @@ function buildArrowRibbon(
   for (let i = 0; i < shaftEndIdx; i++) {
     const px = sampledX[i], py = sampledY[i], pz = sampledZ[i];
     const stx = sampledTX[i], stz = sampledTZ[i];
-    perp.set(-stz, 0, stx).normalize().multiplyScalar(SHAFT_WIDTH / 2);
-    shaftVerts.push(px + perp.x, py, pz + perp.z);
-    shaftVerts.push(px - perp.x, py, pz - perp.z);
+    // Right-hand normal vector in the XZ plane: (-stz, 0, stx)
+    const normX = -stz, normZ = stx;
+    const cx = px + normX * PROCESS_LATERAL_OFFSET;
+    const cz = pz + normZ * PROCESS_LATERAL_OFFSET;
+    perp.set(normX, 0, normZ).multiplyScalar(SHAFT_WIDTH / 2);
+    shaftVerts.push(cx + perp.x, py, cz + perp.z);
+    shaftVerts.push(cx - perp.x, py, cz - perp.z);
   }
   for (let i = 0; i < shaftEndIdx - 1; i++) {
     const o = 2 * i;
@@ -160,13 +169,16 @@ function buildArrowRibbon(
   // ── Triangle tip: base at shaftEndIdx, tip = base + tangent * HEAD_WORLD_LEN ─
   const bx = sampledX[shaftEndIdx], by = sampledY[shaftEndIdx], bz = sampledZ[shaftEndIdx];
   const ttx = sampledTX[shaftEndIdx], ttz = sampledTZ[shaftEndIdx];
-  perp.set(-ttz, 0, ttx).normalize().multiplyScalar(TIP_HALF_WIDTH);
-  const tipX = bx + ttx * HEAD_WORLD_LEN;
-  const tipZ = bz + ttz * HEAD_WORLD_LEN;
+  const normX = -ttz, normZ = ttx;
+  const baseCX = bx + normX * PROCESS_LATERAL_OFFSET;
+  const baseCZ = bz + normZ * PROCESS_LATERAL_OFFSET;
+  perp.set(normX, 0, normZ).multiplyScalar(TIP_HALF_WIDTH);
+  const tipX = baseCX + ttx * HEAD_WORLD_LEN;
+  const tipZ = baseCZ + ttz * HEAD_WORLD_LEN;
   const tipVerts = [
-    bx + perp.x, by, bz + perp.z,   // 0 base-left
-    bx - perp.x, by, bz - perp.z,   // 1 base-right
-    tipX,        by,  tipZ,           // 2 tip
+    baseCX + perp.x, by, baseCZ + perp.z,   // 0 base-left
+    baseCX - perp.x, by, baseCZ - perp.z,   // 1 base-right
+    tipX,            by, tipZ,              // 2 tip
   ];
   const tipGeo = new THREE.BufferGeometry();
   tipGeo.setAttribute('position', new THREE.Float32BufferAttribute(tipVerts, 3));

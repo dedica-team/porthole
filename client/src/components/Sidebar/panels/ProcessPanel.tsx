@@ -310,16 +310,17 @@ export default function ProcessPanel() {
                                                     const fromLm = currentMap?.landmarks[conn.originId];
                                                     const toLm = currentMap?.landmarks[conn.targetId];
                                                     const dirLabel = sc.direction === 'REVERSE' ? '←' : sc.direction === 'BIDIRECTIONAL' ? '↔' : '→';
+                                                    const title = (fromLm?.name ?? '?')  + dirLabel + (toLm?.name ?? '?')
                                                     return (
                                                         <Button
                                                             key={sc.id}
                                                             variant={"ghost"}
                                                             fullWidth={true}
                                                             onClick={() => openEditScDialog(sc.id, sc.title, sc.direction, sc.connectionId)}
+                                                            title={title}
                                                         >
                                                             <span className="flex flex-col items-start text-left whitespace-normal break-words ">
                                                                 <span className="text-foreground">{sc.title ?? conn.name ?? conn.type}</span>
-                                                                <span className="text-sm text-muted-foreground">{fromLm?.name ?? '?'} {dirLabel} {toLm?.name ?? '?'}</span>
                                                             </span>
                                                         </Button>
                                                     );
