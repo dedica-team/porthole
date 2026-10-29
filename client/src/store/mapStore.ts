@@ -89,7 +89,7 @@ interface MapStore {
   relocatingLandmarkId: string | null;
   pendingConnectionMeta: { type: ConnectionType; name?: string; description?: string };
   editorMode: boolean;
-  editorTool: 'RAISE' | 'LOWER' | 'TERRAIN';
+  editorTool: 'NONE' | 'RAISE' | 'LOWER' | 'TERRAIN';
   editorTerrain: Terrain;
   rendererQualityProfile: RendererQualityProfile;
   mainView: MainView;
@@ -122,7 +122,7 @@ interface MapStore {
   setRelocatingLandmark: (id: string | null) => void;
   setPendingConnectionMeta: (meta: { type: ConnectionType; name?: string; description?: string }) => void;
   setEditorMode: (on: boolean) => void;
-  setEditorTool: (tool: 'RAISE' | 'LOWER' | 'TERRAIN') => void;
+  setEditorTool: (tool: 'NONE' | 'RAISE' | 'LOWER' | 'TERRAIN') => void;
   setEditorTerrain: (terrain: Terrain) => void;
   setRendererQualityProfile: (profile: RendererQualityProfile) => void;
   setMainView: (view: MainView) => void;

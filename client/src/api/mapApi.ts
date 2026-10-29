@@ -288,6 +288,34 @@ export async function editMap(
   return handleResponse<SessionState>(res);
 }
 
+export interface RegenerateTerrainOptions {
+  mapSize?: MapSize;
+  cols?: number;
+  rows?: number;
+  seed?: number;
+}
+
+export async function regenerateMapTerrain(
+  id: string,
+  options?: RegenerateTerrainOptions | number,
+): Promise<SessionState> {
+  const payload = typeof options === 'number'
+    ? { seed: options }
+    : {
+        mapSize: options?.mapSize ?? null,
+        cols: options?.cols ?? null,
+        rows: options?.rows ?? null,
+        seed: options?.seed ?? null,
+      };
+
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(id)}/regenerate-terrain`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<SessionState>(res);
+}
+
 export async function setCollaborationMode(id: string, mode: CollaborationMode): Promise<SessionState> {  const res = await fetch(`${BASE_URL}/sessions/${id}/collaboration-mode`, {
     method: 'PATCH',
     headers: authHeaders(),

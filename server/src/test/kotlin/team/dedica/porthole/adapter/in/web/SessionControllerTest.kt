@@ -423,6 +423,23 @@ class SessionControllerTest {
         assertTrue(waterCount > tiles.size() / 2, "Sea map should be mostly water")
     }
 
+    @Test
+    fun `POST regenerate terrain regenerates map for collaborator`() {
+        val body = mapOf("seed" to 12345L)
+        val response = post("/api/sessions/$mapId/regenerate-terrain", body)
+        assertEquals(200, response.statusCode())
+        val returnedState = json(response)
+        assertNotNull(returnedState["map"]["tiles"])
+        assertTrue(returnedState["map"]["tiles"].size() > 0)
+    }
+
+    @Test
+    fun `POST regenerate terrain returns 403 for viewer`() {
+        val body = mapOf("seed" to 12345L)
+        val response = post("/api/sessions/$mapId/regenerate-terrain", body, bearer = viewerToken)
+        assertEquals(403, response.statusCode())
+    }
+
     // ── Unauthenticated access ─────────────────────────────────────────────────
 
     @Test

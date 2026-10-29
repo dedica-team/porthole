@@ -15,7 +15,7 @@ class LandmarkTypeDeserializer : StdDeserializer<LandmarkType>(LandmarkType::cla
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): LandmarkType {
-        val raw = p.text?.trim() ?: return LandmarkType.KEEP
+        val raw = p.string?.trim() ?: return LandmarkType.KEEP
         return try {
             LandmarkType.valueOf(raw)
         } catch (_: IllegalArgumentException) {

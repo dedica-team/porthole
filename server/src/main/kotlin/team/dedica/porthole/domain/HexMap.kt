@@ -30,6 +30,18 @@ class HexMap @JsonCreator constructor(@JsonProperty("tiles") tiles: List<HexTile
     fun isAdjacent(a: HexCoordinate, b: HexCoordinate): Boolean =
         a.distanceTo(b) == 1
 
+    /**
+     * Regenerates the terrain and elevation of this map from scratch based on
+     * existing landmarks and groups.
+     */
+    fun regenerateTerrain(
+        landmarks: Collection<Landmark> = emptyList(),
+        groups: Collection<LandmarkGroup> = emptyList(),
+        seed: Long = java.util.concurrent.ThreadLocalRandom.current().nextLong(),
+        cols: Int? = null,
+        rows: Int? = null,
+    ): HexMap = MapTerrainGenerator.regenerateTerrain(this, landmarks, groups, seed, cols, rows).map
+
     companion object {
         /** Classic hexagonal map (used by tests). */
         fun createHexagonal(

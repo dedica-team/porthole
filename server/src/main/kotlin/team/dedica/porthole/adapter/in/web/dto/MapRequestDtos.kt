@@ -15,6 +15,14 @@ data class CreateMapRequest(
     val mapSize: String = "MEDIUM",
 )
 
+@Introspected
+data class RegenerateTerrainRequest(
+    val mapSize: String? = null,
+    val cols: Int? = null,
+    val rows: Int? = null,
+    val seed: Long? = null,
+)
+
 private const val NAME_MAX_LENGTH = 200
 private const val DESCRIPTION_MAX_LENGTH = 2000
 private const val LINK_MAX_LENGTH = 2000
