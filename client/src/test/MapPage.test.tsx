@@ -22,12 +22,16 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
     hideDecorations,
     onConnectionClick,
     visibleLandmarkLabelIds,
+    visibleLandmarkIds,
+    highlightConnectionIds,
   }: {
     onTileClick: (q: number, r: number) => void;
     brushMode?: boolean;
     hideDecorations?: boolean;
     onConnectionClick?: (connectionId: string) => void;
     visibleLandmarkLabelIds?: Set<string>;
+    visibleLandmarkIds?: Set<string>;
+    highlightConnectionIds?: Set<string>;
   }) => {
     const clickTile = (q: number, r: number) => {
       useMapStore.getState().setSelectedTile({ q, r });
@@ -44,6 +48,8 @@ vi.mock('../components/HexGrid/HexGrid', () => ({
         data-testid="hex-grid"
         data-process-render-mode={hideDecorations ? 'true' : 'false'}
         data-visible-label-ids={visibleLandmarkLabelIds ? [...visibleLandmarkLabelIds].sort().join(',') : 'all'}
+        data-visible-landmark-ids={visibleLandmarkIds ? [...visibleLandmarkIds].sort().join(',') : 'all'}
+        data-highlight-connection-ids={highlightConnectionIds ? [...highlightConnectionIds].sort().join(',') : 'all'}
       >
         <button data-testid="tile-empty"   onClick={() => clickTile(1, 0)}>Empty Tile</button>
         <button data-testid="tile-tower"   onClick={() => clickTile(0, 0)}>Tower Tile</button>
@@ -1003,6 +1009,14 @@ function labelIds() {
   return screen.getByTestId('hex-grid').dataset.visibleLabelIds;
 }
 
+function visibleLandmarkIds() {
+  return screen.getByTestId('hex-grid').dataset.visibleLandmarkIds;
+}
+
+function highlightConnectionIds() {
+  return screen.getByTestId('hex-grid').dataset.highlightConnectionIds;
+}
+
 describe('ProcessMapView – visibleLandmarkLabelIds', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1058,6 +1072,81 @@ describe('ProcessMapView – visibleLandmarkLabelIds', () => {
     expect(labelIds()).toBe('lm-1,lm-2');
     await setMapState({ activeProcessId: null, activeStageId: null });
     expect(labelIds()).toBe('all');
+  });
+
+  it('shows only process nodes in visibleLandmarkIds and process connections in highlightConnectionIds when a process is selected', async () => {
+    // Map with additional unrelated landmark and connection
+    const UNRELATED_LANDMARKS = {
+      ...PROCESS_LANDMARKS,
+      'lm-unrelated': { id: 'lm-unrelated', name: 'Unrelated', ownerId: COLLABORATOR_ID, coordinate: { q: 5, r: 5 }, type: 'KEEP' as const },
+    };
+    const UNRELATED_CONNECTIONS = {
+      ...PROCESS_CONNECTIONS,
+      'conn-unrelated': { id: 'conn-unrelated', name: 'Other', originId: 'lm-unrelated', targetId: 'lm-1', type: 'PIPE' as const, path: [] },
+    };
+    useMapStore.setState({
+      currentMap: makeMap({ landmarks: UNRELATED_LANDMARKS, connections: UNRELATED_CONNECTIONS }),
+      maps: [],
+      processes: PROCESSES,
+      processSidebarHidden: true,
+      activeProcessId: null,
+      activeStageId: null,
+      pendingView: null,
+    });
+
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await screen.findByTestId('hex-grid');
+
+    // Initially no process active -> all nodes and connections visible
+    expect(visibleLandmarkIds()).toBe('all');
+    expect(highlightConnectionIds()).toBe('all');
+
+    // Select process -> only process nodes (lm-1, lm-2, lm-3) and connections (conn-1, conn-2)
+    await setMapState({ activeProcessId: 'proc-1', activeStageId: null });
+    expect(visibleLandmarkIds()).toBe('lm-1,lm-2,lm-3');
+    expect(highlightConnectionIds()).toBe('conn-1,conn-2');
+  });
+
+  it('when a layer is active and a process is selected, shows only process labels where nodes are visible in that layer', async () => {
+    const METRIC_ID = 'metric-1';
+    const LANDMARKS_WITH_METRICS: SessionState['landmarks'] = {
+      'lm-1': {
+        id: 'lm-1', name: 'Alpha', ownerId: COLLABORATOR_ID, coordinate: { q: 0, r: 0 }, type: 'KEEP',
+        metrics: { [METRIC_ID]: { metricId: METRIC_ID, level: 'OK', value: '95' } },
+      },
+      'lm-2': {
+        id: 'lm-2', name: 'Beta', ownerId: COLLABORATOR_ID, coordinate: { q: 1, r: 0 }, type: 'KEEP',
+        metrics: { [METRIC_ID]: { metricId: METRIC_ID, level: 'NONE' } }, // NONE level means not visible in this layer
+      },
+      'lm-3': {
+        id: 'lm-3', name: 'Gamma', ownerId: COLLABORATOR_ID, coordinate: { q: 2, r: 0 }, type: 'KEEP',
+        // no metric entry -> not visible in this layer
+      },
+    };
+
+    useMapStore.setState({
+      currentMap: makeMap({ landmarks: LANDMARKS_WITH_METRICS, connections: PROCESS_CONNECTIONS }),
+      metrics: { [METRIC_ID]: { id: METRIC_ID, name: 'Performance', description: 'Perf metric' } },
+      maps: [],
+      processes: PROCESSES,
+      processSidebarHidden: true,
+      activeProcessId: null,
+      activeStageId: null,
+      pendingView: null,
+    });
+
+    renderMapPage(`/session/${MAP_ID}/processes`);
+    await screen.findByTestId('hex-grid');
+
+    // Select the metric layer by clicking on "Performance"
+    const metricButton = await screen.findByRole('button', { name: 'Performance' });
+    fireEvent.click(metricButton);
+
+    // Select process-1
+    await setMapState({ activeProcessId: 'proc-1', activeStageId: null });
+
+    // Only lm-1 has a non-NONE metric entry, so only lm-1 label should be visible
+    expect(labelIds()).toBe('lm-1');
   });
 });
 

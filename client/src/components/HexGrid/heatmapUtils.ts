@@ -30,16 +30,19 @@ export interface StatusElement {
  * extracts status elements based on that metric's level color.
  * If "none" overlay is selected (`metricOverlayEntries` is undefined or empty), returns an empty array
  * so that no heatmap is painted.
+ * If `visibleLandmarkIds` is provided, only landmarks contained in the set are included.
  */
 export function resolveStatusElements(
   landmarks: Record<string, Landmark> | undefined,
   metricOverlayEntries?: Map<string, { value: string; color: string }>,
+  visibleLandmarkIds?: Set<string>,
 ): StatusElement[] {
   if (!landmarks || !metricOverlayEntries || metricOverlayEntries.size === 0) return [];
   const elements: StatusElement[] = [];
 
   for (const lm of Object.values(landmarks)) {
     if (!lm.coordinate) continue;
+    if (visibleLandmarkIds && !visibleLandmarkIds.has(lm.id)) continue;
 
     const entry = metricOverlayEntries.get(lm.id);
     if (!entry) continue;

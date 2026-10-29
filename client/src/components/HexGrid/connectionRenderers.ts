@@ -3,15 +3,15 @@
  * Each renderer lives in its own file under ./connections/.
  */
 import * as THREE from 'three';
-import type { Connection } from '@/types/connection';
-import type { HexTile } from '@/types/hex';
-import type { ConnectionRenderer }  from './connections/ConnectionRenderer.ts';
-import { PipeRenderer }             from './connections/PipeRenderer.ts';
-import { TelegraphRenderer }        from './connections/TelegraphRenderer.ts';
-import { StreetRenderer }           from './connections/StreetRenderer.ts';
-import { ArrowRenderer }            from './connections/ArrowRenderer.ts';
-import { hexToWorld }               from '@/utils/hexUtils.ts';
-import { tileHeight }               from './terrainUtils';
+import type {Connection} from '@/types/connection';
+import type {HexTile} from '@/types/hex';
+import type {ConnectionRenderer} from './connections/ConnectionRenderer.ts';
+import {PipeRenderer} from './connections/PipeRenderer.ts';
+import {TelegraphRenderer} from './connections/TelegraphRenderer.ts';
+import {StreetRenderer} from './connections/StreetRenderer.ts';
+import {ArrowRenderer} from './connections/ArrowRenderer.ts';
+import {hexToWorld} from '@/utils/hexUtils.ts';
+import {tileHeight} from './terrainUtils';
 
 export type { ConnectionRenderer } from './connections/ConnectionRenderer.ts';
 export { PipeRenderer }      from './connections/PipeRenderer.ts';
@@ -38,15 +38,22 @@ export function buildConnectionGroup(conn: Connection, tiles: HexTile[]): THREE.
 }
 
 const HEX_SIZE       = 1;
-const XRAY_LIFT      = 0.04;
-const XRAY_SHAFT_HW  = 0.11;    // half-width of shaft ribbon (doubled from 0.055)
-const XRAY_ARROW_HW  = 0.40;    // half-width at arrowhead base (doubled from 0.20)
-const XRAY_ARROW_LEN = 0.30;    // length of arrowhead
+const XRAY_LIFT      = 0.08;
+const XRAY_SHAFT_HW  = 0.08;    // half-width of shaft ribbon (doubled from 0.055)
+const XRAY_ARROW_HW  = 0.32;    // half-width at arrowhead base (doubled from 0.20)
+const XRAY_ARROW_LEN = 0.32;    // length of arrowhead
 const XRAY_TRIM      = 0.44;    // clearance from landmark cylinder edge
+/**
+ * Lateral offset perpendicular to the direction of travel (right-hand traffic rule).
+ * Displaces lines so opposing or overlapping connections across the same hex tiles
+ * render as separate parallel lanes rather than occluding each other.
+ */
+export const XRAY_LATERAL_OFFSET = 0.14;
 
 /**
- * Builds a straight-line xray connection: thin shaft from origin to target
- * plus a small triangular arrowhead at the target end.
+ * Builds an xray connection arrow following the original hex tile path:
+ * ribbon shaft along the CatmullRom spline through conn.path,
+ * ending in a triangular arrowhead at the target end.
  * Returns the group and its shared MeshBasicMaterial so the caller can
  * update the color when highlight state changes.
  */
@@ -59,55 +66,132 @@ export function buildXrayLine(
   const tileMap = new Map<string, HexTile>();
   for (const t of tiles) tileMap.set(`${t.coordinate.q},${t.coordinate.r}`, t);
 
-  const getY = (q: number, r: number) =>
-    tileHeight(tileMap.get(`${q},${r}`)?.elevation ?? 0) + XRAY_LIFT;
+  const tileTopY = (q: number, r: number) => {
+    const tile = tileMap.get(`${q},${r}`);
+    return tileHeight(tile?.elevation ?? 0) + XRAY_LIFT;
+  };
 
-  const first = conn.path[0];
-  const last  = conn.path[conn.path.length - 1];
+  const pathData = conn.path.map(({ q, r }) => {
+    const { x: cx, z: cz } = hexToWorld(q, r, HEX_SIZE);
+    return { cx, cz, topY: tileTopY(q, r) };
+  });
 
-  const { x: ax, z: az } = hexToWorld(first.q, first.r, HEX_SIZE);
-  const { x: bx, z: bz } = hexToWorld(last.q,  last.r,  HEX_SIZE);
-  const y = (getY(first.q, first.r) + getY(last.q, last.r)) * 0.5;
+  // Segment midpoint heights
+  const segMidY: number[] = [];
+  for (let i = 0; i < pathData.length - 1; i++) {
+    segMidY.push(Math.max(pathData[i].topY, pathData[i + 1].topY));
+  }
 
-  const dx = bx - ax, dz = bz - az;
-  const d  = Math.hypot(dx, dz);
-  if (d < 0.001) return null;
-  const tx = dx / d, tz = dz / d;
-  const px = -tz,    pz =  tx;
+  const edgeHeightAt = (sx: number, sz: number, segIdx: number): number => {
+    const a = pathData[segIdx], b = pathData[segIdx + 1];
+    const da = Math.hypot(sx - a.cx, sz - a.cz);
+    const db = Math.hypot(sx - b.cx, sz - b.cz);
+    const total = da + db || 1;
+    const ta = db / total, tb = da / total;
+    const base = a.topY * ta + b.topY * tb;
+    const tEdge = 1 - Math.abs(ta - tb);
+    return base + (segMidY[segIdx] - base) * tEdge;
+  };
 
-  const totalTrim = XRAY_TRIM * 2 + XRAY_ARROW_LEN;
-  if (d < totalTrim + 0.01) return null;
+  const rawPoints = pathData.map(({ cx, cz }) => new THREE.Vector3(cx, 0, cz));
 
-  // Shaft: from trimmed origin to arrowhead base
-  const s0x = ax + tx * XRAY_TRIM,              s0z = az + tz * XRAY_TRIM;
-  const s1x = bx - tx * (XRAY_TRIM + XRAY_ARROW_LEN), s1z = bz - tz * (XRAY_TRIM + XRAY_ARROW_LEN);
-  // Arrowhead tip: trimmed inward from target
-  const tipX = bx - tx * XRAY_TRIM, tipZ = bz - tz * XRAY_TRIM;
+  let curve: THREE.Curve<THREE.Vector3>;
+  if (rawPoints.length === 2) {
+    const dir = rawPoints[1].clone().sub(rawPoints[0]).normalize();
+    const startPt = rawPoints[0].clone().add(dir.clone().multiplyScalar(XRAY_TRIM));
+    const tipPt   = rawPoints[1].clone().sub(dir.clone().multiplyScalar(XRAY_TRIM));
+    curve = new THREE.LineCurve3(startPt, tipPt);
+  } else {
+    const d0 = rawPoints[1].clone().sub(rawPoints[0]).normalize();
+    const startPt = rawPoints[0].clone().add(d0.clone().multiplyScalar(XRAY_TRIM));
+
+    const n = rawPoints.length - 1;
+    const dN = rawPoints[n].clone().sub(rawPoints[n - 1]).normalize();
+    const tipPt = rawPoints[n].clone().sub(dN.clone().multiplyScalar(XRAY_TRIM));
+
+    const curvePoints = [startPt, ...rawPoints.slice(1, n), tipPt];
+    curve = new THREE.CatmullRomCurve3(curvePoints);
+  }
+
+  const arcLength = curve.getLength();
+  if (arcLength < 0.001) return null;
+
+  const headFraction = Math.min(XRAY_ARROW_LEN / arcLength, 0.5);
+  const headStart = 1 - headFraction;
+
+  const SAMPLES = Math.max(conn.path.length * 6, 24);
+  const sampledX  = new Float32Array(SAMPLES + 1);
+  const sampledY  = new Float32Array(SAMPLES + 1);
+  const sampledZ  = new Float32Array(SAMPLES + 1);
+  const sampledTX = new Float32Array(SAMPLES + 1);
+  const sampledTZ = new Float32Array(SAMPLES + 1);
+  const _pt = new THREE.Vector3(), _tan = new THREE.Vector3();
+
+  for (let i = 0; i <= SAMPLES; i++) {
+    const t = i / SAMPLES;
+    curve.getPoint(t, _pt);
+    curve.getTangent(t, _tan); _tan.normalize();
+    const segIdx = Math.min(Math.floor(t * (conn.path.length - 1)), conn.path.length - 2);
+    sampledX[i] = _pt.x;
+    sampledY[i] = edgeHeightAt(_pt.x, _pt.z, segIdx);
+    sampledZ[i] = _pt.z;
+    sampledTX[i] = _tan.x;
+    sampledTZ[i] = _tan.z;
+  }
 
   const mat = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide });
   const group = new THREE.Group();
 
-  // Shaft ribbon
-  const hw = XRAY_SHAFT_HW;
+  const shaftEndIdx = Math.max(1, Math.round(headStart * SAMPLES));
+
+  // Shaft ribbon: samples 0 .. shaftEndIdx
+  const shaftVerts: number[] = [];
+  const shaftIdx: number[] = [];
+  const perp = new THREE.Vector3();
+  for (let i = 0; i <= shaftEndIdx; i++) {
+    const px = sampledX[i], py = sampledY[i], pz = sampledZ[i];
+    const stx = sampledTX[i], stz = sampledTZ[i];
+    // Right-hand normal vector in the XZ plane: (-stz, 0, stx)
+    const normX = -stz, normZ = stx;
+    const cx = px + normX * XRAY_LATERAL_OFFSET;
+    const cz = pz + normZ * XRAY_LATERAL_OFFSET;
+    perp.set(normX, 0, normZ).multiplyScalar(XRAY_SHAFT_HW);
+    shaftVerts.push(cx + perp.x, py, cz + perp.z);
+    shaftVerts.push(cx - perp.x, py, cz - perp.z);
+  }
+  for (let i = 0; i < shaftEndIdx; i++) {
+    const o = 2 * i;
+    shaftIdx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3);
+  }
+
   const shaftGeo = new THREE.BufferGeometry();
-  shaftGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array([
-    s0x + px * hw, y, s0z + pz * hw,
-    s0x - px * hw, y, s0z - pz * hw,
-    s1x + px * hw, y, s1z + pz * hw,
-    s1x - px * hw, y, s1z - pz * hw,
-  ]), 3));
-  shaftGeo.setIndex([0, 2, 1, 1, 2, 3]);
+  shaftGeo.setAttribute('position', new THREE.Float32BufferAttribute(shaftVerts, 3));
+  shaftGeo.setIndex(shaftIdx);
+  shaftGeo.computeVertexNormals();
   group.add(new THREE.Mesh(shaftGeo, mat));
 
-  // Arrowhead triangle
-  const aw = XRAY_ARROW_HW;
+  // Arrowhead triangle: base at shaftEndIdx, tip at SAMPLES (displaced by lateral offset)
+  const bx = sampledX[shaftEndIdx], by = sampledY[shaftEndIdx], bz = sampledZ[shaftEndIdx];
+  const ttx = sampledTX[shaftEndIdx], ttz = sampledTZ[shaftEndIdx];
+  const bNormX = -ttz, bNormZ = ttx;
+  const baseCX = bx + bNormX * XRAY_LATERAL_OFFSET;
+  const baseCZ = bz + bNormZ * XRAY_LATERAL_OFFSET;
+  perp.set(bNormX, 0, bNormZ).multiplyScalar(XRAY_ARROW_HW);
+
+  const rawTipX = sampledX[SAMPLES], tipY = sampledY[SAMPLES], rawTipZ = sampledZ[SAMPLES];
+  const endTX = sampledTX[SAMPLES], endTZ = sampledTZ[SAMPLES];
+  const tipNormX = -endTZ, tipNormZ = endTX;
+  const tipX = rawTipX + tipNormX * XRAY_LATERAL_OFFSET;
+  const tipZ = rawTipZ + tipNormZ * XRAY_LATERAL_OFFSET;
+
   const arrowGeo = new THREE.BufferGeometry();
   arrowGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array([
-    tipX,          y, tipZ,
-    s1x + px * aw, y, s1z + pz * aw,
-    s1x - px * aw, y, s1z - pz * aw,
+    tipX,             tipY, tipZ,
+    baseCX + perp.x,  by,   baseCZ + perp.z,
+    baseCX - perp.x,  by,   baseCZ - perp.z,
   ]), 3));
   arrowGeo.setIndex([0, 1, 2]);
+  arrowGeo.computeVertexNormals();
   group.add(new THREE.Mesh(arrowGeo, mat));
 
   return { group, mat };

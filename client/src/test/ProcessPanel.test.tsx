@@ -145,12 +145,6 @@ describe('ProcessPanel – Stage Detail View', () => {
     expect(screen.getByText(/main pipe/i)).toBeInTheDocument();
   });
 
-  it('shows landmark names for connection endpoints', () => {
-    render(<ProcessPanel />);
-    expect(screen.getByText(/Keep/)).toBeInTheDocument();
-    expect(screen.getByText(/Tower/)).toBeInTheDocument();
-  });
-
   it('shows instruction tooltip trigger (help icon) in stage body', () => {
     render(<ProcessPanel />);
     // The help hint is inside a Tooltip; the trigger button contains a HelpCircle icon

@@ -1,7 +1,7 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.3.21"
-    id("org.jetbrains.kotlin.kapt") version "2.3.21"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.3.21"
+    id("org.jetbrains.kotlin.jvm") version "2.4.21"
+    id("org.jetbrains.kotlin.kapt") version "2.4.21"
+    id("org.jetbrains.kotlin.plugin.allopen") version "2.4.21"
     id("io.micronaut.application") version "5.0.2"
     id("com.gradleup.shadow") version "9.4.1"
     id("org.graalvm.buildtools.native") version "1.1.17"
@@ -29,7 +29,7 @@ allOpen {
 }
 
 micronaut {
-    version = providers.gradleProperty("micronautVersion").get()
+    version = "5.2.4"
     runtime("netty")
     testRuntime("junit5")
     processing {
@@ -42,24 +42,11 @@ application {
     mainClass.set("team.dedica.porthole.PortholeApplicationKt")
 }
 
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "com.github.javaparser" && requested.name.startsWith("javaparser-")) {
-            useVersion("3.28.1")
-            because("Micronaut 5 requires JavaParser >= 3.28.0 for 2-argument parseJavadoc method")
-        }
-    }
-}
-
 dependencies {
-    kapt("com.github.javaparser:javaparser-core:3.28.1")
     kapt("io.micronaut:micronaut-inject-java")
     kapt("io.micronaut.validation:micronaut-validation-processor")
     kapt("io.micronaut.security:micronaut-security-processor")
     kapt("io.micronaut:micronaut-graal")
-    kaptTest("com.github.javaparser:javaparser-core:3.28.1")
-    kaptTest("io.micronaut:micronaut-inject-java")
-    kaptTest("io.micronaut.validation:micronaut-validation-processor")
 
     implementation("io.micronaut:micronaut-http-server-netty")
     implementation("io.micronaut:micronaut-http-client")
@@ -77,7 +64,7 @@ dependencies {
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.yubico:webauthn-server-core:2.8.1")
+    implementation("com.yubico:webauthn-server-core:2.10.1")
     implementation("io.jsonwebtoken:jjwt-api")
     runtimeOnly("io.jsonwebtoken:jjwt-impl")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
@@ -91,6 +78,7 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testImplementation("com.github.dasniko:testcontainers-keycloak:3.9.1")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
+    testImplementation(kotlin("test"))
 }
 
 tasks.withType<Test>().configureEach {

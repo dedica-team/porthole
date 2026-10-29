@@ -99,6 +99,37 @@ describe('resolveStatusElements', () => {
     const expectedColor = new THREE.Color(QUALITY_LEVEL_COLOR.OK);
     expect(elements[0].statusColor[0]).toBeCloseTo(expectedColor.r);
   });
+
+  it('filters out landmarks not in visibleLandmarkIds when provided', () => {
+    const landmarks: Record<string, Landmark> = {
+      'lm-1': {
+        id: 'lm-1',
+        name: 'Tower 1',
+        ownerId: null,
+        type: 'KEEP',
+        coordinate: { q: 0, r: 0 },
+        metrics: {},
+      },
+      'lm-2': {
+        id: 'lm-2',
+        name: 'Tower 2',
+        ownerId: null,
+        type: 'KEEP',
+        coordinate: { q: 2, r: 0 },
+        metrics: {},
+      },
+    };
+
+    const overlay = new Map([
+      ['lm-1', { value: '✔', color: QUALITY_LEVEL_COLOR.OK }],
+      ['lm-2', { value: '✖', color: QUALITY_LEVEL_COLOR.ERROR }],
+    ]);
+
+    // When visibleLandmarkIds only contains 'lm-1'
+    const elements = resolveStatusElements(landmarks, overlay, new Set(['lm-1']));
+    expect(elements.length).toBe(1);
+    expect(elements[0].id).toBe('lm-1');
+  });
 });
 
 describe('computeTileHeatmapColor', () => {
@@ -162,7 +193,7 @@ describe('computeTileHeatmapColor', () => {
     // Tile at (0, 0): distance 0 from lm-err (d=0, w=1, full error), distance 2 from lm-ok (d=2, w=0.5, desat ok)
     const errDominated = computeTileHeatmapColor(0, 0, [errorElement, okElement]);
     expect(errDominated).not.toBeNull();
-    const expectedDomR = (errorElement.statusColor[0] * 1.0 + okElement.desaturatedColor[0] * 0.5) / 1.5;
+    const expectedDomR = (errorElement.statusColor[0] + okElement.desaturatedColor[0] * 0.5) / 1.5;
     expect(errDominated!.topRGB[0]).toBeCloseTo(expectedDomR);
   });
 });
