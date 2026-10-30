@@ -210,10 +210,17 @@ describe('Navbar – tab navigation', () => {
     expect(screen.getByTestId('view-overview')).toBeInTheDocument();
   });
 
-  it('navigates to index when Overview tab is clicked', () => {
+  it('navigates to index when session title tab is clicked', () => {
+    useMapStore.setState({ currentMap: makeMap({ name: 'Alpha Base' }) });
     renderWithRoutes(`/session/${MAP_ID}/metrics`);
-    fireEvent.click(screen.getByText('Overview'));
+    fireEvent.click(screen.getByText('Alpha Base'));
     expect(screen.getByTestId('view-overview')).toBeInTheDocument();
+  });
+
+  it('uses map id slice when currentMap has no custom name', () => {
+    useMapStore.setState({ currentMap: makeMap({ name: undefined }) });
+    renderWithRoutes(`/session/${MAP_ID}/metrics`);
+    expect(screen.getByText(`#${MAP_ID.slice(0, 8)}`)).toBeInTheDocument();
   });
 
   it('navigates to /metrics when Quality Metrics tab is clicked', () => {
@@ -372,6 +379,103 @@ describe('Navbar – username editing', () => {
     fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
     await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument());
     expect(mapApi.changeUsername).not.toHaveBeenCalled();
+  });
+});
+
+// ── Search & User popups and icon+text items ─────────────────────────────────
+
+describe('Navbar – search and user elements', () => {
+  const landmarkA: import('../types/landmark').Landmark = {
+    id: 'lm-1',
+    name: 'Dragon Castle',
+    ownerId: null,
+    type: 'KEEP',
+    coordinate: { q: 1, r: 2 },
+  };
+
+  beforeEach(() => {
+    useMapStore.setState({
+      currentMap: makeMap({
+        name: 'Hex Realm',
+        landmarks: { 'lm-1': landmarkA },
+      }),
+    });
+  });
+
+  it('renders search and user buttons with icon and text', () => {
+    renderNavbar();
+    expect(screen.getByRole('button', { name: /^search$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /user menu/i })).toHaveTextContent('alice');
+  });
+
+  it('opens search popup and filters landmarks on typing', async () => {
+    renderNavbar();
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }));
+
+    const searchInput = await screen.findByPlaceholderText('Search…');
+    expect(searchInput).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: 'Dragon' } });
+    expect(await screen.findByText('Dragon Castle')).toBeInTheDocument();
+  });
+
+  it('selects landmark on click in search popup', async () => {
+    renderNavbar();
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }));
+
+    const searchInput = await screen.findByPlaceholderText('Search…');
+    fireEvent.change(searchInput, { target: { value: 'Dragon' } });
+
+    const landmarkItem = await screen.findByText('Dragon Castle');
+    fireEvent.click(landmarkItem);
+
+    // After selection, search popup closes
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText('Search…')).not.toBeInTheDocument();
+    });
+  });
+
+  it('toggles mobile hamburger menu and renders search input and items', async () => {
+    renderNavbar();
+    const menuBtn = screen.getByRole('button', { name: /open menu/i });
+    expect(menuBtn).toHaveTextContent('Menu');
+
+    fireEvent.click(menuBtn);
+    expect(screen.getByRole('button', { name: /close menu/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
+  });
+
+  it('allows entering a search value and selecting a landmark in mobile hamburger menu', async () => {
+    renderNavbar();
+    fireEvent.click(screen.getByRole('button', { name: /open menu/i }));
+
+    const searchInput = screen.getByPlaceholderText('Search…');
+    expect(searchInput).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: 'Dragon' } });
+    const match = await screen.findByText('Dragon Castle');
+    expect(match).toBeInTheDocument();
+
+    fireEvent.click(match);
+    // Menu closes and search input is removed
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText('Search…')).not.toBeInTheDocument();
+    });
+  });
+
+  it('applies responsive collapse classes (hidden 2xl:inline) to navbar labels', () => {
+    renderNavbar();
+    const searchBtn = screen.getByRole('button', { name: /^search$/i });
+    const searchLabel = searchBtn.querySelector('span');
+    expect(searchLabel).toHaveClass('hidden', '2xl:inline');
+
+    const metricsBtn = screen.getByRole('button', { name: /^quality metrics$/i });
+    const metricsLabel = metricsBtn.querySelector('span');
+    expect(metricsLabel).toHaveClass('hidden', '2xl:inline');
+
+    const lobbyBtn = screen.getByRole('button', { name: /back to lobby/i });
+    const lobbyLabel = lobbyBtn.querySelector('span');
+    expect(lobbyLabel).toHaveClass('hidden', '2xl:inline');
   });
 });
 

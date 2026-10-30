@@ -48,6 +48,7 @@
 }
 
 @theme inline {
+  --breakpoint-2xl: 1500px;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-card: hsl(var(--card));
@@ -420,6 +421,15 @@ tr:hover td:not(.group-stripe) {
   color: hsl(var(--holo-indigo));
   letter-spacing: 0.15em;
   text-transform: uppercase;
+}
+
+/* Scrollbar utility */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 /* Active nav / sidebar items */
