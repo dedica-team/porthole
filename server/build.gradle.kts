@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.allopen") version "2.4.21"
     id("io.micronaut.application") version "5.0.2"
     id("com.gradleup.shadow") version "9.4.1"
-    id("org.graalvm.buildtools.native") version "1.1.17"
+    id("org.graalvm.buildtools.native") version "1.1.18"
 }
 
 java {
