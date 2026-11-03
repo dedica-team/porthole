@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import GreenkeepingRotationsView from '../components/GreenkeepingRotationsView/GreenkeepingRotationsView';
+import GreenkeepingChecklistView from '../components/GreenkeepingRotationsView/GreenkeepingChecklistView';
 import * as mapApi from '../api/mapApi';
 import { useAuthStore, useMapStore } from '../store/mapStore';
 import type { SessionState } from '../types/session';
@@ -24,6 +26,17 @@ const makeMap = (): SessionState => ({
   },
   map: { tiles: [] },
 });
+
+function renderView() {
+  return render(
+    <MemoryRouter initialEntries={[`/session/${MAP_ID}/greenkeeping`]}>
+      <Routes>
+        <Route path="/session/:id/greenkeeping" element={<GreenkeepingRotationsView />} />
+        <Route path="/session/:id/greenkeeping/:rotationId" element={<GreenkeepingChecklistView />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
 
 const baseRotation: GreenkeepingRotation = {
   id: 'rot-1',
@@ -90,7 +103,7 @@ describe('GreenkeepingRotationsView', () => {
   });
 
   it('renders the rotation overview as cards for collaborators with only current greenkeeper', () => {
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     expect(screen.getByText('Weekly Core Duty')).toBeInTheDocument();
     expect(screen.getByText('Shared care of the core systems')).toBeInTheDocument();
@@ -104,7 +117,7 @@ describe('GreenkeepingRotationsView', () => {
 
   it('hides create button for viewers', () => {
     useAuthStore.setState({ userId: 'viewer', username: 'viewer', isAuthenticated: true });
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     expect(screen.queryByRole('button', { name: /^rotation$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /advance rotation weekly core duty/i })).not.toBeInTheDocument();
@@ -118,14 +131,14 @@ describe('GreenkeepingRotationsView', () => {
       }],
     });
 
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     expect(screen.getByText('alice')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /advance rotation/i })).not.toBeInTheDocument();
   });
 
   it('opens the edit dialog when the title is clicked', async () => {
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     fireEvent.click(screen.getByText('Weekly Core Duty'));
 
@@ -133,7 +146,7 @@ describe('GreenkeepingRotationsView', () => {
   });
 
   it('shows delete confirmation inside the edit dialog', async () => {
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     fireEvent.click(screen.getByText('Weekly Core Duty'));
 
@@ -145,7 +158,7 @@ describe('GreenkeepingRotationsView', () => {
   });
 
   it('renders table headers including Rotation, Greenkeeper, and Checklist', () => {
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     expect(screen.getByRole('columnheader', { name: /^rotation$/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^greenkeeper$/i })).toBeInTheDocument();
@@ -153,7 +166,7 @@ describe('GreenkeepingRotationsView', () => {
   });
 
   it('renders Create checklist button in the third column when no active checklist exists', () => {
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     expect(screen.getByRole('button', { name: /open checklist for weekly core duty/i })).toHaveTextContent('Create checklist');
   });
@@ -174,18 +187,19 @@ describe('GreenkeepingRotationsView', () => {
       }],
     });
 
-    render(<GreenkeepingRotationsView />);
+    renderView();
 
     expect(screen.getByText('2026-10-21 Checklist')).toBeInTheDocument();
     expect(screen.getByText('1/2 done')).toBeInTheDocument();
   });
 
-  it('opens the checklist dialog when Checklist button is clicked', async () => {
-    render(<GreenkeepingRotationsView />);
+  it('navigates to the checklist view when Checklist button is clicked', async () => {
+    renderView();
 
     fireEvent.click(screen.getByRole('button', { name: /open checklist for weekly core duty/i }));
 
     expect(await screen.findByText('Weekly Core Duty – Checklist')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /back to rotations/i })).toBeInTheDocument();
   });
 
   it('advances the active collaborator and updates the overview', async () => {
@@ -197,7 +211,7 @@ describe('GreenkeepingRotationsView', () => {
       ],
     });
 
-    render(<GreenkeepingRotationsView />);
+    renderView();
     fireEvent.click(screen.getByRole('button', { name: /advance rotation weekly core duty/i }));
 
     // dialog opens — confirm the advance

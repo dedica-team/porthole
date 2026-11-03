@@ -15,7 +15,7 @@
     --holo-bg:          0   0% 16%;    /* dark gray base     */
     --holo-surface:     0   0% 24%;    /* raised surface     */
     --holo-panel:       0   0% 24%;    /* panel background   */
-    --holo-line:      185 100% 22%;    /* dim cyan border    */
+    --holo-line:        0   0% 38%;    /* dark gray border   */
     --holo-glow:      184  86% 54%;    /* glow colour        */
 
     --background:        var(--holo-bg);
@@ -277,6 +277,11 @@ tr:hover td:not(.group-stripe) {
 
 .data-display-table tbody tr:hover td:not(.group-stripe) {
   background: rgba(0, 240, 255, 0.06) !important;
+}
+
+/* Greenkeeping rows have no hover highlight */
+.greenkeeping-table tbody tr:hover td:not(.group-stripe) {
+  background: transparent !important;
 }
 
 .data-display-table .data-sticky-cell,

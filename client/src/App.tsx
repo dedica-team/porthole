@@ -19,6 +19,7 @@ const MetricsView = lazy(() => import('./components/MetricsView/MetricsView'));
 const CollaboratorMatrixView = lazy(() => import('./components/CollaboratorMatrixView/CollaboratorMatrixView'));
 const ChoreListsView = lazy(() => import('./components/ChoreListsView/ChoreListsView'));
 const GreenkeepingRotationsView = lazy(() => import('./components/GreenkeepingRotationsView/GreenkeepingRotationsView'));
+const GreenkeepingChecklistView = lazy(() => import('./components/GreenkeepingRotationsView/GreenkeepingChecklistView'));
 const EditorMapView = lazy(() => import('./pages/MapPage/EditorMapView'));
 const SessionOverviewView = lazy(() => import('./pages/MapPage/SessionOverviewView'));
 
@@ -64,6 +65,7 @@ function App() {
                 <Route path="matrix" element={<CollaboratorMatrixView />} />
                 <Route path="chores" element={<ChoreListsView />} />
                 <Route path="greenkeeping" element={<GreenkeepingRotationsView />} />
+                <Route path="greenkeeping/:rotationId" element={<GreenkeepingChecklistView />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

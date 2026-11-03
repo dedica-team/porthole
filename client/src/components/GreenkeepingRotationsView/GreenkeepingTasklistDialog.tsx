@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AlertCircle, Check, CheckCircle2, Clock, Download, History, ListChecks, Plus, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rotation: GreenkeepingRotation;
+  inline?: boolean;
+  headerAction?: ReactNode;
 }
 
 export function getTodayDateString(): string {
@@ -32,6 +34,8 @@ export default function GreenkeepingTasklistDialog({
   open,
   onOpenChange,
   rotation: initialRotation,
+  inline = false,
+  headerAction,
 }: Props) {
   const currentMap = useMapStore((s) => s.currentMap);
   const greenkeepingRotations = useMapStore((s) => s.greenkeepingRotations);
@@ -198,15 +202,17 @@ export default function GreenkeepingTasklistDialog({
 
   const collaboratorMap = currentMap ? Object.fromEntries(currentMap.collaborators.map((c) => [c.id, c.username])) : {};
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[85vh] flex flex-col gap-3 p-4 sm:p-6 overflow-hidden" aria-describedby={undefined}>
+  const content = (
+    <>
         <DialogHeader className="shrink-0 pb-1">
-          <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-base font-semibold truncate">
-              {rotation.name} – Checklist
-            </DialogTitle>
-          </div>
+          {!inline && (
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-base font-semibold truncate">
+                {rotation.name} – Checklist
+              </DialogTitle>
+              {headerAction}
+            </div>
+          )}
 
           {/* Tab Navigation */}
           <div className="flex items-center gap-1.5 mt-2 border-b border-border pb-1">
@@ -271,7 +277,7 @@ export default function GreenkeepingTasklistDialog({
                   )}
                 </div>
 
-                <div className="flex flex-col gap-2 rounded-md border border-input bg-background p-2 max-h-64 overflow-y-auto">
+                <div className="flex flex-col gap-2 rounded-md border border-input bg-background p-2">
                   {items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-4 text-center text-xs text-muted-foreground gap-2">
                       <p>No tasks configured in this checklist.</p>
@@ -485,7 +491,7 @@ export default function GreenkeepingTasklistDialog({
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pt-1">
+                      <div className="flex flex-col gap-2 pt-1">
                         {selectedHistory.items.map((item, idx) => (
                           <div
                             key={item.id ?? idx}
@@ -587,6 +593,30 @@ export default function GreenkeepingTasklistDialog({
             </div>
           )}
         </DialogFooter>
+    </>
+  );
+
+  if (inline) {
+    return (
+      <div className="flex flex-col rounded-lg border border-border bg-card overflow-hidden">
+        <div className="flex items-stretch border-b border-border shrink-0">
+          <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
+            <ListChecks className="h-3.5 w-3.5 text-muted-foreground" />
+            {rotation.name} – Checklist
+          </div>
+          {headerAction}
+        </div>
+        <div className="flex flex-col gap-3 p-4 sm:p-6">
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm max-h-[85vh] flex flex-col gap-3 p-4 sm:p-6 overflow-hidden" aria-describedby={undefined}>
+        {content}
       </DialogContent>
     </Dialog>
   );

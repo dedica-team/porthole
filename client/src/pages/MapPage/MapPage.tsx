@@ -76,7 +76,7 @@ export default function MapPage() {
   const matchMetrics     = useMatch('/session/:id/metrics');
   const matchMatrix      = useMatch('/session/:id/matrix');
   const matchChores      = useMatch('/session/:id/chores');
-  const matchGreenkeeping = useMatch('/session/:id/greenkeeping');
+  const matchGreenkeeping = useMatch({ path: '/session/:id/greenkeeping', end: false });
   const matchEditor      = useMatch('/session/:id/editor');
   const isPanelRoute = !!(matchMetrics || matchMatrix || matchChores || matchGreenkeeping || matchEditor);
 

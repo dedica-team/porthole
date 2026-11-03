@@ -215,7 +215,7 @@ export default function Navbar() {
   const matchMetrics      = useMatch('/session/:id/metrics');
   const matchMatrix       = useMatch('/session/:id/matrix');
   const matchChores       = useMatch('/session/:id/chores');
-  const matchGreenkeeping = useMatch('/session/:id/greenkeeping');
+  const matchGreenkeeping = useMatch({ path: '/session/:id/greenkeeping', end: false });
   const matchProcesses    = useMatch('/session/:id/processes');
   const matchEditor       = useMatch('/session/:id/editor');
   const matchMapIndex     = useMatch('/session/:id/map');

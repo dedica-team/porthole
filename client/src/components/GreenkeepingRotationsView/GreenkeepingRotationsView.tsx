@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ExternalLink, FastForward, HelpCircle, ListChecks, Plus, Sprout } from 'lucide-react';
 import { Popup } from '@/components/ui/popup';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -13,9 +14,9 @@ import {
   getActiveGreenkeepingEntry,
 } from '@/types/greenkeeping';
 import CreateEditGreenkeepingRotationDialog from './CreateEditGreenkeepingRotationDialog';
-import GreenkeepingTasklistDialog from './GreenkeepingTasklistDialog';
 
 export default function GreenkeepingRotationsView() {
+  const navigate = useNavigate();
   const currentMap = useMapStore((s) => s.currentMap);
   const greenkeepingRotations = useMapStore((s) => s.greenkeepingRotations);
   const setGreenkeepingRotations = useMapStore((s) => s.setGreenkeepingRotations);
@@ -29,7 +30,6 @@ export default function GreenkeepingRotationsView() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingRotation, setEditingRotation] = useState<GreenkeepingRotation | null>(null);
-  const [tasklistRotation, setTasklistRotation] = useState<GreenkeepingRotation | null>(null);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [actionError, setActionError] = useState('');
   const [busyRotationId, setBusyRotationId] = useState<string | null>(null);
@@ -177,10 +177,7 @@ export default function GreenkeepingRotationsView() {
                 const canAdvance = isCollaborator && rotation.collaborators.length > 1;
 
                 return (
-                  <tr
-                    key={rotation.id}
-
-                  >
+                  <tr key={rotation.id}>
                     {/* Left: rotation metadata */}
                     <td className="px-4 py-3 align-top border-b border-border">
                       <div className="font-semibold text-lg cursor-pointer text-link-hover"
@@ -225,7 +222,8 @@ export default function GreenkeepingRotationsView() {
 
                         return (
                           <div className="flex items-center gap-2">
-                            <button
+                            <Button
+                              variant="ghost"
                               type="button"
                               onClick={() => {
                                 if (canAdvance) {
@@ -240,11 +238,10 @@ export default function GreenkeepingRotationsView() {
                               disabled={!canAdvance || isBusy}
                               aria-label={canAdvance ? `Advance rotation ${rotation.name}` : `Current greenkeeper ${username}`}
                               title={canAdvance ? `Current: ${username}. Click to advance to next.` : username}
-                              className={` px-2 py-1 w-24 min-w-24 flex items-center justify-center tr`}
-
+                              className={` px-2 py-1 w-24 min-w-24 h-full flex items-center justify-center tr`}
                             >
                               <UserAvatar username={username} avatarUrl={collab?.avatarUrl} title={username} fullWidth={true} />
-                            </button>
+                            </Button>
                           </div>
                         );
                       })() : (
@@ -260,7 +257,7 @@ export default function GreenkeepingRotationsView() {
                             type="button"
                             size="sm"
                             variant="default"
-                            onClick={() => setTasklistRotation(rotation)}
+                            onClick={() => navigate(`/session/${currentMap.id}/greenkeeping/${rotation.id}`)}
                             className="h-7 text-xs gap-1.5 px-2.5 text-foreground cursor-pointer"
                             aria-label={`Open checklist for ${rotation.name}`}
                             title={`Checklist: ${rotation.currentChecklist.title}`}
@@ -277,7 +274,7 @@ export default function GreenkeepingRotationsView() {
                           type="button"
                           size="sm"
                           variant="default"
-                          onClick={() => setTasklistRotation(rotation)}
+                          onClick={() => navigate(`/session/${currentMap.id}/greenkeeping/${rotation.id}`)}
                           className="h-7 text-xs gap-1.5 px-2.5 text-foreground cursor-pointer"
                           aria-label={`Open checklist for ${rotation.name}`}
                           title="Create checklist"
@@ -317,13 +314,6 @@ export default function GreenkeepingRotationsView() {
         />
       )}
 
-      {tasklistRotation && (
-        <GreenkeepingTasklistDialog
-          open={!!tasklistRotation}
-          onOpenChange={(open) => { if (!open) setTasklistRotation(null); }}
-          rotation={tasklistRotation}
-        />
-      )}
     </div>
   );
 }
