@@ -99,6 +99,21 @@ class SecurityConfigTest {
             "Expected 401 or 403 for unauthenticated request, got $status")
     }
 
+    @Test
+    fun `health endpoint and probes are accessible without authentication`() {
+        val health = exchange("GET", "/health")
+        assertEquals(200, health.statusCode())
+        assertTrue(health.body().contains("\"status\":\"UP\""))
+
+        val liveness = exchange("GET", "/health/liveness")
+        assertEquals(200, liveness.statusCode())
+        assertTrue(liveness.body().contains("\"status\":\"UP\""))
+
+        val readiness = exchange("GET", "/health/readiness")
+        assertEquals(200, readiness.statusCode())
+        assertTrue(readiness.body().contains("\"status\":\"UP\""))
+    }
+
     // Regression: CORS was not configured, blocking cross-origin requests from
     // the Vite dev server (localhost:5173) to the backend.
     @Test

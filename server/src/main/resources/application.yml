@@ -27,6 +27,12 @@ micronaut:
       - pattern: /actuator/**
         access:
           - isAnonymous()
+      - pattern: /actuator
+        access:
+          - isAnonymous()
+      - pattern: /health/**
+        access:
+          - isAnonymous()
       - pattern: /health
         access:
           - isAnonymous()
