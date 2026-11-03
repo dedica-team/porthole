@@ -402,11 +402,6 @@ export default function LobbyPage() {
                         <span className="font-semibold text-foreground text-base">
                           {map.name ?? 'Unnamed session'}
                         </span>
-                        {map.collaborationMode && (
-                          <span className="text-xs px-1.5 py-0.5 rounded border border-border text-muted-foreground bg-muted/20">
-                            {COLLABORATION_MODE_LABELS[map.collaborationMode] ?? map.collaborationMode}
-                          </span>
-                        )}
                       </div>
                       {map.description && (
                         <p className="text-sm text-muted-foreground">{map.description}</p>
@@ -431,21 +426,14 @@ export default function LobbyPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center flex-wrap gap-2 shrink-0">
-                      {/* Admin: delete session */}
-                      {isAdmin && (
-                        deleteConfirmMapId === map.id ? (
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm text-destructive">Delete?</span>
-                            <Button size="sm" variant="destructive" className="h-7 px-2 text-sm" disabled={loading} onClick={() => handleDelete(map.id)}>Yes</Button>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-sm" onClick={() => setDeleteConfirmMapId(null)}>No</Button>
-                          </div>
-                        ) : (
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" disabled={loading} title="Delete session" onClick={() => setDeleteConfirmMapId(map.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {map.collaborationMode && (
+                        <span className="text-xs px-1.5 py-0.5   bg-muted/20">
+                          {COLLABORATION_MODE_LABELS[map.collaborationMode] ?? map.collaborationMode}
+                        </span>
                       )}
+                      <div className="flex flex-col items-stretch gap-2 w-full sm:w-56">
+
                       {isMember ? (
                         <Button
                           onClick={() => {
@@ -454,17 +442,17 @@ export default function LobbyPage() {
                             navigate(`/session/${map.id}`);
                           }}
                           disabled={loading}
-                          className="gap-1.5"
+                          className="gap-1.5 w-full"
                         >
-                          <Eye className="h-4 w-4" />
-                          Enter
+                          <LogIn className="h-4 w-4" />
+                          Continue
                         </Button>
                       ) : (
                         <>
                           <Button
-                            variant="ghost"
+                            variant="default"
                             size="sm"
-                            className="gap-1.5 text-muted-foreground"
+                            className="gap-1.5 "
                             disabled={loading}
                             onClick={() => {
                               setCurrentMap(map);
@@ -473,13 +461,13 @@ export default function LobbyPage() {
                             }}
                           >
                             <Eye className="h-3.5 w-3.5" />
-                            View
+                            View as guest
                           </Button>
                           {/* Admin join bypasses collaboration mode */}
                           {isAdmin && (
                             <Button className="gap-1.5" disabled={loading} onClick={() => handleAdminJoin(map.id)}>
                               <LogIn className="h-4 w-4" />
-                              Join as Collaborator
+                              Join as collaborator
                             </Button>
                           )}
                           {!isAdmin && (() => {
@@ -496,12 +484,26 @@ export default function LobbyPage() {
                                 onClick={() => handleJoinClick(map)}
                               >
                                 <LogIn className="h-4 w-4" />
-                                Join
+                                Join as collaborator
                               </Button>
                             );
                           })()}
+                          {/* Admin: delete session */}
+                          {isAdmin && (deleteConfirmMapId === map.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-sm text-destructive">Delete?</span>
+                                    <Button size="sm" variant="destructive" className="h-7 px-2 text-sm" disabled={loading} onClick={() => handleDelete(map.id)}>Yes</Button>
+                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-sm" onClick={() => setDeleteConfirmMapId(null)}>No</Button>
+                                  </div>
+                              ) : (
+                                  <Button size="sm" variant="destructive" className="gap-1.5" disabled={loading} title="Delete session" onClick={() => setDeleteConfirmMapId(map.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" /> Delete session (Admin)
+                                  </Button>
+                              )
+                          )}
                         </>
                       )}
+                      </div>
                     </div>
                   </div>
                 );

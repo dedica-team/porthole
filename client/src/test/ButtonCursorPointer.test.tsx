@@ -133,15 +133,15 @@ describe('LobbyPage – all buttons have cursor-pointer', () => {
   it('Join button has cursor-pointer', async () => {
     vi.mocked(mapApi.listMaps).mockResolvedValue([makeMap({ collaborationMode: 'OPEN', name: 'Open Map', collaborators: [] })]);
     const { container } = renderLobby();
-    await waitFor(() => screen.getByRole('button', { name: /^join$/i }));
+    await waitFor(() => screen.getByRole('button', { name: /join as collaborator/i }));
     assertAllHaveCursorPointer(container);
   });
 
   it('Join Request dialog buttons all have cursor-pointer', async () => {
     vi.mocked(mapApi.listMaps).mockResolvedValue([makeMap({ collaborationMode: 'REQUEST', name: 'Req Map', collaborators: [] })]);
     const { container } = renderLobby();
-    await waitFor(() => screen.getByRole('button', { name: /^join$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^join$/i }));
+    await waitFor(() => screen.getByRole('button', { name: /join as collaborator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /join as collaborator/i }));
     await waitFor(() => screen.getByRole('button', { name: /send request/i }));
     assertAllHaveCursorPointer(container);
   });
