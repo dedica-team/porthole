@@ -164,21 +164,16 @@ export default function ChoreListsView() {
                                     </th>
                                     {sortedLists.map((list) => (
                                         <th key={list.id} className="text-left px-3 py-2 min-w-56 font-medium bg-transparent align-bottom">
-                                            {isCollaborator ? (
-                                                <Button variant="ghost" fullWidth={true} title={list.description || undefined}
-                                                    onClick={() => setEditingList(list)}
-                                                >
-                                                    <span className={list.completed ? 'line-through text-muted-foreground' : ''}>{list.title}</span>
-                                                    {list.link && <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />}
-                                                </Button>
-                                            ) : (
-                                                <span
-                                                    className={`text-sm font-medium normal-case${list.completed ? ' line-through text-muted-foreground' : ' text-muted-foreground'}`}
-                                                    title={list.description || undefined}
-                                                >
-                                                    {list.title}
-                                                </span>
-                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                fullWidth={true}
+                                                title={list.description || undefined}
+                                                className={isCollaborator ? undefined : 'text-muted-foreground normal-case'}
+                                                onClick={() => setEditingList(list)}
+                                            >
+                                                <span className={list.completed ? 'line-through text-muted-foreground' : ''}>{list.title}</span>
+                                                {list.link && <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                                            </Button>
                                         </th>
                                     ))}
                                 </tr>
@@ -297,6 +292,7 @@ export default function ChoreListsView() {
                 open={!!editingList}
                 onOpenChange={(v) => { if (!v) setEditingList(null); }}
                 choreList={editingList}
+                readOnly={!isCollaborator}
                 onSaved={(lists) => setChoreLists(lists)}
                 onToggleCompleted={(updated) => setChoreLists(choreLists.map((l) => (l.id === updated.id ? updated : l)))}
                 onDeleted={(listId) => { setChoreLists(choreLists.filter((l) => l.id !== listId)); setEditingList(null); }}

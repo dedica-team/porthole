@@ -143,11 +143,15 @@ describe('ChoreListsView – column header edit dialog', () => {
     });
   });
 
-  it('does not render a clickable header button for non-collaborators', () => {
-    setup([makeList({ title: 'Audit' })], false);
+  it('lets visitors click a header to read the description without editing', () => {
+    setup([makeList({ title: 'Audit', description: 'Weekly audit run' })], false);
     render(<ChoreListsView />);
-    expect(screen.queryByRole('button', { name: /audit/i })).not.toBeInTheDocument();
-    expect(screen.getByText('Audit')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /audit/i }));
+
+    expect(screen.getByDisplayValue('Weekly audit run')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete list/i })).not.toBeInTheDocument();
   });
 
   it('saves the renamed list via editChoreList', async () => {

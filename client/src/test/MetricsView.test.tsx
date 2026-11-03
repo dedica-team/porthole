@@ -99,6 +99,18 @@ describe('MetricsView', () => {
     expect(screen.getByText('Availability')).toBeInTheDocument();
   });
 
+  it('lets visitors click a metric header to read its description without editing', () => {
+    setup({ m1: METRIC_AVAIL }, { lm1: LM_IN_A });
+    useAuthStore.setState({ userId: 'viewer', username: 'visitor', token: 'tok', isAuthenticated: true });
+    render(<MetricsView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /availability/i }));
+
+    expect(screen.getByDisplayValue('Uptime %')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /remove metric/i })).not.toBeInTheDocument();
+  });
+
 
   // ── + button opens template selector ─────────────────────────────────────
 

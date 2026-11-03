@@ -60,12 +60,13 @@ const EMPTY_LANDMARKS: Record<string, never> = {};
 interface MetricDefEditDialogProps {
   metric: QualityMetric | null;
   loading: boolean;
+  readOnly?: boolean;
   onSave: (metricId: string, name: string, description: string, link?: string, clearLink?: boolean) => void;
   onDelete: (metricId: string) => void;
   onClose: () => void;
 }
 
-function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose }: MetricDefEditDialogProps) {
+function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave, onDelete, onClose }: MetricDefEditDialogProps) {
   const [name, setName] = useState(metric?.name ?? '');
   const [desc, setDesc] = useState(metric?.description ?? '');
   const [link, setLink] = useState(metric?.link ?? '');
@@ -81,16 +82,17 @@ function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose
   };
 
   return (
-    <Popup title="Edit Metric" open={!!metric} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
+    <Popup title={readOnly ? 'Metric' : 'Edit Metric'} open={!!metric} onOpenChange={(v) => { if (!v) handleClose(); }} className="max-w-sm">
       {metric && (
         <form
-          onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+          onSubmit={(e) => { e.preventDefault(); if (!readOnly) handleSave(); }}
           className="flex flex-col gap-3"
         >
             <Input
-              autoFocus
+              autoFocus={!readOnly}
               value={name}
               onChange={(e) => setName(e.target.value)}
+              readOnly={readOnly}
               className="h-8 text-sm"
               maxLength={60}
               placeholder="Name"
@@ -98,9 +100,10 @@ function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose
             <Textarea
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
+              readOnly={readOnly}
               className="text-sm min-h-20 resize-none"
               maxLength={200}
-              placeholder="Description (optional)"
+              placeholder={readOnly ? 'No description' : 'Description (optional)'}
             />
             {metric.link && (
               <a
@@ -112,39 +115,47 @@ function MetricDefinitionEditDialog({ metric, loading, onSave, onDelete, onClose
                 {metric.link}
               </a>
             )}
-            <Input
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              className="h-8 text-sm"
-              maxLength={2000}
-              placeholder="Link URL (optional)"
-              type="url"
-            />
+            {!readOnly && (
+              <Input
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                className="h-8 text-sm"
+                maxLength={2000}
+                placeholder="Link URL (optional)"
+                type="url"
+              />
+            )}
             <div className="flex justify-end gap-2 pt-1">
-              <Button type="submit" fullWidth={true} disabled={!name.trim() || loading}>Save</Button>
-            </div>
-
-            {/* Delete section */}
-            <div className="border-t border-border pt-3 mt-1">
-              {!confirmDelete ? (
-                <Button
-                  variant="destructive" fullWidth={true}
-                  onClick={() => setConfirmDelete(true)}
-                >
-                  Remove metric…
-                </Button>
+              {readOnly ? (
+                <Button type="button" fullWidth={true} onClick={handleClose}>Close</Button>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm text-destructive">Remove «{metric.name}»? This clears all element values.</span>
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" size="sm" variant="flat" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-                    <Button type="button" size="sm" variant="destructive" disabled={loading} onClick={() => onDelete(metric.id)}>
-                      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, remove'}
-                    </Button>
-                  </div>
-                </div>
+                <Button type="submit" fullWidth={true} disabled={!name.trim() || loading}>Save</Button>
               )}
             </div>
+
+            {/* Delete section – collaborators only */}
+            {!readOnly && (
+              <div className="border-t border-border pt-3 mt-1">
+                {!confirmDelete ? (
+                  <Button
+                    variant="destructive" fullWidth={true}
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    Remove metric…
+                  </Button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-sm text-destructive">Remove «{metric.name}»? This clears all element values.</span>
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" size="sm" variant="flat" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+                      <Button type="button" size="sm" variant="destructive" disabled={loading} onClick={() => onDelete(metric.id)}>
+                        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, remove'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
         </form>
       )}
     </Popup>
@@ -467,6 +478,7 @@ export default function MetricsView() {
 
   // ── metric definition CRUD ────────────────────────────────────────────────
   const [editingMetricDef, setEditingMetricDef] = useState<QualityMetric | null>(null);
+  const [metricDefReadOnly, setMetricDefReadOnly] = useState(false);
 
   // ── landmark editing ──────────────────────────────────────────────────────
   const [editingLandmark, setEditingLandmark] = useState<Landmark | null>(null);
@@ -531,7 +543,10 @@ export default function MetricsView() {
 
   // ── metric definition handlers ────────────────────────────────────────────
 
-  const openMetricDef = (m: QualityMetric) => setEditingMetricDef(m);
+  const openMetricDef = (m: QualityMetric, readOnly = false) => {
+    setMetricDefReadOnly(readOnly);
+    setEditingMetricDef(m);
+  };
 
   // ── cell handlers ─────────────────────────────────────────────────────────
   const openCellEdit = (landmarkId: string, metricId: string) => {
@@ -700,6 +715,7 @@ export default function MetricsView() {
         key={editingMetricDef?.id}
         metric={editingMetricDef}
         loading={loading}
+        readOnly={metricDefReadOnly}
         onSave={(id, name, description, link, clearLink) => {
           onEditMetric(id, name, description || undefined, link, clearLink);
           setEditingMetricDef(null);
@@ -777,17 +793,15 @@ export default function MetricsView() {
                     </Button></th>
                   {visibleMetrics.map((m) => (
                     <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium bg-transparent align-bottom">
-                      {isCollaborator ? (
-                        <Button variant="ghost" fullWidth={true} title={m.description || undefined}
-                          onClick={() => openMetricDef(m)}
-                        >
-                          {m.name}
-                        </Button>
-                      ) : (
-                        <span className="metrics-metric-trigger text-sm font-medium text-muted-foreground normal-case" title={m.description || undefined}>
-                          {m.name}
-                        </span>
-                      )}
+                      <Button
+                        variant="ghost"
+                        fullWidth={true}
+                        title={m.description || undefined}
+                        className={isCollaborator ? undefined : 'metrics-metric-trigger text-muted-foreground normal-case'}
+                        onClick={() => openMetricDef(m, !isCollaborator)}
+                      >
+                        {m.name}
+                      </Button>
                     </th>
                   ))}
                 </tr>
