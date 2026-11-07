@@ -37,6 +37,8 @@ export interface SessionState {
   connections: Record<string, Connection>;
   groups: Record<string, LandmarkGroup>;
   createdAt: string;
+  /** When false/absent no tower-defense mechanics or UI are active for this session. */
+  gameEnabled?: boolean;
 }
 
 export interface AuthSession {

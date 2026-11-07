@@ -4,6 +4,7 @@ import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.domain.ChoreList
 import team.dedica.porthole.domain.CollaboratorMatrix
+import team.dedica.porthole.domain.GameState
 import team.dedica.porthole.domain.GreenkeepingRotation
 import team.dedica.porthole.domain.SessionState
 import team.dedica.porthole.domain.QualityMetric
@@ -35,4 +36,7 @@ class MapStateBroadcaster(private val broker: StompBroker) : BroadcastPort {
 
     override fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>) =
         broker.publish("/topic/map/$sessionId/greenkeeping-rotations", rotations.toMap())
+
+    override fun sendGame(sessionId: UUID, gameState: GameState) =
+        broker.publish("/topic/map/$sessionId/game", gameState)
 }

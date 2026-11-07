@@ -10,6 +10,7 @@ import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import EditorPanel from '@/components/Sidebar/panels/EditorPanel';
+import GameHUD from '@/components/GameHUD/GameHUD';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { useShallow } from 'zustand/react/shallow';
 import { positionLandmark, createConnection } from '@/api/mapApi';
@@ -31,6 +32,7 @@ export default function RegularMapView() {
     editorMode, editorTool, editorTerrain,
     mainView, setMainView, setConfirmPending,
     rendererQualityProfile,
+    gameState, activeWatchtowerId,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     selectedTile: s.selectedTile, setSelectedTile: s.setSelectedTile,
@@ -41,6 +43,7 @@ export default function RegularMapView() {
     editorMode: s.editorMode, editorTool: s.editorTool, editorTerrain: s.editorTerrain,
     mainView: s.mainView, setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
     rendererQualityProfile: s.rendererQualityProfile,
+    gameState: s.gameState, activeWatchtowerId: s.activeWatchtowerId,
   })));
 
   const userId = useAuthStore((s) => s.userId);
@@ -132,6 +135,8 @@ export default function RegularMapView() {
             patchTileRef={patchTileRef}
             hideDecorations={false}
             rendererQualityProfile={rendererQualityProfile}
+            gameState={currentMap.gameEnabled ? gameState : null}
+            activeWatchtowerId={currentMap.gameEnabled ? activeWatchtowerId : null}
           />
         </ErrorBoundary>
       </div>
@@ -149,6 +154,8 @@ export default function RegularMapView() {
       )}
 
       {editorMode && <EditorPanel floating error={actions.error} onClearError={() => actions.setError('')} />}
+
+      <GameHUD />
 
       <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
 

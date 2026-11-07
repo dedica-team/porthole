@@ -5,6 +5,7 @@ import type { ConnectionType } from '../types/connection';
 import type { MatrixLevel } from '../types/matrix';
 import type { Process, StageConnectionDirection } from '../types/process';
 import type { ChoreList, ChoreEntryState } from '../types/chores';
+import type { GameState, ShootResult } from '../types/game';
 import type {
   GreenkeepingRotation,
   CreateGreenkeepingRotationPayload,
@@ -279,11 +280,16 @@ export async function editMap(
   id: string,
   name?: string,
   description?: string,
+  gameEnabled?: boolean,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${id}`, {
     method: 'PATCH',
     headers: authHeaders(),
-    body: JSON.stringify({ name: name ?? null, description: description ?? null }),
+    body: JSON.stringify({
+      name: name ?? null,
+      description: description ?? null,
+      gameEnabled: gameEnabled ?? null,
+    }),
   });
   return handleResponse<SessionState>(res);
 }
@@ -1032,3 +1038,48 @@ export async function discardGreenkeepingChecklist(
   return handleResponse<GreenkeepingRotation>(res);
 }
 
+
+// ── Tower-defense game ──────────────────────────────────────────────────────
+
+export async function fetchGameState(mapId: string): Promise<GameState> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game`, {
+    headers: authHeaders(),
+  });
+  return handleResponse<GameState>(res);
+}
+
+export async function enterWatchtower(mapId: string, landmarkId: string): Promise<GameState> {
+  const res = await fetch(
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game/watchtower/${encodeURIComponent(landmarkId)}/enter`,
+    { method: 'POST', headers: authHeaders() },
+  );
+  return handleResponse<GameState>(res);
+}
+
+export async function leaveWatchtower(mapId: string, landmarkId: string): Promise<GameState> {
+  const res = await fetch(
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game/watchtower/${encodeURIComponent(landmarkId)}/leave`,
+    { method: 'POST', headers: authHeaders() },
+  );
+  return handleResponse<GameState>(res);
+}
+
+export async function shoot(
+  mapId: string,
+  origin: { x: number; y: number; z: number },
+  direction: { x: number; y: number; z: number },
+): Promise<ShootResult> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game/shoot`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      originX: origin.x,
+      originY: origin.y,
+      originZ: origin.z,
+      dirX: direction.x,
+      dirY: direction.y,
+      dirZ: direction.z,
+    }),
+  });
+  return handleResponse<ShootResult>(res);
+}

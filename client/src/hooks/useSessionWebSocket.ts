@@ -4,9 +4,10 @@ import type { SessionState } from '../types/session';
 import type { ChoreList } from '../types/chores';
 import type { CollaboratorMatrix } from '../types/matrix';
 import type { GreenkeepingRotation } from '../types/greenkeeping';
+import type { GameState } from '../types/game';
 import type { QualityMetric } from '../types/landmark';
 import { useMapStore } from '../store/mapStore';
-import { getMap, fetchMetrics, fetchChoreLists, fetchCollaboratorMatrix, fetchGreenkeepingRotations, fetchProcesses } from '../api/mapApi';
+import { getMap, fetchMetrics, fetchChoreLists, fetchCollaboratorMatrix, fetchGreenkeepingRotations, fetchProcesses, fetchGameState } from '../api/mapApi';
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -27,6 +28,7 @@ export function useSessionWebSocket(mapId: string | undefined) {
   const setMetrics = useMapStore((s) => s.setMetrics);
   const setProcesses = useMapStore((s) => s.setProcesses);
   const setProcessesFetched = useMapStore((s) => s.setProcessesFetched);
+  const setGameState = useMapStore((s) => s.setGameState);
   const updateMapRef = useRef(updateMap);
   const setCurrentMapRef = useRef(setCurrentMap);
   const setChoreListsRef = useRef(setChoreLists);
@@ -37,6 +39,7 @@ export function useSessionWebSocket(mapId: string | undefined) {
   const setMetricsRef = useRef(setMetrics);
   const setProcessesRef = useRef(setProcesses);
   const setProcessesFetchedRef = useRef(setProcessesFetched);
+  const setGameStateRef = useRef(setGameState);
   useEffect(() => { updateMapRef.current = updateMap; }, [updateMap]);
   useEffect(() => { setCurrentMapRef.current = setCurrentMap; }, [setCurrentMap]);
   useEffect(() => { setChoreListsRef.current = setChoreLists; }, [setChoreLists]);
@@ -47,6 +50,7 @@ export function useSessionWebSocket(mapId: string | undefined) {
   useEffect(() => { setMetricsRef.current = setMetrics; }, [setMetrics]);
   useEffect(() => { setProcessesRef.current = setProcesses; }, [setProcesses]);
   useEffect(() => { setProcessesFetchedRef.current = setProcessesFetched; }, [setProcessesFetched]);
+  useEffect(() => { setGameStateRef.current = setGameState; }, [setGameState]);
 
   useEffect(() => {
     if (!mapId) return;
@@ -82,6 +86,9 @@ export function useSessionWebSocket(mapId: string | undefined) {
       runIfPromise(fetchProcesses(mapId), (processes) => {
         setProcessesRef.current(processes);
         setProcessesFetchedRef.current(true);
+      });
+      runIfPromise(fetchGameState(mapId), (game) => {
+        setGameStateRef.current(game);
       });
     };
 
@@ -138,6 +145,14 @@ export function useSessionWebSocket(mapId: string | undefined) {
             setGreenkeepingRotationsRef.current(Object.values(rotations));
           } catch {
             console.error('Failed to parse greenkeeping rotations update', message.body);
+          }
+        });
+        client.subscribe(`/topic/map/${mapId}/game`, (message) => {
+          try {
+            const game = JSON.parse(message.body) as GameState;
+            setGameStateRef.current(game);
+          } catch {
+            console.error('Failed to parse game update', message.body);
           }
         });
       },

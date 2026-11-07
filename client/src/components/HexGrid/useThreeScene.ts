@@ -7,6 +7,15 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { SCENE_BACKGROUND } from './terrainUtils';
 import { resolveRendererQuality, type RendererQualityProfile } from './renderQuality';
 
+export interface FirstPersonState {
+  enabled: boolean;
+  /** Tower the camera currently belongs to; changing towers re-initialises aiming. */
+  towerId?: string;
+  position: THREE.Vector3;
+  yaw: number;
+  pitch: number;
+}
+
 interface UseThreeSceneOptions {
   mountRef: React.RefObject<HTMLDivElement | null>;
   fpsRef?: React.RefObject<HTMLDivElement | null>;
@@ -16,6 +25,8 @@ interface UseThreeSceneOptions {
   orthographic?: boolean;
   /** Called after the Three.js scene has been (re-)initialised. */
   onSceneReady?: () => void;
+  /** When set and enabled, the camera is driven by the first-person watchtower controller. */
+  firstPersonRef?: React.RefObject<FirstPersonState | null>;
 }
 
 export interface ThreeRefs {
@@ -43,6 +54,7 @@ export function useThreeScene({
   qualityProfile,
   orthographic = false,
   onSceneReady,
+  firstPersonRef,
 }: UseThreeSceneOptions): React.RefObject<ThreeRefs | null> {
   const threeRef = useRef<ThreeRefs | null>(null);
   const frameRef = useRef<number>(0);
@@ -171,6 +183,8 @@ export function useThreeScene({
       requestRender();
     };
 
+    camera.rotation.order = 'YXZ';
+
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
@@ -228,7 +242,17 @@ export function useThreeScene({
       frameRef.current = 0;
       stats.begin();
 
-      const stillDamping = controls.update();
+      const fp = firstPersonRef?.current;
+      let stillDamping = false;
+      if (fp?.enabled) {
+        controls.enabled = false;
+        camera.position.copy(fp.position);
+        camera.rotation.set(fp.pitch, fp.yaw, 0);
+        needsRenderRef.current = true;
+      } else {
+        controls.enabled = true;
+        stillDamping = controls.update();
+      }
       const wantsRender = needsRenderRef.current || stillDamping;
 
       const elapsed = now - lastRenderTime;
@@ -275,6 +299,10 @@ export function useThreeScene({
       }
 
       stats.end();
+
+      if (firstPersonRef?.current?.enabled) {
+        needsRenderRef.current = true;
+      }
 
       if (needsRenderRef.current || stillDamping) {
         scheduleFrame();

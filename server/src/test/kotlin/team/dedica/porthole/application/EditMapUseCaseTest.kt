@@ -91,6 +91,41 @@ class EditMapUseCaseTest {
         assertEquals("Full description", result.description)
     }
 
+    // ── Game toggle ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `collaborator can enable the tower-defense game`() {
+        val result = useCase.execute(state.id, collaborator.id, null, null, gameEnabled = true)
+
+        assertTrue(result.gameEnabled)
+        assertTrue(mapStatePort.findById(state.id)!!.gameEnabled)
+    }
+
+    @Test
+    fun `disabling the game clears any running game state`() {
+        mapStatePort.save(
+            state.copy(
+                gameEnabled = true,
+                gameState = GameState(phase = GamePhase.ACTIVE, wave = 3),
+            )
+        )
+
+        val result = useCase.execute(state.id, collaborator.id, null, null, gameEnabled = false)
+
+        assertFalse(result.gameEnabled)
+        assertEquals(GamePhase.IDLE, result.gameState.phase)
+        assertEquals(0, result.gameState.wave)
+    }
+
+    @Test
+    fun `omitting the game flag keeps the current value`() {
+        mapStatePort.save(state.copy(gameEnabled = true))
+
+        val result = useCase.execute(state.id, collaborator.id, "Renamed", null)
+
+        assertTrue(result.gameEnabled)
+    }
+
     // ── Authorization ────────────────────────────────────────────────────────
 
     @Test

@@ -7,6 +7,7 @@ import type { Process } from '../types/process';
 import type { ChoreList } from '../types/chores';
 import type { CollaboratorMatrix } from '../types/matrix';
 import type { GreenkeepingRotation } from '../types/greenkeeping';
+import type { GameState } from '../types/game';
 import type { QualityMetric } from '../types/landmark';
 import {
   DEFAULT_RENDERER_QUALITY_PROFILE,
@@ -162,6 +163,13 @@ interface MapStore {
   setGreenkeepingRotationsFetched: (v: boolean) => void;
   setGreenkeepingRotationsLoading: (v: boolean) => void;
   setGreenkeepingRotationsError: (e: string | null) => void;
+  // ── Tower-defense game ─────────────────────────────────────────────────────
+  gameState: GameState | null;
+  setGameState: (game: GameState | null) => void;
+  removeBug: (bugId: string) => void;
+  /** Watchtower the current user is inside, or null. */
+  activeWatchtowerId: string | null;
+  setActiveWatchtowerId: (id: string | null) => void;
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -198,6 +206,8 @@ export const useMapStore = create<MapStore>((set) => ({
   greenkeepingRotationsFetched: false,
   greenkeepingRotationsLoading: false,
   greenkeepingRotationsError: null,
+  gameState: null,
+  activeWatchtowerId: null,
   metrics: {},
   setMetrics: (metrics) => set({ metrics }),
   collaboratorMatrix: null,
@@ -224,6 +234,8 @@ export const useMapStore = create<MapStore>((set) => ({
     greenkeepingRotations: [],
     metrics: {},
     collaboratorMatrix: null,
+    gameState: null,
+    activeWatchtowerId: null,
   })),
   updateMap: (map) =>
     set((state) => {
@@ -337,6 +349,15 @@ export const useMapStore = create<MapStore>((set) => ({
   setGreenkeepingRotationsFetched: (v) => set({ greenkeepingRotationsFetched: v }),
   setGreenkeepingRotationsLoading: (v) => set({ greenkeepingRotationsLoading: v }),
   setGreenkeepingRotationsError: (e) => set({ greenkeepingRotationsError: e }),
+  setGameState: (game) => set({ gameState: game }),
+  removeBug: (bugId) =>
+    set((state) => {
+      if (!state.gameState || !state.gameState.bugs[bugId]) return {};
+      const bugs = { ...state.gameState.bugs };
+      delete bugs[bugId];
+      return { gameState: { ...state.gameState, bugs } };
+    }),
+  setActiveWatchtowerId: (id) => set({ activeWatchtowerId: id }),
 }));
 
 

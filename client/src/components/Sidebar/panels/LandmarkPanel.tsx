@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Castle, Link, Loader2, Trash2, ExternalLink, X, Move, MoreHorizontal, ClipboardList } from 'lucide-react';
+import { Castle, Link, Loader2, Trash2, ExternalLink, X, Move, MoreHorizontal, ClipboardList, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
+import { enterWatchtower, leaveWatchtower } from '@/api/mapApi';
 import type { LandmarkType, QualityLevel } from '@/types/landmark';
 import type { ConnectionType } from '@/types/connection';
 import type { MatrixLevel } from '@/types/matrix';
@@ -58,6 +59,11 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const choreLists = useMapStore((s) => s.choreLists);
   const userId = useAuthStore((s) => s.userId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
+  const activeWatchtowerId = useMapStore((s) => s.activeWatchtowerId);
+  const setActiveWatchtowerId = useMapStore((s) => s.setActiveWatchtowerId);
+  const setGameState = useMapStore((s) => s.setGameState);
+  const [towerLoading, setTowerLoading] = useState(false);
+  const [towerError, setTowerError] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<LandmarkType>('KEEP');
@@ -184,6 +190,25 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
       metricLevel, trimmedLink || undefined, trimmedLink ? (trimmedLinkText || undefined) : undefined, hasBadges ? badgesMap : undefined);
     setEditingMetricId(null);
   };
+  const handleWatchtowerToggle = async () => {
+    if (!currentMap || !selectedLandmark) return;
+    setTowerLoading(true);
+    setTowerError('');
+    try {
+      if (activeWatchtowerId === selectedLandmark.id) {
+        setGameState(await leaveWatchtower(currentMap.id, selectedLandmark.id));
+        setActiveWatchtowerId(null);
+      } else {
+        setGameState(await enterWatchtower(currentMap.id, selectedLandmark.id));
+        setActiveWatchtowerId(selectedLandmark.id);
+      }
+    } catch (e) {
+      setTowerError(e instanceof Error ? e.message : 'Watchtower action failed');
+    } finally {
+      setTowerLoading(false);
+    }
+  };
+
   return (
     <>
       {/* ── Landmark Edit Dialog ─────────────────────────────────────────── */}
@@ -314,6 +339,21 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
             <span className="text-sm text-muted-foreground">{LANDMARK_TYPE_LABELS[selectedLandmark.type]}</span>
           </div>
         </div>
+        {currentMap.gameEnabled && selectedLandmark.type === 'WATCHTOWER' && isCollaborator && (
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              variant={activeWatchtowerId === selectedLandmark.id ? 'flat' : 'default'}
+              className="w-full gap-2 h-8 text-sm"
+              disabled={towerLoading || loading}
+              onClick={handleWatchtowerToggle}
+            >
+              {towerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}
+              {activeWatchtowerId === selectedLandmark.id ? 'Leave Watchtower' : 'Enter'}
+            </Button>
+            {towerError && <span className="text-sm text-destructive px-1">{towerError}</span>}
+          </div>
+        )}
         <div className="flex flex-col gap-2 min-w-0">
           {selectedLandmark.description && (
             <span className="text-sm text-foreground leading-relaxed">{selectedLandmark.description}</span>

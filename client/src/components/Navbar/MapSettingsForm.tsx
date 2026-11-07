@@ -25,6 +25,7 @@ export function MapSettingsForm({ onClose }: Props) {
   const [editName, setEditName] = useState(currentMap?.name ?? '');
   const [editDescription, setEditDescription] = useState(currentMap?.description ?? '');
   const [editCollaborationMode, setEditCollaborationMode] = useState<CollaborationMode>(currentMap?.collaborationMode ?? 'OPEN');
+  const [editGameEnabled, setEditGameEnabled] = useState(currentMap?.gameEnabled ?? false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -37,7 +38,12 @@ export function MapSettingsForm({ onClose }: Props) {
     setSaving(true);
     setSaveError('');
     try {
-      let updated = await editMap(currentMap.id, editName || undefined, editDescription || undefined);
+      let updated = await editMap(
+        currentMap.id,
+        editName || undefined,
+        editDescription || undefined,
+        editGameEnabled,
+      );
       if (editCollaborationMode !== (currentMap.collaborationMode ?? 'OPEN')) {
         updated = await setCollaborationMode(currentMap.id, editCollaborationMode);
       }
@@ -129,6 +135,16 @@ export function MapSettingsForm({ onClose }: Props) {
           ))}
         </select>
       </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={editGameEnabled}
+          onChange={(e) => setEditGameEnabled(e.target.checked)}
+          disabled={!isCollaborator}
+          className="h-4 w-4 rounded border-input accent-primary disabled:opacity-50"
+        />
+        <span>Enable tower-defense game</span>
+      </label>
       <div className="flex flex-col gap-1.5">
         <Label className="text-sm">Map ID</Label>
         <div className="flex items-center gap-1.5">
