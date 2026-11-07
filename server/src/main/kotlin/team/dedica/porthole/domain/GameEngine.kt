@@ -20,7 +20,10 @@ object GameEngine {
     /** Arms the game when a collaborator enters a watchtower for the first time. */
     fun start(state: SessionState, now: Instant): GameState {
         val game = state.gameState
-        if (!state.gameEnabled) return game
+        if (!state.gameEnabled) {
+            return game
+        }
+
         return when (game.phase) {
             GamePhase.ACTIVE -> game
             GamePhase.IDLE -> game.copy(

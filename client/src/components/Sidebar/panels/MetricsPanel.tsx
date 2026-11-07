@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import type { QualityMetric } from '@/types/landmark';
 import MetricTemplateSelector from '@/components/MetricsView/MetricTemplateSelector';
+import { useSidebarCardHeader } from '../SidebarCardHeader';
 interface Props {
   onCreateMetric: (name: string, description: string) => void;
   onEditMetric: (metricId: string, name?: string, description?: string, link?: string, clearLink?: boolean) => void;
@@ -23,6 +24,7 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
   const [editState, setEditState]     = useState<EditState>({ name: '', description: '', link: '' });
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const inCard = useSidebarCardHeader({ title: 'Quality Metrics' });
   if (!currentMap) return null;
   const isCollaborator = !!(userId && currentMap.collaborators.some((c) => c.id === userId));
   const metrics: QualityMetric[] = Object.values(storeMetrics);
@@ -49,10 +51,12 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
   };
   return (
     <div className="flex flex-col gap-4 p-5">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <BarChart2 className="h-4 w-4" />
-        <span className="text-sm font-medium uppercase tracking-wider">Quality Metrics</span>
-      </div>
+      {!inCard && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <BarChart2 className="h-4 w-4" />
+          <span className="text-sm font-medium uppercase tracking-wider">Quality Metrics</span>
+        </div>
+      )}
       {metrics.length === 0 ? (
         <p className="text-sm text-muted-foreground">No metrics yet. Create one below.</p>
       ) : (

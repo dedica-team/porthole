@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {Plus, Trash2, Pencil, ChevronDown, ChevronUp, MousePointer2, MoreHorizontal} from 'lucide-react';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {Button} from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
     removeConnectionFromStage,
     fetchProcesses,
 } from '@/api/mapApi';
+import {useSidebarCardHeader} from '../SidebarCardHeader';
 
 export default function ProcessPanel() {
     const currentMap = useMapStore((s) => s.currentMap);
@@ -78,6 +79,13 @@ export default function ProcessPanel() {
 
     const mapId = currentMap?.id ?? '';
     const activeProcess: Process | undefined = processes.find((p) => p.id === activeProcessId);
+    const openEditDialogRef = useRef<() => void>(() => {});
+    const triggerEdit = useCallback(() => openEditDialogRef.current(), []);
+    const inCard = useSidebarCardHeader(activeProcess ? {
+        title: activeProcess.name,
+        onEdit: triggerEdit,
+        editLabel: 'Edit process',
+    } : null);
 
     // Fetch processes on mount (or when map changes) if not yet fetched
     useEffect(() => {
@@ -109,6 +117,7 @@ export default function ProcessPanel() {
         setEditDesc(activeProcess.description ?? '');
         setEditDialogOpen(true);
     };
+    openEditDialogRef.current = openEditDialog;
 
     const handleSaveProcess = async () => {
         if (!activeProcessId) return;
@@ -213,13 +222,14 @@ export default function ProcessPanel() {
         <TooltipProvider>
             <div className="flex flex-col gap-3 p-4">
                 {/* Header */}
-                <div className="flex items-center gap-2">
-
-                    <Button variant="ghost" fullWidth={true} className={"text-lg"}
-                            title="Edit process" onClick={openEditDialog}>
-                        {activeProcess.name}
-                    </Button>
-                </div>
+                {!inCard && (
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" fullWidth={true} className={"text-lg"}
+                                title="Edit process" onClick={openEditDialog}>
+                            {activeProcess.name}
+                        </Button>
+                    </div>
+                )}
 
                 {activeProcess.description && (
                     <p className="text-sm text-muted-foreground">{activeProcess.description}</p>

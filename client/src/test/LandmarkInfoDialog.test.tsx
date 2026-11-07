@@ -60,9 +60,10 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
     expect(screen.getByText('Iron Keep')).toBeInTheDocument();
   });
 
-  it('renders landmark id as slug', () => {
+  it('renders landmark id as slug in the edit dialog', () => {
     setup();
     render(<LandmarkPanel {...defaultProps} />);
+    fireEvent.click(screen.getByTitle('Edit Element'));
     expect(screen.getByText('tower-abc123')).toBeInTheDocument();
   });
 
@@ -255,7 +256,7 @@ describe('LandmarkPanel – metric value editing (collaborator)', () => {
     expect(onSet).toHaveBeenCalledWith('tower-abc123', 'met-1', '✘', 'ERROR', undefined, undefined, undefined);
   });
 
-  it('shows the Clear (trash) button when an entry exists', () => {
+  it('shows the Clear (trash) button inside the metric dialog when an entry exists', () => {
     setupWithMetric('player-1', true);
     // set a metric entry on the landmark
     useMapStore.setState((s) => ({
@@ -265,6 +266,8 @@ describe('LandmarkPanel – metric value editing (collaborator)', () => {
       },
     }));
     render(<LandmarkPanel {...defaultProps} />);
+    expect(screen.queryByTitle('Clear metric value')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle(`${METRIC.name}: ${METRIC.description}`));
     expect(screen.getByTitle('Clear metric value')).toBeInTheDocument();
   });
 });
