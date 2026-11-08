@@ -18,6 +18,7 @@ import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import CreateConnectionDialog from '@/components/CreateConnectionDialog';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import GameHUD from '@/components/GameHUD/GameHUD';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { useShallow } from 'zustand/react/shallow';
 import { addConnectionToStage, removeConnectionFromStage, createProcess } from '@/api/mapApi';
@@ -49,6 +50,7 @@ export default function ProcessMapView() {
     setActiveStageId,
     rendererQualityProfile,
     setProcessSidebarHidden,
+    gameState, activeWatchtowerId,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
     updateMap: s.updateMap,
@@ -64,6 +66,8 @@ export default function ProcessMapView() {
     setActiveStageId: s.setActiveStageId,
     rendererQualityProfile: s.rendererQualityProfile,
     setProcessSidebarHidden: s.setProcessSidebarHidden,
+    gameState: s.gameState,
+    activeWatchtowerId: s.activeWatchtowerId,
   })));
 
   const userId = useAuthStore((s) => s.userId);
@@ -344,9 +348,13 @@ export default function ProcessMapView() {
             visibleLandmarkLabelIds={visibleLandmarkLabelIds}
             visibleLandmarkIds={visibleLandmarkIds}
             onConnectionClick={handleConnectionClick}
+            gameState={currentMap.gameEnabled ? gameState : null}
+            activeWatchtowerId={currentMap.gameEnabled ? activeWatchtowerId : null}
           />
         </ErrorBoundary>
       </div>
+
+      <GameHUD />
 
 
       {/* Left toolbar */}

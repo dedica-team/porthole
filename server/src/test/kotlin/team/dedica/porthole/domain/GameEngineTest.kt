@@ -199,4 +199,92 @@ class GameEngineTest {
         assertEquals(GamePhase.INTERMISSION, state.gameState.phase)
         assertEquals(now.plusSeconds(GameEngine.WAVE_INTERMISSION_SECONDS), state.gameState.nextWaveAt)
     }
+
+    @Test
+    fun `bug wandering on map edge only steps onto valid on-map tiles`() {
+        val map = HexMap.createHexagonal(2)
+        val state = SessionState(map = map, gameEnabled = true)
+        // Position on the edge of radius 2 hexagonal map
+        val edgeCoord = HexCoordinate(2, 0)
+        assertTrue(map.getTile(edgeCoord) != null)
+
+        val bug = Bug(coordinate = edgeCoord)
+        state.gameState = GameState(phase = GamePhase.ACTIVE, bugs = mutableMapOf(bug.id to bug))
+
+        // Tick several times to test random wandering along edge
+        for (seed in 1..20) {
+            val s = SessionState(map = map, gameEnabled = true)
+            val b = Bug(coordinate = edgeCoord)
+            s.gameState = GameState(phase = GamePhase.ACTIVE, bugs = mutableMapOf(b.id to b))
+            GameEngine.tick(s, now, Random(seed.toLong()))
+
+            val stepped = s.gameState.bugs.getValue(b.id)
+            assertTrue(map.getTile(stepped.coordinate) != null, "Bug moved off-map to ${stepped.coordinate}")
+        }
+    }
+
+    @Test
+    fun `bug on map edge stays in place when all valid neighbours are blocked`() {
+        val map = HexMap.createHexagonal(1)
+        val state = SessionState(map = map, gameEnabled = true)
+        val edgeCoord = HexCoordinate(1, 0)
+
+        // Block all valid on-map neighbours of edgeCoord with walls
+        val onMapNeighbours = map.getNeighbours(edgeCoord).map { it.coordinate }
+        onMapNeighbours.forEach { coord ->
+            val wall = Landmark(
+                id = UUID.randomUUID(),
+                name = "Wall",
+                coordinate = coord,
+                type = LandmarkType.WALL,
+            )
+            state.landmarks[wall.id] = wall
+        }
+
+        val bug = Bug(coordinate = edgeCoord)
+        state.gameState = GameState(phase = GamePhase.ACTIVE, bugs = mutableMapOf(bug.id to bug))
+
+        GameEngine.tick(state, now, Random(42))
+
+        val moved = state.gameState.bugs.getValue(bug.id)
+        assertEquals(edgeCoord, moved.coordinate, "Bug should stay in place when all on-map neighbours are blocked")
+        assertEquals(null, moved.previousCoordinate)
+    }
+
+    @Test
+    fun `off-map bug is pruned and cannot wander beyond map boundaries`() {
+        val map = HexMap.createHexagonal(2)
+        val state = SessionState(map = map, gameEnabled = true)
+        val offMapCoord = HexCoordinate(10, 10)
+        assertTrue(map.getTile(offMapCoord) == null)
+
+        val bug = Bug(coordinate = offMapCoord)
+        state.gameState = GameState(phase = GamePhase.ACTIVE, bugs = mutableMapOf(bug.id to bug))
+
+        GameEngine.tick(state, now, Random(1))
+
+        assertFalse(state.gameState.bugs.containsKey(bug.id), "Off-map bug must be removed")
+    }
+
+    @Test
+    fun `bugs do not target off-map landmarks`() {
+        val map = HexMap.createHexagonal(2)
+        val state = SessionState(map = map, gameEnabled = true)
+        val offMapKeep = Landmark(
+            id = UUID.randomUUID(),
+            name = "OffMapKeep",
+            coordinate = HexCoordinate(10, 10),
+            type = LandmarkType.KEEP,
+        )
+        state.landmarks[offMapKeep.id] = offMapKeep
+
+        val bug = Bug(coordinate = HexCoordinate(0, 0))
+        state.gameState = GameState(phase = GamePhase.ACTIVE, bugs = mutableMapOf(bug.id to bug))
+
+        GameEngine.tick(state, now, Random(1))
+
+        val stepped = state.gameState.bugs.getValue(bug.id)
+        assertTrue(map.getTile(stepped.coordinate) != null)
+        assertEquals(null, stepped.targetLandmarkId, "Bug should not target off-map landmark")
+    }
 }

@@ -234,7 +234,7 @@ export const useMapStore = create<MapStore>((set) => ({
     greenkeepingRotations: [],
     metrics: {},
     collaboratorMatrix: null,
-    gameState: null,
+    gameState: map?.gameState ?? null,
     activeWatchtowerId: null,
   })),
   updateMap: (map) =>
@@ -266,6 +266,7 @@ export const useMapStore = create<MapStore>((set) => ({
         currentMap: mergedMap,
         maps: state.maps.map((m) => (m.id === map.id ? mergedMap : m)),
         selectedLandmark: updatedSelectedLandmark,
+        ...(map.gameState ? { gameState: map.gameState } : {}),
       };
     }),
   updateCollaboratorUsername: (userId, username) =>

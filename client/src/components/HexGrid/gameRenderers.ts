@@ -1,5 +1,37 @@
 import * as THREE from 'three';
 
+/** Slight vertical clearance above tile top surface to prevent z-fighting and floor clipping. */
+export const BUG_CLEARANCE = 0.05;
+
+/**
+ * Calculates world-space position during bug movement across tiles.
+ *
+ * For horizontal movement (X, Z), positions are interpolated with smooth easing.
+ * For vertical movement (Y), when moving between tiles of differing elevations,
+ * a piecewise step transition is applied near the hex boundary (between 40% and 60% of progress)
+ * so the bug stays on the surface plane of each tile rather than sinking below tile surfaces
+ * or clipping through cliff walls.
+ */
+export function interpolateBugPosition(
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  eased: number,
+  target: THREE.Vector3 = new THREE.Vector3()
+): THREE.Vector3 {
+  const x = THREE.MathUtils.lerp(from.x, to.x, eased);
+  const z = THREE.MathUtils.lerp(from.z, to.z, eased);
+
+  let y: number;
+  if (Math.abs(from.y - to.y) < 1e-4) {
+    y = to.y;
+  } else {
+    const yProg = Math.max(0, Math.min(1, (eased - 0.4) / 0.2));
+    const yEased = yProg * yProg * (3 - 2 * yProg);
+    y = THREE.MathUtils.lerp(from.y, to.y, yEased);
+  }
+  return target.set(x, y, z);
+}
+
 const BUG_BODY = new THREE.MeshStandardMaterial({
   color: 0x5c1010,
   emissive: 0x2a0000,

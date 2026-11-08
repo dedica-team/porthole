@@ -119,9 +119,15 @@ object GameEngine {
         bug: Bug,
         random: Random,
     ) {
+        // Crawlers must stay within map boundaries; prune any bug whose position is off-map.
+        if (state.map.getTile(bug.coordinate) == null) {
+            game.bugs.remove(bug.id)
+            return
+        }
+
         val targetId = resolveTarget(state, game, bug)
         val targetCoordinate = targetId?.let { state.landmarks[it]?.coordinate }
-        if (targetId == null || targetCoordinate == null) {
+        if (targetId == null || targetCoordinate == null || state.map.getTile(targetCoordinate) == null) {
             wander(state, game, bug, random)
             return
         }
@@ -141,7 +147,7 @@ object GameEngine {
         val blocked = blockedCoordinates(state, except = setOf(targetCoordinate))
         val path = AStarPathfinder.findPath(state.map, bug.coordinate, targetCoordinate, blocked)
         val next = path?.getOrNull(1)
-        if (next == null) {
+        if (next == null || state.map.getTile(next) == null) {
             wander(state, game, bug, random)
             return
         }
@@ -154,7 +160,7 @@ object GameEngine {
 
     private fun resolveTarget(state: SessionState, game: GameState, bug: Bug): UUID? {
         val isAlive = { landmark: Landmark ->
-            isAttackable(landmark) &&
+            isAttackable(landmark, state.map) &&
                 (game.buildingHealth[landmark.id] ?: game.buildingMaxHealth) > 0
         }
         val current = bug.targetLandmarkId
@@ -164,7 +170,7 @@ object GameEngine {
 
         return state.landmarks.values
             .asSequence()
-            .filter { isAlive(it) && it.coordinate != bug.coordinate }
+            .filter { isAlive(it) && it.coordinate != bug.coordinate && state.map.getTile(it.coordinate!!) != null }
             .minByOrNull { bug.coordinate.distanceTo(it.coordinate!!) }
             ?.id
     }
@@ -177,25 +183,30 @@ object GameEngine {
     ) {
         val occupied = blockedCoordinates(state)
         val freeNeighbours = state.map.getNeighbours(bug.coordinate)
-            .filter { it.coordinate !in occupied }
+            .filter { it.coordinate !in occupied && state.map.getTile(it.coordinate) != null }
         if (freeNeighbours.isEmpty()) {
             game.bugs[bug.id] = bug.copy(previousCoordinate = null)
             return
         }
         val next = freeNeighbours[random.nextInt(freeNeighbours.size)].coordinate
+        if (state.map.getTile(next) == null) {
+            game.bugs[bug.id] = bug.copy(previousCoordinate = null)
+            return
+        }
         game.bugs[bug.id] = bug.copy(coordinate = next, previousCoordinate = bug.coordinate)
     }
 
     /** Buildings are attackable landmarks; walls and existing ruins are obstacles only. */
-    private fun isAttackable(landmark: Landmark): Boolean =
+    private fun isAttackable(landmark: Landmark, map: HexMap? = null): Boolean =
         landmark.coordinate != null &&
+            (map == null || map.getTile(landmark.coordinate) != null) &&
             landmark.type != LandmarkType.WALL &&
             landmark.type != LandmarkType.RUINS
 
     private fun initialBuildingHealth(state: SessionState, game: GameState): MutableMap<UUID, Int> {
         val health = game.buildingHealth.toMutableMap()
         state.landmarks.values
-            .filter { isAttackable(it) }
+            .filter { isAttackable(it, state.map) }
             .forEach { health.putIfAbsent(it.id, game.buildingMaxHealth) }
         return health
     }

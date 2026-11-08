@@ -155,6 +155,9 @@ export function useSessionWebSocket(mapId: string | undefined) {
             console.error('Failed to parse game update', message.body);
           }
         });
+        runIfPromise(fetchGameState(mapId), (game) => {
+          setGameStateRef.current(game);
+        });
       },
       onStompError: (frame) => {
         console.error('STOMP error', frame);

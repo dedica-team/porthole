@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type {HexCoordinate, HexTile, Terrain} from '@/types/hex';
@@ -15,7 +15,7 @@ import {buildConnectionGroup, buildXrayLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
 import type {FirstPersonState} from './useThreeScene';
 import type {GameState} from '@/types/game';
-import {buildBugMesh, buildProjectile, disposeGameObject} from './gameRenderers';
+import {BUG_CLEARANCE, buildBugMesh, buildProjectile, disposeGameObject, interpolateBugPosition} from './gameRenderers';
 import VirtualJoystick from './VirtualJoystick';
 import {shoot as fireShot} from '@/api/mapApi';
 import type {RendererQualityProfile} from './renderQuality';
@@ -176,7 +176,13 @@ export default function HexGrid({
     const topColBufRef = useRef<{ buf: THREE.Float32BufferAttribute; vertsPerTile: number } | null>(null);
     const sideColBufRef = useRef<{ buf: THREE.Float32BufferAttribute; vertsPerTile: number } | null>(null);
     const tileIndexRef = useRef<Map<string, number>>(new Map());
-    const tileByCoordRef = useRef<Map<string, HexTile>>(new Map());
+    const tileByCoord = useMemo(() => {
+        const m = new Map<string, HexTile>();
+        (map.map?.tiles ?? []).forEach((t) => m.set(`${t.coordinate.q},${t.coordinate.r}`, t));
+        return m;
+    }, [map.map?.tiles]);
+    const tileByCoordRef = useRef<Map<string, HexTile>>(tileByCoord);
+    tileByCoordRef.current = tileByCoord;
     const landmarkCoordsRef = useRef<Set<string>>(new Set());
     const landmarkMeshMapRef = useRef<Map<string, THREE.Group>>(new Map());
     const connectionMeshMapRef = useRef<Map<string, THREE.Object3D>>(new Map());
@@ -350,7 +356,7 @@ export default function HexGrid({
         topColBufRef.current = null;
         sideColBufRef.current = null;
         tileIndexRef.current.clear();
-        tileByCoordRef.current.clear();
+        tileByCoordRef.current = tileByCoord;
         optimisticTerrainRef.current.clear();
 
         // Remove stale highlight ring on tile rebuild – not needed here;
@@ -595,10 +601,10 @@ export default function HexGrid({
         Object.values(gameState?.bugs ?? {}).forEach((bug) => {
             seen.add(bug.id);
             const {q, r} = bug.coordinate;
-            const tile = map.map.tiles.find((t) => t.coordinate.q === q && t.coordinate.r === r);
+            const tile = tileByCoordRef.current.get(`${q},${r}`);
             const {x, z} = hexToWorld(q, r, HEX_SIZE);
 
-            const targetPosition = new THREE.Vector3(x, tileHeight(tile?.elevation ?? 0), z);
+            const targetPosition = new THREE.Vector3(x, tileHeight(tile?.elevation ?? 0) + BUG_CLEARANCE, z);
 
             let group = bugMeshMapRef.current.get(bug.id);
             if (!group) {
@@ -618,6 +624,9 @@ export default function HexGrid({
                         to: targetPosition,
                         startedAt: performance.now(),
                     });
+                }
+                if (gameState?.phase !== 'ACTIVE' && (!motion || motion.to.distanceToSquared(targetPosition) <= 1e-6)) {
+                    group.position.copy(targetPosition);
                 }
             }
 
@@ -639,7 +648,7 @@ export default function HexGrid({
 
         requestRender();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameState?.bugs, map.map.tiles, map.landmarks]);
+    }, [gameState?.bugs, gameState?.phase, map.map.tiles, map.landmarks, tileByCoord]);
 
     useEffect(() => {
         const bugMeshes = bugMeshMapRef.current;
@@ -680,7 +689,7 @@ export default function HexGrid({
                 if (!group) return;
                 const t = Math.min(1, (now - motion.startedAt) / BUG_MOVE_INTERP_MS);
                 const eased = t * t * (3 - 2 * t);
-                group.position.lerpVectors(motion.from, motion.to, eased);
+                interpolateBugPosition(motion.from, motion.to, eased, group.position);
                 if (t < 1) moving = true;
             });
             if (moving) {
@@ -779,7 +788,7 @@ export default function HexGrid({
         }
 
         const {q, r} = tower.coordinate;
-        const tile = map.map.tiles.find((t) => t.coordinate.q === q && t.coordinate.r === r);
+        const tile = tileByCoordRef.current.get(`${q},${r}`);
         const {x, z} = hexToWorld(q, r, HEX_SIZE);
         const y = tileHeight(tile?.elevation ?? 0) + 1.45;
         const yaw = Math.atan2(x, z);

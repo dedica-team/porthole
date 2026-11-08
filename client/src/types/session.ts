@@ -2,6 +2,7 @@
 import type { MapData } from './hex';
 import type { Landmark, LandmarkGroup } from './landmark';
 import type { Connection } from './connection';
+import type { GameState } from './game';
 
 export interface Collaborator {
   id: string;
@@ -37,6 +38,7 @@ export interface SessionState {
   connections: Record<string, Connection>;
   groups: Record<string, LandmarkGroup>;
   createdAt: string;
+  gameState?: GameState;
   /** When false/absent no tower-defense mechanics or UI are active for this session. */
   gameEnabled?: boolean;
 }
