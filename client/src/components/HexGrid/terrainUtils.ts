@@ -233,9 +233,9 @@ export const ROCK_MAT = new THREE.MeshStandardMaterial({
 export const ROCK_EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x222222 });
 
 export const SNOW_MOUND_MAT = new THREE.MeshStandardMaterial({
-  color:      0x8899a8,
-  emissive:   new THREE.Color(0x7799aa).multiplyScalar(0.12),
-  roughness:  0.95,
+  color:      0xeaf1f5,
+  emissive:   new THREE.Color(0x304050).multiplyScalar(0.06),
+  roughness:  0.90,
   metalness:  0.0,
   polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
 });

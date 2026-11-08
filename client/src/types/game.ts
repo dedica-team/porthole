@@ -28,4 +28,6 @@ export interface GameState {
 export interface ShootResult {
   hit: boolean;
   bugId?: string | null;
+  landmarkId?: string | null;
+  hitPosition?: { x: number; y: number; z: number } | null;
 }

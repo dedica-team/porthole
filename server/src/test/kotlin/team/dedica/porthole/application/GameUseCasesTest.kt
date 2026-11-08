@@ -181,4 +181,91 @@ class GameUseCasesTest {
             shoot.execute(state.id, collaborator.id, Vec3(0.0, 5.0, 0.0), Vec3(1.0, 0.0, 0.0))
         }
     }
+
+    @Test
+    fun `shooting a building reduces its health by 1`() {
+        val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
+        enter.execute(state.id, collaborator.id, tower.id)
+
+        val house = Landmark(
+            id = UUID.randomUUID(),
+            name = "Cottage",
+            coordinate = HexCoordinate(2, 0),
+            type = LandmarkType.HOUSE,
+        )
+        state.landmarks[house.id] = house
+        state.gameState = GameState(
+            phase = GamePhase.ACTIVE,
+            buildingHealth = mutableMapOf(house.id to 10),
+            towerOccupants = mutableMapOf(tower.id to collaborator.id),
+        )
+        port.save(state)
+
+        val target = GameGeometry.buildingPosition(state, house)!!
+        val origin = GameGeometry.towerEyePosition(state, tower)!!
+        val direction = Vec3(target.x - origin.x, target.y - origin.y, target.z - origin.z)
+
+        val shoot = ShootUseCase(port, NoOpBroadcastPort(), authorization)
+        val result = shoot.execute(state.id, collaborator.id, origin, direction)
+
+        assertTrue(result.hit)
+        assertEquals(house.id.toString(), result.landmarkId)
+        assertEquals(9, state.gameState.buildingHealth[house.id])
+    }
+
+    @Test
+    fun `shooting a building with 1 health destroys it into ruins`() {
+        val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
+        enter.execute(state.id, collaborator.id, tower.id)
+
+        val keep = Landmark(
+            id = UUID.randomUUID(),
+            name = "Keep",
+            coordinate = HexCoordinate(2, 0),
+            type = LandmarkType.KEEP,
+        )
+        state.landmarks[keep.id] = keep
+        state.gameState = GameState(
+            phase = GamePhase.ACTIVE,
+            buildingHealth = mutableMapOf(keep.id to 1),
+            towerOccupants = mutableMapOf(tower.id to collaborator.id),
+        )
+        port.save(state)
+
+        val target = GameGeometry.buildingPosition(state, keep)!!
+        val origin = GameGeometry.towerEyePosition(state, tower)!!
+        val direction = Vec3(target.x - origin.x, target.y - origin.y, target.z - origin.z)
+
+        val shoot = ShootUseCase(port, NoOpBroadcastPort(), authorization)
+        val result = shoot.execute(state.id, collaborator.id, origin, direction)
+
+        assertTrue(result.hit)
+        assertEquals(keep.id.toString(), result.landmarkId)
+        assertEquals(0, state.gameState.buildingHealth[keep.id])
+        assertEquals(LandmarkType.RUINS, state.landmarks[keep.id]!!.type)
+    }
+
+    @Test
+    fun `smaller bug hitbox does not trigger hit when aiming far from bug center`() {
+        val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
+        enter.execute(state.id, collaborator.id, tower.id)
+
+        val bug = Bug(coordinate = HexCoordinate(2, 0))
+        state.gameState = GameState(
+            phase = GamePhase.ACTIVE,
+            bugs = mutableMapOf(bug.id to bug),
+            towerOccupants = mutableMapOf(tower.id to collaborator.id),
+        )
+        port.save(state)
+
+        val target = GameGeometry.bugPosition(state, bug)
+        val origin = GameGeometry.towerEyePosition(state, tower)!!
+        // Aiming 0.55 units offset from bug center: would have hit under old 0.7 radius, but misses under new 0.35 radius
+        val direction = Vec3(target.x - origin.x, target.y - origin.y + 0.55, target.z - origin.z)
+
+        val shoot = ShootUseCase(port, NoOpBroadcastPort(), authorization)
+        val result = shoot.execute(state.id, collaborator.id, origin, direction)
+
+        assertFalse(result.hit)
+    }
 }

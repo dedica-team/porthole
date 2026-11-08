@@ -197,7 +197,7 @@ object GameEngine {
     }
 
     /** Buildings are attackable landmarks; walls and existing ruins are obstacles only. */
-    private fun isAttackable(landmark: Landmark, map: HexMap? = null): Boolean =
+    fun isAttackable(landmark: Landmark, map: HexMap? = null): Boolean =
         landmark.coordinate != null &&
             (map == null || map.getTile(landmark.coordinate) != null) &&
             landmark.type != LandmarkType.WALL &&
@@ -225,7 +225,7 @@ object GameEngine {
      * Turns a destroyed building into ruins and scorches the ground around it.
      * The landmark is replaced in the session so clients receive the new visual.
      */
-    private fun destroyBuilding(state: SessionState, game: GameState, landmarkId: UUID) {
+    fun destroyBuilding(state: SessionState, game: GameState, landmarkId: UUID) {
         val landmark = state.landmarks[landmarkId] ?: return
         val coordinate = landmark.coordinate ?: return
 

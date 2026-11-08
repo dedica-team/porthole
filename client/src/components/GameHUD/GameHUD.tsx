@@ -101,7 +101,7 @@ export default function GameHUD() {
 
             {showAimGuidance && (
               <span className="hidden sm:inline">
-                Drag to aim · Space or Fire to shoot
+                AWSD / Joystick to aim · Space or Fire to shoot
               </span>
             )}
           </div>

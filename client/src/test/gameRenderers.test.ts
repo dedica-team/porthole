@@ -3,9 +3,12 @@ import * as THREE from 'three';
 import {
   BUG_CLEARANCE,
   buildBugMesh,
+  buildExplosion,
   buildProjectile,
   disposeGameObject,
+  EXPLOSION_LIFETIME_MS,
   interpolateBugPosition,
+  updateExplosion,
 } from '../components/HexGrid/gameRenderers';
 
 describe('gameRenderers', () => {
@@ -31,6 +34,30 @@ describe('gameRenderers', () => {
       expect(projectile.renderOrder).toBe(25);
 
       disposeGameObject(projectile);
+    });
+
+    it('creates explosion group with core mesh and spark particles', () => {
+      const { group, particles, coreMesh } = buildExplosion();
+      expect(group).toBeInstanceOf(THREE.Group);
+      expect(coreMesh).toBeInstanceOf(THREE.Mesh);
+      expect(particles.length).toBeGreaterThanOrEqual(6);
+
+      const instance = {
+        group,
+        bornAt: 1000,
+        particles,
+        coreMesh,
+      };
+
+      // Progress at 100ms
+      const aliveAt100 = updateExplosion(instance, 1100, 0.016);
+      expect(aliveAt100).toBe(true);
+
+      // Expired after EXPLOSION_LIFETIME_MS
+      const aliveAtEnd = updateExplosion(instance, 1000 + EXPLOSION_LIFETIME_MS + 10, 0.016);
+      expect(aliveAtEnd).toBe(false);
+
+      disposeGameObject(group);
     });
   });
 

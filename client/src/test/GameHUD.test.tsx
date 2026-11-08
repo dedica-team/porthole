@@ -86,7 +86,7 @@ describe('GameHUD', () => {
     render(<GameHUD />);
     expect(screen.getByText(/Watchtower/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /leave/i })).toBeInTheDocument();
-    expect(screen.getByText(/Drag to aim/i)).toBeInTheDocument();
+    expect(screen.getByText(/to aim/i)).toBeInTheDocument();
   });
 
   it('shows selected tile coordinates and landmark type when selected', () => {
@@ -110,7 +110,7 @@ describe('GameHUD', () => {
     });
     render(<GameHUD />);
     expect(screen.getByText(/Wave 3/)).toBeInTheDocument();
-    expect(screen.getByText(/Drag to aim/i)).toBeInTheDocument();
+    expect(screen.getByText(/to aim/i)).toBeInTheDocument();
     expect(screen.getByText(/\(3, 1\)/)).toBeInTheDocument();
     expect(screen.getByText(/WATCHTOWER/)).toBeInTheDocument();
   });

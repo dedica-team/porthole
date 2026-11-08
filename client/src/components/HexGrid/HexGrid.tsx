@@ -15,7 +15,16 @@ import {buildConnectionGroup, buildXrayLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
 import type {FirstPersonState} from './useThreeScene';
 import type {GameState} from '@/types/game';
-import {BUG_CLEARANCE, buildBugMesh, buildProjectile, disposeGameObject, interpolateBugPosition} from './gameRenderers';
+import {
+    BUG_CLEARANCE,
+    buildBugMesh,
+    buildExplosion,
+    buildProjectile,
+    disposeGameObject,
+    type ExplosionInstance,
+    interpolateBugPosition,
+    updateExplosion,
+} from './gameRenderers';
 import VirtualJoystick from './VirtualJoystick';
 import {shoot as fireShot} from '@/api/mapApi';
 import type {RendererQualityProfile} from './renderQuality';
@@ -198,6 +207,7 @@ export default function HexGrid({
     const buildingHealthBarsRef = useRef<CSS2DObject[]>([]);
     const projectileRef = useRef<Array<{ mesh: THREE.Mesh; velocity: THREE.Vector3; bornAt: number }>>([]);
     const bugCorpseRef = useRef<Array<{ mesh: THREE.Group; timer: number }>>([]);
+    const explosionRef = useRef<ExplosionInstance[]>([]);
     const firstPersonRef = useRef<FirstPersonState | null>(null);
     const savedCameraRef = useRef<{ position: THREE.Vector3; target: THREE.Vector3 } | null>(null);
     const joystickRef = useRef({ x: 0, y: 0 });
@@ -816,9 +826,25 @@ export default function HexGrid({
         three.requestRender();
     }, [activeWatchtowerId, map.landmarks, map.map.tiles, threeRef]);
 
-    // ── Tower-defense: WASD aiming, Space firing, ballistic projectiles ──────────
+    // ── Tower-defense: AWSD / Joystick aiming, Space firing, ballistic projectiles ──────────
     useEffect(() => {
         if (!activeWatchtowerId) return;
+
+        const spawnExplosion = (position: THREE.Vector3) => {
+            const three = threeRef.current;
+            if (!three) return;
+
+            const explosion = buildExplosion();
+            explosion.group.position.copy(position);
+            three.scene.add(explosion.group);
+            explosionRef.current.push({
+                group: explosion.group,
+                bornAt: performance.now(),
+                particles: explosion.particles,
+                coreMesh: explosion.coreMesh,
+            });
+            three.requestRender();
+        };
 
         const dropCorpse = (position: THREE.Vector3, yaw: number) => {
             const three = threeRef.current;
@@ -872,10 +898,35 @@ export default function HexGrid({
                 {x: aim.x, y: aim.y, z: aim.z},
             )
                 .then((result) => {
-                    if (!result.hit || !result.bugId) return;
-                    const hit = visibleBugs.get(result.bugId);
-                    if (hit) dropCorpse(hit.position, hit.yaw);
-                    useMapStore.getState().removeBug(result.bugId);
+                    if (!result.hit) {
+                        if (result.hitPosition) {
+                            spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                        }
+                        return;
+                    }
+                    if (result.bugId) {
+                        const hit = visibleBugs.get(result.bugId);
+                        if (hit) {
+                            dropCorpse(hit.position, hit.yaw);
+                            spawnExplosion(hit.position);
+                        } else if (result.hitPosition) {
+                            spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                        }
+                        useMapStore.getState().removeBug(result.bugId);
+                    } else if (result.landmarkId) {
+                        const targetBuilding = map.landmarks[result.landmarkId];
+                        if (targetBuilding?.coordinate) {
+                            const {q, r} = targetBuilding.coordinate;
+                            const tile = tileByCoordRef.current.get(`${q},${r}`);
+                            const {x, z} = hexToWorld(q, r, HEX_SIZE);
+                            const y = tileHeight(tile?.elevation ?? 0) + 0.6;
+                            spawnExplosion(new THREE.Vector3(x, y, z));
+                        } else if (result.hitPosition) {
+                            spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                        }
+                    } else if (result.hitPosition) {
+                        spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                    }
                 })
                 .catch(() => { /* server rejects shots from outside a tower */ });
         };
@@ -893,14 +944,42 @@ export default function HexGrid({
             );
         };
 
+        const keysPressed = new Set<string>();
+
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.code !== 'Space') return;
             if (isEditableTarget(event.target)) return;
-            event.preventDefault();
-            if (!event.repeat) fire();
+            const code = event.code;
+            const key = event.key.toLowerCase();
+            if (code === 'Space') {
+                event.preventDefault();
+                if (!event.repeat) fire();
+                return;
+            }
+            if (
+                code === 'KeyW' || code === 'KeyA' || code === 'KeyS' || code === 'KeyD' ||
+                key === 'w' || key === 'a' || key === 's' || key === 'd' ||
+                code === 'ArrowUp' || code === 'ArrowDown' || code === 'ArrowLeft' || code === 'ArrowRight'
+            ) {
+                event.preventDefault();
+                keysPressed.add(key);
+                keysPressed.add(code.toLowerCase());
+            }
+        };
+
+        const onKeyUp = (event: KeyboardEvent) => {
+            const code = event.code;
+            const key = event.key.toLowerCase();
+            keysPressed.delete(key);
+            keysPressed.delete(code.toLowerCase());
+        };
+
+        const onBlur = () => {
+            keysPressed.clear();
         };
 
         window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('blur', onBlur);
 
         let last = performance.now();
         let raf = 0;
@@ -910,12 +989,21 @@ export default function HexGrid({
 
             const fp = firstPersonRef.current;
             if (fp?.enabled) {
-                const input = joystickRef.current;
-                // Same deliberately slow turn rate as before, now driven by the joystick.
-                const turnSpeed = 0.4;
-                if (Math.abs(input.x) > 0.02) fp.yaw -= input.x * turnSpeed * dt;
-                if (Math.abs(input.y) > 0.02) {
-                    fp.pitch = Math.max(-1.2, Math.min(1.2, fp.pitch + input.y * turnSpeed * dt));
+                let keyX = 0;
+                let keyY = 0;
+                if (keysPressed.has('a') || keysPressed.has('keya') || keysPressed.has('arrowleft')) keyX -= 1;
+                if (keysPressed.has('d') || keysPressed.has('keyd') || keysPressed.has('arrowright')) keyX += 1;
+                if (keysPressed.has('w') || keysPressed.has('keyw') || keysPressed.has('arrowup')) keyY += 1;
+                if (keysPressed.has('s') || keysPressed.has('keys') || keysPressed.has('arrowdown')) keyY -= 1;
+
+                const joy = joystickRef.current;
+                const combinedX = Math.max(-1, Math.min(1, joy.x + keyX));
+                const combinedY = Math.max(-1, Math.min(1, joy.y + keyY));
+
+                const turnSpeed = 0.8;
+                if (Math.abs(combinedX) > 0.02) fp.yaw -= combinedX * turnSpeed * dt;
+                if (Math.abs(combinedY) > 0.02) {
+                    fp.pitch = Math.max(-1.2, Math.min(1.2, fp.pitch + combinedY * turnSpeed * dt));
                 }
 
                 const three = threeRef.current;
@@ -930,9 +1018,36 @@ export default function HexGrid({
                         }
                         projectile.velocity.y -= 9.81 * dt;
                         projectile.mesh.position.addScaledVector(projectile.velocity, dt);
+
+                        // If projectile hits ground elevation, trigger small impact explosion and remove
+                        const pos = projectile.mesh.position;
+                        const approxQ = Math.round(pos.x / (HEX_SIZE * 1.5));
+                        const approxR = Math.round((pos.z / (HEX_SIZE * Math.sqrt(3))) - approxQ / 2);
+                        const tile = tileByCoordRef.current.get(`${approxQ},${approxR}`);
+                        const groundY = tileHeight(tile?.elevation ?? 0);
+                        if (pos.y <= groundY + 0.05) {
+                            spawnExplosion(new THREE.Vector3(pos.x, Math.max(groundY + 0.05, pos.y), pos.z));
+                            three.scene.remove(projectile.mesh);
+                            disposeGameObject(projectile.mesh);
+                            continue;
+                        }
+
                         survivors.push(projectile);
                     }
                     projectileRef.current = survivors;
+
+                    const survivingExplosions: ExplosionInstance[] = [];
+                    for (const exp of explosionRef.current) {
+                        const alive = updateExplosion(exp, now, dt);
+                        if (!alive) {
+                            three.scene.remove(exp.group);
+                            disposeGameObject(exp.group);
+                        } else {
+                            survivingExplosions.push(exp);
+                        }
+                    }
+                    explosionRef.current = survivingExplosions;
+
                     three.requestRender();
                 }
             }
@@ -944,6 +1059,8 @@ export default function HexGrid({
         return () => {
             cancelAnimationFrame(raf);
             window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keyup', onKeyUp);
+            window.removeEventListener('blur', onBlur);
             fireRef.current = null;
             joystickRef.current = {x: 0, y: 0};
 
@@ -953,6 +1070,12 @@ export default function HexGrid({
                 disposeGameObject(projectile.mesh);
             });
             projectileRef.current = [];
+
+            explosionRef.current.forEach((exp) => {
+                three?.scene.remove(exp.group);
+                disposeGameObject(exp.group);
+            });
+            explosionRef.current = [];
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeWatchtowerId, map.id]);

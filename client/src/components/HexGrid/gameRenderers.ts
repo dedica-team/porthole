@@ -62,6 +62,36 @@ const PROJECTILE_MAT = new THREE.MeshStandardMaterial({
   roughness: 0.2,
 });
 
+const EXPLOSION_CORE_MAT = new THREE.MeshStandardMaterial({
+  color: 0xff8800,
+  emissive: 0xff4400,
+  emissiveIntensity: 3.0,
+  roughness: 0.2,
+  flatShading: true,
+});
+
+const EXPLOSION_SPARK_MAT = new THREE.MeshStandardMaterial({
+  color: 0xffd700,
+  emissive: 0xff9900,
+  emissiveIntensity: 2.5,
+  roughness: 0.15,
+  flatShading: true,
+});
+
+export const EXPLOSION_LIFETIME_MS = 450;
+
+export interface ExplosionParticle {
+  mesh: THREE.Mesh;
+  velocity: THREE.Vector3;
+}
+
+export interface ExplosionInstance {
+  group: THREE.Group;
+  bornAt: number;
+  particles: ExplosionParticle[];
+  coreMesh: THREE.Mesh;
+}
+
 /** Low-poly bug NPC. Rebuilt per tick; the bug count is intentionally small. */
 export function buildBugMesh(): THREE.Group {
   const group = new THREE.Group();
@@ -110,6 +140,65 @@ export function buildProjectile(): THREE.Mesh {
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), PROJECTILE_MAT);
   mesh.renderOrder = 25;
   return mesh;
+}
+
+/** Small explosion effect spawned where a shot hits a bug, building, or ground. */
+export function buildExplosion(): { group: THREE.Group; particles: ExplosionParticle[]; coreMesh: THREE.Mesh } {
+  const group = new THREE.Group();
+
+  const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), EXPLOSION_CORE_MAT);
+  group.add(coreMesh);
+
+  const particles: ExplosionParticle[] = [];
+  const sparkGeo = new THREE.DodecahedronGeometry(0.04, 0);
+
+  const count = 8;
+  for (let i = 0; i < count; i++) {
+    const spark = new THREE.Mesh(sparkGeo, EXPLOSION_SPARK_MAT);
+    const theta = (i / count) * Math.PI * 2 + (Math.sin(i * 3.7) * 0.4);
+    const phi = Math.sin(i * 1.9) * Math.PI * 0.35;
+    const speed = 1.2 + ((i * 17) % 10) / 10 * 1.5;
+    const vx = Math.cos(theta) * Math.cos(phi) * speed;
+    const vy = Math.abs(Math.sin(phi)) * speed + 0.6;
+    const vz = Math.sin(theta) * Math.cos(phi) * speed;
+
+    group.add(spark);
+    particles.push({
+      mesh: spark,
+      velocity: new THREE.Vector3(vx, vy, vz),
+    });
+  }
+
+  return { group, particles, coreMesh };
+}
+
+/**
+ * Updates an explosion instance over time. Returns false when the explosion has expired.
+ */
+export function updateExplosion(
+  instance: ExplosionInstance,
+  now: number,
+  dt: number,
+): boolean {
+  const age = now - instance.bornAt;
+  const progress = Math.min(1, age / EXPLOSION_LIFETIME_MS);
+  if (progress >= 1) return false;
+
+  // Flash core expands quickly and then shrinks/dissipates
+  const coreScale = progress < 0.2
+    ? (progress / 0.2) * 1.6
+    : Math.max(0.01, 1.6 * (1 - (progress - 0.2) / 0.8));
+  instance.coreMesh.scale.setScalar(coreScale);
+
+  // Sparks fly outward with gravity and shrink
+  for (const p of instance.particles) {
+    p.velocity.y -= 4.0 * dt;
+    p.mesh.position.addScaledVector(p.velocity, dt);
+    const sparkScale = Math.max(0.01, 1 - progress);
+    p.mesh.scale.setScalar(sparkScale);
+  }
+
+  return true;
 }
 
 export function disposeGameObject(root: THREE.Object3D): void {

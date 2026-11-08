@@ -1,5 +1,6 @@
 package team.dedica.porthole.domain
 
+import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
@@ -22,13 +23,22 @@ data class Vec3(val x: Double, val y: Double, val z: Double) {
     fun isFinite(): Boolean = x.isFinite() && y.isFinite() && z.isFinite()
 }
 
+data class HitTarget(
+    val distance: Double,
+    val bug: Bug? = null,
+    val landmark: Landmark? = null,
+    val hitPoint: Vec3? = null,
+)
+
 /**
  * World-space geometry shared by the server-side hit resolution and the client renderer.
  * Kept in sync with `client/src/utils/hexUtils.ts` and `terrainUtils.tileHeight`.
  */
 object GameGeometry {
-    const val BUG_RADIUS = 0.7
+    const val BUG_RADIUS = 0.35
     const val BUG_HEIGHT = 0.35
+    const val BUILDING_RADIUS = 0.8
+    const val BUILDING_HEIGHT = 0.8
     const val MAX_RANGE = 150.0
 
     fun hexToWorld(coordinate: HexCoordinate, size: Double = 1.0): Pair<Double, Double> {
@@ -41,6 +51,13 @@ object GameGeometry {
 
     fun bugPosition(state: SessionState, bug: Bug): Vec3 =
         tilePositions(state, bug.coordinate)
+
+    fun buildingPosition(state: SessionState, landmark: Landmark): Vec3? {
+        val coordinate = landmark.coordinate ?: return null
+        val (x, z) = hexToWorld(coordinate)
+        val elevation = state.map.getTile(coordinate)?.elevation ?: 0
+        return Vec3(x, tileHeight(elevation) + BUILDING_HEIGHT * 0.5, z)
+    }
 
     private fun tilePositions(state: SessionState, coordinate: HexCoordinate): Vec3 {
         val (x, z) = hexToWorld(coordinate)
@@ -85,21 +102,51 @@ object GameGeometry {
         game: GameState,
         origin: Vec3,
         direction: Vec3,
-    ): Bug? {
+    ): Bug? = findHitTarget(state, game, origin, direction)?.bug
+
+    /**
+     * Casts a ray into the scene and finds the closest target hit (bug or attackable building).
+     */
+    fun findHitTarget(
+        state: SessionState,
+        game: GameState,
+        origin: Vec3,
+        direction: Vec3,
+        shooterTowerId: UUID? = null,
+    ): HitTarget? {
         val dir = direction.normalized() ?: return null
         if (!origin.isFinite()) return null
 
-        return game.bugs.values
+        val bugHits = game.bugs.values
             .asSequence()
             .mapNotNull { bug ->
                 val t = bugHitCenters(state, bug)
                     .mapNotNull { raySphereDistance(origin, dir, it, BUG_RADIUS) }
                     .minOrNull()
                     ?: return@mapNotNull null
-                if (t > MAX_RANGE) null else t to bug
+                if (t > MAX_RANGE) null else HitTarget(distance = t, bug = bug)
             }
-            .minByOrNull { it.first }
-            ?.second
+
+        val buildingHits = state.landmarks.values
+            .asSequence()
+            .filter { landmark ->
+                landmark.id != shooterTowerId &&
+                    GameEngine.isAttackable(landmark, state.map) &&
+                    (game.buildingHealth[landmark.id] ?: game.buildingMaxHealth) > 0
+            }
+            .mapNotNull { landmark ->
+                val center = buildingPosition(state, landmark) ?: return@mapNotNull null
+                val t = raySphereDistance(origin, dir, center, BUILDING_RADIUS) ?: return@mapNotNull null
+                if (t > MAX_RANGE) null else HitTarget(distance = t, landmark = landmark)
+            }
+
+        val closest = (bugHits + buildingHits).minByOrNull { it.distance } ?: return null
+        val hitPoint = Vec3(
+            origin.x + dir.x * closest.distance,
+            origin.y + dir.y * closest.distance,
+            origin.z + dir.z * closest.distance,
+        )
+        return closest.copy(hitPoint = hitPoint)
     }
 
     /** Distance along the ray to the sphere surface, or null when there is no hit. */
