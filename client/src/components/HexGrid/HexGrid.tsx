@@ -1680,9 +1680,6 @@ export default function HexGrid({
                     >
                         Fire
                     </button>
-                    <div className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs font-mono text-red-100 sm:block">
-                        Drag to aim · Space or Fire to shoot
-                    </div>
                 </div>
             )}
             {loading && (

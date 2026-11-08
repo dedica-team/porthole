@@ -24,24 +24,24 @@ export default function RegularMapView() {
 
   const {
     currentMap,
-    selectedTile, setSelectedTile,
-    selectedLandmark, setSelectedLandmark,
+    setSelectedTile,
+    setSelectedLandmark,
     connectingFromLandmarkId,
     relocatingLandmarkId, setRelocatingLandmark,
     pendingConnectionMeta, setPendingConnectionMeta,
     editorMode, editorTool, editorTerrain,
-    mainView, setMainView, setConfirmPending,
+    setMainView, setConfirmPending,
     rendererQualityProfile,
     gameState, activeWatchtowerId,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
-    selectedTile: s.selectedTile, setSelectedTile: s.setSelectedTile,
-    selectedLandmark: s.selectedLandmark, setSelectedLandmark: s.setSelectedLandmark,
+    setSelectedTile: s.setSelectedTile,
+    setSelectedLandmark: s.setSelectedLandmark,
     connectingFromLandmarkId: s.connectingFromLandmarkId,
     relocatingLandmarkId: s.relocatingLandmarkId, setRelocatingLandmark: s.setRelocatingLandmark,
     pendingConnectionMeta: s.pendingConnectionMeta, setPendingConnectionMeta: s.setPendingConnectionMeta,
     editorMode: s.editorMode, editorTool: s.editorTool, editorTerrain: s.editorTerrain,
-    mainView: s.mainView, setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
+    setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
     rendererQualityProfile: s.rendererQualityProfile,
     gameState: s.gameState, activeWatchtowerId: s.activeWatchtowerId,
   })));
@@ -158,13 +158,6 @@ export default function RegularMapView() {
       <GameHUD />
 
       <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
-
-      {(mainView === 'tile' || mainView === 'landmark') && selectedTile && !editorMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card/90 border border-border text-sm text-muted-foreground pointer-events-none z-10">
-          ({selectedTile.q}, {selectedTile.r})
-          {selectedLandmark && <> · {selectedLandmark.type.replace('_', ' ')}</>}
-        </div>
-      )}
     </>
   );
 }

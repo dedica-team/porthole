@@ -14,6 +14,10 @@ export default function GameHUD() {
   const setActiveWatchtowerId = useMapStore((s) => s.setActiveWatchtowerId);
   const setGameState = useMapStore((s) => s.setGameState);
   const currentMap = useMapStore((s) => s.currentMap);
+  const selectedTile = useMapStore((s) => s.selectedTile);
+  const selectedLandmark = useMapStore((s) => s.selectedLandmark);
+  const mainView = useMapStore((s) => s.mainView);
+  const editorMode = useMapStore((s) => s.editorMode);
   const [now, setNow] = useState(() => Date.now());
   const [leaving, setLeaving] = useState(false);
 
@@ -23,11 +27,16 @@ export default function GameHUD() {
     return () => clearInterval(timer);
   }, [gameState?.phase]);
 
-  if (!currentMap?.gameEnabled || !gameState || gameState.phase === 'IDLE') return null;
+  const showGame = Boolean(currentMap?.gameEnabled && gameState && gameState.phase !== 'IDLE');
+  const showAimGuidance = Boolean(activeWatchtowerId);
+  const showSelection = Boolean(!editorMode && selectedTile && (mainView === 'tile' || mainView === 'landmark'));
+  const showBottomBox = showGame || showAimGuidance || showSelection;
 
-  const bugs = Object.values(gameState.bugs ?? {});
+  if (!activeWatchtowerId && !showBottomBox) return null;
+
+  const bugs = Object.values(gameState?.bugs ?? {});
   const underAttack = new Set(bugs.map((b) => b.targetLandmarkId).filter(Boolean)).size;
-  const nextWaveMs = gameState.nextWaveAt ? new Date(gameState.nextWaveAt).getTime() : null;
+  const nextWaveMs = gameState?.nextWaveAt ? new Date(gameState.nextWaveAt).getTime() : null;
   const secondsToWave = nextWaveMs ? Math.max(0, Math.ceil((nextWaveMs - now) / 1000)) : 0;
 
   const handleLeave = async () => {
@@ -44,31 +53,60 @@ export default function GameHUD() {
   };
 
   return (
-    <div className="pointer-events-none absolute top-2 right-2 z-30 flex flex-col items-end gap-1.5">
-      <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-red-500/40 bg-black/70 px-3 py-1.5 text-xs font-mono text-red-100 shadow-lg">
-        <span className="flex items-center gap-1">
-          <Bug className="h-3.5 w-3.5" /> Wave {gameState.wave}
-        </span>
-        <span>
-          {gameState.phase === 'ACTIVE'
-            ? `${bugs.length} bug${bugs.length === 1 ? '' : 's'}`
-            : `next wave in ${secondsToWave}s`}
-        </span>
-        {underAttack > 0 && (
-          <span className="flex items-center gap-1 text-amber-300">
-            <Shield className="h-3.5 w-3.5" /> {underAttack} under attack
-          </span>
-        )}
-      </div>
-
+    <>
       {activeWatchtowerId && (
-        <div className="pointer-events-auto flex items-center gap-2 rounded-lg border border-red-500/40 bg-black/70 px-2 py-1 text-xs font-mono text-red-100">
-          <Crosshair className="h-3.5 w-3.5" /> Watchtower
-          <Button size="sm" variant="flat" className="h-6 px-2 text-xs" disabled={leaving} onClick={handleLeave}>
-            <LogOut className="h-3 w-3" /> Leave
-          </Button>
+        <div className="pointer-events-none absolute top-2 right-2 z-30 flex flex-col items-end gap-1.5">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-lg border border-red-500/40 bg-black/70 px-2 py-1 text-xs font-mono text-red-100">
+            <Crosshair className="h-3.5 w-3.5" /> Watchtower
+            <Button size="sm" variant="flat" className="h-6 px-2 text-xs" disabled={leaving} onClick={handleLeave}>
+              <LogOut className="h-3 w-3" /> Leave
+            </Button>
+          </div>
         </div>
       )}
-    </div>
+
+      {showBottomBox && (
+        <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
+          <div
+            className={`pointer-events-auto flex items-center gap-3 rounded-lg border px-3 py-1.5 text-xs font-mono shadow-lg whitespace-nowrap ${
+              showGame || showAimGuidance
+                ? 'border-red-500/40 bg-black/70 text-red-100'
+                : 'border-border bg-card/90 text-muted-foreground'
+            }`}
+          >
+            {showGame && gameState && (
+              <>
+                <span className="flex items-center gap-1">
+                  <Bug className="h-3.5 w-3.5" /> Wave {gameState.wave}
+                </span>
+                <span>
+                  {gameState.phase === 'ACTIVE'
+                    ? `${bugs.length} bug${bugs.length === 1 ? '' : 's'}`
+                    : `next wave in ${secondsToWave}s`}
+                </span>
+                {underAttack > 0 && (
+                  <span className="flex items-center gap-1 text-amber-300">
+                    <Shield className="h-3.5 w-3.5" /> {underAttack} under attack
+                  </span>
+                )}
+              </>
+            )}
+
+            {showSelection && selectedTile && (
+              <span>
+                ({selectedTile.q}, {selectedTile.r})
+                {selectedLandmark && <> · {selectedLandmark.type.replace('_', ' ')}</>}
+              </span>
+            )}
+
+            {showAimGuidance && (
+              <span className="hidden sm:inline">
+                Drag to aim · Space or Fire to shoot
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

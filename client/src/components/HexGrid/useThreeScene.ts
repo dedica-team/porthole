@@ -79,7 +79,7 @@ export function useThreeScene({
     scene.background = new THREE.Color(SCENE_BACKGROUND);
     const rendererQuality = resolveRendererQuality(qualityProfile);
 
-    const ORTHO_HALF = 35;
+    const ORTHO_HALF = 20;
     const camera: THREE.PerspectiveCamera | THREE.OrthographicCamera = orthographic
       ? (() => {
           const aspect = initialSize.width > 0 && initialSize.height > 0 ? initialSize.width / initialSize.height : 1;
@@ -99,7 +99,7 @@ export function useThreeScene({
             0.1,
             200,
           );
-          cam.position.set(0, 60, 60);
+          cam.position.set(0, 20, 20);
           cam.lookAt(0, 0, 0);
           return cam;
         })();
