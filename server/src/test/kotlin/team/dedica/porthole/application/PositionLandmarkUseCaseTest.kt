@@ -124,6 +124,32 @@ class PositionLandmarkUseCaseTest {
     }
 
     @Test
+    fun `connection paths are recalculated when target landmark is relocated`() {
+        createUseCase.execute(state.id, collaborator.id, "Iron Keep")
+        val s1 = mapStatePort.findById(state.id)!!
+        createUseCase.execute(s1.id, collaborator.id, "Stone Fort")
+        val s2 = mapStatePort.findById(state.id)!!
+        val ironKeepId = s2.landmarks.values.first { it.name == "Iron Keep" }.id
+        val stoneFortId = s2.landmarks.values.first { it.name == "Stone Fort" }.id
+        positionUseCase.execute(s2.id, collaborator.id, ironKeepId, HexCoordinate(0, 0))
+        val s3 = mapStatePort.findById(state.id)!!
+        positionUseCase.execute(s3.id, collaborator.id, stoneFortId, HexCoordinate(2, 0))
+        val s4 = mapStatePort.findById(state.id)!!
+        createConnectionUseCase.execute(s4.id, ironKeepId, stoneFortId, callerId = collaborator.id)
+        val s5 = mapStatePort.findById(state.id)!!
+
+        val originalPath = s5.connections.values.first().path
+        assertFalse(originalPath.isEmpty())
+
+        val result = positionUseCase.execute(s5.id, collaborator.id, stoneFortId, HexCoordinate(1, 1))
+
+        val updatedPath = result.connections.values.first().path
+        assertEquals(HexCoordinate(0, 0), updatedPath.first())
+        assertEquals(HexCoordinate(1, 1), updatedPath.last())
+        assertNotEquals(originalPath, updatedPath)
+    }
+
+    @Test
     fun `repositioning landmark onto a tile reroutes third-party connections crossing that tile`() {
         createUseCase.execute(state.id, collaborator.id, "Alpha")
         val s1 = mapStatePort.findById(state.id)!!

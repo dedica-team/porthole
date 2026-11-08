@@ -60,12 +60,12 @@ object ConnectionRecalculator {
         state.connections.entries
             .filter { (_, c) -> c.originId == landmarkId || c.targetId == landmarkId }
             .forEach { (connId, c) ->
-                val otherId    = if (c.originId == landmarkId) c.targetId else c.originId.toString()
-                val otherCoord = state.landmarks[otherId]?.coordinate ?: return@forEach
+                val originCoord = if (c.originId == landmarkId) movedCoord else state.landmarks[c.originId]?.coordinate ?: return@forEach
+                val targetCoord = if (c.targetId == landmarkId) movedCoord else state.landmarks[c.targetId]?.coordinate ?: return@forEach
 
-                val blocked = allLandmarkCoords - movedCoord - otherCoord
+                val blocked = allLandmarkCoords - originCoord - targetCoord
 
-                val newPath = AStarPathfinder.findPath(state.map, movedCoord, otherCoord, blocked)
+                val newPath = AStarPathfinder.findPath(state.map, originCoord, targetCoord, blocked)
                     ?: return@forEach
                 state.connections[connId] = c.copy(path = newPath)
             }
