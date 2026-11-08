@@ -81,6 +81,20 @@ describe('GameHUD', () => {
     expect(screen.getByText(/1 under attack/)).toBeInTheDocument();
   });
 
+  it('renders plural bugs count when multiple bugs are active', () => {
+    useMapStore.setState({
+      gameState: {
+        ...activeGame,
+        bugs: {
+          b1: activeGame.bugs.b1,
+          b2: { ...activeGame.bugs.b1, id: 'b2' },
+        },
+      },
+    });
+    render(<GameHUD />);
+    expect(screen.getByText(/2 bugs/)).toBeInTheDocument();
+  });
+
   it('shows the watchtower exit control and aim instruction while inside a tower', () => {
     useMapStore.setState({ gameState: activeGame, activeWatchtowerId: 'tower-1' });
     render(<GameHUD />);

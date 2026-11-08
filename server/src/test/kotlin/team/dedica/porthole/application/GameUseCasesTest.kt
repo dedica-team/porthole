@@ -2,6 +2,7 @@ package team.dedica.porthole.application
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -180,6 +181,32 @@ class GameUseCasesTest {
         assertThrows(IllegalArgumentException::class.java) {
             shoot.execute(state.id, collaborator.id, Vec3(100.0, 100.0, 100.0), Vec3(1.0, 0.0, 0.0))
         }
+    }
+
+    @Test
+    fun `shooting with steep pitch angle and client aim offset is accepted`() {
+        val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
+        enter.execute(state.id, collaborator.id, tower.id)
+
+        val bug = Bug(coordinate = HexCoordinate(1, 0))
+        state.gameState = GameState(
+            phase = GamePhase.ACTIVE,
+            bugs = mutableMapOf(bug.id to bug),
+            towerOccupants = mutableMapOf(tower.id to collaborator.id),
+        )
+        port.save(state)
+
+        val eye = GameGeometry.towerEyePosition(state, tower)!!
+        val aimDir = Vec3(1.0, -1.2, 0.5).normalized()!!
+        val originWithPitchOffset = Vec3(
+            eye.x + aimDir.x * 0.6,
+            eye.y + aimDir.y * 0.6,
+            eye.z + aimDir.z * 0.6,
+        )
+
+        val shoot = ShootUseCase(port, NoOpBroadcastPort(), authorization)
+        val result = shoot.execute(state.id, collaborator.id, originWithPitchOffset, aimDir)
+        assertNotNull(result)
     }
 
     @Test

@@ -73,9 +73,13 @@ object GameEngine {
         return changed
     }
 
-    /** Tiles with a red (ERROR) metric rollup are the bug spawning grounds. */
-    fun spawnCoordinates(state: SessionState): List<HexCoordinate> =
-        state.landmarks.values
+    /**
+     * Spawns crawlers on unblocked terrain tiles adjacent to landmarks with an ERROR metric rollup.
+     * Crawlers never spawn on coordinates occupied by buildings or walls.
+     */
+    fun spawnCoordinates(state: SessionState): List<HexCoordinate> {
+        val occupied = blockedCoordinates(state)
+        val errorLandmarkCoords = state.landmarks.values
             .filter { landmark ->
                 landmark.coordinate != null &&
                     landmark.metrics.values.any { it.level == QualityLevel.ERROR }
@@ -83,6 +87,29 @@ object GameEngine {
             .mapNotNull { it.coordinate }
             .distinct()
             .filter { state.map.getTile(it) != null }
+
+        return errorLandmarkCoords.flatMap { coord ->
+            val freeNeighbours = coord.neighbours().filter { n ->
+                state.map.getTile(n) != null && n !in occupied
+            }
+            if (freeNeighbours.isNotEmpty()) {
+                freeNeighbours
+            } else {
+                val freeRange2 = coord.neighbours()
+                    .flatMap { it.neighbours() }
+                    .distinct()
+                    .filter { n -> state.map.getTile(n) != null && n !in occupied }
+                if (freeRange2.isNotEmpty()) {
+                    freeRange2
+                } else {
+                    val anyFree = state.map.allTiles
+                        .filter { it.coordinate !in occupied }
+                        .map { it.coordinate }
+                    anyFree.ifEmpty { coord.neighbours().filter { state.map.getTile(it) != null } }
+                }
+            }
+        }.distinct()
+    }
 
     private fun spawnWave(
         state: SessionState,

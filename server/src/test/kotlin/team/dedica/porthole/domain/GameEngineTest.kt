@@ -60,7 +60,7 @@ class GameEngineTest {
     }
 
     @Test
-    fun `wave spawns bugs on red tiles`() {
+    fun `wave spawns bugs on tiles adjacent to red landmarks and not inside buildings`() {
         val state = SessionState(map = HexMap.createHexagonal(3), gameEnabled = true)
         val red = redLandmark(UUID.randomUUID(), HexCoordinate(0, 0))
         state.landmarks[red.id] = red
@@ -74,7 +74,45 @@ class GameEngineTest {
         assertEquals(GamePhase.ACTIVE, state.gameState.phase)
         assertEquals(1, state.gameState.wave)
         assertTrue(state.gameState.bugs.isNotEmpty())
-        assertTrue(state.gameState.bugs.values.all { it.spawnCoordinate == HexCoordinate(0, 0) })
+        // Bugs must spawn on neighbours around (0, 0) and NEVER on the occupied building tile (0, 0)
+        assertTrue(state.gameState.bugs.values.all { it.spawnCoordinate in HexCoordinate(0, 0).neighbours() })
+        assertTrue(state.gameState.bugs.values.none { it.coordinate == HexCoordinate(0, 0) })
+    }
+
+    @Test
+    fun `crawlers spawn outside buildings even when adjacent tiles have walls`() {
+        val state = SessionState(map = HexMap.createHexagonal(4), gameEnabled = true)
+        val red = redLandmark(UUID.randomUUID(), HexCoordinate(0, 0))
+        state.landmarks[red.id] = red
+
+        // Surround (0, 0) with walls on 5 out of 6 sides
+        val neighbours = HexCoordinate(0, 0).neighbours()
+        neighbours.take(5).forEach { wallCoord ->
+            val wall = Landmark(id = UUID.randomUUID(), name = "Wall", coordinate = wallCoord, type = LandmarkType.WALL)
+            state.landmarks[wall.id] = wall
+        }
+
+        val spawns = GameEngine.spawnCoordinates(state)
+        assertEquals(listOf(neighbours.last()), spawns)
+    }
+
+    @Test
+    fun `crawlers spawn in outer ring when landmark is completely enclosed`() {
+        val state = SessionState(map = HexMap.createHexagonal(4), gameEnabled = true)
+        val red = redLandmark(UUID.randomUUID(), HexCoordinate(0, 0))
+        state.landmarks[red.id] = red
+
+        // Surround (0, 0) with walls on all 6 sides
+        HexCoordinate(0, 0).neighbours().forEach { wallCoord ->
+            val wall = Landmark(id = UUID.randomUUID(), name = "Wall", coordinate = wallCoord, type = LandmarkType.WALL)
+            state.landmarks[wall.id] = wall
+        }
+
+        val spawns = GameEngine.spawnCoordinates(state)
+        assertTrue(spawns.isNotEmpty())
+        assertTrue(spawns.none { it == HexCoordinate(0, 0) })
+        assertTrue(spawns.none { it in HexCoordinate(0, 0).neighbours() })
+        assertTrue(spawns.all { it.distanceTo(HexCoordinate(0, 0)) == 2 })
     }
 
     @Test

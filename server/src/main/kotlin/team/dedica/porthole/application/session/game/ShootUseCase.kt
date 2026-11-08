@@ -18,7 +18,7 @@ data class ShootResult(
     val hitPosition: Vec3? = null,
 )
 
-private const val MAX_ORIGIN_DRIFT = 2.0
+private const val MAX_ORIGIN_DRIFT = 8.0
 
 /**
  * Resolves a ballistic shot server-side. The client only provides the camera origin and

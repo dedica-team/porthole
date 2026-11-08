@@ -611,7 +611,7 @@ export default function HexGrid({
         Object.values(gameState?.bugs ?? {}).forEach((bug) => {
             seen.add(bug.id);
             const {q, r} = bug.coordinate;
-            const tile = tileByCoordRef.current.get(`${q},${r}`);
+            const tile = tileByCoordRef.current.get(`${q},${r}`) ?? map.map?.tiles?.find(t => t.coordinate.q === q && t.coordinate.r === r);
             const {x, z} = hexToWorld(q, r, HEX_SIZE);
 
             const targetPosition = new THREE.Vector3(x, tileHeight(tile?.elevation ?? 0) + BUG_CLEARANCE, z);
@@ -806,7 +806,7 @@ export default function HexGrid({
         }
 
         const {q, r} = tower.coordinate;
-        const tile = tileByCoordRef.current.get(`${q},${r}`);
+        const tile = tileByCoordRef.current.get(`${q},${r}`) ?? map.map?.tiles?.find(t => t.coordinate.q === q && t.coordinate.r === r);
         const {x, z} = hexToWorld(q, r, HEX_SIZE);
         const y = tileHeight(tile?.elevation ?? 0) + 1.35;
         const yaw = Math.atan2(x, z);
