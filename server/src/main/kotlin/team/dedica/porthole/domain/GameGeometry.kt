@@ -96,14 +96,6 @@ object GameGeometry {
         return Vec3(x, tileHeight(elevation) + 1.45, z)
     }
 
-    /** Returns the ray parameter of the first bug hit, or null. */
-    fun findHit(
-        state: SessionState,
-        game: GameState,
-        origin: Vec3,
-        direction: Vec3,
-    ): Bug? = findHitTarget(state, game, origin, direction)?.bug
-
     /**
      * Casts a ray into the scene and finds the closest target hit (bug or attackable building).
      */
