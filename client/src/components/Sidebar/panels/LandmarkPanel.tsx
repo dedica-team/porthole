@@ -64,6 +64,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
   const activeWatchtowerId = useMapStore((s) => s.activeWatchtowerId);
   const setActiveWatchtowerId = useMapStore((s) => s.setActiveWatchtowerId);
+  const gameState = useMapStore((s) => s.gameState);
   const setGameState = useMapStore((s) => s.setGameState);
   const [towerLoading, setTowerLoading] = useState(false);
   const [towerError, setTowerError] = useState('');
@@ -478,7 +479,12 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
               size="sm"
               variant={activeWatchtowerId === selectedLandmark.id ? 'flat' : 'default'}
               className="w-full gap-2 h-8 text-sm"
-              disabled={towerLoading || loading}
+              disabled={
+                towerLoading ||
+                loading ||
+                (activeWatchtowerId !== selectedLandmark.id &&
+                  (gameState?.buildingHealth?.[selectedLandmark.id] ?? gameState?.buildingMaxHealth ?? 100) <= 0)
+              }
               onClick={handleWatchtowerToggle}
             >
               {towerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}

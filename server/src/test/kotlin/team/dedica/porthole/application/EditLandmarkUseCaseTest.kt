@@ -215,4 +215,37 @@ class EditLandmarkUseCaseTest {
         assertEquals("Renamed Keep", result.landmarks[t1Key]!!.name)
         assertEquals(collaborator2.id, result.landmarks[t1Key]!!.ownerId)
     }
+
+    @Test
+    fun `changing type from ruins to a different type restores building health to 100`() {
+        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(type = LandmarkType.RUINS)
+        state.gameState.buildingHealth[t1Id] = 0
+        mapStatePort.save(state)
+
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, LandmarkType.WATCHTOWER)
+        assertEquals(LandmarkType.WATCHTOWER, result.landmarks[t1Key]!!.type)
+        assertEquals(100, result.gameState.buildingHealth[t1Id])
+    }
+
+    @Test
+    fun `editing a non-ruins landmark does not reset existing health`() {
+        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(type = LandmarkType.KEEP)
+        state.gameState.buildingHealth[t1Id] = 42
+        mapStatePort.save(state)
+
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, LandmarkType.HOUSE)
+        assertEquals(LandmarkType.HOUSE, result.landmarks[t1Key]!!.type)
+        assertEquals(42, result.gameState.buildingHealth[t1Id])
+    }
+
+    @Test
+    fun `editing ruins landmark without changing type does not restore health`() {
+        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(type = LandmarkType.RUINS)
+        state.gameState.buildingHealth[t1Id] = 0
+        mapStatePort.save(state)
+
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, "Old Ruins", null)
+        assertEquals(LandmarkType.RUINS, result.landmarks[t1Key]!!.type)
+        assertEquals(0, result.gameState.buildingHealth[t1Id])
+    }
 }

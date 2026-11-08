@@ -6,6 +6,7 @@ import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.GameEngine
 import team.dedica.porthole.domain.GameGeometry
+import team.dedica.porthole.domain.LandmarkType
 import team.dedica.porthole.domain.SessionRole
 import team.dedica.porthole.domain.Vec3
 import java.util.UUID
@@ -42,6 +43,13 @@ class ShootUseCase(
             ?: throw IllegalArgumentException("You must be inside a watchtower to shoot")
         val tower = state.landmarks[towerId]
             ?: throw IllegalArgumentException("Watchtower $towerId not found")
+        require(tower.type == LandmarkType.WATCHTOWER) {
+            "Watchtower ${tower.name} is ruins and cannot shoot"
+        }
+        val towerHealth = game.buildingHealth[towerId] ?: game.buildingMaxHealth
+        require(towerHealth > 0) {
+            "Watchtower ${tower.name} has no health and cannot shoot"
+        }
         val eye = GameGeometry.towerEyePosition(state, tower)
             ?: throw IllegalArgumentException("Watchtower ${tower.name} has no position")
         require(origin.minus(eye).length() <= MAX_ORIGIN_DRIFT) {

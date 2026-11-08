@@ -247,7 +247,7 @@ export function useThreeScene({
       if (fp?.enabled) {
         controls.enabled = false;
         camera.position.copy(fp.position);
-        camera.rotation.set(fp.pitch, fp.yaw, 0);
+        camera.rotation.set(fp.pitch, fp.yaw, 0, 'YXZ');
         needsRenderRef.current = true;
       } else {
         controls.enabled = true;

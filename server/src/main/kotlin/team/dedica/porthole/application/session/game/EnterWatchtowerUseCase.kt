@@ -34,6 +34,10 @@ class EnterWatchtowerUseCase(
         require(landmark.type == LandmarkType.WATCHTOWER) {
             "Landmark ${landmark.name} is not a watchtower"
         }
+        val health = state.gameState.buildingHealth[landmarkId] ?: state.gameState.buildingMaxHealth
+        require(health > 0) {
+            "Watchtower ${landmark.name} has no health and cannot be manned"
+        }
 
         val occupant = state.gameState.towerOccupants[landmarkId]
         require(occupant == null || occupant == callerId) {

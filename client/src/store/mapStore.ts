@@ -262,11 +262,25 @@ export const useMapStore = create<MapStore>((set) => ({
         state.selectedLandmark && mergedMap.landmarks[state.selectedLandmark.id]
           ? mergedMap.landmarks[state.selectedLandmark.id]
           : state.selectedLandmark;
+      const activeTower = state.activeWatchtowerId ? mergedMap.landmarks[state.activeWatchtowerId] : null;
+      const activeTowerHealth = state.activeWatchtowerId
+        ? (map.gameState?.buildingHealth?.[state.activeWatchtowerId] ??
+           state.gameState?.buildingHealth?.[state.activeWatchtowerId] ??
+           map.gameState?.buildingMaxHealth ??
+           state.gameState?.buildingMaxHealth ?? 100)
+        : null;
+      const shouldEject = Boolean(
+        state.activeWatchtowerId &&
+        (!activeTower ||
+          activeTower.type !== 'WATCHTOWER' ||
+          (activeTowerHealth !== null && activeTowerHealth <= 0))
+      );
       return {
         currentMap: mergedMap,
         maps: state.maps.map((m) => (m.id === map.id ? mergedMap : m)),
         selectedLandmark: updatedSelectedLandmark,
         ...(map.gameState ? { gameState: map.gameState } : {}),
+        ...(shouldEject ? { activeWatchtowerId: null } : {}),
       };
     }),
   updateCollaboratorUsername: (userId, username) =>
@@ -350,7 +364,27 @@ export const useMapStore = create<MapStore>((set) => ({
   setGreenkeepingRotationsFetched: (v) => set({ greenkeepingRotationsFetched: v }),
   setGreenkeepingRotationsLoading: (v) => set({ greenkeepingRotationsLoading: v }),
   setGreenkeepingRotationsError: (e) => set({ greenkeepingRotationsError: e }),
-  setGameState: (game) => set({ gameState: game }),
+  setGameState: (game) =>
+    set((state) => {
+      const activeTower =
+        state.activeWatchtowerId && state.currentMap
+          ? state.currentMap.landmarks[state.activeWatchtowerId]
+          : null;
+      const activeTowerHealth =
+        state.activeWatchtowerId && game
+          ? (game.buildingHealth?.[state.activeWatchtowerId] ?? game.buildingMaxHealth ?? 100)
+          : null;
+      const shouldEject = Boolean(
+        state.activeWatchtowerId &&
+        (!activeTower ||
+          activeTower.type !== 'WATCHTOWER' ||
+          (activeTowerHealth !== null && activeTowerHealth <= 0))
+      );
+      return {
+        gameState: game,
+        ...(shouldEject ? { activeWatchtowerId: null } : {}),
+      };
+    }),
   removeBug: (bugId) =>
     set((state) => {
       if (!state.gameState || !state.gameState.bugs[bugId]) return {};

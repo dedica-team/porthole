@@ -109,6 +109,32 @@ class GameUseCasesTest {
     }
 
     @Test
+    fun `shooting a bug on an adjacent tile hits reliably`() {
+        val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
+        enter.execute(state.id, collaborator.id, tower.id)
+
+        // Bug on adjacent tile (distance = 1)
+        val bug = Bug(coordinate = HexCoordinate(1, 0))
+        state.gameState = GameState(
+            phase = GamePhase.ACTIVE,
+            bugs = mutableMapOf(bug.id to bug),
+            towerOccupants = mutableMapOf(tower.id to collaborator.id),
+        )
+        port.save(state)
+
+        val target = GameGeometry.bugPosition(state, bug)
+        val origin = GameGeometry.towerEyePosition(state, tower)!!
+        val direction = Vec3(target.x - origin.x, target.y - origin.y, target.z - origin.z)
+
+        val shoot = ShootUseCase(port, NoOpBroadcastPort(), authorization)
+        val result = shoot.execute(state.id, collaborator.id, origin, direction)
+
+        assertTrue(result.hit)
+        assertEquals(bug.id.toString(), result.bugId)
+        assertTrue(state.gameState.bugs.isEmpty())
+    }
+
+    @Test
     fun `shooting along the bug's previous tile still hits while it is visibly moving`() {
         val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
         enter.execute(state.id, collaborator.id, tower.id)
@@ -243,6 +269,55 @@ class GameUseCasesTest {
         assertEquals(keep.id.toString(), result.landmarkId)
         assertEquals(0, state.gameState.buildingHealth[keep.id])
         assertEquals(LandmarkType.RUINS, state.landmarks[keep.id]!!.type)
+    }
+
+    @Test
+    fun `cannot enter watchtower with zero health or if ruined`() {
+        state.gameState.buildingHealth[tower.id] = 0
+        port.save(state)
+
+        val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
+        assertThrows(IllegalArgumentException::class.java) {
+            enter.execute(state.id, collaborator.id, tower.id)
+        }
+
+        state.landmarks[tower.id] = tower.copy(type = LandmarkType.RUINS)
+        port.save(state)
+        assertThrows(IllegalArgumentException::class.java) {
+            enter.execute(state.id, collaborator.id, tower.id)
+        }
+    }
+
+    @Test
+    fun `shooting from a ruined or zero health watchtower is rejected`() {
+        val enter = EnterWatchtowerUseCase(port, NoOpBroadcastPort(), authorization)
+        enter.execute(state.id, collaborator.id, tower.id)
+
+        val bug = Bug(coordinate = HexCoordinate(2, 0))
+        state.gameState = GameState(
+            phase = GamePhase.ACTIVE,
+            bugs = mutableMapOf(bug.id to bug),
+            towerOccupants = mutableMapOf(tower.id to collaborator.id),
+            buildingHealth = mutableMapOf(tower.id to 0),
+        )
+        port.save(state)
+
+        val target = GameGeometry.bugPosition(state, bug)
+        val origin = GameGeometry.towerEyePosition(state, tower)!!
+        val direction = Vec3(target.x - origin.x, target.y - origin.y, target.z - origin.z)
+
+        val shoot = ShootUseCase(port, NoOpBroadcastPort(), authorization)
+        assertThrows(IllegalArgumentException::class.java) {
+            shoot.execute(state.id, collaborator.id, origin, direction)
+        }
+
+        // Ruined tower
+        state.gameState.buildingHealth[tower.id] = 100
+        state.landmarks[tower.id] = tower.copy(type = LandmarkType.RUINS)
+        port.save(state)
+        assertThrows(IllegalArgumentException::class.java) {
+            shoot.execute(state.id, collaborator.id, origin, direction)
+        }
     }
 
     @Test

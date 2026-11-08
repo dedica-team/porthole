@@ -29,6 +29,8 @@ class RemoveLandmarkUseCase(
             }
         }
         state.landmarks.remove(landmarkId)
+        state.gameState.towerOccupants.remove(landmarkId)
+        state.gameState.buildingHealth.remove(landmarkId)
         // clean up collaborator matrix entries for the removed landmark
         state.collaboratorMatrix.entries.remove(landmarkId)
         // clean up chore list entries for the removed landmark

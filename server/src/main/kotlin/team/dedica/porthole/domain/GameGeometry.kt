@@ -36,9 +36,10 @@ data class HitTarget(
  */
 object GameGeometry {
     const val BUG_RADIUS = 0.35
-    const val BUG_HEIGHT = 0.35
-    const val BUILDING_RADIUS = 0.8
+    const val BUG_HEIGHT = 0.15
+    const val BUILDING_RADIUS = 0.5
     const val BUILDING_HEIGHT = 0.8
+    const val TOWER_EYE_HEIGHT = 1.35
     const val MAX_RANGE = 150.0
 
     fun hexToWorld(coordinate: HexCoordinate, size: Double = 1.0): Pair<Double, Double> {
@@ -93,7 +94,7 @@ object GameGeometry {
         val coordinate = landmark.coordinate ?: return null
         val (x, z) = hexToWorld(coordinate)
         val elevation = state.map.getTile(coordinate)?.elevation ?: 0
-        return Vec3(x, tileHeight(elevation) + 1.45, z)
+        return Vec3(x, tileHeight(elevation) + TOWER_EYE_HEIGHT, z)
     }
 
     /**

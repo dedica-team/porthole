@@ -782,7 +782,12 @@ export default function HexGrid({
         if (!three) return;
 
         const tower = activeWatchtowerId ? map.landmarks[activeWatchtowerId] : null;
-        if (!tower?.coordinate) {
+        const towerHealth = activeWatchtowerId
+            ? (gameState?.buildingHealth?.[activeWatchtowerId] ?? gameState?.buildingMaxHealth ?? 100)
+            : null;
+        const isRuined = !tower || tower.type !== 'WATCHTOWER' || (towerHealth !== null && towerHealth <= 0);
+
+        if (!activeWatchtowerId || isRuined || !tower?.coordinate) {
             if (firstPersonRef.current) {
                 firstPersonRef.current = null;
                 const saved = savedCameraRef.current;
@@ -794,13 +799,16 @@ export default function HexGrid({
                 savedCameraRef.current = null;
                 three.requestRender();
             }
+            if (activeWatchtowerId && isRuined) {
+                useMapStore.getState().setActiveWatchtowerId(null);
+            }
             return;
         }
 
         const {q, r} = tower.coordinate;
         const tile = tileByCoordRef.current.get(`${q},${r}`);
         const {x, z} = hexToWorld(q, r, HEX_SIZE);
-        const y = tileHeight(tile?.elevation ?? 0) + 1.45;
+        const y = tileHeight(tile?.elevation ?? 0) + 1.35;
         const yaw = Math.atan2(x, z);
 
         const existing = firstPersonRef.current;
@@ -824,7 +832,7 @@ export default function HexGrid({
             existing.position.set(x, y, z);
         }
         three.requestRender();
-    }, [activeWatchtowerId, map.landmarks, map.map.tiles, threeRef]);
+    }, [activeWatchtowerId, gameState?.buildingHealth, gameState?.buildingMaxHealth, map.landmarks, map.map.tiles, threeRef]);
 
     // ── Tower-defense: AWSD / Joystick aiming, Space firing, ballistic projectiles ──────────
     useEffect(() => {
