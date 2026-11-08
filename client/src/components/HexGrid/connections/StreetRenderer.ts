@@ -24,7 +24,7 @@ export class StreetRenderer implements ConnectionRenderer {
   // Shared materials – created once per renderer instance.
   private readonly streetMat = new THREE.MeshLambertMaterial({
     color: LANDMARK_SURFACE_GREY,
-    side:  THREE.FrontSide,
+    side:  THREE.DoubleSide,
     depthTest:  true,
     depthWrite: true,
   });
@@ -164,7 +164,9 @@ export class StreetRenderer implements ConnectionRenderer {
       if (tile?.terrain !== 'WATER') return;
       const { x: px, z: pz } = hexToWorld(q, r, HEX_SIZE);
       const waterSurface = tileHeight(tile.elevation);
-      const pillarH      = LIFT + BRIDGE_LIFT;
+      // Pylon height stops at the underside of the elevated street body (base minus thickness)
+      // to ensure the cylinder does not protrude through or reach the top street surface.
+      const pillarH      = LIFT + BRIDGE_LIFT - THICKNESS;
       const pillarGeo    = new THREE.CylinderGeometry(0.06, 0.08, pillarH, 6);
       const pillar       = new THREE.Mesh(pillarGeo, this.pillarMat);
       pillar.position.set(px, waterSurface + pillarH / 2, pz);
