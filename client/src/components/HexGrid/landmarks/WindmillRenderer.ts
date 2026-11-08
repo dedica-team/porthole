@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import type { Landmark } from '@/types/landmark';
 import type { QualityLevel } from '@/types/landmark';
-import { mat, mesh, edges, namePlane, group, glowMat, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY } from './landmarkUtils';
+import { mat, mesh, edges, namePlane, group, glowMat, statusLight, type LandmarkRenderer, LANDMARK_PLASTER } from './landmarkUtils';
 
 export class WindmillRenderer implements LandmarkRenderer {
   readonly requiresAdjacent = false;
   readonly color = 0xa0d080;
   build(landmark: Landmark, _elevation: number, tintColor: THREE.Color, _adj?: undefined, worstLevel?: QualityLevel): THREE.Group {
-    const mast = mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.90, 6), LANDMARK_SURFACE_GREY); mast.position.y = 0.45;
-    const hub  = mesh(new THREE.SphereGeometry(0.065, 6, 4), LANDMARK_SURFACE_GREY); hub.position.y = 0.92;
+    const mast = mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.90, 6), LANDMARK_PLASTER); mast.position.y = 0.45;
+    const hub  = mesh(new THREE.SphereGeometry(0.065, 6, 4), LANDMARK_PLASTER); hub.position.y = 0.92;
     const rotor = new THREE.Group(); rotor.position.set(0, 0.92, 0.08);
     const BLADE_LEN = 0.36, BLADE_W = 0.09;
     const bladeShape = new THREE.Shape();

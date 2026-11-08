@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
-import { RockBatcher, DEFAULT_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
+import { RockBatcher, ROCKS_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
 
 export class RocksRenderer implements TerrainRenderer {
 
   private batcher: RockBatcher | null = null;
 
-  tileColors(): TileColors { return DEFAULT_TILE_COLORS; }
+  tileColors(): TileColors { return ROCKS_TILE_COLORS; }
 
   init(_scene: THREE.Scene, _maxTiles: number): THREE.Object3D[] {
     this.batcher = new RockBatcher({ radius: 0.22, minCount: 6, countSpread: 4, heightScale: 1 });

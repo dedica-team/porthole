@@ -6,8 +6,7 @@ import {
     seed,
     RockBatcher,
     LineBatcher,
-    TRON_CYAN_DIM,
-    DEFAULT_TILE_COLORS,
+    DESERT_TILE_COLORS,
     type TileColors,
     type TerrainRenderer
 } from '../terrainUtils';
@@ -17,10 +16,10 @@ export class DesertRenderer implements TerrainRenderer {
     private lineBatcher: LineBatcher | null = null;
     private rockBatcher: RockBatcher | null = null;
 
-    tileColors(): TileColors { return DEFAULT_TILE_COLORS; }
+    tileColors(): TileColors { return DESERT_TILE_COLORS; }
 
     init(_scene: THREE.Scene, _maxTiles: number): THREE.Object3D[] {
-        this.lineBatcher = new LineBatcher(new THREE.LineBasicMaterial({ color: TRON_CYAN_DIM }));
+        this.lineBatcher = new LineBatcher(new THREE.LineBasicMaterial({ color: 0x3b7a36 }));
         this.rockBatcher = new RockBatcher({ radius: 0.06, minCount: 0, countSpread: 3, heightScale: 0.35 });
         return [];
     }

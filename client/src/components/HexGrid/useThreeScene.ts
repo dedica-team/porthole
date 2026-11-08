@@ -200,11 +200,11 @@ export function useThreeScene({
     controls.addEventListener('change', requestRender);
 
     // Lighting
-    scene.add(new THREE.HemisphereLight(0x0a1a2a, 0x000000, 0.5));
-    const sun = new THREE.DirectionalLight(0xd0f0ff, 1.8);
+    scene.add(new THREE.HemisphereLight(0xb0c4de, 0x303840, 0.65));
+    const sun = new THREE.DirectionalLight(0xfff8e7, 1.5);
     sun.position.set(20, 40, 20);
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0x204060, 0.6);
+    const fill = new THREE.DirectionalLight(0x406080, 0.5);
     fill.position.set(-20, 20, -20);
     scene.add(fill);
 

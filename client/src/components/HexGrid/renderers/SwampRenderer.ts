@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
-import { tileHeight, seed, lcgNext, RockBatcher, TRON_CYAN_DIM, WATER_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
+import { tileHeight, seed, lcgNext, RockBatcher, SWAMP_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
 
 const REED_UNIT_GEO = new THREE.CylinderGeometry(0.008, 0.010, 1, 3, 1);
 const REED_MAT      = new THREE.MeshBasicMaterial({
-  color: TRON_CYAN_DIM,
+  color: 0x556b2f,
   transparent: true,
-  opacity: 0.70,
+  opacity: 0.85,
   wireframe: false,
 });
 
@@ -18,7 +18,7 @@ export class SwampRenderer implements TerrainRenderer {
   private reedSlot = 0;
   private rockBatcher: RockBatcher | null = null;
 
-  tileColors(): TileColors { return WATER_TILE_COLORS; }
+  tileColors(): TileColors { return SWAMP_TILE_COLORS; }
 
   init(scene: THREE.Scene, maxTiles: number): THREE.Object3D[] {
     this.reedSlot = 0;

@@ -178,7 +178,7 @@ export const TILE_SIDE_MAT = new THREE.MeshStandardMaterial({
 // ── Tile edge line materials ───────────────────────────────────────────────────
 export const EDGE_MAT      = new THREE.LineBasicMaterial({ color: EDGE_COLOR,      transparent: false });
 /** Darker vertical-edge colour for land tiles (pillar edges, not top/bottom rings). */
-export const EDGE_MAT_VERT = new THREE.LineBasicMaterial({ color: 0x002a30,        transparent: false });
+export const EDGE_MAT_VERT = new THREE.LineBasicMaterial({ color: 0x111111,        transparent: false });
 export const EDGE_MAT_DARK = new THREE.LineBasicMaterial({ color: EDGE_COLOR_DARK, transparent: false });
 
 // ── Selection column ──────────────────────────────────────────────────────────

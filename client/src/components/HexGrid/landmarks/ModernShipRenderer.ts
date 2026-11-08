@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Landmark, QualityLevel } from '@/types/landmark';
-import { mesh, edges, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY, TRON_BLACK } from './landmarkUtils';
+import { mesh, edges, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_MARITIME, TRON_BLACK } from './landmarkUtils';
 
 /** Like `edges()` but uses a higher threshold angle (degrees) so only real
  *  silhouette creases show up, not every triangle diagonal in the hull mesh. */
@@ -43,14 +43,14 @@ export class ModernShipRenderer implements LandmarkRenderer {
     const g = group();
 
     // ── main hull – pointed bow ───────────────────────────────────────────
-    const hull = mesh(hullGeo(1.10, 0.19, 0.18), LANDMARK_SURFACE_GREY);
+    const hull = mesh(hullGeo(1.10, 0.19, 0.18), LANDMARK_MARITIME);
     (hull.material as THREE.Material).side = THREE.DoubleSide;
     hull.position.y = 0.0;
     const hullE = hullEdges(hull); hullE.position.y = 0.0;
     g.add(hull, hullE);
 
     // ── upper hull / deck ─────────────────────────────────────────────────
-    const deck = mesh(hullGeo(1.0, 0.15, 0.08), LANDMARK_SURFACE_GREY);
+    const deck = mesh(hullGeo(1.0, 0.15, 0.08), LANDMARK_MARITIME);
     (deck.material as THREE.Material).side = THREE.DoubleSide;
     deck.position.set(0.0, 0.18, 0);
     const deckE = hullEdges(deck); deckE.position.set(0.0, 0.18, 0);
@@ -68,7 +68,7 @@ export class ModernShipRenderer implements LandmarkRenderer {
     g.add(windows);
 
     // ── radar mast ────────────────────────────────────────────────────────
-    const mast = mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.14, 4), LANDMARK_SURFACE_GREY);
+    const mast = mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.14, 4), LANDMARK_MARITIME);
     mast.position.set(0.35, 0.46, 0);
     mast.rotateZ(-Math.PI / 12);
     g.add(mast);

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Landmark } from '@/types/landmark';
 import type { QualityLevel } from '@/types/landmark';
-import { mesh, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY } from './landmarkUtils';
+import { mesh, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_PLASTER } from './landmarkUtils';
 
 // Two rows of three: col spacing 0.28, row spacing 0.30
 // [w, d, h]
@@ -20,7 +20,7 @@ function buildingGroup(w: number, d: number, h: number, tintColor: THREE.Color):
   const g = group();
 
   // ── main body ──────────────────────────────────────────────────────────
-  const body = mesh(new THREE.BoxGeometry(w, h, d), LANDMARK_SURFACE_GREY);
+  const body = mesh(new THREE.BoxGeometry(w, h, d), LANDMARK_PLASTER);
   body.position.y = h / 2;
   g.add(body);
 

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Landmark, QualityLevel } from '@/types/landmark';
-import { mesh, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY, TRON_BLACK } from './landmarkUtils';
+import { mesh, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_MARITIME, LANDMARK_WOOD, TRON_BLACK } from './landmarkUtils';
 
 /**
  * Rounded rowboat hull via LatheGeometry.
@@ -38,13 +38,13 @@ export class SailboatRenderer implements LandmarkRenderer {
     const g = group();
 
     // ── rowboat hull ──────────────────────────────────────────────────────
-    const hull = mesh(rowboatHullGeo(), LANDMARK_SURFACE_GREY);
+    const hull = mesh(rowboatHullGeo(), LANDMARK_MARITIME);
     (hull.material as THREE.Material).side = THREE.DoubleSide;
     const hullE = crispEdges(hull);
     g.add(hull, hullE);
 
     // ── mast (short, stepped slightly forward of centre) ──────────────────
-    const mast = mesh(new THREE.CylinderGeometry(0.020, 0.024, 0.65, 12), LANDMARK_SURFACE_GREY);
+    const mast = mesh(new THREE.CylinderGeometry(0.020, 0.024, 0.65, 12), LANDMARK_WOOD);
     mast.position.set(0.08, 0.42, 0);
     g.add(mast);
 
