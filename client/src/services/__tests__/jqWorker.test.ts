@@ -8,6 +8,7 @@ import {
   generateCurlSnippet,
   generateAutomationScript,
   WIZ_VULNERABILITY_TEMPLATE,
+  GITLAB_OPEN_PRS_TEMPLATE,
   TRANSFORMATION_TEMPLATES,
 } from '../metricService';
 import type { Landmark, PushMetricValuesRequest } from '@/types/landmark';
@@ -63,9 +64,37 @@ describe('jqEvaluator & jqWorker', () => {
     expect(rows[2].level).toBe('OK');
   });
 
+  it('transforms GitLab open merge requests template sample payload', async () => {
+    const sample = JSON.parse(GITLAB_OPEN_PRS_TEMPLATE.samplePayload);
+    const res = await runJqTransform(sample, GITLAB_OPEN_PRS_TEMPLATE.jqFilter);
+    expect(res.success).toBe(true);
+    expect(Array.isArray(res.data)).toBe(true);
+    const rows = res.data as Array<Record<string, unknown>>;
+    expect(rows.length).toBe(3);
+
+    expect(rows[0].element).toBe('prod-web-infra');
+    expect(rows[0].value).toBe('Add OAuth2 authentication provider (!42)');
+    expect(rows[0].level).toBe('OK');
+    expect(rows[0].link).toBe('https://gitlab.example.com/my-org/porthole/-/merge_requests/42');
+    expect(rows[0].linkText).toBe('MR !42');
+    expect(rows[0].badges).toEqual({
+      mr: 'https://gitlab.example.com/my-org/porthole/-/merge_requests/42',
+      author: 'https://gitlab.example.com/alex',
+    });
+
+    expect(rows[1].element).toBe('payment-gateway');
+    expect(rows[1].value).toBe('Draft: Upgrade database connector and migration scripts (!43)');
+    expect(rows[1].level).toBe('WARNING');
+
+    expect(rows[2].element).toBe('analytics-pipeline');
+    expect(rows[2].value).toBe('Fix real-time event streaming sync (!44)');
+    expect(rows[2].level).toBe('ERROR');
+  });
+
   it('includes built-in transformation templates', () => {
-    expect(TRANSFORMATION_TEMPLATES.length).toBeGreaterThanOrEqual(4);
+    expect(TRANSFORMATION_TEMPLATES.length).toBeGreaterThanOrEqual(5);
     expect(TRANSFORMATION_TEMPLATES.some((t) => t.id === 'wiz-vulnerabilities')).toBe(true);
+    expect(TRANSFORMATION_TEMPLATES.some((t) => t.id === 'gitlab-open-pull-requests')).toBe(true);
   });
 
   it('handles empty and malformed JQ filters gracefully', async () => {

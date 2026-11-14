@@ -240,8 +240,7 @@ class SessionController(
     fun removeLandmark(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
-        @Valid @Body request: PositionLandmarkRequest?,
-         user: PortholePrincipal,
+        user: PortholePrincipal,
     ) = HttpResponse.ok(
         removeLandmarkUseCase.execute(
             UUID.fromString(id),

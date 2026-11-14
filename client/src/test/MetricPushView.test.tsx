@@ -103,7 +103,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(selector).toBeInTheDocument();
   });
 
-  it('supports selecting ALIAS match strategy in Direct JSON and JQ Builder tabs', () => {
+  it('renders JQ Transformation Builder by default and toggles Direct JSON Push view', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -112,18 +112,50 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    const directMatchSelect = screen.getByLabelText(/Direct Match Strategy/i);
-    expect(directMatchSelect).toBeInTheDocument();
-    fireEvent.change(directMatchSelect, { target: { value: 'ALIAS' } });
-    expect(directMatchSelect).toHaveValue('ALIAS');
+    // JQ Transformation Builder is visible by default
+    expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
+    expect(screen.getByText(/JQ Filter Expression:/i)).toBeInTheDocument();
 
-    const jqTab = screen.getByRole('tab', { name: /JQ Transformation Builder/i });
-    fireEvent.click(jqTab);
+    // Button to switch to Direct JSON Push
+    const directBtn = screen.getByRole('button', { name: /Direct JSON Push/i });
+    expect(directBtn).toBeInTheDocument();
 
+    // Click to display Direct JSON Push view
+    fireEvent.click(directBtn);
+    expect(screen.getByLabelText(/Direct Match Strategy/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Paste JSON payload here.../i)).toBeInTheDocument();
+
+    // Click back to JQ transformation builder
+    const backBtn = screen.getByRole('button', { name: /Back to JQ Transformation Builder/i });
+    expect(backBtn).toBeInTheDocument();
+    fireEvent.click(backBtn);
+
+    expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
+  });
+
+  it('supports selecting ALIAS match strategy in JQ Builder and Direct JSON views', () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // JQ builder is default
     const jqMatchSelect = screen.getByLabelText(/JQ Match Strategy/i);
     expect(jqMatchSelect).toBeInTheDocument();
     fireEvent.change(jqMatchSelect, { target: { value: 'ALIAS' } });
     expect(jqMatchSelect).toHaveValue('ALIAS');
+
+    // Toggle to Direct JSON Push
+    const directToggleBtn = screen.getByRole('button', { name: /Direct JSON Push/i });
+    fireEvent.click(directToggleBtn);
+
+    const directMatchSelect = screen.getByLabelText(/Direct Match Strategy/i);
+    expect(directMatchSelect).toBeInTheDocument();
+    fireEvent.change(directMatchSelect, { target: { value: 'ALIAS' } });
+    expect(directMatchSelect).toHaveValue('ALIAS');
   });
 
   it('renders empty state when no metrics exist', () => {
@@ -152,10 +184,7 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    const jqTab = screen.getByRole('tab', { name: /JQ Transformation Builder/i });
-    fireEvent.click(jqTab);
-
-    // Initial load selects preset-1
+    // Initial load selects preset-1 (JQ builder default)
     expect(screen.getByTestId('preset-status-saved')).toHaveTextContent(/No changes/i);
 
     // Editing preset name or URL changes status to "Unsaved changes"
@@ -173,9 +202,6 @@ describe('MetricPushView (Subpage)', () => {
         </Routes>
       </MemoryRouter>
     );
-
-    const jqTab = screen.getByRole('tab', { name: /JQ Transformation Builder/i });
-    fireEvent.click(jqTab);
 
     const presetSelect = screen.getByLabelText(/^Preset$/i);
     fireEvent.change(presetSelect, { target: { value: '' } });
@@ -222,9 +248,6 @@ describe('MetricPushView (Subpage)', () => {
         </Routes>
       </MemoryRouter>
     );
-
-    const jqTab = screen.getByRole('tab', { name: /JQ Transformation Builder/i });
-    fireEvent.click(jqTab);
 
     // Currently on existing preset-1: does not show "Name already in use" even if editing
     const nameInput = screen.getByPlaceholderText('Preset Name');
@@ -279,9 +302,6 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    const jqTab = screen.getByRole('tab', { name: /JQ Transformation Builder/i });
-    fireEvent.click(jqTab);
-
     // Switch to new preset
     const presetSelect = screen.getByLabelText(/^Preset$/i);
     fireEvent.change(presetSelect, { target: { value: '' } });
@@ -314,9 +334,6 @@ describe('MetricPushView (Subpage)', () => {
         </Routes>
       </MemoryRouter>
     );
-
-    const jqTab = screen.getByRole('tab', { name: /JQ Transformation Builder/i });
-    fireEvent.click(jqTab);
 
     // Initial state: delete button with trash icon
     const trashBtn = screen.getByRole('button', { name: /Delete Preset/i });
@@ -351,9 +368,6 @@ describe('MetricPushView (Subpage)', () => {
         </Routes>
       </MemoryRouter>
     );
-
-    const jqTab = screen.getByRole('tab', { name: /JQ Transformation Builder/i });
-    fireEvent.click(jqTab);
 
     const helpLink = screen.getByRole('link', { name: /jq documentation/i });
     expect(helpLink).toBeInTheDocument();

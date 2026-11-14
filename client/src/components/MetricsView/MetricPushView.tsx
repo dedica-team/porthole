@@ -76,7 +76,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
     return Object.values(currentMap?.landmarks ?? {});
   }, [currentMap?.landmarks]);
 
-  const [activeTab, setActiveTab] = useState<'direct' | 'jq'>('direct');
+  const [activeTab, setActiveTab] = useState<'direct' | 'jq'>('jq');
 
   // ── Direct JSON Tab State ──────────────────────────────────────────────────
   const [directMatchBy, setDirectMatchBy] = useState<MatchStrategy>('NAME');
@@ -537,32 +537,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
         {/* ── Main Push Workspace ───────────────────────────────────────────── */}
         <div className="p-4 sm:p-5 flex flex-col gap-4">
-          {/* Tabs Navigation */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-muted/60 rounded-lg border border-border max-w-md">
-            <Button
-              type="button"
-              variant={activeTab === 'direct' ? 'secondary' : 'ghost'}
-              className="flex items-center justify-center gap-1.5 text-xs h-8"
-              role="tab"
-              aria-selected={activeTab === 'direct'}
-              onClick={() => setActiveTab('direct')}
-            >
-              <FileCode className="h-4 w-4" />
-              Direct JSON Push
-            </Button>
-            <Button
-              type="button"
-              variant={activeTab === 'jq' ? 'secondary' : 'ghost'}
-              className="flex items-center justify-center gap-1.5 text-xs h-8"
-              role="tab"
-              aria-selected={activeTab === 'jq'}
-              onClick={() => setActiveTab('jq')}
-            >
-              <Sparkles className="h-4 w-4" />
-              JQ Transformation Builder
-            </Button>
-          </div>
-
           {/* ── TAB 1: Direct JSON Push ─────────────────────────────────────── */}
           {activeTab === 'direct' && (
             <div className="flex flex-col gap-4 pt-1">
@@ -575,8 +549,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     onChange={(e) => setDirectMatchBy(e.target.value as MatchStrategy)}
                     className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
                   >
-                    <option value="NAME">Landmark Name (NAME)</option>
-                    <option value="ALIAS">Landmark Alias (ALIAS)</option>
+                    <option value="NAME">Element Name (NAME)</option>
+                    <option value="ALIAS">Element Alias (ALIAS)</option>
                     <option value="LINK">Resource URL (LINK)</option>
                   </select>
                   {directMatchBy === 'LINK' && (
@@ -654,10 +628,22 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   {copiedDirectCurl ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
                   {copiedDirectCurl ? 'Copied cURL' : 'Copy cURL Snippet'}
                 </Button>
-                <Button size="sm" onClick={handleExecuteDirectPush} disabled={submitting} className="h-8 text-xs">
-                  {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
-                  Push Metric Values
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="h-8 text-xs flex items-center gap-1.5"
+                    onClick={() => setActiveTab('jq')}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Back to JQ Transformation Builder
+                  </Button>
+                  <Button size="sm" onClick={handleExecuteDirectPush} disabled={submitting} className="h-8 text-xs">
+                    {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
+                    Push Metric Values
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -853,8 +839,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     onChange={(e) => setJqMatchBy(e.target.value as MatchStrategy)}
                     className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
                   >
-                    <option value="NAME">NAME (Landmark Name)</option>
-                    <option value="ALIAS">ALIAS (Landmark Alias)</option>
+                    <option value="NAME">NAME (Element Name)</option>
+                    <option value="ALIAS">ALIAS (Element Alias)</option>
                     <option value="LINK">LINK (Resource URL)</option>
                   </select>
                   {jqMatchBy === 'LINK' && (
@@ -909,13 +895,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 </Alert>
               )}
 
-              <div className="flex justify-start">
-                <Button variant="default" size="sm" onClick={handleRunJqTransform} className="h-8 text-xs">
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                  Execute JQ Dry-Run
-                </Button>
-              </div>
-
               {jqReconciliation && (
                 <div className="mt-2">
                   <MetricDryRunPreview summary={jqReconciliation} metricName={metric.name} />
@@ -940,10 +919,32 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   {copiedScript ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Terminal className="h-3.5 w-3.5 mr-1.5" />}
                   {copiedScript ? 'Copied CI Script' : 'Copy CI/CD Automation Script'}
                 </Button>
-                <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
-                  {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
-                  Push Transformed Values
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="h-8 text-xs flex items-center gap-1.5"
+                    onClick={() => setActiveTab('direct')}
+                  >
+                    <FileCode className="h-3.5 w-3.5" />
+                    Direct JSON Push
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleRunJqTransform}
+                    className="h-8 text-xs flex items-center gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Execute JQ Dry-Run
+                  </Button>
+                  <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
+                    {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
+                    Push Transformed Values
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -961,7 +962,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex flex-col gap-1.5 text-xs text-foreground">
             <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
               <Check className="h-4 w-4" />
-              Batch push completed successfully! Updated {submitResult.updatedCount} landmark(s).
+              Batch push completed successfully! Updated {submitResult.updatedCount} element(s).
             </div>
             {submitResult.unmatchedElements && submitResult.unmatchedElements.length > 0 && (
               <div className="text-amber-400 text-xs mt-1">
