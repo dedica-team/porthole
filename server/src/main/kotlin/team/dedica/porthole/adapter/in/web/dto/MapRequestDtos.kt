@@ -42,6 +42,8 @@ data class EditLandmarkRequest(
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     val groupId: String? = null,
     val clearGroup: Boolean = false,
+    val links: Map<String, String>? = null,
+    val clearLinks: Boolean = false,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val link: String? = null,
     val clearLink: Boolean = false,
     val ownerId: String? = null,
@@ -127,6 +129,7 @@ data class CreateUnpositionedLandmarkRequest(
     val type: String = "KEEP",
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     val groupId: String? = null,
+    val links: Map<String, String>? = null,
     @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
 )
 

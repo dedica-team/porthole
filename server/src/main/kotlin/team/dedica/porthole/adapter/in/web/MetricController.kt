@@ -5,10 +5,15 @@ import io.micronaut.http.annotation.*
 import jakarta.validation.Valid
 import team.dedica.porthole.adapter.`in`.web.dto.CreateMetricRequest
 import team.dedica.porthole.adapter.`in`.web.dto.EditMetricRequest
+import team.dedica.porthole.adapter.`in`.web.dto.MetricTransformationPresetDto
+import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesRequest
+import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesResponse
 import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.metrics.*
 import team.dedica.porthole.domain.QualityLevel
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.util.*
 
 @Controller("/api/sessions/{id}/metrics")
@@ -17,6 +22,9 @@ class MetricController(
     private val createMetricUseCase: CreateMetricUseCase,
     private val editMetricUseCase: EditMetricUseCase,
     private val removeMetricUseCase: RemoveMetricUseCase,
+    private val pushMetricValuesUseCase: PushMetricValuesUseCase,
+    private val saveMetricPresetUseCase: SaveMetricPresetUseCase,
+    private val deleteMetricPresetUseCase: DeleteMetricPresetUseCase,
 ) {
     @Get
     fun listMetrics(@PathVariable id: String, user: PortholePrincipal): HttpResponse<*> =
@@ -64,6 +72,55 @@ class MetricController(
         user: PortholePrincipal
     ): HttpResponse<*> =
         HttpResponse.ok(removeMetricUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(metricId)))
+
+    @Post("/{metricIdentifier}/values")
+    fun pushMetricValues(
+        @PathVariable id: String,
+        @PathVariable metricIdentifier: String,
+        @Valid @Body request: PushMetricValuesRequest,
+        user: PortholePrincipal,
+    ): HttpResponse<PushMetricValuesResponse> {
+        val decodedIdentifier = URLDecoder.decode(metricIdentifier, StandardCharsets.UTF_8)
+        val result = pushMetricValuesUseCase.execute(
+            sessionId = UUID.fromString(id),
+            callerId = user.userId,
+            metricIdentifier = decodedIdentifier,
+            request = request,
+        )
+        return HttpResponse.ok(result)
+    }
+
+    @Put("/{metricId}/presets")
+    fun savePreset(
+        @PathVariable id: String,
+        @PathVariable metricId: String,
+        @Valid @Body preset: MetricTransformationPresetDto,
+        user: PortholePrincipal,
+    ): HttpResponse<*> =
+        HttpResponse.ok(
+            saveMetricPresetUseCase.execute(
+                sessionId = UUID.fromString(id),
+                callerId = user.userId,
+                metricId = UUID.fromString(metricId),
+                presetDto = preset,
+            )
+        )
+
+    @Delete("/{metricId}/presets/{presetId}")
+    fun deletePreset(
+        @PathVariable id: String,
+        @PathVariable metricId: String,
+        @PathVariable presetId: String,
+        user: PortholePrincipal,
+    ): HttpResponse<*> =
+        HttpResponse.ok(
+            deleteMetricPresetUseCase.execute(
+                sessionId = UUID.fromString(id),
+                callerId = user.userId,
+                metricId = UUID.fromString(metricId),
+                presetId = UUID.fromString(presetId),
+            )
+        )
 }
 
 @Controller("/api/sessions/{id}/landmarks/{landmarkId}/metrics")

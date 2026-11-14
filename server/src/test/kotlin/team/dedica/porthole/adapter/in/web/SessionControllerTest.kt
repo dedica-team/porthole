@@ -217,7 +217,7 @@ class SessionControllerTest {
 
         val landmark = sessionStatePort.findById(mapId)!!.landmarks.values.first { it.name == "Ops Buffer" }
         assertEquals(groupId, landmark.groupId)
-        assertEquals("https://example.test/ops-buffer", landmark.link)
+        assertEquals("https://example.test/ops-buffer", landmark.links["default"])
         assertNull(landmark.coordinate)
     }
 

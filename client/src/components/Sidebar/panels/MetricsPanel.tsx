@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart2, Plus, Pencil, Trash2, Loader2, Check } from 'lucide-react';
+import { BarChart2, Plus, Pencil, Trash2, Loader2, Check, Send } from 'lucide-react';
 import { CloseButton } from '@/components/ui/close-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import type { QualityMetric } from '@/types/landmark';
 import MetricTemplateSelector from '@/components/MetricsView/MetricTemplateSelector';
+import MetricPushRequestModal from '@/components/MetricsView/MetricPushRequestModal';
 import { useSidebarCardHeader } from '../SidebarCardHeader';
 interface Props {
   onCreateMetric: (name: string, description: string) => void;
@@ -24,6 +25,7 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
   const [editState, setEditState]     = useState<EditState>({ name: '', description: '', link: '' });
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [pushModalMetric, setPushModalMetric] = useState<QualityMetric | null>(null);
   const inCard = useSidebarCardHeader({ title: 'Quality Metrics' });
   if (!currentMap) return null;
   const isCollaborator = !!(userId && currentMap.collaborators.some((c) => c.id === userId));
@@ -155,6 +157,9 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
                 </div>
                 {isCollaborator && (
                   <div className="flex gap-1 shrink-0">
+                    <Button className="text-muted-foreground hover:text-foreground transition-colors p-0.5" onClick={() => setPushModalMetric(metric)} title="Push values (REST API / JQ)">
+                      <Send className="h-3 w-3" />
+                    </Button>
                     <Button className="text-muted-foreground hover:text-foreground transition-colors p-0.5" onClick={() => startEdit(metric)} title="Edit metric">
                       <Pencil className="h-3 w-3" />
                     </Button>
@@ -188,6 +193,11 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
         }}
         onClose={() => setShowTemplateSelector(false)}
         loading={loading}
+      />
+      <MetricPushRequestModal
+        metric={pushModalMetric}
+        open={!!pushModalMetric}
+        onOpenChange={(open) => { if (!open) setPushModalMetric(null); }}
       />
     </div>
   );

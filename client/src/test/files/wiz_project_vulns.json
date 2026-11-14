@@ -1,0 +1,44 @@
+{
+  "data": {
+    "vulnerabilityFindings": {
+      "nodes": [
+        {
+          "id": "vuln-finding-98765432-10ab-cdef-1234-567890abcdef",
+          "name": "CVE-2024-3094",
+          "CVEDescription": "Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0.",
+          "CVSSSeverity": "CRITICAL",
+          "score": 10.0,
+          "exploitabilityScore": 3.9,
+          "impactScore": 6.0,
+          "hasExploit": true,
+          "hasCisaKevExploit": true,
+          "status": "OPEN",
+          "vendorSeverity": "CRITICAL",
+          "firstDetectedAt": "2026-10-12T08:15:30.000Z",
+          "lastDetectedAt": "2026-11-14T06:00:12.000Z",
+          "fixedVersion": "5.6.1+really5.4.5-1",
+          "remediation": "Upgrade liblzma5 to version 5.6.1+really5.4.5-1 or later.",
+          "vulnerableAsset": {
+            "id": "asset-11223344-5566-7788-99aa-bbccddeeff00",
+            "type": "VIRTUAL_MACHINE",
+            "name": "prod-web-server-01",
+            "region": "eu-central-1",
+            "providerUniqueId": "arn:aws:ec2:eu-central-1:123456789012:instance/i-0abcdef1234567890"
+          },
+          "projects": [
+            {
+              "id": "8a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+              "name": "Production Web Infrastructure",
+              "slug": "prod-web-infra"
+            }
+          ]
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "eyJpZCI6InZ1bG4tZmluZGluZy05ODc2NTQzMiJ9"
+      },
+      "totalCount": 42
+    }
+  }
+}

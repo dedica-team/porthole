@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import {
-  BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle, Trash2,
+  BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle, Trash2, Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defa
 import { StatusBadge, StatusIndicator, qualityLevelToStatus } from '@/components/ui/status-badge';
 
 import MetricTemplateSelector from './MetricTemplateSelector';
+import MetricPushRequestModal from './MetricPushRequestModal';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 import CreateLandmarkDialog from './CreateLandmarkDialog';
 import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
@@ -63,10 +64,11 @@ interface MetricDefEditDialogProps {
   readOnly?: boolean;
   onSave: (metricId: string, name: string, description: string, link?: string, clearLink?: boolean) => void;
   onDelete: (metricId: string) => void;
+  onPushValues?: (metric: QualityMetric) => void;
   onClose: () => void;
 }
 
-function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave, onDelete, onClose }: MetricDefEditDialogProps) {
+function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave, onDelete, onPushValues, onClose }: MetricDefEditDialogProps) {
   const [name, setName] = useState(metric?.name ?? '');
   const [desc, setDesc] = useState(metric?.description ?? '');
   const [link, setLink] = useState(metric?.link ?? '');
@@ -124,6 +126,21 @@ function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave,
                 placeholder="Link URL (optional)"
                 type="url"
               />
+            )}
+            {!readOnly && onPushValues && (
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth={true}
+                className="gap-1.5 text-xs h-8"
+                onClick={() => {
+                  handleClose();
+                  onPushValues(metric);
+                }}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Push Values (REST API / JQ)
+              </Button>
             )}
             <div className="flex justify-end gap-2 pt-1">
               {readOnly ? (
@@ -479,6 +496,7 @@ export default function MetricsView() {
   // ── metric definition CRUD ────────────────────────────────────────────────
   const [editingMetricDef, setEditingMetricDef] = useState<QualityMetric | null>(null);
   const [metricDefReadOnly, setMetricDefReadOnly] = useState(false);
+  const [pushModalMetric, setPushModalMetric] = useState<QualityMetric | null>(null);
 
   // ── landmark editing ──────────────────────────────────────────────────────
   const [editingLandmark, setEditingLandmark] = useState<Landmark | null>(null);
@@ -667,6 +685,15 @@ export default function MetricsView() {
           </button>
           {isCollaborator && (
             <>
+              {metrics.length > 0 && (
+                <button
+                  className={cardBtnCls}
+                  onClick={() => setPushModalMetric(metrics[0])}
+                  title="Push metric values via REST API or JQ"
+                >
+                  <Send className="h-3.5 w-3.5" /> Push Values
+                </button>
+              )}
               <button className={cardBtnCls} onClick={() => setShowCreateLandmarkDialog(true)} title="Create a new element without position">
                 <Plus className="h-3.5 w-3.5" /> Element
               </button>
@@ -723,6 +750,10 @@ export default function MetricsView() {
         onDelete={(id) => {
           onRemoveMetric(id);
           setEditingMetricDef(null);
+        }}
+        onPushValues={(m) => {
+          setEditingMetricDef(null);
+          setPushModalMetric(m);
         }}
         onClose={() => setEditingMetricDef(null)}
       />
@@ -1051,6 +1082,12 @@ export default function MetricsView() {
           onCreateUnpositionedLandmark(name, type, description, groupId, link);
         }}
         onClose={() => setShowCreateLandmarkDialog(false)}
+      />
+
+      <MetricPushRequestModal
+        metric={pushModalMetric}
+        open={!!pushModalMetric}
+        onOpenChange={(open) => { if (!open) setPushModalMetric(null); }}
       />
     </div>
   );

@@ -213,7 +213,8 @@ class SessionController(
                 type,
                 request.description,
                 request.groupId?.let { UUID.fromString(it) },
-                request.link
+                request.links,
+                request.link,
             )
         )
     }
@@ -267,6 +268,8 @@ class SessionController(
                 request.description,
                 request.groupId?.let { UUID.fromString(it) },
                 request.clearGroup,
+                request.links,
+                request.clearLinks,
                 request.link,
                 request.clearLink,
                 request.ownerId?.let { UUID.fromString(it) },

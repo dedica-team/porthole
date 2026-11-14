@@ -38,6 +38,8 @@ interface Props {
     link?: string,
     clearLink?: boolean,
     ownerId?: string | null,
+    links?: Record<string, string>,
+    clearLinks?: boolean,
   ) => void;
   onEditConnection: (
     connectionId: string,
@@ -74,8 +76,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const [editDescription, setEditDescription] = useState('');
   const [editGroupId, setEditGroupId] = useState<string>('');
   const [editOwnerId, setEditOwnerId] = useState<string>('');
-  const [editLink, setEditLink] = useState('');
-  const [linkError, setLinkError] = useState('');
+  const [editLinks, setEditLinks] = useState<{ key: string; url: string; error?: string }[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showConnForm, setShowConnForm] = useState(false);
   const [connType, setConnType] = useState<ConnectionType>('PIPE');
@@ -142,8 +143,12 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
     setEditDescription(selectedLandmark.description ?? '');
     setEditGroupId(selectedLandmark.groupId ?? '');
     setEditOwnerId(selectedLandmark.ownerId ?? '');
-    setEditLink(selectedLandmark.link ?? '');
-    setLinkError('');
+    const currentLinks = selectedLandmark.links && Object.keys(selectedLandmark.links).length > 0
+      ? Object.entries(selectedLandmark.links).map(([key, url]) => ({ key, url, error: '' }))
+      : selectedLandmark.link
+      ? [{ key: 'repository', url: selectedLandmark.link, error: '' }]
+      : [];
+    setEditLinks(currentLinks);
     setConfirmDelete(false);
     setEditDialogOpen(true);
   };
@@ -152,15 +157,46 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
     e.preventDefault();
     const trimmed = editName.trim();
     if (!isDecorative(editType) && !trimmed) return;
-    const trimmedLink = editLink.trim();
-    if (trimmedLink && !isValidUrl(trimmedLink)) { setLinkError('Must be a valid http/https URL'); return; }
+    const validatedLinks = editLinks.map((l) => {
+      const key = l.key.trim();
+      const url = l.url.trim();
+      if (!key && url) return { ...l, error: 'Key required' };
+      if (url && !isValidUrl(url)) return { ...l, error: 'Must be a valid http/https URL' };
+      return { ...l, error: '' };
+    });
+    if (validatedLinks.some((l) => l.error)) {
+      setEditLinks(validatedLinks);
+      return;
+    }
+    const linksMap: Record<string, string> = {};
+    for (const l of validatedLinks) {
+      if (l.key.trim() && l.url.trim()) {
+        linksMap[l.key.trim()] = l.url.trim();
+      }
+    }
     const newOwnerId = editOwnerId || null;
     const ownerChanged = newOwnerId !== (selectedLandmark.ownerId ?? null);
+    const hasLinks = Object.keys(linksMap).length > 0;
+    const hadLinks = (selectedLandmark.links && Object.keys(selectedLandmark.links).length > 0) || !!selectedLandmark.link;
+
     const editArgs: Parameters<Props['onEditLandmark']> = [
-      selectedLandmark.id, trimmed, editType, editDescription.trim() || undefined, editGroupId || undefined,
-      editGroupId === '' && !!selectedLandmark.groupId, trimmedLink || undefined, trimmedLink === '' && !!selectedLandmark.link,
+      selectedLandmark.id,
+      trimmed,
+      editType,
+      editDescription.trim() || undefined,
+      editGroupId || undefined,
+      editGroupId === '' && !!selectedLandmark.groupId,
+      undefined,
+      false,
     ];
-    if (ownerChanged) editArgs.push(newOwnerId);
+    if (ownerChanged || hasLinks || (!hasLinks && hadLinks)) {
+      editArgs.push(ownerChanged ? newOwnerId : undefined);
+    }
+    if (hasLinks || (!hasLinks && hadLinks)) {
+      editArgs.push(hasLinks ? linksMap : undefined);
+      editArgs.push(!hasLinks && hadLinks);
+    }
+
     setEditDialogOpen(false);
     onEditLandmark(...editArgs);
   };
@@ -341,9 +377,56 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                   ))}
                 </select>
               )}
-              <div className="flex flex-col gap-0.5">
-                <Input value={editLink} onChange={(e) => { setEditLink(e.target.value); setLinkError(''); }} className={`h-8 text-sm${linkError ? ' border-destructive' : ''}`} placeholder="Link (optional, https://…)" type="url" />
-                {linkError && <span className="text-sm text-destructive px-1">{linkError}</span>}
+              <div className="flex flex-col gap-1.5 pt-1">
+                <span className="text-sm font-semibold text-foreground">Links</span>
+                {editLinks.map((l, index) => (
+                  <div key={index} className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        value={l.key}
+                        onChange={(e) => {
+                          const n = [...editLinks];
+                          n[index].key = e.target.value;
+                          setEditLinks(n);
+                        }}
+                        className="h-8 text-sm w-28 shrink-0"
+                        placeholder="Key (e.g. repo)"
+                      />
+                      <Input
+                        value={l.url}
+                        onChange={(e) => {
+                          const n = [...editLinks];
+                          n[index].url = e.target.value;
+                          n[index].error = '';
+                          setEditLinks(n);
+                        }}
+                        className={`h-8 text-sm flex-1${l.error ? ' border-destructive' : ''}`}
+                        placeholder="https://..."
+                        type="url"
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 shrink-0"
+                        onClick={() => setEditLinks((prev) => prev.filter((_, i) => i !== index))}
+                        title="Remove link"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {l.error && <span className="text-xs text-destructive px-1">{l.error}</span>}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="w-full h-7 text-xs"
+                  onClick={() => setEditLinks((prev) => [...prev, { key: prev.length === 0 ? 'repository' : '', url: '' }])}
+                >
+                  + Add Link
+                </Button>
               </div>
               <div className="flex items-center gap-1.5 px-1 min-w-0">
                 <span className="text-sm text-muted-foreground shrink-0">ID (not editable):</span>
@@ -497,13 +580,39 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
           {selectedLandmark.description && (
             <span className="text-sm text-foreground leading-relaxed">{selectedLandmark.description}</span>
           )}
-          {selectedLandmark.link && (
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-sm text-muted-foreground">Link</span>
-              <a href={selectedLandmark.link} target="_blank" rel="noopener noreferrer"
-                className="text-sm text-link hover:text-link-hover truncate underline underline-offset-2" title={selectedLandmark.link}>
-                {selectedLandmark.link}
-              </a>
+          {((selectedLandmark.links && Object.keys(selectedLandmark.links).length > 0) || selectedLandmark.link) && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-sm text-muted-foreground">Links</span>
+              <div className="flex flex-col gap-1">
+                {selectedLandmark.links && Object.keys(selectedLandmark.links).length > 0 ? (
+                  Object.entries(selectedLandmark.links).map(([key, url]) => (
+                    <div key={key} className="flex items-center gap-1.5 min-w-0 text-sm">
+                      <span className="text-xs font-mono text-muted-foreground uppercase px-1 py-0.5 rounded bg-muted/60 shrink-0">
+                        {key}
+                      </span>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-link hover:text-link-hover truncate underline underline-offset-2 flex-1"
+                        title={url}
+                      >
+                        {url}
+                      </a>
+                    </div>
+                  ))
+                ) : selectedLandmark.link ? (
+                  <a
+                    href={selectedLandmark.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-link hover:text-link-hover truncate underline underline-offset-2"
+                    title={selectedLandmark.link}
+                  >
+                    {selectedLandmark.link}
+                  </a>
+                ) : null}
+              </div>
             </div>
           )}
           {selectedLandmark.groupId && (currentMap.groups ?? {})[selectedLandmark.groupId] && (

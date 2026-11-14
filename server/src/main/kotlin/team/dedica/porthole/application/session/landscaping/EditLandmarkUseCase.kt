@@ -2,6 +2,7 @@ package team.dedica.porthole.application.session.landscaping
 
 import jakarta.inject.Singleton
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
+import team.dedica.porthole.application.DataSanitationUtils.cleanLinks
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -25,6 +26,8 @@ class EditLandmarkUseCase(
         description: String? = null,
         groupId: UUID? = null,
         clearGroup: Boolean = false,
+        links: Map<String, String>? = null,
+        clearLinks: Boolean = false,
         link: String? = null,
         clearLink: Boolean = false,
         ownerId: UUID? = null,
@@ -49,10 +52,14 @@ class EditLandmarkUseCase(
             }
             else -> landmark.groupId
         }
-        val newLink = when {
-            clearLink -> null
-            link != null -> cleanLink(link)
-            else -> landmark.link
+        val newLinks = when {
+            clearLinks || clearLink -> emptyMap()
+            links != null -> cleanLinks(links)
+            link != null -> {
+                val cleaned = cleanLink(link)
+                if (cleaned != null) mapOf("default" to cleaned) else emptyMap()
+            }
+            else -> landmark.links
         }
         val newOwnerId = when {
             clearOwner -> null
@@ -64,7 +71,7 @@ class EditLandmarkUseCase(
         }
         state.landmarks[landmarkId] = landmark.copy(
             name = newName, type = newType, description = newDescription,
-            groupId = newGroupId, link = newLink, ownerId = newOwnerId,
+            groupId = newGroupId, links = newLinks, ownerId = newOwnerId,
             metrics = landmark.metrics,
         )
         if (landmark.type == LandmarkType.RUINS && newType != LandmarkType.RUINS) {
