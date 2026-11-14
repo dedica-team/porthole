@@ -147,7 +147,7 @@ object GameEngine {
                     val anyFree = state.map.allTiles
                         .filter { it.coordinate !in occupied }
                         .map { it.coordinate }
-                    anyFree.ifEmpty { coord.neighbours().filter { state.map.getTile(it) != null } }
+                    anyFree
                 }
             }
         }.distinct()
