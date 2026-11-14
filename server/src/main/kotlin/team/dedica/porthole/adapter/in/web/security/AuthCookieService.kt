@@ -13,7 +13,7 @@ class AuthCookieService(private val props: PortholeAuthProperties) {
     private val cookieName get() = props.cookie.cookieName
     private val cookiePath get() = props.cookie.cookiePath
     private val secureCookie get() = props.cookie.cookieSecure
-    private val expirationMs get() = props.jwt.expirationMs
+    private val maxAge get() = props.cookie.maxAge
     private val sameSite: SameSite
         get() = runCatching {
             SameSite.valueOf(props.cookie.cookieSameSite.trim().replaceFirstChar { it.uppercase() })
@@ -25,7 +25,7 @@ class AuthCookieService(private val props: PortholeAuthProperties) {
             .secure(secureCookie)
             .sameSite(sameSite)
             .path(cookiePath)
-            .maxAge(Duration.ofMillis(expirationMs))
+            .maxAge(maxAge)
 
     fun clearAuthCookie(): Cookie =
         Cookie.of(cookieName, "")

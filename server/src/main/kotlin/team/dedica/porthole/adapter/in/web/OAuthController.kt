@@ -38,7 +38,7 @@ data class OAuthStartResponse(val authorizationUrl: String)
 class OAuthController(
     private val gitHubOAuthService: GitHubOAuthService,
     private val gitHubOAuthStateService: GitHubOAuthStateService,
-    private val jwtTokenProvider: JwtTokenProvider,
+    private val userSessionStore: UserSessionStore,
     private val authCookieService: AuthCookieService,
     private val userRepository: UserPort,
     private val adminService: AdminService,
@@ -80,12 +80,13 @@ class OAuthController(
         val userInfo = gitHubOAuthService.fetchUserInfo(accessToken)
             ?: return HttpResponse.status<AuthResponse>(HttpStatus.UNAUTHORIZED).cookie(clearStateCookie)
         val user = gitHubOAuthService.upsertUser(userInfo)
-        val token = jwtTokenProvider.generateToken(user.id, user.username)
+        val token = userSessionStore.createSession(user.id, user.username)
         return HttpResponse.ok(
             AuthResponse(
                 user.id,
                 user.username,
                 user.avatarUrl,
+                token = token,
                 isAdmin = adminService.isAdmin(user.id),
                 githubEnabled = githubEnabled,
                 keycloakEnabled = keycloakEnabled
@@ -96,7 +97,7 @@ class OAuthController(
     }
 
     @Get("/session")
-    fun session( user: PortholePrincipal?): HttpResponse<AuthResponse> {
+    fun session(user: PortholePrincipal?): HttpResponse<AuthResponse> {
         val authenticatedUser = user ?: return HttpResponse.unauthorized()
         val userRecord = userRepository.findById(authenticatedUser.userId)
             ?: return HttpResponse.unauthorized()
@@ -113,8 +114,10 @@ class OAuthController(
     }
 
     @Post("/logout")
-    fun logout(): HttpResponse<*> =
-        HttpResponse.noContent<Any>().cookie(authCookieService.clearAuthCookie())
+    fun logout(request: HttpRequest<*>): HttpResponse<*> {
+        authCookieService.resolveToken(request)?.let { userSessionStore.removeSession(it) }
+        return HttpResponse.noContent<Any>().cookie(authCookieService.clearAuthCookie())
+    }
 
     private fun stateCookie(state: String): Cookie =
         Cookie.of(GitHubOAuthStateService.STATE_COOKIE_NAME, state)

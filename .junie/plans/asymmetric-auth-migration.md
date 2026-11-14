@@ -138,28 +138,28 @@ Verify that public REST API endpoints and browser authentication function with a
 
 # Delivery Steps
 
-###   Step 1: Configure asymmetric JWKS validation in Micronaut Security
+### ✓ Step 1: Configure asymmetric JWKS validation in Micronaut Security
 Configure Micronaut Security to validate tokens using an external Identity Provider's public JWKS endpoint (such as Keycloak), eliminating the need for a shared symmetric secret (`porthole.auth.jwt.secret`).
 
 - Update `server/src/main/resources/application.yml` to replace symmetric secret generation with `micronaut.security.token.jwt.signatures.jwks` configuration pointing to the Keycloak certs endpoint (`${PORTHOLE_KEYCLOAK_ISSUER_URI}/protocol/openid-connect/certs`).
 - Remove `secret` and related symmetric signing properties from `PortholeAuthProperties.kt` while preserving cookie and CORS configurations.
 - Ensure Micronaut Security's standard `JwtTokenValidator` is wired to accept RS256/ES256 asymmetric signatures.
 
-###   Step 2: Refactor authentication fetcher and principal mapping
+### ✓ Step 2: Refactor authentication fetcher and principal mapping
 Ensure incoming JWTs in Bearer headers or session cookies are decoded via asymmetric validation and mapped directly into `PortholePrincipal`.
 
 - Update `JwtAuthenticationFetcher.kt` to delegate token parsing and signature verification to Micronaut's asymmetric token validator or public key resolver rather than `JwtTokenProvider`.
 - Enhance `PortholePrincipalArgumentBinder.kt` to extract the `userId` (`sub` or mapped attribute) and `username` (`preferred_username` or `name`) from standard OIDC claims.
 - Verify that `StompWebSocketEndpoint.kt` and REST API controllers receive an authenticated `PortholePrincipal` with identical role mappings (`USER`).
 
-###   Step 3: Adapt OAuth and WebAuthn flows to asymmetric session tokens
+### ✓ Step 3: Adapt OAuth and WebAuthn flows to asymmetric session tokens
 Ensure browser login mechanisms (Keycloak OIDC, GitHub OAuth, and WebAuthn) function seamlessly without requiring the backend to sign tokens with a local symmetric secret.
 
 - Refactor `KeycloakLoginSuccessHandler.kt` to store the upstream Keycloak ID token or access token directly in the auth cookie rather than re-signing with `JwtTokenProvider`.
 - Update `OAuthController.kt` and `WebAuthnController.kt` to issue session identifiers or delegate token issuance without relying on symmetric HMAC keys.
 - Ensure `/api/auth/session` returns current user metadata (`AuthResponse`) based on the authenticated `PortholePrincipal`.
 
-###   Step 4: Remove JwtTokenProvider and update test suites
+### ✓ Step 4: Remove JwtTokenProvider and update test suites
 Delete the legacy `JwtTokenProvider` class and update unit/integration tests to use asymmetric tokens or mock authentication.
 
 - Delete `server/src/main/kotlin/team/dedica/porthole/adapter/in/web/security/JwtTokenProvider.kt`.

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import team.dedica.porthole.adapter.out.messaging.StompBroker
 import java.net.URI
 import java.net.http.HttpClient
@@ -31,14 +31,14 @@ class StompWebSocketEndpointTest {
     lateinit var server: EmbeddedServer
 
     @Inject
-    lateinit var jwtTokenProvider: JwtTokenProvider
+    lateinit var userSessionStore: UserSessionStore
 
     @Inject
     lateinit var broker: StompBroker
 
     @Test
     fun `authenticated client connects, subscribes and receives a published message`() {
-        val token = jwtTokenProvider.generateToken(UUID.randomUUID(), "ws-user")
+        val token = userSessionStore.createSession(UUID.randomUUID(), "ws-user")
         val received = LinkedBlockingQueue<String>()
 
         val webSocket = HttpClient.newHttpClient()

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.adapter.`in`.web.dto.ShootRequest
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
@@ -37,7 +37,7 @@ class GameControllerTest {
     lateinit var server: EmbeddedServer
 
     @Inject
-    lateinit var jwtTokenProvider: JwtTokenProvider
+    lateinit var userSessionStore: UserSessionStore
 
     @Inject
     lateinit var sessionStatePort: SessionStatePort
@@ -68,7 +68,7 @@ class GameControllerTest {
             )
         }
         val user = userPort.findByUsername("player1")!!
-        token = jwtTokenProvider.generateToken(user.id, user.username)
+        token = userSessionStore.createSession(user.id, user.username)
 
         if (userPort.findByUsername("player2") == null) {
             userPort.save(
@@ -80,7 +80,7 @@ class GameControllerTest {
             )
         }
         val outsider = userPort.findByUsername("player2")!!
-        outsiderToken = jwtTokenProvider.generateToken(outsider.id, outsider.username)
+        outsiderToken = userSessionStore.createSession(outsider.id, outsider.username)
 
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 1 })
         val tower = Landmark(

@@ -1,6 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
-import io.micronaut.core.bind.ArgumentBinder
 import io.micronaut.core.bind.ArgumentBinder.BindingResult
 import io.micronaut.core.convert.ArgumentConversionContext
 import io.micronaut.core.type.Argument
@@ -48,8 +47,22 @@ class PortholePrincipalArgumentBinder : TypedRequestArgumentBinder<PortholePrinc
     }
 
     private fun Authentication.toPortholePrincipal(): PortholePrincipal? {
-        val rawUserId = attributes[PortholePrincipal.USER_ID_ATTRIBUTE] ?: return null
-        val userId = runCatching { UUID.fromString(rawUserId.toString()) }.getOrNull() ?: return null
-        return PortholePrincipal(userId = userId, username = name)
+        val rawUserId = attributes[PortholePrincipal.USER_ID_ATTRIBUTE]
+            ?: attributes["sub"]
+            ?: attributes["id"]
+            ?: name
+            ?: return null
+
+        val userId = runCatching { UUID.fromString(rawUserId.toString()) }.getOrElse {
+            UUID.nameUUIDFromBytes(rawUserId.toString().toByteArray())
+        }
+
+        val username = (attributes["preferred_username"] as? String)?.takeIf { it.isNotBlank() }
+            ?: (attributes["name"] as? String)?.takeIf { it.isNotBlank() }
+            ?: (attributes["user_name"] as? String)?.takeIf { it.isNotBlank() }
+            ?: name
+            ?: "unknown"
+
+        return PortholePrincipal(userId = userId, username = username)
     }
 }

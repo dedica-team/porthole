@@ -5,45 +5,46 @@ import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.Authentication
 import io.micronaut.security.filters.AuthenticationFetcher
+import io.micronaut.security.token.validator.TokenValidator
 import jakarta.inject.Singleton
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 /**
- * Resolves the caller's identity from the Porthole JWT.
+ * Resolves the caller's identity from an asymmetric JWT (via JWKS / TokenValidator)
+ * or an opaque session identifier (via UserSessionStore).
  *
- * Replaces the former Spring `WebSocketHandshakeAuthInterceptor` / `OncePerRequestFilter`
- * pair: the token is read from the `Authorization: Bearer` header (REST clients) or the
- * auth cookie (browser WebSocket handshakes, which cannot set headers), validated with
- * [JwtTokenProvider] and surfaced to Micronaut Security as an [Authentication].
- *
- * The fetcher is deliberately stateless (no repository lookup per request): the JWT is
- * signed, so its `userId`/`username` claims are trustworthy until they expire. Controllers
- * that need the full user record load it themselves.
+ * The token is read from the `Authorization: Bearer` header (REST clients) or the
+ * auth cookie (browser WebSocket handshakes and web client requests).
  */
 @Singleton
 class JwtAuthenticationFetcher(
-    private val jwtTokenProvider: JwtTokenProvider,
+    private val tokenValidators: Collection<TokenValidator<HttpRequest<*>>>,
     private val authCookieService: AuthCookieService,
+    private val userSessionStore: UserSessionStore,
 ) : AuthenticationFetcher<HttpRequest<*>> {
 
     override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
 
     override fun fetchAuthentication(request: HttpRequest<*>): Publisher<Authentication> {
         val token = resolveToken(request) ?: return Mono.empty()
-        val claims = runCatching { jwtTokenProvider.getTokenClaims(token) }
-            .onFailure { log.debug("Ignoring unusable JWT", it) }
-            .getOrNull()
-            ?: return Mono.empty()
 
-        return Mono.just(
-            Authentication.build(
-                claims.username,
-                listOf("USER"),
-                mapOf(PortholePrincipal.USER_ID_ATTRIBUTE to claims.userId.toString()),
-            ),
-        )
+        val session = userSessionStore.getSession(token)
+        if (session != null) {
+            return Mono.just(
+                Authentication.build(
+                    session.username,
+                    listOf("USER"),
+                    mapOf(PortholePrincipal.USER_ID_ATTRIBUTE to session.userId.toString()),
+                ),
+            )
+        }
+
+        return Flux.fromIterable(tokenValidators)
+            .flatMap { validator -> validator.validateToken(token, request) }
+            .next()
     }
 
     private fun resolveToken(request: HttpRequest<*>): String? =

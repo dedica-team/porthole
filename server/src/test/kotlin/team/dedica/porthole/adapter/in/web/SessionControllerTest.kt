@@ -8,7 +8,7 @@ import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.application.port.UserPort
@@ -35,7 +35,7 @@ class SessionControllerTest {
     lateinit var server: EmbeddedServer
 
     @Inject
-    lateinit var jwtTokenProvider: JwtTokenProvider
+    lateinit var userSessionStore: UserSessionStore
 
     @Inject
     lateinit var sessionStatePort: SessionStatePort
@@ -65,7 +65,7 @@ class SessionControllerTest {
             )
         }
         val user = userPort.findByUsername("sessionuser")!!
-        token = jwtTokenProvider.generateToken(user.id, user.username)
+        token = userSessionStore.createSession(user.id, user.username)
 
         if (userPort.findByUsername("viewer") == null) {
             userPort.save(
@@ -77,7 +77,7 @@ class SessionControllerTest {
             )
         }
         val viewer = userPort.findByUsername("viewer")!!
-        viewerToken = jwtTokenProvider.generateToken(viewer.id, viewer.username)
+        viewerToken = userSessionStore.createSession(viewer.id, viewer.username)
 
         val map = HexMap.createHexagonal(radius = 3, elevationFn = { 2 })
         val state = SessionState(map = map).also {

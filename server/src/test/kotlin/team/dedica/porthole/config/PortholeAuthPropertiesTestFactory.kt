@@ -7,16 +7,8 @@ package team.dedica.porthole.config
  */
 object PortholeAuthPropertiesTestFactory {
 
-    val DEFAULT_JWT = PortholeAuthProperties.Jwt().apply {
-        secret = "test-secret-key-for-unit-tests-only-do-not-use-in-production-256bit!!"
-        expirationMs = 3_600_000L
-        issuer = "porthole-test"
-        audience = "porthole-test-api"
-    }
-
     fun build(
         cookie: PortholeAuthProperties.Cookie = PortholeAuthProperties.Cookie(),
-        jwt: PortholeAuthProperties.Jwt = DEFAULT_JWT,
         allowedOrigins: String = "http://localhost:5173",
         github: PortholeAuthProperties.GitHub = PortholeAuthProperties.GitHub(),
         keycloak: PortholeAuthProperties.Keycloak = PortholeAuthProperties.Keycloak(),
@@ -24,28 +16,12 @@ object PortholeAuthPropertiesTestFactory {
         tagline: String = "for teams",
     ) = PortholeAuthProperties().apply {
         this.cookie = cookie
-        this.jwt = jwt
         this.allowedOrigins = allowedOrigins
         this.github = github
         this.keycloak = keycloak
         this.webauthn = webauthn
         this.tagline = tagline
     }
-
-    /** Convenience: custom JWT settings. */
-    fun withJwt(
-        secret: String = DEFAULT_JWT.secret,
-        expirationMs: Long = DEFAULT_JWT.expirationMs,
-        issuer: String = DEFAULT_JWT.issuer,
-        audience: String = DEFAULT_JWT.audience,
-    ) = build(
-        jwt = PortholeAuthProperties.Jwt().apply {
-            this.secret = secret
-            this.expirationMs = expirationMs
-            this.issuer = issuer
-            this.audience = audience
-        }
-    )
 
     /** Convenience: WebAuthn enabled with the given rp-id. */
     fun withWebAuthn(
