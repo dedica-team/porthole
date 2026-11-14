@@ -44,7 +44,7 @@ export function MapSettingsForm({ onClose }: Props) {
         editName || undefined,
         editDescription || undefined,
         editGameEnabled,
-        editWaveIntermissionPeriod.trim() || null,
+        editWaveIntermissionPeriod.trim(),
       );
       if (editCollaborationMode !== (currentMap.collaborationMode ?? 'OPEN')) {
         updated = await setCollaborationMode(currentMap.id, editCollaborationMode);
