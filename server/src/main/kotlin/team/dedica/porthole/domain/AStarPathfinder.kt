@@ -24,10 +24,11 @@ object AStarPathfinder {
         while (open.isNotEmpty()) {
             val current = open.poll()
             if (current.coord == to) return reconstructPath(cameFrom, to)
+            if (current.g > (gScore[current.coord] ?: Int.MAX_VALUE)) continue
 
             for (neighbour in map.getNeighbours(current.coord)) {
                 if (neighbour.coordinate in blockedCoordinates) continue
-                val tentativeG = gScore.getValue(current.coord) + 1
+                val tentativeG = current.g + 1
                 if (tentativeG < (gScore[neighbour.coordinate] ?: Int.MAX_VALUE)) {
                     gScore[neighbour.coordinate] = tentativeG
                     cameFrom[neighbour.coordinate] = current.coord

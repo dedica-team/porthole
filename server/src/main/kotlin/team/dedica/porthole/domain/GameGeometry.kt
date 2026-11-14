@@ -146,8 +146,6 @@ object GameGeometry {
     fun raySphereDistance(origin: Vec3, direction: Vec3, center: Vec3, radius: Double): Double? {
         val oc = center - origin
         val tca = oc.dot(direction)
-        if (tca < 0) return null
-
         val d2 = oc.dot(oc) - tca * tca
         val r2 = radius * radius
         if (d2 > r2) return null
