@@ -7,17 +7,17 @@ import type { QualityMetric, Landmark } from '@/types/landmark';
 
 vi.mock('@/api/mapApi', () => ({
   pushMetricValues: vi.fn(),
-  saveMetricPreset: vi.fn(),
-  deleteMetricPreset: vi.fn(),
+  saveMetricTransformation: vi.fn(),
+  deleteMetricTransformation: vi.fn(),
 }));
 
 const mockMetric1: QualityMetric = {
   id: 'm-123',
   name: 'Code Coverage',
   description: 'Test coverage percentage',
-  presets: [
+  transformations: [
     {
-      id: 'preset-1',
+      id: 'transformation-1',
       name: 'GitLab CI Coverage',
       metricId: 'm-123',
       requestUrl: 'https://gitlab.example.com/api/v4/projects/123/pipelines',
@@ -87,7 +87,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByText(/POST \/api\/sessions\/sess-abc\/metrics\/m-123\/values/i)).toBeInTheDocument();
   });
 
-  it('allows switching metrics via dropdown', () => {
+  it('allows switching metrics via dropdown in header', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -175,7 +175,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByRole('button', { name: /Go to Metrics Overview/i })).toBeInTheDocument();
   });
 
-  it('shows loaded from persistence badge when preset matches saved data', () => {
+  it('shows loaded from persistence badge when transformation matches saved data', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -184,17 +184,17 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    // Initial load selects preset-1 (JQ builder default)
-    expect(screen.getByTestId('preset-status-saved')).toHaveTextContent(/No changes/i);
+    // Initial load selects transformation-1 (JQ builder default)
+    expect(screen.getByTestId('transformation-status-saved')).toHaveTextContent(/No changes/i);
 
-    // Editing preset name or URL changes status to "Unsaved changes"
-    const nameInput = screen.getByPlaceholderText('Preset Name');
+    // Editing transformation name or URL changes status to "Unsaved changes"
+    const nameInput = screen.getByPlaceholderText('Transformation Name');
     fireEvent.change(nameInput, { target: { value: 'Modified GitLab CI' } });
 
-    expect(screen.getByTestId('preset-status-dirty')).toHaveTextContent(/Unsaved changes/i);
+    expect(screen.getByTestId('transformation-status-dirty')).toHaveTextContent(/Unsaved changes/i);
   });
 
-  it('shows unsaved preset badge when creating new preset or choosing template', () => {
+  it('shows unsaved transformation badge when creating new transformation or choosing template', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -203,19 +203,19 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    const presetSelect = screen.getByLabelText(/^Preset$/i);
-    fireEvent.change(presetSelect, { target: { value: '' } });
+    const transformationSelect = screen.getByLabelText(/^Transformation$/i);
+    fireEvent.change(transformationSelect, { target: { value: '' } });
 
-    expect(screen.getByTestId('preset-status-unsaved')).toHaveTextContent(/Unsaved preset/i);
+    expect(screen.getByTestId('transformation-status-unsaved')).toHaveTextContent(/Unsaved transformation/i);
   });
 
-  it('validates unique preset names only for new presets and not existing ones', () => {
-    // Metric with 2 presets
-    const metricWithPresets: QualityMetric = {
+  it('validates unique transformation names only for new transformations and not existing ones', () => {
+    // Metric with 2 transformations
+    const metricWithTransformations: QualityMetric = {
       ...mockMetric1,
-      presets: [
+      transformations: [
         {
-          id: 'preset-1',
+          id: 'transformation-1',
           name: 'GitLab CI Coverage',
           metricId: 'm-123',
           requestUrl: 'https://gitlab.example.com',
@@ -224,7 +224,7 @@ describe('MetricPushView (Subpage)', () => {
           matchBy: 'NAME',
         },
         {
-          id: 'preset-2',
+          id: 'transformation-2',
           name: 'GitHub Actions',
           metricId: 'm-123',
           requestUrl: 'https://github.com',
@@ -237,7 +237,7 @@ describe('MetricPushView (Subpage)', () => {
 
     useMapStore.setState({
       metrics: {
-        'm-123': metricWithPresets,
+        'm-123': metricWithTransformations,
       },
     });
 
@@ -249,26 +249,26 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    // Currently on existing preset-1: does not show "Name already in use" even if editing
-    const nameInput = screen.getByPlaceholderText('Preset Name');
+    // Currently on existing transformation-1: does not show "Name already in use" even if editing
+    const nameInput = screen.getByPlaceholderText('Transformation Name');
     expect(screen.queryByText(/Name already in use/i)).not.toBeInTheDocument();
     fireEvent.change(nameInput, { target: { value: 'github actions' } });
     expect(screen.queryByText(/Name already in use/i)).not.toBeInTheDocument();
 
-    // Switch to new preset (no preset selected)
-    const presetSelect = screen.getByLabelText(/^Preset$/i);
-    fireEvent.change(presetSelect, { target: { value: '' } });
+    // Switch to new transformation (no transformation selected)
+    const transformationSelect = screen.getByLabelText(/^Transformation$/i);
+    fireEvent.change(transformationSelect, { target: { value: '' } });
 
-    // Typing an existing preset name for a new preset flags as duplicate
+    // Typing an existing transformation name for a new transformation flags as duplicate
     fireEvent.change(nameInput, { target: { value: 'github actions' } });
     expect(screen.getByText(/Name already in use/i)).toBeInTheDocument();
-    const saveBtn = screen.getByRole('button', { name: /Save Preset/i });
+    const saveBtn = screen.getByRole('button', { name: /Save Transformation/i });
     expect(saveBtn).toBeDisabled();
   });
 
-  it('provides feedback when a preset is saved successfully', async () => {
-    const { saveMetricPreset } = await import('@/api/mapApi');
-    vi.mocked(saveMetricPreset).mockResolvedValueOnce({
+  it('provides feedback when a transformation is saved successfully', async () => {
+    const { saveMetricTransformation } = await import('@/api/mapApi');
+    vi.mocked(saveMetricTransformation).mockResolvedValueOnce({
       id: 'sess-abc',
       createdAt: '',
       collaborators: [],
@@ -279,10 +279,10 @@ describe('MetricPushView (Subpage)', () => {
       metrics: {
         'm-123': {
           ...mockMetric1,
-          presets: [
+          transformations: [
             {
-              id: 'preset-saved-1',
-              name: 'Brand New Preset',
+              id: 'transformation-saved-1',
+              name: 'Brand New Transformation',
               metricId: 'm-123',
               requestUrl: 'https://api.example.com/data',
               httpMethod: 'GET',
@@ -302,30 +302,85 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    // Switch to new preset
-    const presetSelect = screen.getByLabelText(/^Preset$/i);
-    fireEvent.change(presetSelect, { target: { value: '' } });
+    // Switch to new transformation
+    const transformationSelect = screen.getByLabelText(/^Transformation$/i);
+    fireEvent.change(transformationSelect, { target: { value: '' } });
 
-    const nameInput = screen.getByPlaceholderText('Preset Name');
-    fireEvent.change(nameInput, { target: { value: 'Brand New Preset' } });
+    const nameInput = screen.getByPlaceholderText('Transformation Name');
+    fireEvent.change(nameInput, { target: { value: 'Brand New Transformation' } });
 
     const urlInput = screen.getByPlaceholderText(/https:\/\/gitlab.example.com/i);
     fireEvent.change(urlInput, { target: { value: 'https://api.example.com/data' } });
 
-    const saveBtn = screen.getByRole('button', { name: /Save Preset/i });
+    const saveBtn = screen.getByRole('button', { name: /Save Transformation/i });
     fireEvent.click(saveBtn);
 
-    expect(saveMetricPreset).toHaveBeenCalledWith('sess-abc', 'm-123', expect.objectContaining({
-      name: 'Brand New Preset',
+    expect(saveMetricTransformation).toHaveBeenCalledWith('sess-abc', 'm-123', expect.objectContaining({
+      name: 'Brand New Transformation',
       requestUrl: 'https://api.example.com/data',
     }));
 
-    const feedback = await screen.findByTestId('preset-save-feedback');
-    expect(feedback).toHaveTextContent(/Preset "Brand New Preset" saved successfully/i);
+    const feedback = await screen.findByTestId('transformation-save-feedback');
+    expect(feedback).toHaveTextContent(/Transformation "Brand New Transformation" saved successfully/i);
   });
 
-  it('requires confirmation before deleting a preset and supports cancelling', async () => {
-    const { deleteMetricPreset } = await import('@/api/mapApi');
+  it('saves transformation with the chosen target metric when changed', async () => {
+    const { saveMetricTransformation } = await import('@/api/mapApi');
+    vi.mocked(saveMetricTransformation).mockResolvedValueOnce({
+      id: 'sess-abc',
+      createdAt: '',
+      collaborators: [],
+      connections: {},
+      landmarks: {},
+      groups: {},
+      map: { tiles: [] },
+      metrics: {
+        'm-456': {
+          ...mockMetric2,
+          transformations: [
+            {
+              id: 'transformation-saved-2',
+              name: 'Security Scanner',
+              metricId: 'm-456',
+              requestUrl: 'https://sec.example.com/api',
+              httpMethod: 'GET',
+              jqFilter: '.',
+              matchBy: 'NAME',
+            },
+          ],
+        },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-456/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const nameInput = screen.getByPlaceholderText('Transformation Name');
+    fireEvent.change(nameInput, { target: { value: 'Security Scanner' } });
+
+    const urlInput = screen.getByPlaceholderText(/https:\/\/gitlab.example.com/i);
+    fireEvent.change(urlInput, { target: { value: 'https://sec.example.com/api' } });
+
+    const saveBtn = screen.getByRole('button', { name: /Save Transformation/i });
+    fireEvent.click(saveBtn);
+
+    // Saved to m-456 (the active metric)
+    expect(saveMetricTransformation).toHaveBeenCalledWith('sess-abc', 'm-456', expect.objectContaining({
+      name: 'Security Scanner',
+      requestUrl: 'https://sec.example.com/api',
+    }));
+
+    const feedback = await screen.findByTestId('transformation-save-feedback');
+    expect(feedback).toHaveTextContent(/Transformation "Security Scanner" saved successfully/i);
+  });
+
+  it('requires confirmation before deleting a transformation and supports cancelling', async () => {
+    const { deleteMetricTransformation } = await import('@/api/mapApi');
 
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
@@ -336,28 +391,28 @@ describe('MetricPushView (Subpage)', () => {
     );
 
     // Initial state: delete button with trash icon
-    const trashBtn = screen.getByRole('button', { name: /Delete Preset/i });
+    const trashBtn = screen.getByRole('button', { name: /Delete Transformation/i });
     expect(trashBtn).toBeInTheDocument();
 
     // Clicking trash shows confirmation prompt
     fireEvent.click(trashBtn);
-    expect(screen.getByText(/Delete preset\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Delete transformation\?/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Yes, delete/i })).toBeInTheDocument();
     const cancelBtn = screen.getByRole('button', { name: /Cancel/i });
     expect(cancelBtn).toBeInTheDocument();
 
-    // Clicking cancel dismisses confirmation without calling deleteMetricPreset
+    // Clicking cancel dismisses confirmation without calling deleteMetricTransformation
     fireEvent.click(cancelBtn);
-    expect(deleteMetricPreset).not.toHaveBeenCalled();
-    expect(screen.queryByText(/Delete preset\?/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Delete Preset/i })).toBeInTheDocument();
+    expect(deleteMetricTransformation).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Delete transformation\?/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Delete Transformation/i })).toBeInTheDocument();
 
-    // Clicking trash again and confirming deletes the preset
-    fireEvent.click(screen.getByRole('button', { name: /Delete Preset/i }));
+    // Clicking trash again and confirming deletes the transformation
+    fireEvent.click(screen.getByRole('button', { name: /Delete Transformation/i }));
     const confirmDeleteBtn = screen.getByRole('button', { name: /Yes, delete/i });
     fireEvent.click(confirmDeleteBtn);
 
-    expect(deleteMetricPreset).toHaveBeenCalledWith('sess-abc', 'm-123', 'preset-1');
+    expect(deleteMetricTransformation).toHaveBeenCalledWith('sess-abc', 'm-123', 'transformation-1');
   });
 
   it('renders a help link to the official jq documentation in JQ Transformation Builder', () => {
@@ -374,5 +429,45 @@ describe('MetricPushView (Subpage)', () => {
     expect(helpLink).toHaveAttribute('href', 'https://jqlang.github.io/jq/manual/');
     expect(helpLink).toHaveAttribute('target', '_blank');
     expect(helpLink).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('runs jq dry-run transformation successfully when output evaluates to an array', async () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Click "Execute JQ Dry-Run" with existing template / payload
+    const dryRunBtn = screen.getByRole('button', { name: /Execute JQ Dry-Run/i });
+    fireEvent.click(dryRunBtn);
+
+    // Should render dry-run reconciliation summary without errors
+    expect(await screen.findByText(/Dry-Run Preview:/i)).toBeInTheDocument();
+    expect(screen.queryByText(/JQ Transformation output must evaluate to an array/i)).not.toBeInTheDocument();
+  });
+
+  it('displays error when jq dry-run output does not evaluate to an array', async () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Set filter to '.' and sample to a single object (evaluates to object, not array)
+    const jqFilterInput = screen.getByDisplayValue(mockMetric1.transformations![0].jqFilter);
+    fireEvent.change(jqFilterInput, { target: { value: '.' } });
+
+    const sampleTextarea = screen.getByDisplayValue(mockMetric1.transformations![0].lastPayloadSample!);
+    fireEvent.change(sampleTextarea, { target: { value: '{"key": "value"}' } });
+
+    const dryRunBtn = screen.getByRole('button', { name: /Execute JQ Dry-Run/i });
+    fireEvent.click(dryRunBtn);
+
+    expect(await screen.findByText(/JQ Transformation output must evaluate to an array of metric elements, but got object\./i)).toBeInTheDocument();
   });
 });

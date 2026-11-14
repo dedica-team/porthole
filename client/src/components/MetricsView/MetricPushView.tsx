@@ -28,6 +28,7 @@ import type {
   MatchStrategy,
   PushMetricValuesRequest,
   PushMetricValuesResponse,
+  MetricElementValueDto,
   Landmark,
 } from '@/types/landmark';
 import {
@@ -38,7 +39,7 @@ import {
   TRANSFORMATION_TEMPLATES,
 } from '@/services/metricService';
 import { runJqTransform } from '@/services/jqWorker';
-import { pushMetricValues, saveMetricPreset, deleteMetricPreset } from '@/api/mapApi';
+import { pushMetricValues, saveMetricTransformation, deleteMetricTransformation } from '@/api/mapApi';
 import MetricDryRunPreview from './MetricDryRunPreview';
 
 export interface MetricPushViewProps {
@@ -88,8 +89,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
   // ── JQ Builder Tab State ───────────────────────────────────────────────────
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
-  const [presetName, setPresetName] = useState<string>('');
+  const [selectedTransformationId, setSelectedTransformationId] = useState<string>('');
+  const [transformationName, setTransformationName] = useState<string>('');
   const [requestUrl, setRequestUrl] = useState<string>('');
   const [httpMethod, setHttpMethod] = useState<string>('GET');
   const [jqFilter, setJqFilter] = useState<string>('[.[] | { element: .name, value: (.count | tostring), level: "OK" }]');
@@ -100,12 +101,16 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   const [jqTransformError, setJqTransformError] = useState<string>('');
   const [copiedScript, setCopiedScript] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState<string>('');
-  const [confirmDeletePreset, setConfirmDeletePreset] = useState(false);
+  const [confirmDeleteTransformation, setConfirmDeleteTransformation] = useState(false);
 
   // ── Execution State ────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<PushMetricValuesResponse | null>(null);
   const [submitError, setSubmitError] = useState<string>('');
+
+  const transformations = useMemo(() => {
+    return metric?.transformations || [];
+  }, [metric]);
 
   // Initialize sample payload when metric or landmarks change
   useEffect(() => {
@@ -116,17 +121,18 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
       setDirectMatchKey('');
       setDirectTemplateId('');
       setSelectedTemplateId('');
-      setConfirmDeletePreset(false);
+      setConfirmDeleteTransformation(false);
       setSubmitResult(null);
       setSubmitError('');
       setDirectJsonError('');
       setJqTransformError('');
 
-      // If metric has presets, select the first preset by default
-      if (metric.presets && metric.presets.length > 0) {
-        const first = metric.presets[0];
-        setSelectedPresetId(first.id);
-        setPresetName(first.name);
+      // If metric has transformations, select the first transformation by default
+      const list = metric.transformations || [];
+      if (list.length > 0) {
+        const first = list[0];
+        setSelectedTransformationId(first.id);
+        setTransformationName(first.name);
         setRequestUrl(first.requestUrl);
         setHttpMethod(first.httpMethod || 'GET');
         setJqFilter(first.jqFilter || '.');
@@ -134,8 +140,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         setJqMatchKey(first.matchKey || '');
         if (first.lastPayloadSample) setSamplePayload(first.lastPayloadSample);
       } else {
-        setSelectedPresetId('');
-        setPresetName('');
+        setSelectedTransformationId('');
+        setTransformationName('');
         setRequestUrl('');
         setHttpMethod('GET');
         setJqFilter('[.[] | { element: .name, value: (.count | tostring), level: "OK" }]');
@@ -181,52 +187,52 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
     return reconcileMetricPush(landmarks, jqTransformedReq);
   }, [landmarks, jqTransformedReq]);
 
-  // ── Preset State & Dirty Tracking ──────────────────────────────────────────
-  const selectedPreset = useMemo(() => {
-    return (metric?.presets || []).find((p) => p.id === selectedPresetId) || null;
-  }, [metric?.presets, selectedPresetId]);
+  // ── Transformation State & Dirty Tracking ──────────────────────────────────
+  const selectedTransformation = useMemo(() => {
+    return transformations.find((p) => p.id === selectedTransformationId) || null;
+  }, [transformations, selectedTransformationId]);
 
-  const isDuplicatePresetName = useMemo(() => {
-    if (selectedPresetId) return false;
-    const trimmed = presetName.trim().toLowerCase();
+  const isDuplicateTransformationName = useMemo(() => {
+    if (selectedTransformationId) return false;
+    const trimmed = transformationName.trim().toLowerCase();
     if (!trimmed || !metric) return false;
-    return (metric.presets || []).some(
+    return transformations.some(
       (p) => p.name.trim().toLowerCase() === trimmed
     );
-  }, [presetName, metric, selectedPresetId]);
+  }, [transformationName, metric, selectedTransformationId, transformations]);
 
-  const isPresetDirty = useMemo(() => {
-    if (!selectedPreset) {
-      return Boolean(presetName.trim() || requestUrl.trim() || (jqFilter && jqFilter !== '.') || samplePayload.trim());
+  const isTransformationDirty = useMemo(() => {
+    if (!selectedTransformation) {
+      return Boolean(transformationName.trim() || requestUrl.trim() || (jqFilter && jqFilter !== '.') || samplePayload.trim());
     }
     return (
-      presetName.trim() !== selectedPreset.name.trim() ||
-      requestUrl.trim() !== selectedPreset.requestUrl.trim() ||
-      (httpMethod || 'GET') !== (selectedPreset.httpMethod || 'GET') ||
-      (jqFilter.trim() || '.') !== (selectedPreset.jqFilter?.trim() || '.') ||
-      jqMatchBy !== (selectedPreset.matchBy || 'NAME') ||
-      (jqMatchKey.trim() || '') !== (selectedPreset.matchKey?.trim() || '') ||
-      (samplePayload || '') !== (selectedPreset.lastPayloadSample || '')
+      transformationName.trim() !== selectedTransformation.name.trim() ||
+      requestUrl.trim() !== selectedTransformation.requestUrl.trim() ||
+      (httpMethod || 'GET') !== (selectedTransformation.httpMethod || 'GET') ||
+      (jqFilter.trim() || '.') !== (selectedTransformation.jqFilter?.trim() || '.') ||
+      jqMatchBy !== (selectedTransformation.matchBy || 'NAME') ||
+      (jqMatchKey.trim() || '') !== (selectedTransformation.matchKey?.trim() || '') ||
+      (samplePayload || '') !== (selectedTransformation.lastPayloadSample || '')
     );
-  }, [selectedPreset, presetName, requestUrl, httpMethod, jqFilter, jqMatchBy, jqMatchKey, samplePayload]);
+  }, [selectedTransformation, transformationName, requestUrl, httpMethod, jqFilter, jqMatchBy, jqMatchKey, samplePayload]);
 
   // ── Template Selection Handlers ───────────────────────────────────────────
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
     setSaveFeedback('');
     setSubmitError('');
-    setConfirmDeletePreset(false);
+    setConfirmDeleteTransformation(false);
     if (!templateId) return;
     const template = TRANSFORMATION_TEMPLATES.find((t) => t.id === templateId);
     if (template) {
-      setPresetName(template.name);
+      setTransformationName(template.name);
       setRequestUrl(template.requestUrl);
       setHttpMethod(template.httpMethod);
       setJqFilter(template.jqFilter);
       setSamplePayload(template.samplePayload);
       setJqMatchBy(template.matchBy);
       setJqMatchKey(template.matchKey || '');
-      setSelectedPresetId('');
+      setSelectedTransformationId('');
     }
   };
 
@@ -245,52 +251,52 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
     }
   };
 
-  // ── Preset Handlers ────────────────────────────────────────────────────────
-  const handleSelectPreset = (presetId: string) => {
-    setSelectedPresetId(presetId);
+  // ── Transformation Handlers ────────────────────────────────────────────────
+  const handleSelectTransformation = (transformationId: string) => {
+    setSelectedTransformationId(transformationId);
     setSelectedTemplateId('');
     setSaveFeedback('');
     setSubmitError('');
-    setConfirmDeletePreset(false);
-    if (!presetId) {
-      setPresetName('');
+    setConfirmDeleteTransformation(false);
+    if (!transformationId) {
+      setTransformationName('');
       return;
     }
-    const preset = (metric?.presets || []).find((p) => p.id === presetId);
-    if (preset) {
-      setPresetName(preset.name);
-      setRequestUrl(preset.requestUrl);
-      setHttpMethod(preset.httpMethod || 'GET');
-      setJqFilter(preset.jqFilter || '.');
-      setJqMatchBy(preset.matchBy || 'NAME');
-      setJqMatchKey(preset.matchKey || '');
-      if (preset.lastPayloadSample) setSamplePayload(preset.lastPayloadSample);
+    const item = transformations.find((p) => p.id === transformationId);
+    if (item) {
+      setTransformationName(item.name);
+      setRequestUrl(item.requestUrl);
+      setHttpMethod(item.httpMethod || 'GET');
+      setJqFilter(item.jqFilter || '.');
+      setJqMatchBy(item.matchBy || 'NAME');
+      setJqMatchKey(item.matchKey || '');
+      if (item.lastPayloadSample) setSamplePayload(item.lastPayloadSample);
     }
   };
 
-  const handleSavePreset = async () => {
+  const handleSaveTransformation = async () => {
     if (!metric || !currentMap) return;
     setSaveFeedback('');
     setSubmitError('');
-    setConfirmDeletePreset(false);
+    setConfirmDeleteTransformation(false);
 
-    const trimmedName = presetName.trim();
+    const trimmedName = transformationName.trim();
     const trimmedUrl = requestUrl.trim();
 
     if (!trimmedName || !trimmedUrl) {
-      setSubmitError('Preset name and foreign request URL are required.');
+      setSubmitError('Transformation name and foreign request URL are required.');
       return;
     }
 
-    if (isDuplicatePresetName) {
-      setSubmitError(`A preset with the name "${trimmedName}" already exists.`);
+    if (isDuplicateTransformationName) {
+      setSubmitError(`A transformation with the name "${trimmedName}" already exists.`);
       return;
     }
 
     try {
       setSubmitting(true);
-      const updatedState = await saveMetricPreset(currentMap.id, metric.id, {
-        id: selectedPresetId || undefined,
+      const updatedState = await saveMetricTransformation(currentMap.id, metric.id, {
+        id: selectedTransformationId || undefined,
         name: trimmedName,
         requestUrl: trimmedUrl,
         httpMethod,
@@ -300,39 +306,86 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         lastPayloadSample: samplePayload || undefined,
       });
 
-      // If saving a new preset, update selectedPresetId to the saved preset's id
+      // Update selectedTransformationId to the saved transformation's id
       const updatedMetric = updatedState.metrics?.[metric.id];
-      const savedPreset = updatedMetric?.presets?.find(
+      const updatedList = updatedMetric?.transformations || [];
+      const saved = updatedList.find(
         (p) => p.name.trim().toLowerCase() === trimmedName.toLowerCase()
       );
-      if (savedPreset) {
-        setSelectedPresetId(savedPreset.id);
+      if (saved) {
+        setSelectedTransformationId(saved.id);
       }
 
-      setSaveFeedback(`Preset "${trimmedName}" saved successfully.`);
-      setSubmitError('');
+      setSaveFeedback(
+        selectedTransformationId
+          ? `Transformation "${trimmedName}" updated successfully.`
+          : `Transformation "${trimmedName}" saved successfully.`
+      );
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to save preset.');
+      const message = err instanceof Error ? err.message : 'Failed to save transformation.';
+      setSubmitError(message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeletePreset = async () => {
-    if (!metric || !currentMap || !selectedPresetId) return;
+  const handleDeleteTransformation = async () => {
+    if (!metric || !currentMap || !selectedTransformationId) return;
     setSaveFeedback('');
     setSubmitError('');
     try {
       setSubmitting(true);
-      await deleteMetricPreset(currentMap.id, metric.id, selectedPresetId);
-      setSelectedPresetId('');
-      setPresetName('');
-      setConfirmDeletePreset(false);
-      setSaveFeedback('Preset deleted.');
+      await deleteMetricTransformation(currentMap.id, metric.id, selectedTransformationId);
+      setSelectedTransformationId('');
+      setTransformationName('');
+      setRequestUrl('');
+      setHttpMethod('GET');
+      setJqFilter('[.[] | { element: .name, value: (.count | tostring), level: "OK" }]');
+      setSamplePayload('[\n  { "name": "Auth Service", "count": 5 },\n  { "name": "Billing Service", "count": 12 }\n]');
+      setJqMatchBy('NAME');
+      setJqMatchKey('');
+      setJqTransformedReq(null);
+      setConfirmDeleteTransformation(false);
+      setSaveFeedback('Transformation deleted successfully.');
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to delete preset.');
+      const message = err instanceof Error ? err.message : 'Failed to delete transformation.';
+      setSubmitError(message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // ── Run JQ Dry-Run Transformation ──────────────────────────────────────────
+  const handleRunJqTransform = async () => {
+    setJqTransformError('');
+    setJqTransformedReq(null);
+
+    let parsedPayload: unknown;
+    try {
+      parsedPayload = JSON.parse(samplePayload);
+    } catch {
+      setJqTransformError('Input data sample is not valid JSON.');
+      return;
+    }
+
+    try {
+      const transformed = await runJqTransform(parsedPayload, jqFilter);
+      if (!transformed.success) {
+        setJqTransformError(transformed.error || 'JQ Evaluation failed.');
+        return;
+      }
+      if (!Array.isArray(transformed.data)) {
+        setJqTransformError(`JQ Transformation output must evaluate to an array of metric elements, but got ${typeof transformed.data}.`);
+        return;
+      }
+      setJqTransformedReq({
+        matchBy: jqMatchBy,
+        matchKey: jqMatchKey.trim() || undefined,
+        values: transformed.data as MetricElementValueDto[],
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'JQ Evaluation failed.';
+      setJqTransformError(message);
     }
   };
 
@@ -343,15 +396,36 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
     setSubmitError('');
     setSubmitResult(null);
 
-    const req = parseDirectRequest();
-    if (!req) {
-      setDirectJsonError('Invalid JSON payload or array format.');
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(directJson);
+    } catch {
+      setDirectJsonError('Invalid JSON format.');
+      return;
+    }
+
+    let requestBody: PushMetricValuesRequest;
+    if (Array.isArray(parsedBody)) {
+      requestBody = {
+        matchBy: directMatchBy,
+        matchKey: directMatchKey.trim() || undefined,
+        values: parsedBody,
+      };
+    } else if (parsedBody && typeof parsedBody === 'object') {
+      const obj = parsedBody as Record<string, unknown>;
+      requestBody = {
+        matchBy: (obj.matchBy as MatchStrategy) || directMatchBy,
+        matchKey: (obj.matchKey as string) || (directMatchKey.trim() || undefined),
+        values: Array.isArray(obj.values) ? obj.values : [],
+      };
+    } else {
+      setDirectJsonError('JSON must be an array of element values or a PushMetricValuesRequest object.');
       return;
     }
 
     try {
       setSubmitting(true);
-      const res = await pushMetricValues(currentMap.id, metric.id, req);
+      const res = await pushMetricValues(currentMap.id, metric.id, requestBody);
       setSubmitResult(res);
       if (onSuccess) onSuccess();
     } catch (err: unknown) {
@@ -359,34 +433,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
     } finally {
       setSubmitting(false);
     }
-  };
-
-  // ── Run JQ Dry-Run ─────────────────────────────────────────────────────────
-  const handleRunJqTransform = async () => {
-    setJqTransformError('');
-    setJqTransformedReq(null);
-
-    let parsedSample: unknown;
-    try {
-      parsedSample = JSON.parse(samplePayload);
-    } catch {
-      setJqTransformError('Foreign JSON Sample is not valid JSON.');
-      return;
-    }
-
-    const res = await runJqTransform(parsedSample, jqFilter);
-    if (!res.success) {
-      setJqTransformError(res.error || 'JQ transformation failed.');
-      return;
-    }
-
-    const transformedValues = Array.isArray(res.data) ? res.data : [res.data];
-    const transformed: PushMetricValuesRequest = {
-      matchBy: jqMatchBy,
-      matchKey: jqMatchKey.trim() || undefined,
-      values: transformedValues,
-    };
-    setJqTransformedReq(transformed);
   };
 
   // ── Execute JQ Batch Push ──────────────────────────────────────────────────
@@ -508,12 +554,12 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 aria-label="Select Metric"
                 value={metric.id}
                 onChange={(e) => {
-                  const newMetricId = e.target.value;
-                  if (sessionId) {
-                    navigate(`/session/${sessionId}/metrics/${newMetricId}/push`);
+                  const targetId = e.target.value;
+                  if (targetId && targetId !== metric.id && sessionId) {
+                    navigate(`/session/${sessionId}/metrics/${targetId}/push`);
                   }
                 }}
-                className="h-7 text-xs bg-muted border border-border rounded px-1.5 text-foreground font-medium cursor-pointer"
+                className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
               >
                 {allMetrics.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -527,82 +573,95 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
           <Link
             to={sessionId ? `/session/${sessionId}/metrics` : '/lobby'}
             className={cardBtnCls}
-            title="Back to Metrics"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Metrics
           </Link>
         </div>
 
-
-
-        {/* ── Main Push Workspace ───────────────────────────────────────────── */}
         <div className="p-4 sm:p-5 flex flex-col gap-4">
-          {/* ── TAB 1: Direct JSON Push ─────────────────────────────────────── */}
+
+          {/* ── TAB 1: Direct JSON Push ──────────────────────────────────────── */}
           {activeTab === 'direct' && (
             <div className="flex flex-col gap-4 pt-1">
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/20 p-3 rounded-lg border border-border">
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted/20 rounded-lg border border-border">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-muted-foreground font-medium">Match By:</span>
+                  <span className="text-muted-foreground font-medium">Match Strategy:</span>
                   <select
                     aria-label="Direct Match Strategy"
                     value={directMatchBy}
-                    onChange={(e) => setDirectMatchBy(e.target.value as MatchStrategy)}
+                    onChange={(e) => {
+                      const next = e.target.value as MatchStrategy;
+                      setDirectMatchBy(next);
+                      const sample = generateSamplePayload(landmarks, next, directMatchKey);
+                      setDirectJson(JSON.stringify(sample, null, 2));
+                    }}
                     className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
                   >
-                    <option value="NAME">Element Name (NAME)</option>
-                    <option value="ALIAS">Element Alias (ALIAS)</option>
-                    <option value="LINK">Resource URL (LINK)</option>
+                    <option value="NAME">NAME (Element Name)</option>
+                    <option value="ALIAS">ALIAS (Element Alias)</option>
+                    <option value="LINK">LINK (Resource URL)</option>
                   </select>
+
                   {directMatchBy === 'LINK' && (
                     <Input
-                      placeholder="Link key (e.g. repository, docs)"
+                      placeholder="Match Key (e.g. repository)"
                       value={directMatchKey}
                       onChange={(e) => setDirectMatchKey(e.target.value)}
                       className="h-8 text-xs w-48"
                     />
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-muted-foreground font-medium">Template:</span>
+
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground font-medium">Load Template:</span>
                   <select
                     value={directTemplateId}
                     onChange={(e) => handleSelectDirectTemplate(e.target.value)}
                     className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                    aria-label="Direct JSON Template"
                   >
-                    <option value="">-- Load Template... --</option>
+                    <option value="">-- Choose Template... --</option>
                     {TRANSFORMATION_TEMPLATES.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
                       </option>
                     ))}
                   </select>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => {
-                      setDirectTemplateId('');
-                      const sample = generateSamplePayload(landmarks, directMatchBy, directMatchKey);
-                      setDirectJson(JSON.stringify(sample, null, 2));
-                    }}
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                    Generate Map Sample
-                  </Button>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">JSON Payload (Array or Push Request DTO):</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-muted-foreground font-medium text-xs">JSON Request Payload:</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const sample = generateSamplePayload(landmarks, directMatchBy, directMatchKey);
+                      setDirectJson(JSON.stringify(sample, null, 2));
+                      setDirectJsonError('');
+                    }}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" /> Reset to Workspace Elements
+                  </Button>
+                </div>
                 <Textarea
                   value={directJson}
-                  onChange={(e) => setDirectJson(e.target.value)}
-                  className="font-mono text-xs min-h-60 resize-y bg-background"
+                  onChange={(e) => {
+                    setDirectJson(e.target.value);
+                    setDirectJsonError('');
+                  }}
+                  className="font-mono text-xs min-h-64 resize-y bg-background"
                   placeholder="Paste JSON payload here..."
                 />
-                {directJsonError && <span className="text-rose-400 text-xs">{directJsonError}</span>}
               </div>
+
+              {directJsonError && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">{directJsonError}</AlertDescription>
+                </Alert>
+              )}
 
               {directReconciliation && (
                 <div className="mt-2">
@@ -626,12 +685,12 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
                 <Button variant="secondary" size="sm" onClick={handleCopyCurl} className="h-8 text-xs">
                   {copiedDirectCurl ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-                  {copiedDirectCurl ? 'Copied cURL' : 'Copy cURL Snippet'}
+                  {copiedDirectCurl ? 'Copied cURL' : 'Copy cURL Command'}
                 </Button>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
-                    variant="default"
+                    variant="ghost"
                     size="sm"
                     className="h-8 text-xs flex items-center gap-1.5"
                     onClick={() => setActiveTab('jq')}
@@ -652,7 +711,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
           {activeTab === 'jq' && (
             <div className="flex flex-col gap-4 pt-1">
               <h3>Transformation</h3>
-              {/* Template & Preset Selector Bar */}
+              {/* Template & Transformation Selector Bar */}
               <div className="flex flex-col gap-3 p-3 bg-muted/20 rounded-lg border border-border">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs">
@@ -675,15 +734,15 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-muted-foreground font-medium">Saved Preset:</span>
+                    <span className="text-muted-foreground font-medium">Saved Transformation:</span>
                     <select
-                      value={selectedPresetId}
-                      onChange={(e) => handleSelectPreset(e.target.value)}
+                      value={selectedTransformationId}
+                      onChange={(e) => handleSelectTransformation(e.target.value)}
                       className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                      aria-label="Preset"
+                      aria-label="Transformation"
                     >
-                      <option value="">-- New / Custom Preset --</option>
-                      {(metric.presets || []).map((p) => (
+                      <option value="">-- New / Custom Transformation --</option>
+                      {transformations.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
                         </option>
@@ -691,20 +750,20 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     </select>
 
                     {/* Persistence / Unsaved Status Badge */}
-                    {selectedPresetId ? (
-                      !isPresetDirty ? (
+                    {selectedTransformationId ? (
+                      !isTransformationDirty ? (
                         <span
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                          title="This preset matches the persisted configuration"
-                          data-testid="preset-status-saved"
+                          title="This transformation matches the persisted configuration"
+                          data-testid="transformation-status-saved"
                         >
                           <CheckCircle2 className="h-3 w-3" /> No changes
                         </span>
                       ) : (
                         <span
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                          title="This preset has unsaved modifications"
-                          data-testid="preset-status-dirty"
+                          title="This transformation has unsaved modifications"
+                          data-testid="transformation-status-dirty"
                         >
                           <AlertCircle className="h-3 w-3" /> Unsaved changes
                         </span>
@@ -712,24 +771,24 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     ) : (
                       <span
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border"
-                        title="Preset not yet saved to persistence"
-                        data-testid="preset-status-unsaved"
+                        title="Transformation not yet saved to persistence"
+                        data-testid="transformation-status-unsaved"
                       >
-                        Unsaved preset
+                        Unsaved transformation
                       </span>
                     )}
 
                     <div className="flex items-center gap-1.5">
                       <Input
-                        placeholder="Preset Name"
-                        value={presetName}
+                        placeholder="Transformation Name"
+                        value={transformationName}
                         onChange={(e) => {
-                          setPresetName(e.target.value);
+                          setTransformationName(e.target.value);
                           if (saveFeedback) setSaveFeedback('');
                         }}
-                        className={`h-8 text-xs w-48 ${isDuplicatePresetName ? 'border-destructive focus-visible:ring-destructive text-destructive' : ''}`}
+                        className={`h-8 text-xs w-48 ${isDuplicateTransformationName ? 'border-destructive focus-visible:ring-destructive text-destructive' : ''}`}
                       />
-                      {isDuplicatePresetName && (
+                      {isDuplicateTransformationName && (
                         <span className="text-[11px] text-destructive font-medium whitespace-nowrap">
                           Name already in use
                         </span>
@@ -740,35 +799,35 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     <Button
                       size="sm"
                       className="h-8 text-xs"
-                      onClick={handleSavePreset}
-                      disabled={submitting || isDuplicatePresetName}
+                      onClick={handleSaveTransformation}
+                      disabled={submitting || isDuplicateTransformationName}
                     >
                       <Save className="h-3.5 w-3.5 mr-1.5" />
-                      {selectedPresetId ? 'Update Preset' : 'Save Preset'}
+                      {selectedTransformationId ? 'Update Transformation' : 'Save Transformation'}
                     </Button>
-                    {selectedPresetId && (
-                      !confirmDeletePreset ? (
+                    {selectedTransformationId && (
+                      !confirmDeleteTransformation ? (
                         <Button
                           variant="destructive"
                           size="sm"
                           className="h-8 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                          onClick={() => setConfirmDeletePreset(true)}
+                          onClick={() => setConfirmDeleteTransformation(true)}
                           disabled={submitting}
-                          title="Delete Preset"
-                          aria-label="Delete Preset"
+                          title="Delete Transformation"
+                          aria-label="Delete Transformation"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       ) : (
                         <div className="flex items-center gap-1.5 bg-destructive/10 border border-destructive/30 px-2 py-0.5 rounded">
                           <span className="text-xs text-destructive font-medium whitespace-nowrap">
-                            Delete preset?
+                            Delete transformation?
                           </span>
                           <Button
                             size="sm"
                             variant="destructive"
                             className="h-6 px-2 text-xs"
-                            onClick={handleDeletePreset}
+                            onClick={handleDeleteTransformation}
                             disabled={submitting}
                           >
                             Yes, delete
@@ -777,7 +836,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                             size="sm"
                             variant="ghost"
                             className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                            onClick={() => setConfirmDeletePreset(false)}
+                            onClick={() => setConfirmDeleteTransformation(false)}
                             disabled={submitting}
                           >
                             Cancel
@@ -792,7 +851,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 {saveFeedback && (
                   <div
                     className="flex items-center justify-between px-3 py-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs"
-                    data-testid="preset-save-feedback"
+                    data-testid="transformation-save-feedback"
                   >
                     <div className="flex items-center gap-1.5 font-medium">
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -922,7 +981,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
-                    variant="default"
+                    variant="ghost"
                     size="sm"
                     className="h-8 text-xs flex items-center gap-1.5"
                     onClick={() => setActiveTab('direct')}
@@ -932,7 +991,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   </Button>
                   <Button
                     type="button"
-                    variant="secondary"
                     size="sm"
                     onClick={handleRunJqTransform}
                     className="h-8 text-xs flex items-center gap-1.5"

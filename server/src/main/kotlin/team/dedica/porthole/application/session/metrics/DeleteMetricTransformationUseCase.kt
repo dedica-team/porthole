@@ -9,7 +9,7 @@ import team.dedica.porthole.domain.SessionState
 import java.util.UUID
 
 @Singleton
-class DeleteMetricPresetUseCase(
+class DeleteMetricTransformationUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
@@ -19,14 +19,14 @@ class DeleteMetricPresetUseCase(
         sessionId: UUID,
         callerId: UUID,
         metricId: UUID,
-        presetId: UUID,
+        transformationId: UUID,
     ): SessionState {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val metric = state.metrics[metricId]
             ?: throw NoSuchElementException("Metric $metricId not found")
 
-        val updatedPresets = metric.presets.filter { it.id != presetId }
-        state.metrics[metricId] = metric.copy(presets = updatedPresets)
+        val transformations = metric.transformations.filter { it.id != transformationId }
+        state.metrics[metricId] = metric.copy(transformations = transformations)
 
         sessionStatePort.save(state)
         broadcastPort.sendMetrics(sessionId, state.metrics)

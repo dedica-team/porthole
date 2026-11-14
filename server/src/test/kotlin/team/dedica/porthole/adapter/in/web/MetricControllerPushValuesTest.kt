@@ -123,7 +123,7 @@ class MetricControllerPushValuesTest {
         val root = json(response)
         assertEquals(1, root["updatedCount"].asInt())
         assertEquals(1, root["unmatchedElements"].size())
-        assertEquals("Unmatched Service", root["unmatchedElements"][0].asText())
+        assertEquals("Unmatched Service", root["unmatchedElements"][0].asString())
 
         val state = sessionStatePort.findById(sessionId)!!
         val updatedMetric = state.landmarks[landmarkId]?.metrics?.get(metricId)
@@ -154,8 +154,8 @@ class MetricControllerPushValuesTest {
     }
 
     @Test
-    fun `PUT and DELETE metric transformation preset lifecycle`() {
-        val presetBody = mapOf(
+    fun `PUT and DELETE metric transformation lifecycle`() {
+        val body = mapOf(
             "name" to "SonarQube Sync",
             "requestUrl" to "https://sonar.example.com/api/measures",
             "httpMethod" to "GET",
@@ -163,18 +163,18 @@ class MetricControllerPushValuesTest {
             "matchBy" to "NAME",
         )
 
-        val putResponse = send("PUT", "/api/sessions/$sessionId/metrics/$metricId/presets", presetBody)
+        val putResponse = send("PUT", "/api/sessions/$sessionId/metrics/$metricId/transformations", body)
         assertEquals(200, putResponse.statusCode())
 
         val stateAfterPut = sessionStatePort.findById(sessionId)!!
-        val metricWithPreset = stateAfterPut.metrics[metricId]!!
-        assertEquals(1, metricWithPreset.presets.size)
-        val presetId = metricWithPreset.presets.first().id
+        val metricWitTransformation = stateAfterPut.metrics[metricId]!!
+        assertEquals(1, metricWitTransformation.transformations.size)
+        val transformationId = metricWitTransformation.transformations.first().id
 
-        val deleteResponse = send("DELETE", "/api/sessions/$sessionId/metrics/$metricId/presets/$presetId")
+        val deleteResponse = send("DELETE", "/api/sessions/$sessionId/metrics/$metricId/transformations/$transformationId")
         assertEquals(200, deleteResponse.statusCode())
 
         val stateAfterDelete = sessionStatePort.findById(sessionId)!!
-        assertTrue(stateAfterDelete.metrics[metricId]!!.presets.isEmpty())
+        assertTrue(stateAfterDelete.metrics[metricId]!!.transformations.isEmpty())
     }
 }

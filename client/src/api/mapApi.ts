@@ -592,29 +592,29 @@ export async function pushMetricValues(
   return handleResponse<import('@/types/landmark').PushMetricValuesResponse>(res);
 }
 
-export async function saveMetricPreset(
+export async function saveMetricTransformation(
   mapId: string,
   metricId: string,
-  preset: Partial<import('@/types/landmark').MetricTransformationPreset> & { name: string; requestUrl: string },
+  transformation: Partial<import('@/types/landmark').MetricTransformation> & { name: string; requestUrl: string },
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/presets`,
+    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/transformations`,
     {
       method: 'PUT',
       headers: authHeaders(),
-      body: JSON.stringify(preset),
+      body: JSON.stringify(transformation),
     },
   );
   return handleResponse<SessionState>(res);
 }
 
-export async function deleteMetricPreset(
+export async function deleteMetricTransformation(
   mapId: string,
   metricId: string,
-  presetId: string,
+  transformationId: string,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/presets/${encodeURIComponent(presetId)}`,
+    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/transformations/${encodeURIComponent(transformationId)}`,
     {
       method: 'DELETE',
       headers: authHeaders(),

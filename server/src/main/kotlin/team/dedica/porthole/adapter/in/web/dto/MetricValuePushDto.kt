@@ -34,7 +34,7 @@ data class PushMetricValuesResponse(
 )
 
 @Introspected
-data class MetricTransformationPresetDto(
+data class MetricTransformationDto(
     val id: UUID? = null,
     @field:NotBlank @field:Size(max = 200)
     val name: String,

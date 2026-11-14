@@ -41,7 +41,7 @@ export function worstLevel(entries: LandmarkMetricEntry[]): QualityLevel {
 
 export type MatchStrategy = 'NAME' | 'LINK' | 'ALIAS';
 
-export interface MetricTransformationPreset {
+export interface MetricTransformation {
   id: string;
   name: string;
   metricId: string;
@@ -94,7 +94,7 @@ export interface QualityMetric {
   name: string;
   description: string;
   link?: string;
-  presets?: MetricTransformationPreset[];
+  transformations?: MetricTransformation[];
 }
 
 export interface MetricTemplate {

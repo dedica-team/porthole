@@ -5,7 +5,7 @@ import io.micronaut.http.annotation.*
 import jakarta.validation.Valid
 import team.dedica.porthole.adapter.`in`.web.dto.CreateMetricRequest
 import team.dedica.porthole.adapter.`in`.web.dto.EditMetricRequest
-import team.dedica.porthole.adapter.`in`.web.dto.MetricTransformationPresetDto
+import team.dedica.porthole.adapter.`in`.web.dto.MetricTransformationDto
 import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesRequest
 import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesResponse
 import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
@@ -23,8 +23,8 @@ class MetricController(
     private val editMetricUseCase: EditMetricUseCase,
     private val removeMetricUseCase: RemoveMetricUseCase,
     private val pushMetricValuesUseCase: PushMetricValuesUseCase,
-    private val saveMetricPresetUseCase: SaveMetricPresetUseCase,
-    private val deleteMetricPresetUseCase: DeleteMetricPresetUseCase,
+    private val saveMetricTransformationUseCase: SaveMetricTransformationUseCase,
+    private val deleteMetricTransformationUseCase: DeleteMetricTransformationUseCase,
 ) {
     @Get
     fun listMetrics(@PathVariable id: String, user: PortholePrincipal): HttpResponse<*> =
@@ -90,35 +90,35 @@ class MetricController(
         return HttpResponse.ok(result)
     }
 
-    @Put("/{metricId}/presets")
-    fun savePreset(
+    @Put("/{metricId}/transformations")
+    fun saveTransformation(
         @PathVariable id: String,
         @PathVariable metricId: String,
-        @Valid @Body preset: MetricTransformationPresetDto,
+        @Valid @Body transformationDto: MetricTransformationDto,
         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
-            saveMetricPresetUseCase.execute(
+            saveMetricTransformationUseCase.execute(
                 sessionId = UUID.fromString(id),
                 callerId = user.userId,
                 metricId = UUID.fromString(metricId),
-                presetDto = preset,
+                transformationDto = transformationDto,
             )
         )
 
-    @Delete("/{metricId}/presets/{presetId}")
-    fun deletePreset(
+    @Delete("/{metricId}/transformations/{transformationId}")
+    fun deleteTransformation(
         @PathVariable id: String,
         @PathVariable metricId: String,
-        @PathVariable presetId: String,
+        @PathVariable transformationId: String,
         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
-            deleteMetricPresetUseCase.execute(
+            deleteMetricTransformationUseCase.execute(
                 sessionId = UUID.fromString(id),
                 callerId = user.userId,
                 metricId = UUID.fromString(metricId),
-                presetId = UUID.fromString(presetId),
+                transformationId = UUID.fromString(transformationId),
             )
         )
 }

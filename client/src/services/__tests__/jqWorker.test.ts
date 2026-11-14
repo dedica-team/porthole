@@ -73,22 +73,25 @@ describe('jqEvaluator & jqWorker', () => {
     expect(rows.length).toBe(3);
 
     expect(rows[0].element).toBe('prod-web-infra');
-    expect(rows[0].value).toBe('Add OAuth2 authentication provider (!42)');
-    expect(rows[0].level).toBe('OK');
-    expect(rows[0].link).toBe('https://gitlab.example.com/my-org/porthole/-/merge_requests/42');
-    expect(rows[0].linkText).toBe('MR !42');
+    expect(rows[0].value).toBe('5 open MRs');
+    expect(rows[0].level).toBe('ERROR');
+    expect(rows[0].link).toBe('https://gitlab.example.com/infra/prod-web-infra/-/merge_requests');
+    expect(rows[0].linkText).toBe('MRs (5)');
     expect(rows[0].badges).toEqual({
-      mr: 'https://gitlab.example.com/my-org/porthole/-/merge_requests/42',
-      author: 'https://gitlab.example.com/alex',
+      mrs: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
     });
 
     expect(rows[1].element).toBe('payment-gateway');
-    expect(rows[1].value).toBe('Draft: Upgrade database connector and migration scripts (!43)');
+    expect(rows[1].value).toBe('2 open MRs');
     expect(rows[1].level).toBe('WARNING');
+    expect(rows[1].link).toBe('https://gitlab.example.com/services/payment-gateway/-/merge_requests');
+    expect(rows[1].linkText).toBe('MRs (2)');
 
     expect(rows[2].element).toBe('analytics-pipeline');
-    expect(rows[2].value).toBe('Fix real-time event streaming sync (!44)');
-    expect(rows[2].level).toBe('ERROR');
+    expect(rows[2].value).toBe('0 open MRs');
+    expect(rows[2].level).toBe('OK');
+    expect(rows[2].link).toBe('https://gitlab.example.com/data/analytics-pipeline/-/merge_requests');
+    expect(rows[2].linkText).toBe('MRs (0)');
   });
 
   it('includes built-in transformation templates', () => {

@@ -168,7 +168,7 @@ graph TD
 
 ### File Structure
 - `server/src/main/kotlin/team/dedica/porthole/domain/Landmark.kt` (modified: `link` -> `links: Map<String, String>`)
-- `server/src/main/kotlin/team/dedica/porthole/domain/MetricTransformationPreset.kt` (added)
+- `../../server/src/main/kotlin/team/dedica/porthole/domain/MetricTransformation.kt` (added)
 - `server/src/main/kotlin/team/dedica/porthole/adapter/in/web/dto/MetricValuePushDto.kt` (added)
 - `server/src/main/kotlin/team/dedica/porthole/application/session/metrics/PushMetricValuesUseCase.kt` (added)
 - `server/src/main/kotlin/team/dedica/porthole/adapter/in/web/MetricController.kt` (modified)
