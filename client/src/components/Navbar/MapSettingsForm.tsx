@@ -143,7 +143,7 @@ export function MapSettingsForm({ onClose }: Props) {
           disabled={!isCollaborator}
           className="h-4 w-4 rounded border-input accent-primary disabled:opacity-50"
         />
-        <span>Enable tower-defense game</span>
+        <span>Enable tower-defense game (alpha)</span>
       </label>
       <div className="flex flex-col gap-1.5">
         <Label className="text-sm">Map ID</Label>
