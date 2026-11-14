@@ -338,11 +338,12 @@ export async function placeLandmark(
   r: number,
   name: string,
   type: LandmarkType = 'KEEP',
+  aliases?: string[],
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ q, r, name, type }),
+    body: JSON.stringify({ q, r, name, type, aliases: aliases ?? null }),
   });
   return handleResponse<SessionState>(res);
 }
@@ -371,6 +372,8 @@ export async function editLandmark(
   ownerId?: string | null,
   links?: Record<string, string>,
   clearLinks?: boolean,
+  aliases?: string[],
+  clearAliases?: boolean,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'PATCH',
@@ -387,6 +390,8 @@ export async function editLandmark(
       clearLink: clearLink ?? false,
       ownerId: ownerId !== undefined ? ownerId : null,
       clearOwner: ownerId === null,
+      aliases: aliases ?? null,
+      clearAliases: clearAliases ?? false,
     }),
   });
   return handleResponse<SessionState>(res);
@@ -634,6 +639,8 @@ export async function createUnpositionedLandmark(
   description?: string,
   groupId?: string,
   link?: string,
+  links?: Record<string, string>,
+  aliases?: string[],
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/unpositioned`, {
     method: 'POST',
@@ -644,6 +651,8 @@ export async function createUnpositionedLandmark(
       description: description ?? null,
       groupId: groupId ?? null,
       link: link ?? null,
+      links: links ?? null,
+      aliases: aliases ?? null,
     }),
   });
   return handleResponse<SessionState>(res);

@@ -1,6 +1,7 @@
 package team.dedica.porthole.application.session.metrics
 
 import jakarta.inject.Singleton
+import team.dedica.porthole.application.DataSanitationUtils.cleanAliases
 import team.dedica.porthole.application.DataSanitationUtils.cleanLink
 import team.dedica.porthole.application.DataSanitationUtils.cleanLinks
 import team.dedica.porthole.application.port.AuthorizationPort
@@ -31,6 +32,7 @@ class CreateUnpositionedLandmarkUseCase(
         groupId: UUID? = null,
         links: Map<String, String>? = null,
         link: String? = null,
+        aliases: List<String>? = null,
     ): SessionState {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
 
@@ -57,6 +59,7 @@ class CreateUnpositionedLandmarkUseCase(
             description = description,
             groupId = groupId,
             links = resolvedLinks,
+            aliases = aliases?.let { cleanAliases(it) } ?: emptyList(),
         )
 
         sessionStatePort.save(state)

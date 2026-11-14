@@ -115,6 +115,15 @@ class DemoDataLoaderTest {
     }
 
     @Test
+    fun `at least one landmark has prod-web-infra alias`() {
+        loader.run(event)
+        val map = mapPort.findById(DEMO_MAP_ID)!!
+        val matching = map.landmarks.values.filter { "prod-web-infra" in it.aliases }
+        assertEquals(1, matching.size, "Expected exactly one landmark with 'prod-web-infra' alias")
+        assertEquals("Administration Office", matching.first().name)
+    }
+
+    @Test
     fun `all landmarks are positioned on the map`() {
         loader.run(event)
         val map = mapPort.findById(DEMO_MAP_ID)!!

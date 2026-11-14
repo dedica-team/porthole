@@ -31,10 +31,17 @@ class SaveMetricPresetUseCase(
         require(presetDto.name.isNotBlank()) { "Preset name must not be blank" }
         require(presetDto.requestUrl.isNotBlank()) { "Preset request URL must not be blank" }
 
+        val trimmedName = presetDto.name.trim()
         val presetId = presetDto.id ?: UUID.randomUUID()
+
+        // Ensure preset names are unique within the metric (case-insensitive)
+        require(metric.presets.none { it.id != presetId && it.name.equals(trimmedName, ignoreCase = true) }) {
+            "A preset with the name '$trimmedName' already exists"
+        }
+
         val updatedPreset = MetricTransformationPreset(
             id = presetId,
-            name = presetDto.name.trim(),
+            name = trimmedName,
             metricId = metricId,
             requestUrl = presetDto.requestUrl.trim(),
             httpMethod = presetDto.httpMethod.trim().uppercase(),

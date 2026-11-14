@@ -31,6 +31,8 @@ interface Props {
     ownerId?: string | null,
     links?: Record<string, string>,
     clearLinks?: boolean,
+    aliases?: string[],
+    clearAliases?: boolean,
   ) => void;
   onRemoveLandmark: (landmarkId: string) => void;
   onEditConnection?: (
@@ -87,6 +89,7 @@ export default function LandmarkInfoPopover({
   const [editGroupId, setEditGroupId] = useState('');
   const [editOwnerId, setEditOwnerId] = useState('');
   const [editLinks, setEditLinks] = useState<{ key: string; url: string; error?: string }[]>([]);
+  const [editAliases, setEditAliases] = useState('');
 
   // ── Connection edit state ────────────────────────────────────────────────────
   const [connEditOpen, setConnEditOpen] = useState(false);
@@ -135,6 +138,7 @@ export default function LandmarkInfoPopover({
       ? [{ key: 'repository', url: landmark.link, error: '' }]
       : [];
     setEditLinks(currentLinks);
+    setEditAliases((landmark.aliases ?? []).join(', '));
     setInfoOpen(false);
     setEditOpen(true);
   };
@@ -174,6 +178,14 @@ export default function LandmarkInfoPopover({
     const hasLinks = Object.keys(linksMap).length > 0;
     const hadLinks = (landmark.links && Object.keys(landmark.links).length > 0) || !!landmark.link;
 
+    const parsedAliases = editAliases
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+    const hadAliases = (landmark.aliases ?? []).length > 0;
+    const clearAliases = parsedAliases.length === 0 && hadAliases;
+    const aliasesChanged = JSON.stringify(parsedAliases) !== JSON.stringify(landmark.aliases ?? []);
+
     onEditLandmark(
       landmark.id,
       trimmed || undefined,
@@ -186,6 +198,8 @@ export default function LandmarkInfoPopover({
       ownerChanged ? newOwnerId : undefined,
       hasLinks ? linksMap : undefined,
       !hasLinks && hadLinks,
+      aliasesChanged ? parsedAliases : undefined,
+      clearAliases,
     );
     setEditOpen(false);
   };
@@ -278,6 +292,19 @@ export default function LandmarkInfoPopover({
                     <span className="truncate">{landmark.link}</span>
                   </a>
                 ) : null}
+              </div>
+            </div>
+          )}
+
+          {landmark.aliases && landmark.aliases.length > 0 && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs text-muted-foreground font-medium">Aliases</span>
+              <div className="flex flex-wrap gap-1">
+                {landmark.aliases.map((alias) => (
+                  <span key={alias} className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted text-foreground border border-border">
+                    {alias}
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -478,6 +505,13 @@ export default function LandmarkInfoPopover({
             onChange={(e) => setEditName(e.target.value)}
             className="h-8 text-sm"
             placeholder={isDecorative(editType) ? 'Name (optional)' : 'Name'}
+          />
+
+          <Input
+            value={editAliases}
+            onChange={(e) => setEditAliases(e.target.value)}
+            className="h-8 text-sm"
+            placeholder="Aliases (comma-separated, optional)"
           />
 
           <select

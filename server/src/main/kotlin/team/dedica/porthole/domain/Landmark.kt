@@ -16,6 +16,7 @@ import java.util.*
  * @param groupId     optional reference to a [LandmarkGroup] id
  * @param links       map of named links associated with this landmark (e.g. "repository" -> "https://...", "docs" -> "https://...")
  * @param metrics     assigned quality metric values keyed by metric UUID
+ * @param aliases     alternative names or identifiers for this element
  */
 data class Landmark(
     val id: UUID,
@@ -27,6 +28,7 @@ data class Landmark(
     val groupId: UUID? = null,
     val links: Map<String, String> = emptyMap(),
     val metrics: Map<UUID, LandmarkMetricEntry> = emptyMap(),
+    val aliases: List<String> = emptyList(),
 ) {
     companion object {
         @JvmStatic
@@ -42,6 +44,7 @@ data class Landmark(
             @JsonProperty("links") links: Map<String, String>? = null,
             @JsonProperty("link") legacyLink: String? = null,
             @JsonProperty("metrics") metrics: Map<UUID, LandmarkMetricEntry>? = null,
+            @JsonProperty("aliases") aliases: List<String>? = null,
         ): Landmark {
             val resolvedLinks = when {
                 !links.isNullOrEmpty() -> links
@@ -58,6 +61,7 @@ data class Landmark(
                 groupId = groupId,
                 links = resolvedLinks,
                 metrics = metrics ?: emptyMap(),
+                aliases = aliases?.map { it.trim() }?.filter { it.isNotBlank() }?.distinct() ?: emptyList(),
             )
         }
     }

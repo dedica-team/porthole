@@ -70,6 +70,11 @@ class PushMetricValuesUseCase(
                 MatchStrategy.NAME -> {
                     state.landmarks.values.filter { it.name.trim().equals(elementKey, ignoreCase = true) }
                 }
+                MatchStrategy.ALIAS -> {
+                    state.landmarks.values.filter { landmark ->
+                        landmark.aliases.any { it.trim().equals(elementKey, ignoreCase = true) }
+                    }
+                }
                 MatchStrategy.LINK -> {
                     val canonicalTarget = DataSanitationUtils.normalizeCanonicalUrl(elementKey)
                     state.landmarks.values.filter { landmark ->

@@ -49,7 +49,7 @@ export const MetricDryRunPreview: React.FC<Props> = ({ summary }) => {
           <thead className="bg-muted/50 text-muted-foreground border-b border-border sticky top-0">
             <tr>
               <th className="p-2 font-medium">Element</th>
-              <th className="p-2 font-medium">Matched Landmark</th>
+              <th className="p-2 font-medium">Matched Element</th>
               <th className="p-2 font-medium">Value</th>
               <th className="p-2 font-medium">Level</th>
               <th className="p-2 font-medium">Details</th>

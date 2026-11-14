@@ -88,6 +88,46 @@ class SaveAndDeleteMetricPresetUseCaseTest {
     }
 
     @Test
+    fun `save preset fails if another preset has the same name`() {
+        val preset1 = MetricTransformationPreset(
+            id = UUID.randomUUID(),
+            name = "GitLab MRs",
+            metricId = metricId,
+            requestUrl = "https://gitlab.url",
+        )
+        val preset2 = MetricTransformationPreset(
+            id = UUID.randomUUID(),
+            name = "GitHub PRs",
+            metricId = metricId,
+            requestUrl = "https://github.url",
+        )
+        val s = sessionStatePort.findById(state.id)!!
+        s.metrics[metricId] = s.metrics[metricId]!!.copy(presets = listOf(preset1, preset2))
+        sessionStatePort.save(s)
+
+        // Attempting to add a new preset with existing name (case-insensitive) fails
+        val duplicateNewDto = MetricTransformationPresetDto(
+            name = "gitlab mrs",
+            requestUrl = "https://other.url",
+        )
+        val err1 = assertThrows(IllegalArgumentException::class.java) {
+            saveUseCase.execute(state.id, collaborator.id, metricId, duplicateNewDto)
+        }
+        assertTrue(err1.message!!.contains("already exists"))
+
+        // Attempting to rename preset2 to preset1's name fails
+        val renameConflictDto = MetricTransformationPresetDto(
+            id = preset2.id,
+            name = "GitLab MRs",
+            requestUrl = preset2.requestUrl,
+        )
+        val err2 = assertThrows(IllegalArgumentException::class.java) {
+            saveUseCase.execute(state.id, collaborator.id, metricId, renameConflictDto)
+        }
+        assertTrue(err2.message!!.contains("already exists"))
+    }
+
+    @Test
     fun `delete preset removes preset`() {
         val presetId = UUID.randomUUID()
         val initialPreset = MetricTransformationPreset(

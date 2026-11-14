@@ -34,7 +34,7 @@ class BadRequestExceptionHandler : ExceptionHandler<IllegalArgumentException, Ht
     private val log = LoggerFactory.getLogger(BadRequestExceptionHandler::class.java)
 
     override fun handle(request: HttpRequest<*>, exception: IllegalArgumentException): HttpResponse<ErrorResponse> {
-        log.error("Bad request: ${exception.message}", exception)
+        log.warn("Bad request: {}", exception.message)
         return HttpResponse.status<ErrorResponse>(HttpStatus.BAD_REQUEST)
             .body(ErrorResponse(exception.message ?: "Invalid request", HttpStatus.BAD_REQUEST.code))
     }
@@ -45,7 +45,7 @@ class ConflictExceptionHandler : ExceptionHandler<IllegalStateException, HttpRes
     private val log = LoggerFactory.getLogger(ConflictExceptionHandler::class.java)
 
     override fun handle(request: HttpRequest<*>, exception: IllegalStateException): HttpResponse<ErrorResponse> {
-        log.error("Conflict: ${exception.message}", exception)
+        log.warn("Conflict: {}", exception.message)
         return HttpResponse.status<ErrorResponse>(HttpStatus.CONFLICT)
             .body(ErrorResponse(exception.message ?: "Conflict", HttpStatus.CONFLICT.code))
     }
@@ -56,7 +56,7 @@ class NotFoundExceptionHandler : ExceptionHandler<NoSuchElementException, HttpRe
     private val log = LoggerFactory.getLogger(NotFoundExceptionHandler::class.java)
 
     override fun handle(request: HttpRequest<*>, exception: NoSuchElementException): HttpResponse<ErrorResponse> {
-        log.error("Not found: ${exception.message}", exception)
+        log.warn("Not found: {}", exception.message)
         return HttpResponse.status<ErrorResponse>(HttpStatus.NOT_FOUND)
             .body(ErrorResponse(exception.message ?: "Not found", HttpStatus.NOT_FOUND.code))
     }
@@ -67,7 +67,7 @@ class ForbiddenExceptionHandler : ExceptionHandler<IllegalAccessException, HttpR
     private val log = LoggerFactory.getLogger(ForbiddenExceptionHandler::class.java)
 
     override fun handle(request: HttpRequest<*>, exception: IllegalAccessException): HttpResponse<ErrorResponse> {
-        log.error("Forbidden: ${exception.message}", exception)
+        log.warn("Forbidden: {}", exception.message)
         return HttpResponse.status<ErrorResponse>(HttpStatus.FORBIDDEN)
             .body(ErrorResponse(exception.message ?: "Forbidden", HttpStatus.FORBIDDEN.code))
     }
@@ -78,7 +78,7 @@ class AccessDeniedExceptionHandler : ExceptionHandler<AccessDeniedException, Htt
     private val log = LoggerFactory.getLogger(AccessDeniedExceptionHandler::class.java)
 
     override fun handle(request: HttpRequest<*>, exception: AccessDeniedException): HttpResponse<ErrorResponse> {
-        log.warn("Access denied: ${exception.message}")
+        log.warn("Access denied: {}", exception.message)
         return HttpResponse.status<ErrorResponse>(HttpStatus.FORBIDDEN)
             .body(ErrorResponse(exception.message ?: "Forbidden", HttpStatus.FORBIDDEN.code))
     }
@@ -91,7 +91,7 @@ class ValidationExceptionHandler : ExceptionHandler<ConstraintViolationException
     private val log = LoggerFactory.getLogger(ValidationExceptionHandler::class.java)
 
     override fun handle(request: HttpRequest<*>, exception: ConstraintViolationException): HttpResponse<ErrorResponse> {
-        log.error("Validation failed: ${exception.message}", exception)
+        log.warn("Validation failed: {}", exception.message)
         val message = constraintMessage(exception)
         return HttpResponse.status<ErrorResponse>(HttpStatus.BAD_REQUEST)
             .body(ErrorResponse(message, HttpStatus.BAD_REQUEST.code))
@@ -110,7 +110,7 @@ class JsonSyntaxExceptionHandler : ExceptionHandler<JsonSyntaxException, HttpRes
     private val log = LoggerFactory.getLogger(JsonSyntaxExceptionHandler::class.java)
 
     override fun handle(request: HttpRequest<*>, exception: JsonSyntaxException): HttpResponse<ErrorResponse> {
-        log.error("Unreadable message: ${exception.message}", exception)
+        log.warn("Unreadable message: {}", exception.message)
         val invalid = generateSequence<Throwable>(exception.cause) { it.cause }
             .filterIsInstance<InvalidFormatException>()
             .firstOrNull()

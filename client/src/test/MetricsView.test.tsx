@@ -1,10 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import MetricsView from '../components/MetricsView/MetricsView';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
 import type {Landmark, LandmarkGroup, QualityMetric} from '../types/landmark';
 import * as MapActionsContext from '../pages/MapPage/MapActionsContext';
+
+function render(ui: React.ReactElement = <MetricsView />) {
+  return rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+}
 // ── shared fixtures ────────────────────────────────────────────────────────
 
 const METRIC_AVAIL = { id: 'm1', name: 'Availability', description: 'Uptime %' };

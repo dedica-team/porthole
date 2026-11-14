@@ -1,6 +1,6 @@
 // Session / auth / collaborator types
 import type { MapData } from './hex';
-import type { Landmark, LandmarkGroup } from './landmark';
+import type { Landmark, LandmarkGroup, QualityMetric } from './landmark';
 import type { Connection } from './connection';
 import type { GameState } from './game';
 
@@ -37,6 +37,7 @@ export interface SessionState {
   landmarks: Record<string, Landmark>;
   connections: Record<string, Connection>;
   groups: Record<string, LandmarkGroup>;
+  metrics?: Record<string, QualityMetric>;
   createdAt: string;
   gameState?: GameState;
   /** When false/absent no tower-defense mechanics or UI are active for this session. */

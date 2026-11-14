@@ -91,6 +91,10 @@ export function reconcileMetricPush(
 
     if (request.matchBy === 'NAME') {
       matching = landmarks.filter((lm) => lm.name.trim().toLowerCase() === elemKey.toLowerCase());
+    } else if (request.matchBy === 'ALIAS') {
+      matching = landmarks.filter((lm) =>
+        (lm.aliases ?? []).some((a) => a.trim().toLowerCase() === elemKey.toLowerCase())
+      );
     } else {
       const canonicalTarget = canonicalUrl(elemKey);
       matching = landmarks.filter((lm) => {
@@ -153,7 +157,7 @@ export function generateSamplePayload(
 
   if (sampleSubset.length === 0) {
     values.push({
-      element: matchBy === 'NAME' ? 'Example Service' : 'https://github.com/org/example-service',
+      element: matchBy === 'NAME' ? 'Example Service' : matchBy === 'ALIAS' ? 'example-svc' : 'https://github.com/org/example-service',
       value: '95%',
       level: 'OK',
       description: 'Sample metric update',
@@ -161,7 +165,11 @@ export function generateSamplePayload(
   } else {
     for (const lm of sampleSubset) {
       let identifier = lm.name;
-      if (matchBy === 'LINK') {
+      if (matchBy === 'ALIAS') {
+        identifier = lm.aliases && lm.aliases.length > 0
+          ? lm.aliases[0]
+          : lm.name.toLowerCase().replace(/\s+/g, '-');
+      } else if (matchBy === 'LINK') {
         const linksMap = lm.links ?? (lm.link ? { default: lm.link } : {});
         const linkVal = matchKey ? linksMap[matchKey] : Object.values(linksMap)[0];
         identifier = linkVal || `https://github.com/org/${lm.name.toLowerCase().replace(/\s+/g, '-')}`;
@@ -198,6 +206,17 @@ export function generateCurlSnippet(
 
   return `curl -X POST "${url}" \\\n  -H "Content-Type: application/json"${authHeader} \\\n  -d '${jsonBody.replace(/'/g, "'\\''")}'`;
 }
+
+/**
+ * Synthesizes a CI/CD pipeline automation script combining foreign fetch, jq transformation, and batch push.
+ */
+export {
+  TRANSFORMATION_TEMPLATES,
+  WIZ_VULNERABILITY_TEMPLATE,
+  GITLAB_CI_TEMPLATE,
+  GITHUB_PRS_TEMPLATE,
+  SONARQUBE_QUALITY_GATE_TEMPLATE,
+} from './transformationTemplates';
 
 /**
  * Synthesizes a CI/CD pipeline automation script combining foreign fetch, jq transformation, and batch push.

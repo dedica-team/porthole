@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import {
   BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle, Trash2, Send,
@@ -17,7 +18,6 @@ import { QUALITY_LEVEL_LABEL, QUALITY_LEVEL_SIGN, worstLevel, isDecorative, defa
 import { StatusBadge, StatusIndicator, qualityLevelToStatus } from '@/components/ui/status-badge';
 
 import MetricTemplateSelector from './MetricTemplateSelector';
-import MetricPushRequestModal from './MetricPushRequestModal';
 import GroupsPanel from '@/components/Sidebar/panels/GroupsPanel';
 import CreateLandmarkDialog from './CreateLandmarkDialog';
 import LandmarkInfoPopover from '@/components/LandmarkInfoPopover/LandmarkInfoPopover';
@@ -130,7 +130,7 @@ function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave,
             {!readOnly && onPushValues && (
               <Button
                 type="button"
-                variant="secondary"
+                variant="ghost"
                 fullWidth={true}
                 className="gap-1.5 text-xs h-8"
                 onClick={() => {
@@ -139,7 +139,7 @@ function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave,
                 }}
               >
                 <Send className="h-3.5 w-3.5" />
-                Push Values (REST API / JQ)
+                Import Values
               </Button>
             )}
             <div className="flex justify-end gap-2 pt-1">
@@ -467,6 +467,7 @@ function LandmarkEditDialog({ landmark, groups, loading, onSave, onRemove, onClo
 }
 
 export default function MetricsView() {
+  const navigate = useNavigate();
   const {
     handleCreateMetric: onCreateMetric,
     handleCreateUnpositionedLandmark: onCreateUnpositionedLandmark,
@@ -496,7 +497,6 @@ export default function MetricsView() {
   // ── metric definition CRUD ────────────────────────────────────────────────
   const [editingMetricDef, setEditingMetricDef] = useState<QualityMetric | null>(null);
   const [metricDefReadOnly, setMetricDefReadOnly] = useState(false);
-  const [pushModalMetric, setPushModalMetric] = useState<QualityMetric | null>(null);
 
   // ── landmark editing ──────────────────────────────────────────────────────
   const [editingLandmark, setEditingLandmark] = useState<Landmark | null>(null);
@@ -688,7 +688,13 @@ export default function MetricsView() {
               {metrics.length > 0 && (
                 <button
                   className={cardBtnCls}
-                  onClick={() => setPushModalMetric(metrics[0])}
+                  onClick={() => {
+                    if (metrics.length > 0) {
+                      navigate(`/session/${currentMap.id}/metrics/${metrics[0].id}/push`);
+                    } else {
+                      navigate(`/session/${currentMap.id}/metrics/push`);
+                    }
+                  }}
                   title="Push metric values via REST API or JQ"
                 >
                   <Send className="h-3.5 w-3.5" /> Push Values
@@ -753,7 +759,7 @@ export default function MetricsView() {
         }}
         onPushValues={(m) => {
           setEditingMetricDef(null);
-          setPushModalMetric(m);
+          navigate(`/session/${currentMap.id}/metrics/${m.id}/push`);
         }}
         onClose={() => setEditingMetricDef(null)}
       />
@@ -1078,16 +1084,10 @@ export default function MetricsView() {
         open={showCreateLandmarkDialog}
         loading={loading}
         groups={groups}
-        onSubmit={(name, type, description, groupId, link) => {
-          onCreateUnpositionedLandmark(name, type, description, groupId, link);
+        onSubmit={(name, type, description, groupId, link, links, aliases) => {
+          onCreateUnpositionedLandmark(name, type, description, groupId, link, links, aliases);
         }}
         onClose={() => setShowCreateLandmarkDialog(false)}
-      />
-
-      <MetricPushRequestModal
-        metric={pushModalMetric}
-        open={!!pushModalMetric}
-        onOpenChange={(open) => { if (!open) setPushModalMetric(null); }}
       />
     </div>
   );

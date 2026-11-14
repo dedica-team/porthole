@@ -266,4 +266,26 @@ class EditLandmarkUseCaseTest {
         assertEquals(LandmarkType.RUINS, result.landmarks[t1Key]!!.type)
         assertEquals(0, result.gameState.buildingHealth[t1Id])
     }
+
+    @Test
+    fun `owner can set aliases and duplicates or empty entries are cleaned`() {
+        val result = useCase.execute(
+            state.id,
+            collaborator1.id,
+            t1Id,
+            null,
+            null,
+            aliases = listOf(" auth-service ", "auth-svc", "auth-service", "   ", "auth-v1")
+        )
+        assertEquals(listOf("auth-service", "auth-svc", "auth-v1"), result.landmarks[t1Key]!!.aliases)
+    }
+
+    @Test
+    fun `owner can clear aliases with clearAliases flag`() {
+        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(aliases = listOf("alias-1", "alias-2"))
+        mapStatePort.save(state)
+
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, clearAliases = true)
+        assertTrue(result.landmarks[t1Key]!!.aliases.isEmpty())
+    }
 }

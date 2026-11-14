@@ -110,7 +110,21 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
     render(<LandmarkPanel {...defaultProps} onEditLandmark={onEditLandmark} />);
     fireEvent.click(screen.getByTitle('Edit Element'));
     fireEvent.click(screen.getByText('Save'));
-    expect(onEditLandmark).toHaveBeenCalledWith('tower-abc123', 'Iron Keep', 'KEEP', undefined, undefined, false, undefined, false);
+    expect(onEditLandmark).toHaveBeenCalledWith(
+      'tower-abc123',
+      'Iron Keep',
+      'KEEP',
+      undefined,
+      undefined,
+      false,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      false,
+      undefined,
+      false,
+    );
   });
 
   it('calls onRemoveLandmark when Remove Landmark is clicked', () => {
@@ -142,7 +156,50 @@ describe('LandmarkPanel (TowerInfoDialog replacement)', () => {
     });
     fireEvent.click(screen.getByText('Save'));
     expect(onEditLandmark).toHaveBeenCalledWith(
-      'tower-abc123', 'Iron Keep', 'KEEP', 'A great keep', undefined, false, undefined, false,
+      'tower-abc123',
+      'Iron Keep',
+      'KEEP',
+      'A great keep',
+      undefined,
+      false,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      false,
+      undefined,
+      false,
+    );
+  });
+
+  it('passes aliases to onEditLandmark and renders them in read mode', () => {
+    setup('player-1', { aliases: ['alpha-keep', 'keep-1'] });
+    const onEditLandmark = vi.fn();
+    render(<LandmarkPanel {...defaultProps} onEditLandmark={onEditLandmark} />);
+    expect(screen.getByText('alpha-keep')).toBeInTheDocument();
+    expect(screen.getByText('keep-1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle('Edit Element'));
+    const aliasInput = screen.getByPlaceholderText('Aliases (comma-separated, optional)');
+    expect(aliasInput).toHaveValue('alpha-keep, keep-1');
+    fireEvent.change(aliasInput, {
+      target: { value: 'new-alias, secondary-alias' },
+    });
+    fireEvent.click(screen.getByText('Save'));
+    expect(onEditLandmark).toHaveBeenCalledWith(
+      'tower-abc123',
+      'Iron Keep',
+      'KEEP',
+      undefined,
+      undefined,
+      false,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      false,
+      ['new-alias', 'secondary-alias'],
+      false,
     );
   });
 

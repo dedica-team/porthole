@@ -40,6 +40,8 @@ interface Props {
     ownerId?: string | null,
     links?: Record<string, string>,
     clearLinks?: boolean,
+    aliases?: string[],
+    clearAliases?: boolean,
   ) => void;
   onEditConnection: (
     connectionId: string,
@@ -77,6 +79,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const [editGroupId, setEditGroupId] = useState<string>('');
   const [editOwnerId, setEditOwnerId] = useState<string>('');
   const [editLinks, setEditLinks] = useState<{ key: string; url: string; error?: string }[]>([]);
+  const [editAliases, setEditAliases] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showConnForm, setShowConnForm] = useState(false);
   const [connType, setConnType] = useState<ConnectionType>('PIPE');
@@ -149,6 +152,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
       ? [{ key: 'repository', url: selectedLandmark.link, error: '' }]
       : [];
     setEditLinks(currentLinks);
+    setEditAliases((selectedLandmark.aliases ?? []).join(', '));
     setConfirmDelete(false);
     setEditDialogOpen(true);
   };
@@ -179,7 +183,16 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
     const hasLinks = Object.keys(linksMap).length > 0;
     const hadLinks = (selectedLandmark.links && Object.keys(selectedLandmark.links).length > 0) || !!selectedLandmark.link;
 
-    const editArgs: Parameters<Props['onEditLandmark']> = [
+    const parsedAliases = editAliases
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+    const hadAliases = (selectedLandmark.aliases ?? []).length > 0;
+    const clearAliases = parsedAliases.length === 0 && hadAliases;
+    const aliasesChanged = JSON.stringify(parsedAliases) !== JSON.stringify(selectedLandmark.aliases ?? []);
+
+    setEditDialogOpen(false);
+    onEditLandmark(
       selectedLandmark.id,
       trimmed,
       editType,
@@ -188,17 +201,12 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
       editGroupId === '' && !!selectedLandmark.groupId,
       undefined,
       false,
-    ];
-    if (ownerChanged || hasLinks || (!hasLinks && hadLinks)) {
-      editArgs.push(ownerChanged ? newOwnerId : undefined);
-    }
-    if (hasLinks || (!hasLinks && hadLinks)) {
-      editArgs.push(hasLinks ? linksMap : undefined);
-      editArgs.push(!hasLinks && hadLinks);
-    }
-
-    setEditDialogOpen(false);
-    onEditLandmark(...editArgs);
+      ownerChanged ? newOwnerId : undefined,
+      hasLinks ? linksMap : undefined,
+      !hasLinks && hadLinks,
+      aliasesChanged ? parsedAliases : undefined,
+      clearAliases,
+    );
   };
   const startConnEdit = (connId: string) => {
     const c = (currentMap.connections ?? {})[connId];
@@ -361,6 +369,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
           {!confirmDelete ? (
             <form id="edit-landmark-form" onSubmit={handleSaveEdit} className="flex flex-col gap-2 min-w-0">
               <Input autoFocus value={editName} maxLength={40} onChange={(e) => setEditName(e.target.value)} className="h-8 text-sm" placeholder={isDecorative(editType) ? 'Name (optional)' : 'Name'} />
+              <Input value={editAliases} onChange={(e) => setEditAliases(e.target.value)} className="h-8 text-sm" placeholder="Aliases (comma-separated, optional)" />
               <select value={editType} onChange={(e) => setEditType(e.target.value as LandmarkType)} className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground">
                 {ALL_LANDMARK_TYPES.map((t) => <option key={t} value={t}>{LANDMARK_TYPE_LABELS[t]}</option>)}
               </select>
@@ -612,6 +621,18 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                     {selectedLandmark.link}
                   </a>
                 ) : null}
+              </div>
+            </div>
+          )}
+          {selectedLandmark.aliases && selectedLandmark.aliases.length > 0 && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-sm text-muted-foreground">Aliases</span>
+              <div className="flex flex-wrap gap-1">
+                {selectedLandmark.aliases.map((alias) => (
+                  <span key={alias} className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted text-foreground border border-border">
+                    {alias}
+                  </span>
+                ))}
               </div>
             </div>
           )}

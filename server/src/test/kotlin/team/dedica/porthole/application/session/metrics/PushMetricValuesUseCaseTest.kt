@@ -39,6 +39,7 @@ class PushMetricValuesUseCaseTest {
                 "repository" to "https://gitlab.example.com/team/auth-service.git",
                 "docs" to "https://docs.example.com/auth",
             ),
+            aliases = listOf("auth-svc", "auth_microservice", "authentication"),
         )
         val lm2 = Landmark(
             id = lm2Id,
@@ -46,6 +47,7 @@ class PushMetricValuesUseCaseTest {
             links = mapOf(
                 "repository" to "https://gitlab.example.com/team/billing-service",
             ),
+            aliases = listOf("billing-svc", "payments"),
         )
 
         state.metrics[metricId] = metric
@@ -171,6 +173,41 @@ class PushMetricValuesUseCaseTest {
         assertThrows(AccessDeniedException::class.java) {
             useCase.execute(state.id, outsider.id, "Open Merge Requests", request)
         }
+    }
+
+    @Test
+    fun `push by alias updates matched landmark and matches case-insensitively`() {
+        val request = PushMetricValuesRequest(
+            matchBy = MatchStrategy.ALIAS,
+            values = listOf(
+                MetricElementValueDto(
+                    element = "AUTH_MICROSERVICE",
+                    value = "8",
+                    level = QualityLevel.WARNING,
+                ),
+                MetricElementValueDto(
+                    element = "payments",
+                    value = "0",
+                    level = QualityLevel.OK,
+                ),
+                MetricElementValueDto(
+                    element = "non-existent-alias",
+                    value = "100",
+                ),
+            ),
+        )
+
+        val response = useCase.execute(state.id, collaborator.id, metricId.toString(), request)
+
+        assertEquals(2, response.updatedCount)
+        assertEquals(listOf("non-existent-alias"), response.unmatchedElements)
+        assertTrue(response.warnings.isEmpty())
+
+        val updatedState = sessionStatePort.findById(state.id)!!
+        assertEquals("8", updatedState.landmarks[lm1Id]?.metrics?.get(metricId)?.value)
+        assertEquals(QualityLevel.WARNING, updatedState.landmarks[lm1Id]?.metrics?.get(metricId)?.level)
+        assertEquals("0", updatedState.landmarks[lm2Id]?.metrics?.get(metricId)?.value)
+        assertEquals(QualityLevel.OK, updatedState.landmarks[lm2Id]?.metrics?.get(metricId)?.level)
     }
 
     @Test

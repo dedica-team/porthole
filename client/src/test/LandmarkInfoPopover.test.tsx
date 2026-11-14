@@ -120,4 +120,45 @@ describe('LandmarkInfoPopover', () => {
     // The confirmation dialog should be closed
     expect(screen.queryByText(/remove «Tower 1»\?/i)).not.toBeInTheDocument();
   });
+
+  it('displays aliases in read mode and allows editing aliases in the edit dialog', () => {
+    const lmWithAliases: Landmark = {
+      ...LM1,
+      aliases: ['auth-service', 'auth-api'],
+    };
+    setup();
+    const onEditLandmark = vi.fn();
+    render(
+      <LandmarkInfoPopover {...defaultProps} landmark={lmWithAliases} onEditLandmark={onEditLandmark}>
+        <button>Open Me</button>
+      </LandmarkInfoPopover>
+    );
+    fireEvent.click(screen.getByText('Open Me'));
+
+    expect(screen.getByText('auth-service')).toBeInTheDocument();
+    expect(screen.getByText('auth-api')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle('Edit Element'));
+    const aliasInput = screen.getByPlaceholderText('Aliases (comma-separated, optional)');
+    expect(aliasInput).toHaveValue('auth-service, auth-api');
+
+    fireEvent.change(aliasInput, { target: { value: 'auth-service, auth-v2, auth-proxy' } });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(onEditLandmark).toHaveBeenCalledWith(
+      'lm1',
+      'Tower 1',
+      'KEEP',
+      undefined,
+      undefined,
+      false,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      false,
+      ['auth-service', 'auth-v2', 'auth-proxy'],
+      false,
+    );
+  });
 });

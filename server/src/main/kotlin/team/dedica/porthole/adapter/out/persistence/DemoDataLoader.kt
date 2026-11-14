@@ -379,7 +379,8 @@ class DemoDataLoader(
                 m(metricSatisfaction, "4.0 / 5", OK),
                 m(metricStaffResp, "10 min", E),
                 m(metricWaitTime, "20 min", W)
-            )
+            ),
+            aliases = listOf("prod-web-infra")
         )
     }
 
@@ -391,14 +392,16 @@ class DemoDataLoader(
         groupId: UUID,
         description: String,
         metrics: List<Pair<UUID, Pair<String, QualityLevel>>>,
+        aliases: List<String> = emptyList(),
     ) {
-        val result = placeLandmarkUseCase.execute(DEMO_MAP_ID, owner, coordinate, name, type)
+        val result = placeLandmarkUseCase.execute(DEMO_MAP_ID, owner, coordinate, name, type, aliases = aliases)
         val landmark = result.getLandmarkAt(coordinate)!!
         val id = landmark.id
         landmarkUuids[name] = id
         editLandmarkUseCase.execute(
             DEMO_MAP_ID, owner, id, name = null, type = null,
-            description = description, groupId = groupId
+            description = description, groupId = groupId,
+            aliases = aliases.ifEmpty { null }
         )
         metrics.forEach { (metricId, vl) ->
             setLandmarkMetricUseCase.execute(DEMO_MAP_ID, id, metricId, value = vl.first, level = vl.second, callerId = owner)

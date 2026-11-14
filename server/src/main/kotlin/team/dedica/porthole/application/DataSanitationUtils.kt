@@ -29,6 +29,14 @@ object DataSanitationUtils {
         }
     }
 
+    fun cleanAliases(aliases: List<String>): List<String> {
+        return aliases
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .onEach { require(it.length <= 200) { "Alias must not exceed 200 characters" } }
+            .distinct()
+    }
+
     /**
      * Normalizes a URL / git remote string to a canonical HTTPS format for deterministic matching.
      *

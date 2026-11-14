@@ -34,6 +34,23 @@ function executeFilter(input: unknown, filter: string): unknown {
   const trimmed = filter.trim();
   if (trimmed === '.') return input;
 
+  // Handle fallback operator: expr1 // expr2
+  const fallbackIdx = findTopLevelFallbackIndex(trimmed);
+  if (fallbackIdx !== -1) {
+    const left = trimmed.slice(0, fallbackIdx).trim();
+    const right = trimmed.slice(fallbackIdx + 2).trim();
+    const leftRes = executeFilter(input, left);
+    if (leftRes !== null && leftRes !== undefined && leftRes !== false && leftRes !== '') {
+      return leftRes;
+    }
+    return executeFilter(input, right);
+  }
+
+  // Handle if-then-elif-else-end conditionals
+  if (trimmed.startsWith('if ') && trimmed.endsWith('end')) {
+    return evaluateIfElse(input, trimmed);
+  }
+
   // Handle top-level array construction: [ ... ]
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     const inner = trimmed.slice(1, -1).trim();
@@ -103,9 +120,10 @@ function executeFilter(input: unknown, filter: string): unknown {
     return accessPath(input, trimmed.slice(1));
   }
 
-  // Literal value
+  // Literal value with interpolation
   if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-    return trimmed.slice(1, -1);
+    const inner = trimmed.slice(1, -1);
+    return interpolateString(input, inner);
   }
   if (!isNaN(Number(trimmed))) {
     return Number(trimmed);
@@ -115,6 +133,125 @@ function executeFilter(input: unknown, filter: string): unknown {
   if (trimmed === 'null') return null;
 
   return input;
+}
+
+function interpolateString(input: unknown, str: string): string {
+  return str.replace(/\\\((.*?)\)/g, (_, expr) => {
+    const res = executeFilter(input, expr.trim());
+    return res === null || res === undefined ? '' : String(res);
+  });
+}
+
+function evaluateIfElse(input: unknown, expr: string): unknown {
+  const clauses = parseIfClauses(expr);
+  for (const clause of clauses) {
+    if (clause.condition === null || evaluateCondition(input, clause.condition)) {
+      return executeFilter(input, clause.body);
+    }
+  }
+  return null;
+}
+
+interface IfClause {
+  condition: string | null;
+  body: string;
+}
+
+function parseIfClauses(expr: string): IfClause[] {
+  const clauses: IfClause[] = [];
+  const tokens = tokenizeIfExpr(expr);
+  let currentCond: string | null = null;
+
+  for (const tok of tokens) {
+    if (tok.type === 'if' || tok.type === 'elif') {
+      currentCond = tok.value;
+    } else if (tok.type === 'then') {
+      clauses.push({ condition: currentCond, body: tok.value });
+    } else if (tok.type === 'else') {
+      clauses.push({ condition: null, body: tok.value });
+    }
+  }
+  return clauses;
+}
+
+function tokenizeIfExpr(expr: string): { type: string; value: string }[] {
+  const result: { type: string; value: string }[] = [];
+  let depth = 0;
+  let inString = false;
+  let stringChar = '';
+  let currentKeyword = '';
+  let start = 0;
+
+  const keywords = ['if', 'then', 'elif', 'else', 'end'];
+  let i = 0;
+  while (i < expr.length) {
+    const ch = expr[i];
+    if (inString) {
+      if (ch === stringChar && expr[i - 1] !== '\\') inString = false;
+      i++;
+    } else {
+      if (ch === '"' || ch === "'") {
+        inString = true;
+        stringChar = ch;
+        i++;
+      } else if (ch === '(' || ch === '{' || ch === '[') {
+        depth++;
+        i++;
+      } else if (ch === ')' || ch === '}' || ch === ']') {
+        depth--;
+        i++;
+      } else if (depth === 0) {
+        let matchedKw: string | null = null;
+        for (const kw of keywords) {
+          const sub = expr.slice(i, i + kw.length);
+          const nextChar = expr[i + kw.length];
+          const prevChar = i > 0 ? expr[i - 1] : ' ';
+          if (sub === kw && (nextChar === undefined || /\s/.test(nextChar)) && (prevChar === undefined || /\s/.test(prevChar))) {
+            matchedKw = kw;
+            break;
+          }
+        }
+        if (matchedKw) {
+          if (currentKeyword) {
+            result.push({ type: currentKeyword, value: expr.slice(start, i).trim() });
+          }
+          currentKeyword = matchedKw;
+          i += matchedKw.length;
+          start = i;
+        } else {
+          i++;
+        }
+      } else {
+        i++;
+      }
+    }
+  }
+  return result;
+}
+
+function findTopLevelFallbackIndex(str: string): number {
+  let depth = 0;
+  let inString = false;
+  let stringChar = '';
+
+  for (let i = 0; i < str.length - 1; i++) {
+    const ch = str[i];
+    if (inString) {
+      if (ch === stringChar && str[i - 1] !== '\\') inString = false;
+    } else {
+      if (ch === '"' || ch === "'") {
+        inString = true;
+        stringChar = ch;
+      } else if (ch === '{' || ch === '[' || ch === '(') {
+        depth++;
+      } else if (ch === '}' || ch === ']' || ch === ')') {
+        depth--;
+      } else if (ch === '/' && str[i + 1] === '/' && depth === 0) {
+        return i;
+      }
+    }
+  }
+  return -1;
 }
 
 function evalMultiExpression(input: unknown, expr: string): unknown[] {
@@ -292,14 +429,39 @@ function findTopLevelPipeIndex(str: string): number {
 }
 
 function evaluateCondition(input: unknown, condition: string): boolean {
-  if (condition.includes('==')) {
-    const [left, right] = condition.split('==').map((s) => s.trim());
+  const trimmed = condition.trim();
+  if (/\sor\s/i.test(trimmed)) {
+    const parts = trimmed.split(/\s+or\s+/i);
+    return parts.some((p) => evaluateCondition(input, p));
+  }
+  if (/\sand\s/i.test(trimmed)) {
+    const parts = trimmed.split(/\s+and\s+/i);
+    return parts.every((p) => evaluateCondition(input, p));
+  }
+  if (trimmed.includes('==')) {
+    const [left, right] = trimmed.split('==').map((s) => s.trim());
     return executeFilter(input, left) === executeFilter(input, right);
   }
-  if (condition.includes('!=')) {
-    const [left, right] = condition.split('!=').map((s) => s.trim());
+  if (trimmed.includes('!=')) {
+    const [left, right] = trimmed.split('!=').map((s) => s.trim());
     return executeFilter(input, left) !== executeFilter(input, right);
   }
-  const val = executeFilter(input, condition);
+  if (trimmed.includes('>=')) {
+    const [left, right] = trimmed.split('>=').map((s) => s.trim());
+    return Number(executeFilter(input, left)) >= Number(executeFilter(input, right));
+  }
+  if (trimmed.includes('<=')) {
+    const [left, right] = trimmed.split('<=').map((s) => s.trim());
+    return Number(executeFilter(input, left)) <= Number(executeFilter(input, right));
+  }
+  if (trimmed.includes('>')) {
+    const [left, right] = trimmed.split('>').map((s) => s.trim());
+    return Number(executeFilter(input, left)) > Number(executeFilter(input, right));
+  }
+  if (trimmed.includes('<')) {
+    const [left, right] = trimmed.split('<').map((s) => s.trim());
+    return Number(executeFilter(input, left)) < Number(executeFilter(input, right));
+  }
+  const val = executeFilter(input, trimmed);
   return !!val;
 }

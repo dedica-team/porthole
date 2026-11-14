@@ -6,4 +6,5 @@ package team.dedica.porthole.domain
 enum class MatchStrategy {
     NAME,
     LINK,
+    ALIAS,
 }

@@ -11,7 +11,7 @@ interface Props {
   open: boolean;
   loading: boolean;
   groups: Record<string, LandmarkGroup>;
-  onSubmit: (name: string, type: LandmarkType, description?: string, groupId?: string, link?: string) => void;
+  onSubmit: (name: string, type: LandmarkType, description?: string, groupId?: string, link?: string, links?: Record<string, string>, aliases?: string[]) => void;
   onClose: () => void;
 }
 
@@ -32,6 +32,7 @@ export default function CreateLandmarkDialog({ open, loading, groups, onSubmit, 
   const [groupId, setGroupId] = useState('');
   const [link, setLink] = useState('');
   const [linkError, setLinkError] = useState('');
+  const [aliases, setAliases] = useState('');
 
   const sortedGroups = useMemo(
     () => Object.values(groups).sort((a, b) => a.name.localeCompare(b.name)),
@@ -50,6 +51,7 @@ export default function CreateLandmarkDialog({ open, loading, groups, onSubmit, 
     setGroupId('');
     setLink('');
     setLinkError('');
+    setAliases('');
   };
 
   const handleClose = () => {
@@ -65,12 +67,19 @@ export default function CreateLandmarkDialog({ open, loading, groups, onSubmit, 
       setLinkError('Must be a valid http/https URL');
       return;
     }
+    const parsedAliases = aliases
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+
     onSubmit(
       name.trim(),
       type,
       description.trim() || undefined,
       groupId || undefined,
       link.trim() || undefined,
+      undefined,
+      parsedAliases.length > 0 ? parsedAliases : undefined,
     );
     handleClose();
   };
@@ -88,6 +97,13 @@ export default function CreateLandmarkDialog({ open, loading, groups, onSubmit, 
           className="h-8 text-sm"
           maxLength={60}
           placeholder="Name"
+        />
+
+        <Input
+          value={aliases}
+          onChange={(e) => setAliases(e.target.value)}
+          className="h-8 text-sm"
+          placeholder="Aliases (comma-separated, optional)"
         />
 
         <select

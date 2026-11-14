@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { runJqTransform } from '../jqWorker';
 import { evaluateJq } from '../jqEvaluator';
-import { canonicalUrl, reconcileMetricPush, generateSamplePayload, generateCurlSnippet, generateAutomationScript } from '../metricService';
+import {
+  canonicalUrl,
+  reconcileMetricPush,
+  generateSamplePayload,
+  generateCurlSnippet,
+  generateAutomationScript,
+  WIZ_VULNERABILITY_TEMPLATE,
+  TRANSFORMATION_TEMPLATES,
+} from '../metricService';
 import type { Landmark, PushMetricValuesRequest } from '@/types/landmark';
 
 describe('jqEvaluator & jqWorker', () => {
@@ -30,6 +38,34 @@ describe('jqEvaluator & jqWorker', () => {
       { element: 'Auth Service', value: '5', level: 'OK' },
       { element: 'Billing Service', value: '12', level: 'OK' },
     ]);
+  });
+
+  it('transforms Wiz vulnerability findings template sample payload', async () => {
+    const sample = JSON.parse(WIZ_VULNERABILITY_TEMPLATE.samplePayload);
+    const res = await runJqTransform(sample, WIZ_VULNERABILITY_TEMPLATE.jqFilter);
+    expect(res.success).toBe(true);
+    expect(Array.isArray(res.data)).toBe(true);
+    const rows = res.data as Array<Record<string, unknown>>;
+    expect(rows.length).toBe(3);
+    expect(rows[0].element).toBe('prod-web-infra');
+    expect(rows[0].value).toBe('3C / 12H / 27M / 15L');
+    expect(rows[0].level).toBe('ERROR');
+    expect(rows[0].badges).toEqual({
+      dashboard: 'https://app.wiz.io/security/projects/8a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/vulnerabilities',
+    });
+
+    expect(rows[1].element).toBe('payment-gateway');
+    expect(rows[1].value).toBe('0C / 4H / 9M / 2L');
+    expect(rows[1].level).toBe('WARNING');
+
+    expect(rows[2].element).toBe('analytics-pipeline');
+    expect(rows[2].value).toBe('0C / 0H / 2M / 8L');
+    expect(rows[2].level).toBe('OK');
+  });
+
+  it('includes built-in transformation templates', () => {
+    expect(TRANSFORMATION_TEMPLATES.length).toBeGreaterThanOrEqual(4);
+    expect(TRANSFORMATION_TEMPLATES.some((t) => t.id === 'wiz-vulnerabilities')).toBe(true);
   });
 
   it('handles empty and malformed JQ filters gracefully', async () => {
