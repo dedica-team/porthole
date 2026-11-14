@@ -281,6 +281,7 @@ export async function editMap(
   name?: string,
   description?: string,
   gameEnabled?: boolean,
+  waveIntermissionPeriod?: string | null,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${id}`, {
     method: 'PATCH',
@@ -289,6 +290,7 @@ export async function editMap(
       name: name ?? null,
       description: description ?? null,
       gameEnabled: gameEnabled ?? null,
+      waveIntermissionPeriod: waveIntermissionPeriod !== undefined ? waveIntermissionPeriod : null,
     }),
   });
   return handleResponse<SessionState>(res);

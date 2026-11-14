@@ -41,6 +41,7 @@ export interface SessionState {
   gameState?: GameState;
   /** When false/absent no tower-defense mechanics or UI are active for this session. */
   gameEnabled?: boolean;
+  waveIntermissionPeriod?: string | null;
 }
 
 export interface AuthSession {

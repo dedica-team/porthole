@@ -173,3 +173,6 @@ porthole:
     debounce-ms: 5000
   admin:
     user-ids: ${PORTHOLE_ADMIN_USER_IDS:}
+  game:
+    tick-interval-ms: ${PORTHOLE_GAME_TICK_INTERVAL_MS:1000}
+    wave-intermission-period: ${PORTHOLE_WAVE_INTERMISSION_PERIOD:PT1H}

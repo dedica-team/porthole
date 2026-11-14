@@ -109,6 +109,7 @@ class SessionController(
             request.name,
             request.description,
             request.gameEnabled,
+            request.waveIntermissionPeriod,
         )
     )
 

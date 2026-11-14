@@ -235,7 +235,36 @@ class GameEngineTest {
 
         assertTrue(GameEngine.tick(state, now))
         assertEquals(GamePhase.INTERMISSION, state.gameState.phase)
-        assertEquals(now.plusSeconds(GameEngine.WAVE_INTERMISSION_SECONDS), state.gameState.nextWaveAt)
+        assertEquals(now.plus(GameEngine.parsePeriod(GameEngine.WAVE_INTERMISSION_PERIOD)), state.gameState.nextWaveAt)
+    }
+
+    @Test
+    fun `custom wave intermission period on session state is respected`() {
+        val state = SessionState(
+            map = HexMap.createHexagonal(3),
+            gameEnabled = true,
+            waveIntermissionPeriod = "PT20S",
+        )
+        state.gameState = GameState(phase = GamePhase.ACTIVE)
+
+        assertTrue(GameEngine.tick(state, now))
+        assertEquals(GamePhase.INTERMISSION, state.gameState.phase)
+        assertEquals(now.plusSeconds(20), state.gameState.nextWaveAt)
+    }
+
+    @Test
+    fun `parsePeriod parses ISO-8601, shorthands, and defaults to one hour`() {
+        assertEquals(java.time.Duration.ofHours(1), GameEngine.parsePeriod(null))
+        assertEquals(java.time.Duration.ofHours(1), GameEngine.parsePeriod(""))
+        assertEquals(java.time.Duration.ofHours(1), GameEngine.parsePeriod("PT1H"))
+        assertEquals(java.time.Duration.ofSeconds(20), GameEngine.parsePeriod("PT20S"))
+        assertEquals(java.time.Duration.ofMinutes(15), GameEngine.parsePeriod("PT15M"))
+        assertEquals(java.time.Duration.ofDays(1), GameEngine.parsePeriod("P1D"))
+        assertEquals(java.time.Duration.ofHours(1), GameEngine.parsePeriod("1h"))
+        assertEquals(java.time.Duration.ofSeconds(30), GameEngine.parsePeriod("30s"))
+        assertEquals(java.time.Duration.ofMinutes(5), GameEngine.parsePeriod("5m"))
+        assertEquals(java.time.Duration.ofDays(2), GameEngine.parsePeriod("2d"))
+        assertEquals(java.time.Duration.ofHours(1), GameEngine.parsePeriod("invalid-input"))
     }
 
     @Test

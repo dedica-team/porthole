@@ -1,5 +1,6 @@
 package team.dedica.porthole.domain
 
+import java.time.Duration
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
@@ -12,10 +13,44 @@ import java.util.UUID
  */
 object GameEngine {
     const val BUILDING_HEALTH = DEFAULT_BUILDING_HEALTH
-    const val WAVE_INTERMISSION_SECONDS = 20L
+    const val WAVE_INTERMISSION_PERIOD = "PT1H"
     const val FIRST_WAVE_DELAY_SECONDS = 3L
     const val BUGS_BASE = 2
     const val MAX_BUGS_PER_WAVE = 12
+
+    /**
+     * Parses an ISO-8601 period/duration string (e.g. "PT1H", "PT20S", "P1D") or shorthand
+     * format (e.g. "1h", "20s", "30m", "1d"), defaulting to one hour ("PT1H") if null/invalid.
+     */
+    fun parsePeriod(period: String?): Duration {
+        if (period.isNullOrBlank()) {
+            return Duration.parse(WAVE_INTERMISSION_PERIOD)
+        }
+        val trimmed = period.trim()
+        try {
+            return Duration.parse(trimmed)
+        } catch (_: Exception) {
+        }
+        try {
+            return Duration.parse("PT${trimmed.uppercase()}")
+        } catch (_: Exception) {
+        }
+        val match = Regex("""^(\d+)\s*([a-zA-Z]+)?$""").matchEntire(trimmed)
+        if (match != null) {
+            val (amountStr, unitStr) = match.destructured
+            val amount = amountStr.toLongOrNull() ?: 1L
+            return when (unitStr.lowercase()) {
+                "s", "sec", "secs", "second", "seconds" -> Duration.ofSeconds(amount)
+                "m", "min", "mins", "minute", "minutes" -> Duration.ofMinutes(amount)
+                "h", "hr", "hrs", "hour", "hours" -> Duration.ofHours(amount)
+                "d", "day", "days" -> Duration.ofDays(amount)
+                "w", "week", "weeks" -> Duration.ofDays(amount * 7)
+                "", "ms", "millis" -> if (unitStr.isEmpty()) Duration.ofSeconds(amount) else Duration.ofMillis(amount)
+                else -> Duration.parse(WAVE_INTERMISSION_PERIOD)
+            }
+        }
+        return Duration.parse(WAVE_INTERMISSION_PERIOD)
+    }
 
     /** Arms the game when a collaborator enters a watchtower for the first time. */
     fun start(state: SessionState, now: Instant): GameState {
@@ -40,7 +75,12 @@ object GameEngine {
      *
      * @return true when [state] was mutated and should be persisted/broadcast.
      */
-    fun tick(state: SessionState, now: Instant, random: Random = Random()): Boolean {
+    fun tick(
+        state: SessionState,
+        now: Instant = Instant.now(),
+        random: Random = Random(),
+        defaultIntermissionPeriod: String = WAVE_INTERMISSION_PERIOD,
+    ): Boolean {
         if (!state.gameEnabled) return false
         var game = state.gameState
         if (game.phase == GamePhase.IDLE) return false
@@ -50,7 +90,7 @@ object GameEngine {
         if (game.phase == GamePhase.INTERMISSION) {
             val next = game.nextWaveAt
             if (next == null || !now.isBefore(next)) {
-                game = spawnWave(state, game, now, random)
+                game = spawnWave(state, game, now, random, defaultIntermissionPeriod)
                 changed = true
             }
         }
@@ -61,9 +101,11 @@ object GameEngine {
             changed = changed || snapshot.isNotEmpty()
 
             if (game.bugs.isEmpty()) {
+                val period = state.waveIntermissionPeriod ?: defaultIntermissionPeriod
+                val duration = parsePeriod(period)
                 game = game.copy(
                     phase = GamePhase.INTERMISSION,
-                    nextWaveAt = now.plusSeconds(WAVE_INTERMISSION_SECONDS),
+                    nextWaveAt = now.plus(duration),
                 )
                 changed = true
             }
@@ -116,12 +158,15 @@ object GameEngine {
         game: GameState,
         now: Instant,
         random: Random,
+        defaultIntermissionPeriod: String = WAVE_INTERMISSION_PERIOD,
     ): GameState {
         val spawns = spawnCoordinates(state)
         if (spawns.isEmpty()) {
+            val period = state.waveIntermissionPeriod ?: defaultIntermissionPeriod
+            val duration = parsePeriod(period)
             return game.copy(
                 phase = GamePhase.INTERMISSION,
-                nextWaveAt = now.plusSeconds(WAVE_INTERMISSION_SECONDS),
+                nextWaveAt = now.plus(duration),
             )
         }
 

@@ -21,14 +21,17 @@ class EditMapUseCase(
         name: String?,
         description: String?,
         gameEnabled: Boolean? = null,
+        waveIntermissionPeriod: String? = null,
     ): SessionState {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
         val newName = name?.trim()?.ifBlank { null }
         val newDescription = description?.trim()?.ifBlank { null }
+        val newWaveIntermissionPeriod = waveIntermissionPeriod?.trim()?.ifBlank { null }
         val updated = state.copy(
             name = newName,
             description = newDescription,
             gameEnabled = gameEnabled ?: state.gameEnabled,
+            waveIntermissionPeriod = if (waveIntermissionPeriod != null) newWaveIntermissionPeriod else state.waveIntermissionPeriod,
             // Disabling the game must stop all mechanics and clear any running wave.
             gameState = if (gameEnabled == false) GameState() else state.gameState,
         )

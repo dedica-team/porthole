@@ -26,6 +26,7 @@ export function MapSettingsForm({ onClose }: Props) {
   const [editDescription, setEditDescription] = useState(currentMap?.description ?? '');
   const [editCollaborationMode, setEditCollaborationMode] = useState<CollaborationMode>(currentMap?.collaborationMode ?? 'OPEN');
   const [editGameEnabled, setEditGameEnabled] = useState(currentMap?.gameEnabled ?? false);
+  const [editWaveIntermissionPeriod, setEditWaveIntermissionPeriod] = useState(currentMap?.waveIntermissionPeriod ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -43,6 +44,7 @@ export function MapSettingsForm({ onClose }: Props) {
         editName || undefined,
         editDescription || undefined,
         editGameEnabled,
+        editWaveIntermissionPeriod.trim() || null,
       );
       if (editCollaborationMode !== (currentMap.collaborationMode ?? 'OPEN')) {
         updated = await setCollaborationMode(currentMap.id, editCollaborationMode);
@@ -135,16 +137,33 @@ export function MapSettingsForm({ onClose }: Props) {
           ))}
         </select>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={editGameEnabled}
-          onChange={(e) => setEditGameEnabled(e.target.checked)}
-          disabled={!isCollaborator}
-          className="h-4 w-4 rounded border-input accent-primary disabled:opacity-50"
-        />
-        <span>Enable tower-defense game (alpha)</span>
-      </label>
+      <div className="flex flex-col gap-2">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={editGameEnabled}
+            onChange={(e) => setEditGameEnabled(e.target.checked)}
+            disabled={!isCollaborator}
+            className="h-4 w-4 rounded border-input accent-primary disabled:opacity-50"
+          />
+          <span>Enable tower-defense game (alpha)</span>
+        </label>
+        {editGameEnabled && (
+          <div className="flex flex-col gap-1.5 pl-6">
+            <Label htmlFor="map-settings-wave-period" className="text-sm">Wave intermission period</Label>
+            <Input
+              id="map-settings-wave-period"
+              value={editWaveIntermissionPeriod}
+              onChange={(e) => setEditWaveIntermissionPeriod(e.target.value)}
+              placeholder="PT1H (e.g. PT1H, PT20S, 1h)"
+              className="h-8 text-sm"
+              readOnly={!isCollaborator}
+              disabled={!isCollaborator}
+            />
+            <p className="text-xs text-muted-foreground">Period format (e.g. PT1H for 1 hour, PT20S for 20 seconds, or 1h).</p>
+          </div>
+        )}
+      </div>
       <div className="flex flex-col gap-1.5">
         <Label className="text-sm">Map ID</Label>
         <div className="flex items-center gap-1.5">

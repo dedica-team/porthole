@@ -31,6 +31,7 @@ data class SessionState(
     val greenkeepingRotations: MutableMap<UUID, GreenkeepingRotation> = mutableMapOf(),
     var gameState: GameState = GameState(),
     val gameEnabled: Boolean = false,
+    val waveIntermissionPeriod: String? = null,
 ) {
 
     fun getCollaborator(collaboratorId: UUID): Collaborator? = collaborators.find { it.id == collaboratorId }

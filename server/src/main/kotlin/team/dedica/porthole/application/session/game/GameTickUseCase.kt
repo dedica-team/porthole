@@ -4,6 +4,7 @@ import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.GameEngine
+import team.dedica.porthole.domain.PortholeGameProperties
 import java.time.Instant
 
 /**
@@ -14,12 +15,14 @@ import java.time.Instant
 class GameTickUseCase(
     private val sessionStatePort: SessionStatePort,
     private val broadcastPort: BroadcastPort,
+    private val gameProperties: PortholeGameProperties? = null,
 ) {
     fun tick(now: Instant = Instant.now()) {
+        val defaultPeriod = gameProperties?.waveIntermissionPeriod ?: GameEngine.WAVE_INTERMISSION_PERIOD
         sessionStatePort.findAll().forEach { state ->
             if (!state.gameEnabled) return@forEach
             val landmarkTypesBefore = state.landmarks.mapValues { it.value.type }
-            if (GameEngine.tick(state, now)) {
+            if (GameEngine.tick(state, now, defaultIntermissionPeriod = defaultPeriod)) {
                 sessionStatePort.save(state)
                 broadcastPort.sendGame(state.id, state.gameState)
                 // Destroyed buildings turn into ruins and scorch surrounding terrain,

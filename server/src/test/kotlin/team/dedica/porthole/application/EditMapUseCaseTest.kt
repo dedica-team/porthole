@@ -118,6 +118,21 @@ class EditMapUseCaseTest {
     }
 
     @Test
+    fun `collaborator can set wave intermission period`() {
+        val result = useCase.execute(state.id, collaborator.id, null, null, waveIntermissionPeriod = "PT20S")
+
+        assertEquals("PT20S", result.waveIntermissionPeriod)
+        assertEquals("PT20S", mapStatePort.findById(state.id)!!.waveIntermissionPeriod)
+    }
+
+    @Test
+    fun `blank wave intermission period is stored as null`() {
+        val result = useCase.execute(state.id, collaborator.id, null, null, waveIntermissionPeriod = "   ")
+
+        assertNull(result.waveIntermissionPeriod)
+    }
+
+    @Test
     fun `omitting the game flag keeps the current value`() {
         mapStatePort.save(state.copy(gameEnabled = true))
 

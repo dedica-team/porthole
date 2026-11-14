@@ -1290,6 +1290,12 @@
     "allDeclaredFields": true
   },
   {
+    "name": "team.dedica.porthole.domain.PortholeGameProperties",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
     "name": "team.dedica.porthole.domain.Process",
     "allDeclaredConstructors": true,
     "allDeclaredMethods": true,
