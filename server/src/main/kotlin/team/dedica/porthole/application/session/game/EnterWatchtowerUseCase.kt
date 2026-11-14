@@ -44,6 +44,7 @@ class EnterWatchtowerUseCase(
             "Watchtower ${landmark.name} is already occupied"
         }
 
+        state.gameState.towerOccupants.entries.removeIf { it.value == callerId }
         state.gameState.towerOccupants[landmarkId] = callerId
         state.gameState = GameEngine.start(state, now)
 
