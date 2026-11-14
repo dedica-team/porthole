@@ -29,7 +29,7 @@ allOpen {
 }
 
 micronaut {
-    version = "5.2.4"
+    version = "5.2.6"
     runtime("netty")
     testRuntime("junit5")
     processing {
