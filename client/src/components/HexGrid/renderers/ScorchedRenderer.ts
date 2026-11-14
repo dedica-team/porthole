@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 import {
-  tileHeight, seed, lcgNext, LineBatcher, PointsBatcher, ROCK_EDGE_MAT, TRON_BLACK,
+  tileHeight, seed, lcgNext, LineBatcher, PointsBatcher, ROCK_EDGE_MAT, SCORCHED_TILE_COLORS,
   type TileColors, type TerrainRenderer,
 } from '../terrainUtils';
 
@@ -82,17 +82,6 @@ const DEBRIS_MAT = new THREE.ShaderMaterial({
   // no transparency needed – opaque faces + additive glow in shader
 });
 DEBRIS_MAT.onBeforeRender = () => { debrisUniforms.uTime.value = performance.now() / 1000; };
-
-const SCORCHED_TILE_COLORS: TileColors = {
-  topColor:      TRON_BLACK,
-  topEmissive:   new THREE.Color(0x3a0c00).multiplyScalar(0.05),
-  topRoughness:  1.0,
-  topMetalness:  0.0,
-  sideColor:     TRON_BLACK,
-  sideEmissive:  new THREE.Color(0x280800).multiplyScalar(0.03),
-  sideRoughness: 1.0,
-  sideMetalness: 0.0,
-};
 
 // ── Glow shader ───────────────────────────────────────────────────────────────
 // Each point stores its own phase offset and cycle speed in the `aPhase` and

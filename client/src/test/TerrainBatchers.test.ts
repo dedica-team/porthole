@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { RockBatcher, LineBatcher, PointsBatcher } from '@/components/HexGrid/terrainUtils';
+import { RockBatcher, LineBatcher, PointsBatcher, SNOW_MOUND_MAT, SNOWY_TILE_COLORS } from '@/components/HexGrid/terrainUtils';
 import { RocksRenderer }   from '@/components/HexGrid/renderers/RocksRenderer';
 import { WaterRenderer }   from '@/components/HexGrid/renderers/WaterRenderer';
 import { SwampRenderer }   from '@/components/HexGrid/renderers/SwampRenderer';
@@ -263,6 +263,12 @@ describe('WaterRenderer', () => {
     // flush must not throw and must add at most 2 objects
     expect(() => renderer.flush(scene)).not.toThrow();
     expect(scene.children.length).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('SnowyRenderer decoration colors', () => {
+  it('snow mound decoration material matches snowy tile top color', () => {
+    expect(SNOW_MOUND_MAT.color.getHex()).toBe(SNOWY_TILE_COLORS.topColor);
   });
 });
 

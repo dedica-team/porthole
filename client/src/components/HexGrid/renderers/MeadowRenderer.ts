@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
-import { tileHeight, seed, lcgNext, LineBatcher, DEFAULT_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
+import { tileHeight, seed, lcgNext, LineBatcher, MEADOW_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
 
 const STEM_COLOR = new THREE.Color(0x006622);
 const FLOWER_MAT = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 });
@@ -9,7 +9,7 @@ const FLOWER_MAT = new THREE.LineBasicMaterial({ vertexColors: true, transparent
 export class MeadowRenderer implements TerrainRenderer {
   private lineBatcher: LineBatcher | null = null;
 
-  tileColors(): TileColors { return DEFAULT_TILE_COLORS; }
+  tileColors(): TileColors { return MEADOW_TILE_COLORS; }
 
   init(_scene: THREE.Scene, _maxTiles: number): THREE.Object3D[] {
     this.lineBatcher = new LineBatcher(FLOWER_MAT, true);

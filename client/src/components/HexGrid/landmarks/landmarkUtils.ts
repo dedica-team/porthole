@@ -9,8 +9,26 @@ import { tileHeight, TRON_BLACK } from '../terrainUtils';
 
 export { tileHeight, TRON_BLACK };
 
-/** Greyish surface colour derived from the tile base (TRON_BLACK lightened + desaturated). */
-export const LANDMARK_SURFACE_GREY = new THREE.Color(0x3a3d42);
+/** Warm weathered stone (Keep, Watchtower, Wall, Ruins). */
+export const LANDMARK_STONE = new THREE.Color(0x9e9a93);
+
+/** Plaster / cream wall (House, Windmill). */
+export const LANDMARK_PLASTER = new THREE.Color(0xd8ccb8);
+
+/** Industrial galvanized steel (Furnace, Silo, Atomic Reactor, Oil Pump, Oil Rig, Pump Station, Antenna, Satellite Dish). */
+export const LANDMARK_STEEL = new THREE.Color(0x7a858c);
+
+/** Clean nautical off-white (Lighthouse, Modern Ship, Sailboat, Submarine, Buoy). */
+export const LANDMARK_MARITIME = new THREE.Color(0xe0e6ed);
+
+/** Timber / wood material. */
+export const LANDMARK_WOOD = new THREE.Color(0x6e4f32);
+
+/** Dark obsidian stone (Portal). */
+export const LANDMARK_DARK_OBSIDIAN = new THREE.Color(0x2d2b38);
+
+/** Base surface material fallback. */
+export const LANDMARK_SURFACE_GREY = LANDMARK_STEEL;
 
 const SHARED_RESOURCE_KEY = '__hexgridSharedResource';
 

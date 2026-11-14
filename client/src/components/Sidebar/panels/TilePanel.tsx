@@ -6,6 +6,7 @@ import { StatusBadge, StatusIndicator } from '@/components/ui/status-badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
+import { useSidebarCardHeader } from '../SidebarCardHeader';
 import { toSlug } from '@/utils/slugUtils';
 import type { Landmark, LandmarkType } from '@/types/landmark';
 import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, isDecorative } from '@/types/landmark';
@@ -43,6 +44,8 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
       setWallId(crypto.randomUUID());
     }
   }, [selectedType]);
+
+  const inCard = useSidebarCardHeader({ title: 'Selected Tile' });
 
   if (!selectedTile || !currentMap) return null;
 
@@ -104,10 +107,12 @@ export default function TilePanel({ onPlaceLandmark, onPositionLandmark, loading
 
   return (
     <div className="flex flex-col gap-4 p-5">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <MapPin className="h-4 w-4" />
-        <span className="text-sm font-medium uppercase tracking-wider">Selected Tile</span>
-      </div>
+      {!inCard && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <MapPin className="h-4 w-4" />
+          <span className="text-sm font-medium uppercase tracking-wider">Selected Tile</span>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center">

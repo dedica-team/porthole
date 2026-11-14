@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
-import { tileHeight, seed, lcgNext, LineBatcher, SNOWY_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
+import { tileHeight, seed, lcgNext, LineBatcher, ICE_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
 import { buildIcyShimmer } from './SnowyRenderer';
 
 const ICE_SPIKE_GEO = new THREE.ConeGeometry(0.05, 1, 5);
@@ -43,7 +43,7 @@ export class IceRenderer implements TerrainRenderer {
   private edgeBatcher: LineBatcher | null = null;
   private shimmerTiles: HexTile[] = [];
 
-  tileColors(): TileColors { return SNOWY_TILE_COLORS; }
+  tileColors(): TileColors { return ICE_TILE_COLORS; }
 
   init(scene: THREE.Scene, maxTiles: number): THREE.Object3D[] {
     this.spikeSlot = 0;

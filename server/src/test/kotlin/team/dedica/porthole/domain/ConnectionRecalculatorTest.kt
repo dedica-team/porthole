@@ -152,6 +152,48 @@ class ConnectionRecalculatorTest {
     }
 
     @Test
+    fun `recalculateConnectionsInvolvingLandmark updates path after target landmark moves`() {
+        addLandmark("A", coordA)
+        addLandmark("B", coordB)
+        val oldPath = listOf(coordA, HexCoordinate(1, 0), HexCoordinate(2, 0), HexCoordinate(3, 0), coordB)
+        val c1 = addConnection("c1", "A", "B", oldPath)
+
+        val newBCoord = HexCoordinate(2, 2)
+        state.landmarks[lmUuid("B")] = state.landmarks[lmUuid("B")]!!.copy(coordinate = newBCoord)
+
+        ConnectionRecalculator.recalculateConnectionsInvolvingLandmark(state, lmUuid("B"))
+
+        val newPath = state.connections[c1.id]!!.path
+        assertEquals(coordA, newPath.first(), "Path must still start at A")
+        assertEquals(newBCoord, newPath.last(), "Path must end at B's new position")
+        assertNotEquals(oldPath, newPath)
+    }
+
+    @Test
+    fun `recalculateConnectionsInvolvingLandmark updates multiple incoming and outgoing connections`() {
+        addLandmark("A", coordA)
+        addLandmark("B", coordB)
+        addLandmark("C", HexCoordinate(0, 2))
+
+        val cAB = addConnection("c-ab", "A", "B", listOf(coordA, HexCoordinate(1, 0), coordB))
+        val cCB = addConnection("c-cb", "C", "B", listOf(HexCoordinate(0, 2), HexCoordinate(1, 1), coordB))
+
+        val newBCoord = HexCoordinate(-1, -1)
+        state.landmarks[lmUuid("B")] = state.landmarks[lmUuid("B")]!!.copy(coordinate = newBCoord)
+
+        ConnectionRecalculator.recalculateConnectionsInvolvingLandmark(state, lmUuid("B"))
+
+        val newPathAB = state.connections[cAB.id]!!.path
+        val newPathCB = state.connections[cCB.id]!!.path
+
+        assertEquals(coordA, newPathAB.first())
+        assertEquals(newBCoord, newPathAB.last())
+
+        assertEquals(HexCoordinate(0, 2), newPathCB.first())
+        assertEquals(newBCoord, newPathCB.last())
+    }
+
+    @Test
     fun `recalculateConnectionsInvolvingLandmark does not touch unrelated connections`() {
         addLandmark("A", coordA)
         addLandmark("B", coordB)

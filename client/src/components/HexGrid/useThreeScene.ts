@@ -7,6 +7,15 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { SCENE_BACKGROUND } from './terrainUtils';
 import { resolveRendererQuality, type RendererQualityProfile } from './renderQuality';
 
+export interface FirstPersonState {
+  enabled: boolean;
+  /** Tower the camera currently belongs to; changing towers re-initialises aiming. */
+  towerId?: string;
+  position: THREE.Vector3;
+  yaw: number;
+  pitch: number;
+}
+
 interface UseThreeSceneOptions {
   mountRef: React.RefObject<HTMLDivElement | null>;
   fpsRef?: React.RefObject<HTMLDivElement | null>;
@@ -16,6 +25,8 @@ interface UseThreeSceneOptions {
   orthographic?: boolean;
   /** Called after the Three.js scene has been (re-)initialised. */
   onSceneReady?: () => void;
+  /** When set and enabled, the camera is driven by the first-person watchtower controller. */
+  firstPersonRef?: React.RefObject<FirstPersonState | null>;
 }
 
 export interface ThreeRefs {
@@ -43,6 +54,7 @@ export function useThreeScene({
   qualityProfile,
   orthographic = false,
   onSceneReady,
+  firstPersonRef,
 }: UseThreeSceneOptions): React.RefObject<ThreeRefs | null> {
   const threeRef = useRef<ThreeRefs | null>(null);
   const frameRef = useRef<number>(0);
@@ -67,7 +79,7 @@ export function useThreeScene({
     scene.background = new THREE.Color(SCENE_BACKGROUND);
     const rendererQuality = resolveRendererQuality(qualityProfile);
 
-    const ORTHO_HALF = 35;
+    const ORTHO_HALF = 20;
     const camera: THREE.PerspectiveCamera | THREE.OrthographicCamera = orthographic
       ? (() => {
           const aspect = initialSize.width > 0 && initialSize.height > 0 ? initialSize.width / initialSize.height : 1;
@@ -87,7 +99,7 @@ export function useThreeScene({
             0.1,
             200,
           );
-          cam.position.set(0, 60, 60);
+          cam.position.set(0, 20, 20);
           cam.lookAt(0, 0, 0);
           return cam;
         })();
@@ -171,6 +183,8 @@ export function useThreeScene({
       requestRender();
     };
 
+    camera.rotation.order = 'YXZ';
+
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
@@ -186,11 +200,11 @@ export function useThreeScene({
     controls.addEventListener('change', requestRender);
 
     // Lighting
-    scene.add(new THREE.HemisphereLight(0x0a1a2a, 0x000000, 0.5));
-    const sun = new THREE.DirectionalLight(0xd0f0ff, 1.8);
+    scene.add(new THREE.HemisphereLight(0xb0c4de, 0x303840, 0.65));
+    const sun = new THREE.DirectionalLight(0xfff8e7, 1.5);
     sun.position.set(20, 40, 20);
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0x204060, 0.6);
+    const fill = new THREE.DirectionalLight(0x406080, 0.5);
     fill.position.set(-20, 20, -20);
     scene.add(fill);
 
@@ -228,7 +242,17 @@ export function useThreeScene({
       frameRef.current = 0;
       stats.begin();
 
-      const stillDamping = controls.update();
+      const fp = firstPersonRef?.current;
+      let stillDamping = false;
+      if (fp?.enabled) {
+        controls.enabled = false;
+        camera.position.copy(fp.position);
+        camera.rotation.set(fp.pitch, fp.yaw, 0, 'YXZ');
+        needsRenderRef.current = true;
+      } else {
+        controls.enabled = true;
+        stillDamping = controls.update();
+      }
       const wantsRender = needsRenderRef.current || stillDamping;
 
       const elapsed = now - lastRenderTime;
@@ -275,6 +299,10 @@ export function useThreeScene({
       }
 
       stats.end();
+
+      if (firstPersonRef?.current?.enabled) {
+        needsRenderRef.current = true;
+      }
 
       if (needsRenderRef.current || stillDamping) {
         scheduleFrame();

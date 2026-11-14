@@ -10,6 +10,7 @@ import HexGrid from '@/components/HexGrid/HexGrid';
 import LandmarkSearchField from '@/components/LandmarkSearchField';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import EditorPanel from '@/components/Sidebar/panels/EditorPanel';
+import GameHUD from '@/components/GameHUD/GameHUD';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
 import { useShallow } from 'zustand/react/shallow';
 import { positionLandmark, createConnection } from '@/api/mapApi';
@@ -23,24 +24,26 @@ export default function RegularMapView() {
 
   const {
     currentMap,
-    selectedTile, setSelectedTile,
-    selectedLandmark, setSelectedLandmark,
+    setSelectedTile,
+    setSelectedLandmark,
     connectingFromLandmarkId,
     relocatingLandmarkId, setRelocatingLandmark,
     pendingConnectionMeta, setPendingConnectionMeta,
     editorMode, editorTool, editorTerrain,
-    mainView, setMainView, setConfirmPending,
+    setMainView, setConfirmPending,
     rendererQualityProfile,
+    gameState, activeWatchtowerId,
   } = useMapStore(useShallow((s) => ({
     currentMap: s.currentMap,
-    selectedTile: s.selectedTile, setSelectedTile: s.setSelectedTile,
-    selectedLandmark: s.selectedLandmark, setSelectedLandmark: s.setSelectedLandmark,
+    setSelectedTile: s.setSelectedTile,
+    setSelectedLandmark: s.setSelectedLandmark,
     connectingFromLandmarkId: s.connectingFromLandmarkId,
     relocatingLandmarkId: s.relocatingLandmarkId, setRelocatingLandmark: s.setRelocatingLandmark,
     pendingConnectionMeta: s.pendingConnectionMeta, setPendingConnectionMeta: s.setPendingConnectionMeta,
     editorMode: s.editorMode, editorTool: s.editorTool, editorTerrain: s.editorTerrain,
-    mainView: s.mainView, setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
+    setMainView: s.setMainView, setConfirmPending: s.setConfirmPending,
     rendererQualityProfile: s.rendererQualityProfile,
+    gameState: s.gameState, activeWatchtowerId: s.activeWatchtowerId,
   })));
 
   const userId = useAuthStore((s) => s.userId);
@@ -132,6 +135,8 @@ export default function RegularMapView() {
             patchTileRef={patchTileRef}
             hideDecorations={false}
             rendererQualityProfile={rendererQualityProfile}
+            gameState={currentMap.gameEnabled ? gameState : null}
+            activeWatchtowerId={currentMap.gameEnabled ? activeWatchtowerId : null}
           />
         </ErrorBoundary>
       </div>
@@ -150,14 +155,9 @@ export default function RegularMapView() {
 
       {editorMode && <EditorPanel floating error={actions.error} onClearError={() => actions.setError('')} />}
 
-      <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
+      <GameHUD />
 
-      {(mainView === 'tile' || mainView === 'landmark') && selectedTile && !editorMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-card/90 border border-border text-sm text-muted-foreground pointer-events-none z-10">
-          ({selectedTile.q}, {selectedTile.r})
-          {selectedLandmark && <> · {selectedLandmark.type.replace('_', ' ')}</>}
-        </div>
-      )}
+      <div ref={fpsRef} className="absolute bottom-2 left-2 text-sm text-muted-foreground pointer-events-none font-mono" />
     </>
   );
 }

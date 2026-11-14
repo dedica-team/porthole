@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Castle, Link, Loader2, Trash2, ExternalLink, X, Move, MoreHorizontal, ClipboardList } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import { Castle, Link, Loader2, Trash2, ExternalLink, X, Move, MoreHorizontal, ClipboardList, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useMapStore, useAuthStore } from '@/store/mapStore';
+import { enterWatchtower, leaveWatchtower } from '@/api/mapApi';
 import type { LandmarkType, QualityLevel } from '@/types/landmark';
 import type { ConnectionType } from '@/types/connection';
 import type { MatrixLevel } from '@/types/matrix';
@@ -23,6 +24,7 @@ import { ALL_LANDMARK_TYPES, LANDMARK_TYPE_LABELS, QUALITY_LEVEL_LABEL, QUALITY_
 import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
 import { MATRIX_LEVEL_LABEL } from '@/types/matrix';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { useSidebarCardHeader } from '../SidebarCardHeader';
 interface Props {
   onStartConnection: (type: ConnectionType, name?: string, description?: string) => void;
   onRemoveLandmark: () => void;
@@ -49,8 +51,10 @@ interface Props {
   onSetLandmarkMetric: (landmarkId: string, metricId: string, value: string | undefined, level: QualityLevel, link?: string, linkText?: string, badges?: Record<string, string>) => void;
   onClearLandmarkMetric: (landmarkId: string, metricId: string) => void;
   loading: boolean;
+  onClose?: () => void;
+  closeLabel?: string;
 }
-export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onEditLandmark, onEditConnection, onRemoveConnection, onSetLandmarkMetric, onClearLandmarkMetric, loading }: Props) {
+export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onEditLandmark, onEditConnection, onRemoveConnection, onSetLandmarkMetric, onClearLandmarkMetric, loading, onClose, closeLabel }: Props) {
   const selectedLandmark = useMapStore((s) => s.selectedLandmark);
   const currentMap = useMapStore((s) => s.currentMap);
   const storeMetrics = useMapStore((s) => s.metrics);
@@ -58,11 +62,18 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const choreLists = useMapStore((s) => s.choreLists);
   const userId = useAuthStore((s) => s.userId);
   const setRelocatingLandmark = useMapStore((s) => s.setRelocatingLandmark);
+  const activeWatchtowerId = useMapStore((s) => s.activeWatchtowerId);
+  const setActiveWatchtowerId = useMapStore((s) => s.setActiveWatchtowerId);
+  const gameState = useMapStore((s) => s.gameState);
+  const setGameState = useMapStore((s) => s.setGameState);
+  const [towerLoading, setTowerLoading] = useState(false);
+  const [towerError, setTowerError] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<LandmarkType>('KEEP');
   const [editDescription, setEditDescription] = useState('');
   const [editGroupId, setEditGroupId] = useState<string>('');
+  const [editOwnerId, setEditOwnerId] = useState<string>('');
   const [editLink, setEditLink] = useState('');
   const [linkError, setLinkError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -84,9 +95,23 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
   const [metricLinkError, setMetricLinkError] = useState('');
   const [metricBadges, setMetricBadges] = useState<{ key: string; url: string; error: string }[]>([]);
   const [confirmClearMetricId, setConfirmClearMetricId] = useState<string | null>(null);
+  const startEditRef = useRef<() => void>(() => {});
+  const triggerEdit = useCallback(() => startEditRef.current(), []);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const triggerClose = useCallback(() => closeRef.current?.(), []);
+  const isCollaborator = !!(userId && currentMap?.collaborators.some((c) => c.id === userId));
+  const inCard = useSidebarCardHeader(selectedLandmark ? {
+    title: selectedLandmark.name,
+    subtitle: LANDMARK_TYPE_LABELS[selectedLandmark.type],
+    onEdit: isCollaborator ? triggerEdit : undefined,
+    editLabel: 'Edit Element',
+    editDisabled: loading,
+    onClose: onClose ? triggerClose : undefined,
+    closeLabel,
+  } : null);
   if (!selectedLandmark || !currentMap) return null;
   const isOwner = selectedLandmark.ownerId === userId;
-  const isCollaborator = !!(userId && currentMap.collaborators.some((c) => c.id === userId));
   const owner = currentMap.collaborators.find((c) => c.id === selectedLandmark.ownerId);
   const groups = Object.values(currentMap.groups ?? {});
   const connections = Object.values(currentMap.connections ?? {}).filter(
@@ -116,20 +141,28 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
     setEditType(selectedLandmark.type);
     setEditDescription(selectedLandmark.description ?? '');
     setEditGroupId(selectedLandmark.groupId ?? '');
+    setEditOwnerId(selectedLandmark.ownerId ?? '');
     setEditLink(selectedLandmark.link ?? '');
     setLinkError('');
     setConfirmDelete(false);
     setEditDialogOpen(true);
   };
+  startEditRef.current = startEdit;
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = editName.trim();
     if (!isDecorative(editType) && !trimmed) return;
     const trimmedLink = editLink.trim();
     if (trimmedLink && !isValidUrl(trimmedLink)) { setLinkError('Must be a valid http/https URL'); return; }
+    const newOwnerId = editOwnerId || null;
+    const ownerChanged = newOwnerId !== (selectedLandmark.ownerId ?? null);
+    const editArgs: Parameters<Props['onEditLandmark']> = [
+      selectedLandmark.id, trimmed, editType, editDescription.trim() || undefined, editGroupId || undefined,
+      editGroupId === '' && !!selectedLandmark.groupId, trimmedLink || undefined, trimmedLink === '' && !!selectedLandmark.link,
+    ];
+    if (ownerChanged) editArgs.push(newOwnerId);
     setEditDialogOpen(false);
-    onEditLandmark(selectedLandmark.id, trimmed, editType, editDescription.trim() || undefined, editGroupId || undefined,
-      editGroupId === '' && !!selectedLandmark.groupId, trimmedLink || undefined, trimmedLink === '' && !!selectedLandmark.link);
+    onEditLandmark(...editArgs);
   };
   const startConnEdit = (connId: string) => {
     const c = (currentMap.connections ?? {})[connId];
@@ -184,8 +217,102 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
       metricLevel, trimmedLink || undefined, trimmedLink ? (trimmedLinkText || undefined) : undefined, hasBadges ? badgesMap : undefined);
     setEditingMetricId(null);
   };
+  const handleWatchtowerToggle = async () => {
+    if (!currentMap || !selectedLandmark) return;
+    setTowerLoading(true);
+    setTowerError('');
+    try {
+      if (activeWatchtowerId === selectedLandmark.id) {
+        setGameState(await leaveWatchtower(currentMap.id, selectedLandmark.id));
+        setActiveWatchtowerId(null);
+      } else {
+        setGameState(await enterWatchtower(currentMap.id, selectedLandmark.id));
+        setActiveWatchtowerId(selectedLandmark.id);
+      }
+    } catch (e) {
+      setTowerError(e instanceof Error ? e.message : 'Watchtower action failed');
+    } finally {
+      setTowerLoading(false);
+    }
+  };
+
+  const editingMetric = editingMetricId ? allMetrics.find((m) => m.id === editingMetricId) : undefined;
+  const editingMetricEntry = editingMetricId ? landmarkMetricEntries[editingMetricId] : undefined;
+
   return (
     <>
+      {/* ── Metric Value Dialog ──────────────────────────────────────────── */}
+      <Dialog open={!!editingMetricId} onOpenChange={(open) => { if (!open) { setEditingMetricId(null); setConfirmClearMetricId(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">{editingMetric?.name ?? 'Quality Metric'}</DialogTitle>
+            {editingMetric?.description && <DialogDescription>{editingMetric.description}</DialogDescription>}
+          </DialogHeader>
+          {confirmClearMetricId === editingMetricId ? (
+            <div className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <span className="text-sm text-destructive text-center">Clear «{editingMetric?.name}»?</span>
+              <span className="text-sm text-muted-foreground text-center">This removes the value, link and badges.</span>
+              <div className="flex gap-2 mt-1">
+                <Button size="sm" variant="destructive" className="flex-1 h-8 text-sm" disabled={loading}
+                  onClick={() => {
+                    if (!editingMetricId) return;
+                    setConfirmClearMetricId(null);
+                    setEditingMetricId(null);
+                    onClearLandmarkMetric(selectedLandmark.id, editingMetricId);
+                  }}>
+                  {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, clear'}
+                </Button>
+                <Button size="sm" variant="flat" className="flex-1 h-8 text-sm" onClick={() => setConfirmClearMetricId(null)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSaveMetric} className="flex flex-col gap-2 min-w-0">
+              <Input autoFocus value={metricValue} onChange={(e) => setMetricValue(e.target.value)} className="h-7 text-sm" maxLength={60}
+                placeholder={metricLevel !== 'NONE' ? `Leave empty to use "${QUALITY_LEVEL_SIGN[metricLevel]}"` : 'Value (e.g. 99.9 %)'} />
+              <QualityLevelButtonGroup
+                value={metricLevel}
+                onChange={setMetricLevel}
+                buttonClassName="h-7 min-w-12"
+              />
+              <div className="flex flex-col gap-0.5">
+                <Input value={metricLink} onChange={(e) => { setMetricLink(e.target.value); setMetricLinkError(''); }}
+                  className={`h-7 text-sm${metricLinkError ? ' border-destructive' : ''}`} placeholder="Link (optional, https://…)" type="url" />
+                {metricLinkError && <span className="text-sm text-destructive px-1">{metricLinkError}</span>}
+              </div>
+              <Input value={metricLinkText} onChange={(e) => setMetricLinkText(e.target.value)} className="h-7 text-sm" maxLength={60}
+                placeholder="Link text (optional)" />
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-foreground">Badges</span>
+                {metricBadges.map((badge, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input value={badge.key} onChange={(e) => { const n = [...metricBadges]; n[index].key = e.target.value; setMetricBadges(n); }} className="h-7 text-sm flex-1" placeholder="Badge key" />
+                    <Input value={badge.url} onChange={(e) => { const n = [...metricBadges]; n[index].url = e.target.value; setMetricBadges(n); }}
+                      className={`h-7 text-sm flex-1${badge.error ? ' border-destructive' : ''}`} placeholder="Badge URL (https://…)" type="url" />
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 p-0" onClick={() => setMetricBadges((prev) => prev.filter((_, i) => i !== index))} title="Remove badge">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" size="sm" variant="default" className="w-full h-8 text-sm" onClick={() => setMetricBadges((prev) => [...prev, { key: '', url: '', error: '' }])}>
+                  + Add Badge
+                </Button>
+              </div>
+              <div className="flex gap-1.5">
+                <Button type="submit" size="sm" className="flex-1 h-8 text-sm" disabled={(metricLevel === 'NONE' && !metricValue.trim() && !metricLink.trim() && metricBadges.length === 0) || loading}>
+                  {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                </Button>
+                <Button type="button" size="sm" variant="flat" className="h-8 px-3 text-sm" onClick={() => setEditingMetricId(null)}>Cancel</Button>
+              </div>
+              {editingMetricEntry && isCollaborator && (
+                <Button type="button" size="sm" variant="destructive" className="w-full gap-2 h-8 text-sm" disabled={loading}
+                  title="Clear metric value" onClick={() => { if (editingMetricId) setConfirmClearMetricId(editingMetricId); }}>
+                  <Trash2 className="h-3.5 w-3.5" />Clear metric value
+                </Button>
+              )}
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
       {/* ── Landmark Edit Dialog ─────────────────────────────────────────── */}
       <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setConfirmDelete(false); }}>
         <DialogContent className="max-w-sm">
@@ -206,6 +333,14 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                 <option value="">— No group —</option>
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
+              {isCollaborator && currentMap.collaborators.length > 0 && (
+                <select value={editOwnerId} onChange={(e) => setEditOwnerId(e.target.value)} className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground" aria-label="Owner">
+                  <option value="">— No owner —</option>
+                  {currentMap.collaborators.map((c) => (
+                    <option key={c.id} value={c.id}>{c.username}{c.id === userId ? ' (you)' : ''}</option>
+                  ))}
+                </select>
+              )}
               <div className="flex flex-col gap-0.5">
                 <Input value={editLink} onChange={(e) => { setEditLink(e.target.value); setLinkError(''); }} className={`h-8 text-sm${linkError ? ' border-destructive' : ''}`} placeholder="Link (optional, https://…)" type="url" />
                 {linkError && <span className="text-sm text-destructive px-1">{linkError}</span>}
@@ -213,6 +348,28 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
               <div className="flex items-center gap-1.5 px-1 min-w-0">
                 <span className="text-sm text-muted-foreground shrink-0">ID (not editable):</span>
                 <span className="text-sm font-mono text-muted-foreground truncate" title={selectedLandmark.id}>{selectedLandmark.id}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 px-1 min-w-0">
+                <span className="text-sm text-muted-foreground shrink-0">Position</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-sm font-mono text-foreground truncate">
+                    {selectedLandmark.coordinate ? `(${selectedLandmark.coordinate.q}, ${selectedLandmark.coordinate.r})` : 'No position'}
+                  </span>
+                  {isCollaborator && selectedLandmark.coordinate && (
+                    <button
+                      type="button"
+                      className="flex items-center justify-center h-6 w-6 rounded-md border border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+                      title="Relocate"
+                      disabled={loading}
+                      onClick={() => {
+                        setEditDialogOpen(false);
+                        setRelocatingLandmark(selectedLandmark.id);
+                      }}
+                    >
+                      <Move className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
           ) : (
@@ -301,19 +458,41 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
       </Dialog>
       {/* ── Panel ───────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 p-5 min-w-0 relative">
-        {isCollaborator && (
+        {!inCard && isCollaborator && (
           <button className="absolute top-3 right-3 flex items-center justify-center h-6 w-6 rounded-md border border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
             title="Edit Element" disabled={loading} onClick={startEdit}>
             <MoreHorizontal className="h-3.5 w-3.5" />
           </button>
         )}
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Castle className="h-4 w-4" />
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium text-foreground uppercase tracking-wider">{selectedLandmark.name.slice(0, 32)}</span>
-            <span className="text-sm text-muted-foreground">{LANDMARK_TYPE_LABELS[selectedLandmark.type]}</span>
+        {!inCard && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Castle className="h-4 w-4" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-medium text-foreground uppercase tracking-wider">{selectedLandmark.name.slice(0, 32)}</span>
+              <span className="text-sm text-muted-foreground">{LANDMARK_TYPE_LABELS[selectedLandmark.type]}</span>
+            </div>
           </div>
-        </div>
+        )}
+        {currentMap.gameEnabled && selectedLandmark.type === 'WATCHTOWER' && isCollaborator && (
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              variant={activeWatchtowerId === selectedLandmark.id ? 'flat' : 'default'}
+              className="w-full gap-2 h-8 text-sm"
+              disabled={
+                towerLoading ||
+                loading ||
+                (activeWatchtowerId !== selectedLandmark.id &&
+                  (gameState?.buildingHealth?.[selectedLandmark.id] ?? gameState?.buildingMaxHealth ?? 100) <= 0)
+              }
+              onClick={handleWatchtowerToggle}
+            >
+              {towerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}
+              {activeWatchtowerId === selectedLandmark.id ? 'Leave Watchtower' : 'Enter'}
+            </Button>
+            {towerError && <span className="text-sm text-destructive px-1">{towerError}</span>}
+          </div>
+        )}
         <div className="flex flex-col gap-2 min-w-0">
           {selectedLandmark.description && (
             <span className="text-sm text-foreground leading-relaxed">{selectedLandmark.description}</span>
@@ -338,47 +517,11 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
             </div>
           )}
           <div className="flex justify-between items-center gap-2 min-w-0">
-            <span className="text-sm text-muted-foreground shrink-0">ID</span>
-            <span className="text-sm font-mono text-muted-foreground truncate" title={selectedLandmark.id}>{selectedLandmark.id.slice(0, 12)}</span>
-          </div>
-          <div className="flex justify-between items-center gap-2 min-w-0">
             <span className="text-sm text-muted-foreground shrink-0">Owner</span>
-            {isCollaborator && currentMap.collaborators.length > 0 ? (
-              <select
-                value={selectedLandmark.ownerId ?? ''}
-                disabled={loading}
-                className="h-7 text-sm rounded-md border border-input bg-background px-2 text-foreground disabled:opacity-50 disabled:cursor-not-allowed max-w-40 truncate"
-                onChange={(e) => {
-                  const newOwnerId = e.target.value || null;
-                  if (newOwnerId === (selectedLandmark.ownerId ?? null)) return;
-                  onEditLandmark(selectedLandmark.id, undefined, undefined, undefined, undefined, undefined, undefined, undefined, newOwnerId);
-                }}
-              >
-                <option value="">— No owner —</option>
-                {currentMap.collaborators.map((c) => (
-                  <option key={c.id} value={c.id}>{c.username}{c.id === userId ? ' (you)' : ''}</option>
-                ))}
-              </select>
-            ) : (
-              <span className="text-sm text-foreground truncate">
-                {owner?.username ?? 'No owner'}
-                {isOwner && <span className="text-muted-foreground"> (you)</span>}
-              </span>
-            )}
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Position</span>
-            {isCollaborator && selectedLandmark.coordinate ? (
-              <button className="flex items-center gap-1.5 rounded-md border border-border bg-muted/40 hover:bg-muted px-2 py-0.5 transition-colors disabled:opacity-50 cursor-pointer"
-                title="Relocate" disabled={loading} onClick={() => setRelocatingLandmark(selectedLandmark.id)}>
-                <span className="text-sm font-mono text-foreground">({selectedLandmark.coordinate.q}, {selectedLandmark.coordinate.r})</span>
-                <Move className="h-3 w-3 text-muted-foreground" />
-              </button>
-            ) : (
-              <span className="text-sm font-mono text-foreground">
-                {selectedLandmark.coordinate ? `(${selectedLandmark.coordinate.q}, ${selectedLandmark.coordinate.r})` : 'No position'}
-              </span>
-            )}
+            <span className="text-sm text-foreground truncate">
+              {owner?.username ?? 'No owner'}
+              {isOwner && <span className="text-muted-foreground"> (you)</span>}
+            </span>
           </div>
         </div>
         {/* ── Quality Metrics ─────────────────────────────────────────────── */}
@@ -398,73 +541,16 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                 {allMetrics.map((metric) => {
                   const entry = landmarkMetricEntries[metric.id];
                   const level: QualityLevel = entry?.level ?? 'NONE';
-                  if (editingMetricId === metric.id) {
-                    return (
-                      <form key={metric.id} onSubmit={handleSaveMetric} className="flex flex-col gap-1.5 rounded-md border border-border p-2 min-w-0">
-                        <span className="text-sm font-semibold text-foreground">{metric.name}</span>
-                        <Input autoFocus value={metricValue} onChange={(e) => setMetricValue(e.target.value)} className="h-7 text-sm" maxLength={60}
-                          placeholder={metricLevel !== 'NONE' ? `Leave empty to use "${QUALITY_LEVEL_SIGN[metricLevel]}"` : 'Value (e.g. 99.9 %)'} />
-                        <QualityLevelButtonGroup
-                          value={metricLevel}
-                          onChange={setMetricLevel}
-                          buttonClassName="h-7 min-w-12"
-                        />
-                        <div className="flex flex-col gap-0.5">
-                          <Input value={metricLink} onChange={(e) => { setMetricLink(e.target.value); setMetricLinkError(''); }}
-                            className={`h-7 text-sm${metricLinkError ? ' border-destructive' : ''}`} placeholder="Link (optional, https://…)" type="url" />
-                          {metricLinkError && <span className="text-sm text-destructive px-1">{metricLinkError}</span>}
-                        </div>
-                        <Input value={metricLinkText} onChange={(e) => setMetricLinkText(e.target.value)} className="h-7 text-sm" maxLength={60}
-                          placeholder="Link text (optional)" />
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-sm font-semibold text-foreground">Badges</span>
-                          {metricBadges.map((badge, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <Input value={badge.key} onChange={(e) => { const n = [...metricBadges]; n[index].key = e.target.value; setMetricBadges(n); }} className="h-7 text-sm flex-1" placeholder="Badge key" />
-                              <Input value={badge.url} onChange={(e) => { const n = [...metricBadges]; n[index].url = e.target.value; setMetricBadges(n); }}
-                                className={`h-7 text-sm flex-1${badge.error ? ' border-destructive' : ''}`} placeholder="Badge URL (https://…)" type="url" />
-                              <Button type="button" size="icon" variant="ghost" className="h-7 w-7 p-0" onClick={() => setMetricBadges((prev) => prev.filter((_, i) => i !== index))} title="Remove badge">
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button type="button" size="sm" variant="default" className="w-full h-8 text-sm" onClick={() => setMetricBadges((prev) => [...prev, { key: '', url: '', error: '' }])}>
-                            + Add Badge
-                          </Button>
-                        </div>
-                        <div className="flex gap-1.5">
-                          <Button type="submit" size="sm" className="flex-1 h-7 text-sm" disabled={(metricLevel === 'NONE' && !metricValue.trim() && !metricLink.trim() && metricBadges.length === 0) || loading}>
-                            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
-                          </Button>
-                          <Button type="button" size="sm" variant="flat" className="h-7 px-2 text-sm" onClick={() => setEditingMetricId(null)}>Cancel</Button>
-                        </div>
-                      </form>
-                    );
-                  }
-                  if (confirmClearMetricId === metric.id) {
-                    return (
-                      <div key={metric.id} className="flex flex-col gap-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
-                        <span className="text-sm text-destructive text-center">Clear «{metric.name}»?</span>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="destructive" className="flex-1 h-7 text-sm" disabled={loading}
-                            onClick={() => { setConfirmClearMetricId(null); onClearLandmarkMetric(selectedLandmark.id, metric.id); }}>
-                            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, clear'}
-                          </Button>
-                          <Button size="sm" variant="flat" className="flex-1 h-7 text-sm" onClick={() => setConfirmClearMetricId(null)}>Cancel</Button>
-                        </div>
-                      </div>
-                    );
-                  }
                   return (
-                    <div key={metric.id}
-                      className={`flex flex-col gap-1 rounded-md border border-border px-2 py-1.5 transition-colors min-w-0${isCollaborator ? ' cursor-pointer hover:bg-accent/30' : ''}`}
+                    <Button key={metric.id} variant={"flat"}
+                      className={`flex flex-col gap-1 rounded-md  px-2 py-1.5 transition-colors min-w-0${isCollaborator ? ' cursor-pointer hover:bg-accent/30' : ''}`}
                       onClick={isCollaborator ? () => startMetricEdit(metric.id) : undefined}
                       title={`${metric.name}: ${metric.description}`}
                     >
-                      <div className="flex items-center justify-between gap-1.5 min-w-0">
+                      <div className="flex items-center justify-evenly gap-1.5 min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
                           {level !== 'NONE' ? (
-                            <StatusBadge status={qualityLevelToStatus[level]} className="text-sm font-semibold font-mono" title={QUALITY_LEVEL_LABEL[level]}>
+                            <StatusBadge status={qualityLevelToStatus[level]}  title={QUALITY_LEVEL_LABEL[level]}>
                               {entry?.value ?? QUALITY_LEVEL_SIGN[level]}
                             </StatusBadge>
                           ) : (
@@ -480,12 +566,6 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                               <ExternalLink className="h-3 w-3" />
                             </a>
                           )}
-                          {entry && isCollaborator && (
-                            <button className="text-muted-foreground hover:text-destructive transition-colors" title="Clear metric value"
-                              onClick={(e) => { e.stopPropagation(); setConfirmClearMetricId(metric.id); }}>
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          )}
                         </div>
                       </div>
                       {entry?.badges && Object.entries(entry.badges).map(([key, url]) => (
@@ -494,7 +574,7 @@ export default function LandmarkPanel({ onStartConnection, onRemoveLandmark, onE
                           <img src={url} alt={key} title={key} className="h-4 max-w-32 object-contain" />
                         </div>
                       ))}
-                    </div>
+                    </Button>
                   );
                 })}
               </div>

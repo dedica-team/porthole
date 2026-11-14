@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
-import { tileHeight, seed, LineBatcher, WIRE_MAT, TRON_CYAN_DIM, DEFAULT_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
+import { tileHeight, seed, LineBatcher, WIRE_MAT, FOREST_TILE_COLORS, type TileColors, type TerrainRenderer } from '../terrainUtils';
 
 // ── Static crown geometry ────────────────────────────────────────────────────
 const CROWN_GEO = (() => {
@@ -23,14 +23,14 @@ export class ForestRenderer implements TerrainRenderer {
   private crownSlot = 0;
   private trunkBatcher: LineBatcher | null = null;
 
-  tileColors(): TileColors { return DEFAULT_TILE_COLORS; }
+  tileColors(): TileColors { return FOREST_TILE_COLORS; }
 
   init(scene: THREE.Scene, maxTiles: number): THREE.Object3D[] {
     this.crownSlot = 0;
     this.crownInst = new THREE.InstancedMesh(CROWN_GEO, WIRE_MAT, maxTiles * MAX_TREES_PER_TILE);
     this.crownInst.count = 0;
     scene.add(this.crownInst);
-    this.trunkBatcher = new LineBatcher(new THREE.LineBasicMaterial({ color: TRON_CYAN_DIM }));
+    this.trunkBatcher = new LineBatcher(new THREE.LineBasicMaterial({ color: 0x6e4f32 }));
     return [this.crownInst];
   }
 
@@ -53,8 +53,8 @@ export class ForestRenderer implements TerrainRenderer {
       const dist   = 0.2 + ((s * (i + 3) * 53) % 100) / 200;
       const tx     = x + Math.cos(angle) * dist;
       const tz     = z + Math.sin(angle) * dist;
-      const trunkH = 0.22 + ((s * (i + 7)) % 10) / 40;
-      const crownR = 0.85 + ((s * (i + 11)) % 10) / 25;
+      const trunkH = (0.22 + ((s * (i + 7)) % 10) / 40) * 0.5;
+      const crownR = (0.85 + ((s * (i + 11)) % 10) / 25) * 0.5;
 
       trunkPoints.push(tx, top, tz, tx, top + trunkH, tz);
 

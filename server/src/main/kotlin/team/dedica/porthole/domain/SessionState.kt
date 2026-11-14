@@ -10,6 +10,7 @@ import java.util.*
  * @param map     the hex grid
  * @param collaborators all collaborators participating in this session (by collaborator ID)
  * @param landmarks  all placed landmarks (by landmark ID)
+ * @param gameEnabled when false, no tower-defense mechanics run and no game UI is shown
  */
 data class SessionState(
     val id: UUID = UUID.randomUUID(),
@@ -28,6 +29,9 @@ data class SessionState(
     val processes: MutableMap<UUID, Process> = mutableMapOf(),
     val choreLists: MutableMap<UUID, ChoreList> = mutableMapOf(),
     val greenkeepingRotations: MutableMap<UUID, GreenkeepingRotation> = mutableMapOf(),
+    var gameState: GameState = GameState(),
+    val gameEnabled: Boolean = false,
+    val waveIntermissionPeriod: String? = null,
 ) {
 
     fun getCollaborator(collaboratorId: UUID): Collaborator? = collaborators.find { it.id == collaboratorId }

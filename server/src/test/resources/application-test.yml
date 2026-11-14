@@ -47,3 +47,5 @@ porthole:
     # Relative to the module working directory; lives under build/ and is cleaned
     # by `gradle clean` without polluting the source tree.
     path: ${porthole.test.storage.path:build/porthole-test-storage}
+  game:
+    wave-intermission-period: "PT1H"

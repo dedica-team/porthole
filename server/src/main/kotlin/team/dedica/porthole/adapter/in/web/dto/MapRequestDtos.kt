@@ -91,6 +91,9 @@ data class EditGroupRequest(
 data class EditMapRequest(
     @field:Size(max = NAME_MAX_LENGTH) val name: String?,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String?,
+    /** Enables or disables the tower-defense mechanics for this session. */
+    val gameEnabled: Boolean? = null,
+    @field:Size(max = 100) val waveIntermissionPeriod: String? = null,
 )
 
 @Introspected

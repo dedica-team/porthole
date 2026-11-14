@@ -5,22 +5,22 @@ import * as THREE from 'three';
 import type { HexTile } from '@/types/hex';
 import { hexToWorld } from '@/utils/hexUtils.ts';
 
-// ── Tron palette ──────────────────────────────────────────────────────────────
+// ── Tron palette & biome colors ────────────────────────────────────────────────
 export const TRON_CYAN     = 0x00f0ff;
 export const TRON_CYAN_DIM = 0x006070;
 export const TRON_BLACK    = 0x2a2a2a;
 /** Scene backdrop – matches the docs-site dark gray base. */
 export const SCENE_BACKGROUND = 0x2a2a2a;
-export const EDGE_COLOR      = TRON_BLACK;
+export const EDGE_COLOR      = 0x1a1a1a;
 /** Darker edge colour used for water and swamp tiles. */
-export const EDGE_COLOR_DARK = 0x004455;
+export const EDGE_COLOR_DARK = 0x0e3550;
 
 /** Shared wireframe material – one draw-call per InstancedMesh. */
 export const WIRE_MAT = new THREE.MeshBasicMaterial({
-  color: TRON_CYAN_DIM,
+  color: 0x235223,
   wireframe: true,
   transparent: true,
-  opacity: 0.3,
+  opacity: 0.6,
 });
 
 
@@ -36,39 +36,129 @@ export interface TileColors {
   sideMetalness: number;
 }
 
-// Default tile colours (used by most terrain types)
-export const DEFAULT_TILE_COLORS: TileColors = {
-  topColor:      TRON_BLACK,
-  topEmissive:   new THREE.Color(TRON_CYAN_DIM).multiplyScalar(0.06),
-  topRoughness:  1.0,
+export const GRASS_TILE_COLORS: TileColors = {
+  topColor:      0x4b8b3b,
+  topEmissive:   new THREE.Color(0x000000),
+  topRoughness:  0.95,
   topMetalness:  0.0,
-  sideColor:     TRON_BLACK,
-  sideEmissive:  new THREE.Color(TRON_CYAN_DIM).multiplyScalar(0.03),
-  sideRoughness: 1.0,
+  sideColor:     0x2d5222,
+  sideEmissive:  new THREE.Color(0x000000),
+  sideRoughness: 0.95,
+  sideMetalness: 0.0,
+};
+
+export const FOREST_TILE_COLORS: TileColors = {
+  topColor:      0x2d662e,
+  topEmissive:   new THREE.Color(0x000000),
+  topRoughness:  0.95,
+  topMetalness:  0.0,
+  sideColor:     0x1e401e,
+  sideEmissive:  new THREE.Color(0x000000),
+  sideRoughness: 0.95,
+  sideMetalness: 0.0,
+};
+
+export const MEADOW_TILE_COLORS: TileColors = {
+  topColor:      0x5ca642,
+  topEmissive:   new THREE.Color(0x000000),
+  topRoughness:  0.95,
+  topMetalness:  0.0,
+  sideColor:     0x3a6b2d,
+  sideEmissive:  new THREE.Color(0x000000),
+  sideRoughness: 0.95,
+  sideMetalness: 0.0,
+};
+
+export const DESERT_TILE_COLORS: TileColors = {
+  topColor:      0xe3ba6d,
+  topEmissive:   new THREE.Color(0x000000),
+  topRoughness:  0.90,
+  topMetalness:  0.0,
+  sideColor:     0xc49b50,
+  sideEmissive:  new THREE.Color(0x000000),
+  sideRoughness: 0.90,
+  sideMetalness: 0.0,
+};
+
+export const BEACH_TILE_COLORS: TileColors = {
+  topColor:      0xf0d58a,
+  topEmissive:   new THREE.Color(0x000000),
+  topRoughness:  0.90,
+  topMetalness:  0.0,
+  sideColor:     0xd1b366,
+  sideEmissive:  new THREE.Color(0x000000),
+  sideRoughness: 0.90,
   sideMetalness: 0.0,
 };
 
 export const WATER_TILE_COLORS: TileColors = {
-  topColor:      0x010a0f,
-  topEmissive:   new THREE.Color(0x003850).multiplyScalar(0.55),
+  topColor:      0x2072a8,
+  topEmissive:   new THREE.Color(0x0a2a40).multiplyScalar(0.4),
   topRoughness:  0.08,
   topMetalness:  0.65,
-  sideColor:     0x010a0f,
-  sideEmissive:  new THREE.Color(0x003850).multiplyScalar(0.25),
+  sideColor:     0x144d73,
+  sideEmissive:  new THREE.Color(0x051a28).multiplyScalar(0.2),
   sideRoughness: 0.15,
   sideMetalness: 0.45,
 };
 
-export const SNOWY_TILE_COLORS: TileColors = {
-  topColor:      0x2a3d4a,
-  topEmissive:   new THREE.Color(0x6688aa).multiplyScalar(0.07),
+export const SWAMP_TILE_COLORS: TileColors = {
+  topColor:      0x3a5234,
+  topEmissive:   new THREE.Color(0x08140a).multiplyScalar(0.2),
+  topRoughness:  0.60,
+  topMetalness:  0.15,
+  sideColor:     0x253822,
+  sideEmissive:  new THREE.Color(0x040a05).multiplyScalar(0.1),
+  sideRoughness: 0.70,
+  sideMetalness: 0.10,
+};
+
+export const ROCKS_TILE_COLORS: TileColors = {
+  topColor:      0x8a8f99,
+  topEmissive:   new THREE.Color(0x000000),
   topRoughness:  0.95,
-  topMetalness:  0.0,
-  sideColor:     0x1a2a35,
-  sideEmissive:  new THREE.Color(0x445566).multiplyScalar(0.05),
+  topMetalness:  0.05,
+  sideColor:     0x5c6069,
+  sideEmissive:  new THREE.Color(0x000000),
   sideRoughness: 0.95,
+  sideMetalness: 0.05,
+};
+
+export const SNOWY_TILE_COLORS: TileColors = {
+  topColor:      0xeaf1f5,
+  topEmissive:   new THREE.Color(0x304050).multiplyScalar(0.06),
+  topRoughness:  0.90,
+  topMetalness:  0.0,
+  sideColor:     0x8b9ca8,
+  sideEmissive:  new THREE.Color(0x202830).multiplyScalar(0.04),
+  sideRoughness: 0.90,
   sideMetalness: 0.0,
 };
+
+export const ICE_TILE_COLORS: TileColors = {
+  topColor:      0xa8d8ea,
+  topEmissive:   new THREE.Color(0x336688).multiplyScalar(0.15),
+  topRoughness:  0.20,
+  topMetalness:  0.20,
+  sideColor:     0x6ba3b8,
+  sideEmissive:  new THREE.Color(0x224455).multiplyScalar(0.10),
+  sideRoughness: 0.30,
+  sideMetalness: 0.15,
+};
+
+export const SCORCHED_TILE_COLORS: TileColors = {
+  topColor:      0x332a2a,
+  topEmissive:   new THREE.Color(0xd94814).multiplyScalar(0.08),
+  topRoughness:  1.0,
+  topMetalness:  0.0,
+  sideColor:     0x221a1a,
+  sideEmissive:  new THREE.Color(0x882000).multiplyScalar(0.05),
+  sideRoughness: 1.0,
+  sideMetalness: 0.0,
+};
+
+// Default tile colours (fallback)
+export const DEFAULT_TILE_COLORS: TileColors = GRASS_TILE_COLORS;
 
 // ── TerrainRenderer interface ─────────────────────────────────────────────────
 export interface TerrainRenderer {
@@ -133,19 +223,19 @@ const ROCK_EDGE_STRIDE = 6; // 2 vertices × 3 components per segment
 const ROCK_EDGE_COUNT  = ROCK_EDGE_PAIRS.length / ROCK_EDGE_STRIDE;
 
 export const ROCK_MAT = new THREE.MeshStandardMaterial({
-  color:     TRON_BLACK,
-  emissive:  new THREE.Color(0x007888).multiplyScalar(0.06),
-  roughness: 1.0,
-  metalness: 0.0,
+  color:     0x6a707a,
+  emissive:  new THREE.Color(0x000000),
+  roughness: 0.95,
+  metalness: 0.05,
   polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
 });
 
-export const ROCK_EDGE_MAT = new THREE.LineBasicMaterial({ color: TRON_CYAN });
+export const ROCK_EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x222222 });
 
 export const SNOW_MOUND_MAT = new THREE.MeshStandardMaterial({
-  color:      0x8899a8,
-  emissive:   new THREE.Color(0x7799aa).multiplyScalar(0.12),
-  roughness:  0.95,
+  color:      0xeaf1f5,
+  emissive:   new THREE.Color(0x304050).multiplyScalar(0.06),
+  roughness:  0.90,
   metalness:  0.0,
   polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
 });

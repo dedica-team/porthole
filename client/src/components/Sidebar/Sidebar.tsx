@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import { AlertTriangle, Pencil, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,6 +10,7 @@ import TilePanel from './panels/TilePanel';
 import LandmarkPanel from './panels/LandmarkPanel';
 import MetricsPanel from './panels/MetricsPanel';
 import ProcessPanel from './panels/ProcessPanel';
+import { SidebarCardHeaderContext, useSidebarCardHeader, type SidebarCardHeaderConfig } from './SidebarCardHeader';
 import type { LandmarkType, QualityLevel } from '@/types/landmark';
 import type { ConnectionType } from '@/types/connection';
 import { CONNECTION_TYPE_LABELS } from '@/types/connection';
@@ -46,14 +47,26 @@ function ProcessConnectionView({ onClose }: { onClose: () => void }) {
     setSelectedConnectionId(null);
   };
 
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const triggerClose = useCallback(() => closeRef.current(), []);
+  const inCard = useSidebarCardHeader(conn ? {
+    title: conn.name ?? 'Connection',
+    subtitle: CONNECTION_TYPE_LABELS[conn.type ?? 'PIPE'],
+    onClose: triggerClose,
+    closeLabel: 'Close connection',
+  } : null);
+
   if (!conn) return null;
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-end px-2 pt-2 shrink-0">
-        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onClose} aria-label="Close">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+      {!inCard && (
+        <div className="flex items-center justify-end px-2 pt-2 shrink-0">
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onClose} aria-label="Close">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
       <div className="flex flex-col gap-3 px-5 pb-5">
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-foreground">{conn.name ?? '—'}</span>
@@ -149,14 +162,6 @@ function ProcessLandmarkView({
 
   return (
     <div className="flex flex-col">
-      {/* Back / close button – only in process mode (normal mode uses the global close button) */}
-      {processMode && (
-        <div className="flex items-center justify-end px-2 pt-2 shrink-0">
-          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onClose} aria-label="Back to process">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
       {/* Landmark details */}
       <LandmarkPanel
         onStartConnection={onStartConnection}
@@ -167,6 +172,8 @@ function ProcessLandmarkView({
         onSetLandmarkMetric={onSetLandmarkMetric}
         onClearLandmarkMetric={onClearLandmarkMetric}
         loading={loading}
+        onClose={onClose}
+        closeLabel="Back to process"
       />
       {/* Related processes – only in process mode */}
       {processMode && relatedStages.length > 0 && (
@@ -246,7 +253,9 @@ export default function Sidebar({
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [mobileHeight, setMobileHeight] = useState(280);
+  const [cardHeader, setCardHeader] = useState<SidebarCardHeaderConfig | null>(null);
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
+  const registerCardHeader = useCallback((config: SidebarCardHeaderConfig | null) => setCardHeader(config), []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -282,10 +291,25 @@ export default function Sidebar({
     setMainView('idle');
   };
 
+  const activeProcess = processes.find((p) => p.id === activeProcessId);
+  const fallbackTitle = processMode
+    ? (activeProcess?.name ?? 'Process')
+    : mainView === 'tile'
+      ? 'Selected Tile'
+      : mainView === 'landmark'
+        ? (selectedLandmark?.name ?? 'Element')
+        : mainView === 'metrics'
+          ? 'Quality Metrics'
+          : '';
+  const headerTitle = cardHeader?.title ?? fallbackTitle;
+  const showClose = !!cardHeader?.onClose || !processMode;
+  const closeAction = cardHeader?.onClose ?? handleClose;
+
   return (
+    <SidebarCardHeaderContext.Provider value={registerCardHeader}>
     <aside
       style={isMobile ? { height: mobileHeight } : undefined}
-      className="absolute bottom-0 left-0 right-0 z-20 flex flex-col bg-card border-t border-border overflow-hidden md:top-0 md:left-auto md:w-(--sidebar-width) md:border-t-0 md:border-l md:relative md:shrink-0"
+      className="absolute bottom-0 left-0 right-0 z-20 flex flex-col bg-card border-t border-border overflow-hidden rounded-t-xl md:top-0 md:left-auto md:w-(--sidebar-width) md:my-2 md:mr-6 md:rounded-xl md:border md:border-border md:shadow-sm md:relative md:shrink-0"
     >
       {/* Drag handle – mobile only */}
       <div
@@ -298,20 +322,42 @@ export default function Sidebar({
         <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
       </div>
 
-      {/* Close button – hidden in process mode (panel closed via map buttons) */}
-      {!processMode && (
-        <div className="flex items-center justify-end px-2 pt-2 shrink-0">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={handleClose}
-            aria-label="Close panel"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+      {/* Card header – title and actions */}
+      <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-2 shrink-0">
+        <div className="flex flex-col min-w-0">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground truncate">{headerTitle}</h2>
+          {cardHeader?.subtitle && (
+            <span className="text-sm text-muted-foreground truncate">{cardHeader.subtitle}</span>
+          )}
         </div>
-      )}
+        <div className="flex items-center gap-1 shrink-0">
+          {cardHeader?.onEdit && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={cardHeader.onEdit}
+              disabled={cardHeader.editDisabled}
+              title={cardHeader.editLabel ?? 'Edit'}
+              aria-label={cardHeader.editLabel ?? 'Edit'}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {showClose && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={closeAction}
+              aria-label={cardHeader?.closeLabel ?? 'Close panel'}
+              title={cardHeader?.closeLabel ?? 'Close panel'}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Connecting-Banner – hide in process mode */}
       {connectingFromLandmarkId && !processMode && (
@@ -409,5 +455,6 @@ export default function Sidebar({
         )}
       </ScrollArea>
     </aside>
+    </SidebarCardHeaderContext.Provider>
   );
 }

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Landmark } from '@/types/landmark';
 import type { QualityLevel } from '@/types/landmark';
-import { mesh, edges, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_SURFACE_GREY } from './landmarkUtils';
+import { mesh, edges, namePlane, group, statusLight, type LandmarkRenderer, LANDMARK_STONE } from './landmarkUtils';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function block(
@@ -20,7 +20,7 @@ function block(
 }
 
 const CRACK_TILT = 0.18;
-const S = LANDMARK_SURFACE_GREY; // stone
+const S = LANDMARK_STONE; // stone
 
 export class RuinsRenderer implements LandmarkRenderer {
   readonly requiresAdjacent = false;

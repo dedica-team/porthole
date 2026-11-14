@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type {HexCoordinate, HexTile, Terrain} from '@/types/hex';
@@ -13,6 +13,20 @@ import {getLandmarkRenderer} from './landmarks/index';
 import {clearNamePlaneCache} from './landmarks/landmarkUtils';
 import {buildConnectionGroup, buildXrayLine} from './connectionRenderers';
 import {useThreeScene} from './useThreeScene';
+import type {FirstPersonState} from './useThreeScene';
+import type {GameState} from '@/types/game';
+import {
+    BUG_CLEARANCE,
+    buildBugMesh,
+    buildExplosion,
+    buildProjectile,
+    disposeGameObject,
+    type ExplosionInstance,
+    interpolateBugPosition,
+    updateExplosion,
+} from './gameRenderers';
+import VirtualJoystick from './VirtualJoystick';
+import {shoot as fireShot} from '@/api/mapApi';
 import type {RendererQualityProfile} from './renderQuality';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import {LOADING_COPY} from '@/components/ui/loadingCopy';
@@ -113,9 +127,16 @@ interface Props {
     visibleLandmarkLabelIds?: Set<string>;
     /** When set, only these landmark IDs (nodes) are visible on the map; others are hidden. */
     visibleLandmarkIds?: Set<string>;
+    /** Tower-defense state: bugs currently on the map. */
+    gameState?: GameState | null;
+    /** Watchtower landmark the local user is inside; enables first-person mode. */
+    activeWatchtowerId?: string | null;
 }
 
 const HEX_SIZE = 1;
+/** Bugs are interpolated over slightly less than the server tick so they never lag behind. */
+const BUG_MOVE_INTERP_MS = 850;
+const BUG_CORPSE_LIFETIME_MS = 6000;
 /** Distance between any two adjacent hex centers – always √3 * HEX_SIZE. */
 const HEX_NEIGHBOR_DIST = Math.sqrt(3) * HEX_SIZE;
 const HEX_DIRS = ([
@@ -147,6 +168,8 @@ export default function HexGrid({
                                     rendererQualityProfile,
                                     visibleLandmarkLabelIds,
                                     visibleLandmarkIds,
+                                    gameState,
+                                    activeWatchtowerId,
                                 }: Props) {
     const mountRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
@@ -162,7 +185,13 @@ export default function HexGrid({
     const topColBufRef = useRef<{ buf: THREE.Float32BufferAttribute; vertsPerTile: number } | null>(null);
     const sideColBufRef = useRef<{ buf: THREE.Float32BufferAttribute; vertsPerTile: number } | null>(null);
     const tileIndexRef = useRef<Map<string, number>>(new Map());
-    const tileByCoordRef = useRef<Map<string, HexTile>>(new Map());
+    const tileByCoord = useMemo(() => {
+        const m = new Map<string, HexTile>();
+        (map.map?.tiles ?? []).forEach((t) => m.set(`${t.coordinate.q},${t.coordinate.r}`, t));
+        return m;
+    }, [map.map?.tiles]);
+    const tileByCoordRef = useRef<Map<string, HexTile>>(tileByCoord);
+    tileByCoordRef.current = tileByCoord;
     const landmarkCoordsRef = useRef<Set<string>>(new Set());
     const landmarkMeshMapRef = useRef<Map<string, THREE.Group>>(new Map());
     const connectionMeshMapRef = useRef<Map<string, THREE.Object3D>>(new Map());
@@ -173,6 +202,16 @@ export default function HexGrid({
     const arrowLabelObjectsRef = useRef<CSS2DObject[]>([]);
     const stageLabelRef = useRef<CSS2DObject | null>(null);
     const connectionXrayMatRef = useRef<Map<string, THREE.MeshBasicMaterial>>(new Map());
+    const bugMeshMapRef = useRef<Map<string, THREE.Group>>(new Map());
+    const bugMotionRef = useRef<Map<string, { from: THREE.Vector3; to: THREE.Vector3; startedAt: number }>>(new Map());
+    const buildingHealthBarsRef = useRef<CSS2DObject[]>([]);
+    const projectileRef = useRef<Array<{ mesh: THREE.Mesh; velocity: THREE.Vector3; bornAt: number }>>([]);
+    const bugCorpseRef = useRef<Array<{ mesh: THREE.Group; timer: number }>>([]);
+    const explosionRef = useRef<ExplosionInstance[]>([]);
+    const firstPersonRef = useRef<FirstPersonState | null>(null);
+    const savedCameraRef = useRef<{ position: THREE.Vector3; target: THREE.Vector3 } | null>(null);
+    const joystickRef = useRef({ x: 0, y: 0 });
+    const fireRef = useRef<(() => void) | null>(null);
 
     const optimisticTerrainRef = useRef<Map<string, Terrain>>(new Map());
     const selectionMeshRef = useRef<THREE.Mesh | null>(null);
@@ -239,7 +278,14 @@ export default function HexGrid({
     const stableNativeMove = useRef((e: PointerEvent) => onNativeMoveRef.current(e));
 
     // ── Scene (delegated to useThreeScene) ───────────────────────────────────
-    const threeRef = useThreeScene({mountRef, fpsRef, onNativePointerMove: stableNativeMove.current, qualityProfile: rendererQualityProfile, orthographic: hideDecorations});
+    const threeRef = useThreeScene({
+        mountRef,
+        fpsRef,
+        onNativePointerMove: stableNativeMove.current,
+        qualityProfile: rendererQualityProfile,
+        orthographic: hideDecorations,
+        firstPersonRef,
+    });
 
     const requestRender = () => {
         threeRef.current?.requestRender();
@@ -320,7 +366,7 @@ export default function HexGrid({
         topColBufRef.current = null;
         sideColBufRef.current = null;
         tileIndexRef.current.clear();
-        tileByCoordRef.current.clear();
+        tileByCoordRef.current = tileByCoord;
         optimisticTerrainRef.current.clear();
 
         // Remove stale highlight ring on tile rebuild – not needed here;
@@ -555,6 +601,492 @@ export default function HexGrid({
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map.landmarks, map.map.tiles]);
+
+    // ── Tower-defense: bug NPCs ──────────────────────────────────────────────────
+    useEffect(() => {
+        const scene = threeRef.current?.scene;
+        if (!scene) return;
+
+        const seen = new Set<string>();
+        Object.values(gameState?.bugs ?? {}).forEach((bug) => {
+            seen.add(bug.id);
+            const {q, r} = bug.coordinate;
+            const tile = tileByCoordRef.current.get(`${q},${r}`) ?? map.map?.tiles?.find(t => t.coordinate.q === q && t.coordinate.r === r);
+            const {x, z} = hexToWorld(q, r, HEX_SIZE);
+
+            const targetPosition = new THREE.Vector3(x, tileHeight(tile?.elevation ?? 0) + BUG_CLEARANCE, z);
+
+            let group = bugMeshMapRef.current.get(bug.id);
+            if (!group) {
+                group = buildBugMesh();
+                // Bugs are intentionally half the previous size on screen.
+                group.scale.setScalar(0.5);
+                group.position.copy(targetPosition);
+                scene.add(group);
+                bugMeshMapRef.current.set(bug.id, group);
+            } else {
+                const motion = bugMotionRef.current.get(bug.id);
+                if (!motion || motion.to.distanceToSquared(targetPosition) > 1e-6) {
+                    // Start each step from the currently rendered position, not the
+                    // server tile, so back-to-back updates never snap.
+                    bugMotionRef.current.set(bug.id, {
+                        from: group.position.clone(),
+                        to: targetPosition,
+                        startedAt: performance.now(),
+                    });
+                }
+                if (gameState?.phase !== 'ACTIVE' && (!motion || motion.to.distanceToSquared(targetPosition) <= 1e-6)) {
+                    group.position.copy(targetPosition);
+                }
+            }
+
+            const target = bug.targetLandmarkId ? map.landmarks[bug.targetLandmarkId] : null;
+            if (target?.coordinate) {
+                const {x: tx, z: tz} = hexToWorld(target.coordinate.q, target.coordinate.r, HEX_SIZE);
+                group.rotation.y = Math.atan2(tx - x, tz - z);
+            }
+        });
+
+        bugMeshMapRef.current.forEach((group, id) => {
+            if (!seen.has(id)) {
+                scene.remove(group);
+                disposeGameObject(group);
+                bugMeshMapRef.current.delete(id);
+                bugMotionRef.current.delete(id);
+            }
+        });
+
+        requestRender();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gameState?.bugs, gameState?.phase, map.map.tiles, map.landmarks, tileByCoord]);
+
+    useEffect(() => {
+        const bugMeshes = bugMeshMapRef.current;
+        return () => {
+            // The scene lives for the component lifetime; reading the ref at unmount is intentional.
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            const scene = threeRef.current?.scene;
+            if (!scene) return;
+            bugMeshes.forEach((group) => {
+                scene.remove(group);
+                disposeGameObject(group);
+            });
+            bugMeshes.clear();
+        };
+    }, [threeRef]);
+
+    useEffect(() => {
+        return () => {
+            const scene = threeRef.current?.scene;
+            bugCorpseRef.current.forEach(({ mesh, timer }) => {
+                window.clearTimeout(timer);
+                scene?.remove(mesh);
+                disposeGameObject(mesh);
+            });
+            bugCorpseRef.current = [];
+        };
+    }, [threeRef]);
+
+    // Smooth bug movement: ease each step over most of the server tick.
+    useEffect(() => {
+        if (gameState?.phase !== 'ACTIVE') return;
+
+        let raf = 0;
+        const animate = (now: number) => {
+            let moving = false;
+            bugMotionRef.current.forEach((motion, id) => {
+                const group = bugMeshMapRef.current.get(id);
+                if (!group) return;
+                const t = Math.min(1, (now - motion.startedAt) / BUG_MOVE_INTERP_MS);
+                const eased = t * t * (3 - 2 * t);
+                interpolateBugPosition(motion.from, motion.to, eased, group.position);
+                if (t < 1) moving = true;
+            });
+            if (moving) {
+                requestRender();
+                raf = requestAnimationFrame(animate);
+            }
+        };
+        raf = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(raf);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gameState?.phase, gameState?.bugs, threeRef]);
+
+    // ── Tower-defense: building health bars ─────────────────────────────────────
+    useEffect(() => {
+        const scene = threeRef.current?.scene;
+        if (!scene) return;
+
+        buildingHealthBarsRef.current.forEach((obj) => {
+            scene.remove(obj);
+            obj.element.remove();
+        });
+        buildingHealthBarsRef.current = [];
+
+        if (!gameState || gameState.phase === 'IDLE') {
+            requestRender();
+            return;
+        }
+
+        const maxHealth = gameState.buildingMaxHealth && gameState.buildingMaxHealth > 0
+            ? gameState.buildingMaxHealth
+            : 100;
+        const healthByLandmark = gameState.buildingHealth ?? {};
+
+        Object.values(map.landmarks ?? {}).forEach((landmark) => {
+            if (!landmark.coordinate) return;
+            if (landmark.type === 'WALL' || landmark.type === 'RUINS') return;
+            const health = healthByLandmark[landmark.id];
+            if (health == null) return;
+
+            const ratio = Math.max(0, Math.min(1, health / maxHealth));
+            const color = ratio > 0.6 ? '#22c55e' : ratio > 0.3 ? '#f59e0b' : '#ef4444';
+
+            const el = document.createElement('div');
+            el.style.cssText = [
+                'width: 34px',
+                'height: 6px',
+                'border: 1px solid rgba(0,0,0,0.75)',
+                'border-radius: 2px',
+                'background: rgba(0,0,0,0.65)',
+                'overflow: hidden',
+                'pointer-events: none',
+                'user-select: none',
+                'box-shadow: 0 1px 2px rgba(0,0,0,0.6)',
+            ].join(';');
+            const fill = document.createElement('div');
+            fill.style.cssText = [
+                'height: 100%',
+                `width: ${ratio * 100}%`,
+                `background: ${color}`,
+                'transition: width 120ms linear',
+            ].join(';');
+            el.appendChild(fill);
+
+            const tile = tileByCoordRef.current.get(`${landmark.coordinate.q},${landmark.coordinate.r}`);
+            const {x, z} = hexToWorld(landmark.coordinate.q, landmark.coordinate.r, HEX_SIZE);
+            const y = tileHeight(tile?.elevation ?? 0) + 1.15;
+            const obj = new CSS2DObject(el);
+            obj.position.set(x, y, z);
+            scene.add(obj);
+            buildingHealthBarsRef.current.push(obj);
+        });
+
+        requestRender();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gameState?.buildingHealth, gameState?.buildingMaxHealth, gameState?.phase, map.landmarks, map.map.tiles]);
+
+    // ── Tower-defense: first-person watchtower camera ────────────────────────────
+    useEffect(() => {
+        const three = threeRef.current;
+        if (!three) return;
+
+        const tower = activeWatchtowerId ? map.landmarks[activeWatchtowerId] : null;
+        const towerHealth = activeWatchtowerId
+            ? (gameState?.buildingHealth?.[activeWatchtowerId] ?? gameState?.buildingMaxHealth ?? 100)
+            : null;
+        const isRuined = !tower || tower.type !== 'WATCHTOWER' || (towerHealth !== null && towerHealth <= 0);
+
+        if (!activeWatchtowerId || isRuined || !tower?.coordinate) {
+            if (firstPersonRef.current) {
+                firstPersonRef.current = null;
+                const saved = savedCameraRef.current;
+                if (saved) {
+                    three.camera.position.copy(saved.position);
+                    three.controls.target.copy(saved.target);
+                    three.controls.update();
+                }
+                savedCameraRef.current = null;
+                three.requestRender();
+            }
+            if (activeWatchtowerId && isRuined) {
+                useMapStore.getState().setActiveWatchtowerId(null);
+            }
+            return;
+        }
+
+        const {q, r} = tower.coordinate;
+        const tile = tileByCoordRef.current.get(`${q},${r}`) ?? map.map?.tiles?.find(t => t.coordinate.q === q && t.coordinate.r === r);
+        const {x, z} = hexToWorld(q, r, HEX_SIZE);
+        const y = tileHeight(tile?.elevation ?? 0) + 1.35;
+        const yaw = Math.atan2(x, z);
+
+        const existing = firstPersonRef.current;
+        if (!existing || existing.towerId !== activeWatchtowerId) {
+            if (!existing) {
+                savedCameraRef.current = {
+                    position: three.camera.position.clone(),
+                    target: three.controls.target.clone(),
+                };
+            }
+            firstPersonRef.current = {
+                enabled: true,
+                towerId: activeWatchtowerId ?? undefined,
+                position: new THREE.Vector3(x, y, z),
+                yaw,
+                pitch: -0.08,
+            };
+        } else {
+            // Map updates (landmark edits, terrain changes, game broadcasts) must not
+            // reset the player's aim; only move the camera if the tower itself moved.
+            existing.position.set(x, y, z);
+        }
+        three.requestRender();
+    }, [activeWatchtowerId, gameState?.buildingHealth, gameState?.buildingMaxHealth, map.landmarks, map.map.tiles, threeRef]);
+
+    // ── Tower-defense: AWSD / Joystick aiming, Space firing, ballistic projectiles ──────────
+    useEffect(() => {
+        if (!activeWatchtowerId) return;
+
+        const spawnExplosion = (position: THREE.Vector3) => {
+            const three = threeRef.current;
+            if (!three) return;
+
+            const explosion = buildExplosion();
+            explosion.group.position.copy(position);
+            three.scene.add(explosion.group);
+            explosionRef.current.push({
+                group: explosion.group,
+                bornAt: performance.now(),
+                particles: explosion.particles,
+                coreMesh: explosion.coreMesh,
+            });
+            three.requestRender();
+        };
+
+        const dropCorpse = (position: THREE.Vector3, yaw: number) => {
+            const three = threeRef.current;
+            if (!three) return;
+
+            const corpse = buildBugMesh();
+            corpse.scale.setScalar(0.5);
+            // Flip belly-up and lift slightly so the legs point at the sky.
+            corpse.position.set(position.x, position.y + 0.25, position.z);
+            corpse.rotation.set(Math.PI, yaw, 0);
+            three.scene.add(corpse);
+            three.requestRender();
+
+            const timer = window.setTimeout(() => {
+                threeRef.current?.scene.remove(corpse);
+                disposeGameObject(corpse);
+                bugCorpseRef.current = bugCorpseRef.current.filter((entry) => entry.mesh !== corpse);
+                threeRef.current?.requestRender();
+            }, BUG_CORPSE_LIFETIME_MS);
+
+            bugCorpseRef.current.push({mesh: corpse, timer});
+        };
+
+        const fire = () => {
+            const fp = firstPersonRef.current;
+            const three = threeRef.current;
+            if (!fp?.enabled || !three) return;
+
+            const aim = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(fp.pitch, fp.yaw, 0, 'YXZ'));
+            const origin = fp.position.clone().add(aim.clone().multiplyScalar(0.6));
+            const projectile = buildProjectile();
+            projectile.position.copy(origin);
+            three.scene.add(projectile);
+            projectileRef.current.push({
+                mesh: projectile,
+                velocity: aim.clone().multiplyScalar(60),
+                bornAt: performance.now(),
+            });
+            three.requestRender();
+
+            // Capture visible positions before the server broadcast removes the bug.
+            const visibleBugs = new Map<string, { position: THREE.Vector3; yaw: number }>();
+            Object.keys(useMapStore.getState().gameState?.bugs ?? {}).forEach((id) => {
+                const mesh = bugMeshMapRef.current.get(id);
+                if (mesh) visibleBugs.set(id, { position: mesh.position.clone(), yaw: mesh.rotation.y });
+            });
+
+            fireShot(
+                map.id,
+                {x: origin.x, y: origin.y, z: origin.z},
+                {x: aim.x, y: aim.y, z: aim.z},
+            )
+                .then((result) => {
+                    if (!result.hit) {
+                        if (result.hitPosition) {
+                            spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                        }
+                        return;
+                    }
+                    if (result.bugId) {
+                        const hit = visibleBugs.get(result.bugId);
+                        if (hit) {
+                            dropCorpse(hit.position, hit.yaw);
+                            spawnExplosion(hit.position);
+                        } else if (result.hitPosition) {
+                            spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                        }
+                        useMapStore.getState().removeBug(result.bugId);
+                    } else if (result.landmarkId) {
+                        const targetBuilding = map.landmarks[result.landmarkId];
+                        if (targetBuilding?.coordinate) {
+                            const {q, r} = targetBuilding.coordinate;
+                            const tile = tileByCoordRef.current.get(`${q},${r}`);
+                            const {x, z} = hexToWorld(q, r, HEX_SIZE);
+                            const y = tileHeight(tile?.elevation ?? 0) + 0.6;
+                            spawnExplosion(new THREE.Vector3(x, y, z));
+                        } else if (result.hitPosition) {
+                            spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                        }
+                    } else if (result.hitPosition) {
+                        spawnExplosion(new THREE.Vector3(result.hitPosition.x, result.hitPosition.y, result.hitPosition.z));
+                    }
+                })
+                .catch(() => { /* server rejects shots from outside a tower */ });
+        };
+
+        fireRef.current = fire;
+
+        const isEditableTarget = (target: EventTarget | null) => {
+            const el = target as HTMLElement | null;
+            if (!el) return false;
+            return (
+                el.tagName === 'INPUT' ||
+                el.tagName === 'TEXTAREA' ||
+                el.tagName === 'SELECT' ||
+                el.isContentEditable
+            );
+        };
+
+        const keysPressed = new Set<string>();
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (isEditableTarget(event.target)) return;
+            const code = event.code;
+            const key = event.key.toLowerCase();
+            if (code === 'Space') {
+                event.preventDefault();
+                if (!event.repeat) fire();
+                return;
+            }
+            if (
+                code === 'KeyW' || code === 'KeyA' || code === 'KeyS' || code === 'KeyD' ||
+                key === 'w' || key === 'a' || key === 's' || key === 'd' ||
+                code === 'ArrowUp' || code === 'ArrowDown' || code === 'ArrowLeft' || code === 'ArrowRight'
+            ) {
+                event.preventDefault();
+                keysPressed.add(key);
+                keysPressed.add(code.toLowerCase());
+            }
+        };
+
+        const onKeyUp = (event: KeyboardEvent) => {
+            const code = event.code;
+            const key = event.key.toLowerCase();
+            keysPressed.delete(key);
+            keysPressed.delete(code.toLowerCase());
+        };
+
+        const onBlur = () => {
+            keysPressed.clear();
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('blur', onBlur);
+
+        let last = performance.now();
+        let raf = 0;
+        const loop = (now: number) => {
+            const dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+
+            const fp = firstPersonRef.current;
+            if (fp?.enabled) {
+                let keyX = 0;
+                let keyY = 0;
+                if (keysPressed.has('a') || keysPressed.has('keya') || keysPressed.has('arrowleft')) keyX -= 1;
+                if (keysPressed.has('d') || keysPressed.has('keyd') || keysPressed.has('arrowright')) keyX += 1;
+                if (keysPressed.has('w') || keysPressed.has('keyw') || keysPressed.has('arrowup')) keyY += 1;
+                if (keysPressed.has('s') || keysPressed.has('keys') || keysPressed.has('arrowdown')) keyY -= 1;
+
+                const joy = joystickRef.current;
+                const combinedX = Math.max(-1, Math.min(1, joy.x + keyX));
+                const combinedY = Math.max(-1, Math.min(1, joy.y + keyY));
+
+                const turnSpeed = 0.8;
+                if (Math.abs(combinedX) > 0.02) fp.yaw -= combinedX * turnSpeed * dt;
+                if (Math.abs(combinedY) > 0.02) {
+                    fp.pitch = Math.max(-1.2, Math.min(1.2, fp.pitch + combinedY * turnSpeed * dt));
+                }
+
+                const three = threeRef.current;
+                if (three) {
+                    const survivors: typeof projectileRef.current = [];
+                    for (const projectile of projectileRef.current) {
+                        const age = (now - projectile.bornAt) / 1000;
+                        if (age > 3) {
+                            three.scene.remove(projectile.mesh);
+                            disposeGameObject(projectile.mesh);
+                            continue;
+                        }
+                        projectile.velocity.y -= 9.81 * dt;
+                        projectile.mesh.position.addScaledVector(projectile.velocity, dt);
+
+                        // If projectile hits ground elevation, trigger small impact explosion and remove
+                        const pos = projectile.mesh.position;
+                        const approxQ = Math.round(pos.x / (HEX_SIZE * 1.5));
+                        const approxR = Math.round((pos.z / (HEX_SIZE * Math.sqrt(3))) - approxQ / 2);
+                        const tile = tileByCoordRef.current.get(`${approxQ},${approxR}`);
+                        const groundY = tileHeight(tile?.elevation ?? 0);
+                        if (pos.y <= groundY + 0.05) {
+                            spawnExplosion(new THREE.Vector3(pos.x, Math.max(groundY + 0.05, pos.y), pos.z));
+                            three.scene.remove(projectile.mesh);
+                            disposeGameObject(projectile.mesh);
+                            continue;
+                        }
+
+                        survivors.push(projectile);
+                    }
+                    projectileRef.current = survivors;
+
+                    const survivingExplosions: ExplosionInstance[] = [];
+                    for (const exp of explosionRef.current) {
+                        const alive = updateExplosion(exp, now, dt);
+                        if (!alive) {
+                            three.scene.remove(exp.group);
+                            disposeGameObject(exp.group);
+                        } else {
+                            survivingExplosions.push(exp);
+                        }
+                    }
+                    explosionRef.current = survivingExplosions;
+
+                    three.requestRender();
+                }
+            }
+
+            raf = requestAnimationFrame(loop);
+        };
+        raf = requestAnimationFrame(loop);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keyup', onKeyUp);
+            window.removeEventListener('blur', onBlur);
+            fireRef.current = null;
+            joystickRef.current = {x: 0, y: 0};
+
+            const three = threeRef.current;
+            projectileRef.current.forEach((projectile) => {
+                three?.scene.remove(projectile.mesh);
+                disposeGameObject(projectile.mesh);
+            });
+            projectileRef.current = [];
+
+            explosionRef.current.forEach((exp) => {
+                three?.scene.remove(exp.group);
+                disposeGameObject(exp.group);
+            });
+            explosionRef.current = [];
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWatchtowerId, map.id]);
 
     // ── Landmark visibility in process mode ──────────────────────────────────────
     useEffect(() => {
@@ -911,8 +1443,18 @@ export default function HexGrid({
     useEffect(() => {
         const hasMetricOverlayEntries = !!metricOverlayEntries && metricOverlayEntries.size > 0;
         const hasXrayLabels = hideDecorations && Object.keys(map.landmarks ?? {}).length > 0;
-        threeRef.current?.setCss2dActive(hasMetricOverlayEntries || hasXrayLabels);
-    }, [metricOverlayEntries, hideDecorations, map.landmarks, threeRef]);
+        // Health bars are CSS2D objects too; enable the renderer while they exist.
+        const hasHealthBars = buildingHealthBarsRef.current.length > 0;
+        threeRef.current?.setCss2dActive(hasMetricOverlayEntries || hasXrayLabels || hasHealthBars);
+    }, [
+        metricOverlayEntries,
+        hideDecorations,
+        map.landmarks,
+        map.map.tiles,
+        gameState?.buildingHealth,
+        gameState?.phase,
+        threeRef,
+    ]);
 
     // ── Highlighted tile ring mesh (process mode) ─────────────────────────────────
     // For each landmark tile: build a flat annular hex ring (6 quads) that sits
@@ -1239,6 +1781,38 @@ export default function HexGrid({
                 role="application"
                 aria-label="Hexagonal map grid"
             />
+            {activeWatchtowerId && (
+                <div className="pointer-events-none absolute inset-0 z-20">
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div className="relative h-7 w-7">
+                            <span className="absolute left-1/2 top-0 h-2 w-px -translate-x-1/2 bg-red-400" />
+                            <span className="absolute left-1/2 bottom-0 h-2 w-px -translate-x-1/2 bg-red-400" />
+                            <span className="absolute top-1/2 left-0 w-2 h-px -translate-y-1/2 bg-red-400" />
+                            <span className="absolute top-1/2 right-0 w-2 h-px -translate-y-1/2 bg-red-400" />
+                            <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-300" />
+                        </div>
+                    </div>
+                    <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
+                        <VirtualJoystick
+                            onChange={(x, y) => {
+                                joystickRef.current = {x, y};
+                            }}
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        aria-label="Fire"
+                        className="pointer-events-auto absolute bottom-4 right-4 h-20 w-20 touch-none select-none rounded-full border-2 border-red-300/70 bg-red-600/90 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition active:scale-95 active:bg-red-700 sm:bottom-6 sm:right-6"
+                        onPointerDown={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            fireRef.current?.();
+                        }}
+                    >
+                        Fire
+                    </button>
+                </div>
+            )}
             {loading && (
                 <LoadingOverlay label={LOADING_COPY.render} variant="overlay" />
             )}

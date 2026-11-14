@@ -19,7 +19,7 @@ import {
     glowMat,
     statusLight,
     type LandmarkRenderer,
-    LANDMARK_SURFACE_GREY
+    LANDMARK_DARK_OBSIDIAN
 } from './landmarkUtils';
 import {TRON_CYAN} from "@/components/HexGrid/terrainUtils.ts";
 
@@ -34,16 +34,16 @@ export class PortalRenderer implements LandmarkRenderer {
 
         // ── foot pylons ───────────────────────────────────────────────────────────
         const pylonGeo = new THREE.BoxGeometry(0.09, 0.28, 0.09);
-        const pylonL = mesh(pylonGeo, LANDMARK_SURFACE_GREY);
+        const pylonL = mesh(pylonGeo, LANDMARK_DARK_OBSIDIAN);
         pylonL.position.set(-RING_R + 0.12, 0.12, 0);
         pylonL.add(edges(pylonL));
-        const pylonR = mesh(pylonGeo, LANDMARK_SURFACE_GREY);
+        const pylonR = mesh(pylonGeo, LANDMARK_DARK_OBSIDIAN);
         pylonR.position.set(RING_R - 0.12, 0.12, 0);
         pylonR.add(edges(pylonR));
 
         // ── outer ring ────────────────────────────────────────────────────────────
         const ringGeo = new THREE.TorusGeometry(RING_R, RING_T, 12, 48);
-        const ring = mesh(ringGeo, LANDMARK_SURFACE_GREY);
+        const ring = mesh(ringGeo, LANDMARK_DARK_OBSIDIAN);
         ring.position.y = RING_Y;
 
         // inner decoration ring (thinner, tinted)

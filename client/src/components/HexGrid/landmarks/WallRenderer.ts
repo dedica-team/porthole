@@ -5,7 +5,7 @@ import {TRON_CYAN} from '../terrainUtils';
 import {
     tintGrey, mesh, edges, glowMat, statusLight,
     tileHeight,
-    type LandmarkRenderer, type Adjacent, LANDMARK_SURFACE_GREY,
+    type LandmarkRenderer, type Adjacent, LANDMARK_STONE,
 } from './landmarkUtils';
 
 // ── Laser barrier shader (WallRenderer-private) ───────────────────────────────
@@ -78,7 +78,7 @@ export class WallRenderer implements LandmarkRenderer {
     build(_landmark: Landmark, elevation: number, tintColor: THREE.Color, adjacent?: Adjacent[], worstLevel?: QualityLevel): THREE.Group {
         const g = new THREE.Group();
 
-        const pillar = mesh(new THREE.BoxGeometry(0.28, 0.60, 0.28), LANDMARK_SURFACE_GREY);
+        const pillar = mesh(new THREE.BoxGeometry(0.28, 0.60, 0.28), LANDMARK_STONE);
         pillar.position.y = 0.30;
         const pillarEdge = edges(pillar);
         pillarEdge.position.y = 0.30;

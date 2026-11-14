@@ -115,6 +115,53 @@ describe('mapStore – updateMap', () => {
     useMapStore.getState().updateMap(updated);
     expect(useMapStore.getState().selectedLandmark?.link).toBe('https://example.com');
   });
+
+  it('ejects player from active watchtower if tower is ruined or has no health', () => {
+    const tower = { id: 'tower1', name: 'Watchtower', ownerId: 'p1', coordinate: { q: 0, r: 0 }, type: 'WATCHTOWER' as const };
+    useMapStore.setState({
+      currentMap: { ...makeMap(), landmarks: { tower1: tower } },
+      activeWatchtowerId: 'tower1',
+      gameState: {
+        phase: 'ACTIVE',
+        wave: 1,
+        buildingHealth: { tower1: 100 },
+        buildingMaxHealth: 100,
+        towerOccupants: {},
+        bugs: {},
+      },
+    });
+
+    // 1. Tower turns into ruins via updateMap
+    const ruinedMap: SessionState = {
+      ...makeMap(),
+      landmarks: { tower1: { ...tower, type: 'RUINS' } },
+      gameState: {
+        phase: 'ACTIVE',
+        wave: 1,
+        buildingHealth: { tower1: 0 },
+        buildingMaxHealth: 100,
+        towerOccupants: {},
+        bugs: {},
+      },
+    };
+    useMapStore.getState().updateMap(ruinedMap);
+    expect(useMapStore.getState().activeWatchtowerId).toBeNull();
+
+    // 2. Tower health drops to 0 via setGameState
+    useMapStore.setState({
+      currentMap: { ...makeMap(), landmarks: { tower1: tower } },
+      activeWatchtowerId: 'tower1',
+    });
+    useMapStore.getState().setGameState({
+      phase: 'ACTIVE',
+      wave: 1,
+      buildingHealth: { tower1: 0 },
+      buildingMaxHealth: 100,
+      towerOccupants: {},
+      bugs: {},
+    });
+    expect(useMapStore.getState().activeWatchtowerId).toBeNull();
+  });
 });
 
 describe('mapStore – updateCollaboratorUsername', () => {

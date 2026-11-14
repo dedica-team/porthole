@@ -67,6 +67,12 @@ class EditLandmarkUseCase(
             groupId = newGroupId, link = newLink, ownerId = newOwnerId,
             metrics = landmark.metrics,
         )
+        if (landmark.type == LandmarkType.RUINS && newType != LandmarkType.RUINS) {
+            state.gameState.buildingHealth[landmarkId] = state.gameState.buildingMaxHealth
+        }
+        if (landmark.type == LandmarkType.WATCHTOWER && newType != LandmarkType.WATCHTOWER) {
+            state.gameState.towerOccupants.remove(landmarkId)
+        }
         sessionStatePort.save(state)
         broadcastPort.send(sessionId, state)
         return state

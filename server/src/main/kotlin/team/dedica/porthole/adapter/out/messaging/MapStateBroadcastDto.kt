@@ -20,6 +20,8 @@ data class MapStateBroadcastDto(
     val description: String?,
     val collaborationMode: CollaborationMode,
     val joinRequests: List<JoinRequest>,
+    val gameEnabled: Boolean,
+    val waveIntermissionPeriod: String? = null,
 ) {
     companion object {
         fun from(state: SessionState) = MapStateBroadcastDto(
@@ -34,6 +36,8 @@ data class MapStateBroadcastDto(
             description = state.description,
             collaborationMode = state.collaborationMode,
             joinRequests = state.joinRequests.toList(),
+            gameEnabled = state.gameEnabled,
+            waveIntermissionPeriod = state.waveIntermissionPeriod,
         )
     }
 }

@@ -102,7 +102,16 @@ class SessionController(
         @PathVariable id: String,
         @Valid @Body request: EditMapRequest,
          user: PortholePrincipal,
-    ) = HttpResponse.ok(editMapUseCase.execute(UUID.fromString(id), user.userId, request.name, request.description))
+    ) = HttpResponse.ok(
+        editMapUseCase.execute(
+            UUID.fromString(id),
+            user.userId,
+            request.name,
+            request.description,
+            request.gameEnabled,
+            request.waveIntermissionPeriod,
+        )
+    )
 
     @Post("/{id}/regenerate-terrain")
     fun regenerateTerrain(
