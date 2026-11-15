@@ -38,8 +38,11 @@ describe('enterDefaultSession', () => {
     expect(navigate).toHaveBeenCalledWith('/lobby', { replace: true });
   });
 
-  it('navigates to the cookie-stored session when it still exists', async () => {
-    const maps = [makeMap('m1'), makeMap('m2')];
+  it('navigates to the cookie-stored session when it exists and the user is a collaborator', async () => {
+    const maps = [
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: USER_ID, username: 'alice' }] },
+    ];
     vi.mocked(mapApi.listMaps).mockResolvedValue(maps);
     setDefaultSessionId(USER_ID, 'm2');
     const navigate = vi.fn();
@@ -50,6 +53,24 @@ describe('enterDefaultSession', () => {
 
     expect(setCurrentMap).toHaveBeenCalledWith(maps[1]);
     expect(navigate).toHaveBeenCalledWith('/session/m2', { replace: true });
+  });
+
+  it('falls back to the lobby when the cookie-stored session exists but user is not a collaborator', async () => {
+    const maps = [
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: 'other-user', username: 'bob' }] },
+    ];
+    vi.mocked(mapApi.listMaps).mockResolvedValue(maps);
+    setDefaultSessionId(USER_ID, 'm2');
+    const navigate = vi.fn();
+    const setMaps = vi.fn();
+    const setCurrentMap = vi.fn();
+
+    await enterDefaultSession(USER_ID, navigate, setMaps, setCurrentMap);
+
+    expect(setMaps).toHaveBeenCalledWith(maps);
+    expect(setCurrentMap).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/lobby', { replace: true });
   });
 
   it('falls back to the lobby when there are no sessions', async () => {

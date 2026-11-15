@@ -78,20 +78,44 @@ describe('resolveDefaultSessionId', () => {
     expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
   });
 
-  it('returns the cookie-stored session id when it still exists in the list', () => {
-    const maps = [makeMap('m1'), makeMap('m2')];
+  it('returns the cookie-stored session id when it exists in the list and the user is a collaborator', () => {
+    const maps = [
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: 'user-1', username: 'alice' }] },
+    ];
     setDefaultSessionId('user-1', 'm2');
     expect(resolveDefaultSessionId(maps, 'user-1')).toBe('m2');
   });
 
-  it('returns null when the cookie-stored session no longer exists', () => {
+  it('returns null when the cookie-stored session exists but the user is not a collaborator', () => {
+    const maps = [
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: 'user-2', username: 'bob' }] },
+    ];
+    setDefaultSessionId('user-1', 'm2');
+    expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
+  });
+
+  it('returns null when the cookie-stored session has an empty collaborators list', () => {
     const maps = [makeMap('m1'), makeMap('m2')];
+    setDefaultSessionId('user-1', 'm2');
+    expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
+  });
+
+  it('returns null when the cookie-stored session no longer exists', () => {
+    const maps = [
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: 'user-1', username: 'alice' }] },
+    ];
     setDefaultSessionId('user-1', 'deleted-session');
     expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
   });
 
   it('returns null when another user has a cookie but this user does not', () => {
-    const maps = [makeMap('m1'), makeMap('m2')];
+    const maps = [
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: 'user-1', username: 'alice' }] },
+    ];
     setDefaultSessionId('user-2', 'm2');
     expect(resolveDefaultSessionId(maps, 'user-1')).toBeNull();
   });

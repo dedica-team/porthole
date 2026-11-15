@@ -32,12 +32,16 @@ export function clearDefaultSessionId(userId: string): void {
 /**
  * Resolves which session should be entered automatically after login:
  * the user's previously selected session (from cookie) if it still exists
- * in the given list, otherwise the first session in the list.
+ * in the given list and the user is a collaborator in it, otherwise null.
  */
 export function resolveDefaultSessionId(maps: SessionState[], userId: string): string | null {
+  if (!userId) return null;
   const cookieId = getDefaultSessionId(userId);
-  if (cookieId && maps.some((m) => m.id === cookieId)) {
-    return cookieId;
+  if (cookieId) {
+    const map = maps.find((m) => m.id === cookieId);
+    if (map && map.collaborators?.some((c) => c.id === userId)) {
+      return cookieId;
+    }
   }
   return null;
 }
