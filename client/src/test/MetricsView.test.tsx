@@ -801,5 +801,36 @@ describe('MetricsView', () => {
     localStorage.removeItem('landmarks.metrics.hiddenGroups');
     localStorage.removeItem('landmarks.metrics.hiddenMetrics');
   });
+
+  // ── transformations indicator ─────────────────────────────────────────────
+
+  it('renders transformation symbol in column header when metric has transformations', () => {
+    const metricWithTransformations: QualityMetric = {
+      ...METRIC_AVAIL,
+      transformations: [
+        {
+          id: 't1',
+          name: 'Prometheus Uptime',
+          metricId: 'm1',
+          requestUrl: 'https://prom.example.com/api/v1/query',
+          httpMethod: 'GET',
+          jqFilter: '.',
+          matchBy: 'NAME',
+        },
+      ],
+    };
+    setup({ m1: metricWithTransformations, m2: METRIC_COVERAGE }, { lm1: LM_IN_A });
+    render(<MetricsView />);
+
+    expect(screen.getByTestId('metric-has-transformations')).toBeInTheDocument();
+    expect(screen.getAllByTestId('metric-has-transformations')).toHaveLength(1);
+  });
+
+  it('does not render transformation symbol when metric has no transformations', () => {
+    setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: LM_IN_A });
+    render(<MetricsView />);
+
+    expect(screen.queryByTestId('metric-has-transformations')).not.toBeInTheDocument();
+  });
 });
 

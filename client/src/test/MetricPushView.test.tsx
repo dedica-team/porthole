@@ -83,7 +83,7 @@ describe('MetricPushView (Subpage)', () => {
 
     expect(screen.getByRole('link', { name: /Back to Metrics/i })).toHaveAttribute('href', '/session/sess-abc/metrics');
     expect(screen.getByText(/REST API Push Values: Code Coverage/i)).toBeInTheDocument();
-    expect(screen.getByText(/Test coverage percentage/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/Test coverage percentage/i)).toBeInTheDocument();
     expect(screen.getByText(/POST \/api\/sessions\/sess-abc\/metrics\/m-123\/values/i)).toBeInTheDocument();
   });
 
@@ -103,7 +103,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(selector).toBeInTheDocument();
   });
 
-  it('renders JQ Transformation Builder by default and toggles Direct JSON Push view', () => {
+  it('renders JQ Transformation Builder by default and toggles Direct JSON Push view via header button', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -116,7 +116,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
     expect(screen.getByText(/JQ Filter Expression:/i)).toBeInTheDocument();
 
-    // Button to switch to Direct JSON Push
+    // Button in top right of card header to switch to Direct JSON Push
     const directBtn = screen.getByRole('button', { name: /Direct JSON Push/i });
     expect(directBtn).toBeInTheDocument();
 
@@ -125,10 +125,10 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByLabelText(/Direct Match Strategy/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Paste JSON payload here.../i)).toBeInTheDocument();
 
-    // Click back to JQ transformation builder
-    const backBtn = screen.getByRole('button', { name: /Back to JQ Transformation Builder/i });
-    expect(backBtn).toBeInTheDocument();
-    fireEvent.click(backBtn);
+    // Header toggle now says "JQ Transformation Builder"
+    const headerJqBtn = screen.getByRole('button', { name: /JQ Transformation Builder/i });
+    expect(headerJqBtn).toBeInTheDocument();
+    fireEvent.click(headerJqBtn);
 
     expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
   });
@@ -431,7 +431,11 @@ describe('MetricPushView (Subpage)', () => {
     expect(helpLink).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
-  it('runs jq dry-run transformation successfully when output evaluates to an array', async () => {
+  it('runs jq dry-run transformation successfully, shows Preview section, and supports inspecting payload', async () => {
+    // Mock navigator.clipboard
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText: writeTextMock } });
+
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -440,6 +444,9 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
+    // Verify Preview heading exists
+    expect(screen.getByRole('heading', { name: /Preview/i, level: 3 })).toBeInTheDocument();
+
     // Click "Execute JQ Dry-Run" with existing template / payload
     const dryRunBtn = screen.getByRole('button', { name: /Execute JQ Dry-Run/i });
     fireEvent.click(dryRunBtn);
@@ -447,6 +454,29 @@ describe('MetricPushView (Subpage)', () => {
     // Should render dry-run reconciliation summary without errors
     expect(await screen.findByText(/Dry-Run Preview:/i)).toBeInTheDocument();
     expect(screen.queryByText(/JQ Transformation output must evaluate to an array/i)).not.toBeInTheDocument();
+
+    // Inspect Payload button should appear
+    const inspectPayloadBtn = screen.getByRole('button', { name: /Inspect Payload/i });
+    expect(inspectPayloadBtn).toBeInTheDocument();
+
+    // Click "Inspect Payload"
+    fireEvent.click(inspectPayloadBtn);
+
+    // Should show transformed JSON payload
+    const payloadPre = screen.getByTestId('transformed-payload-preview');
+    expect(payloadPre).toBeInTheDocument();
+    expect(payloadPre.textContent).toContain('"element": "Auth Service"');
+    expect(payloadPre.textContent).toContain('"value": "88"');
+
+    // Click "Copy Payload"
+    const copyPayloadBtn = screen.getByRole('button', { name: /Copy Payload/i });
+    fireEvent.click(copyPayloadBtn);
+    expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('"element": "Auth Service"'));
+
+    // Switch back to Table Preview
+    const tableBtn = screen.getByRole('button', { name: /Table Preview/i });
+    fireEvent.click(tableBtn);
+    expect(screen.getByText(/Dry-Run Preview:/i)).toBeInTheDocument();
   });
 
   it('displays error when jq dry-run output does not evaluate to an array', async () => {

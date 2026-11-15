@@ -828,19 +828,31 @@ export default function MetricsView() {
                       </svg>
                       {totalHiddenFilters > 0 ? `${totalHiddenFilters} hidden` : 'Filter'}
                     </Button></th>
-                  {visibleMetrics.map((m) => (
-                    <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium bg-transparent align-bottom">
-                      <Button
-                        variant="ghost"
-                        fullWidth={true}
-                        title={m.description || undefined}
-                        className={isCollaborator ? undefined : 'metrics-metric-trigger text-muted-foreground normal-case'}
-                        onClick={() => openMetricDef(m, !isCollaborator)}
-                      >
-                        {m.name}
-                      </Button>
-                    </th>
-                  ))}
+                  {visibleMetrics.map((m) => {
+                    const hasTransformations = Boolean(m.transformations && m.transformations.length > 0);
+                    return (
+                      <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium bg-transparent align-bottom">
+                        <Button
+                          variant="ghost"
+                          fullWidth={true}
+                          title={m.description || undefined}
+                          className={isCollaborator ? undefined : 'metrics-metric-trigger text-muted-foreground normal-case'}
+                          onClick={() => openMetricDef(m, !isCollaborator)}
+                        >
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <span className="truncate">{m.name}</span>
+                            {hasTransformations && (
+                              <Send
+                                className="h-3.5 w-3.5 text-primary shrink-0"
+                                aria-label="Has transformations"
+                                data-testid="metric-has-transformations"
+                              />
+                            )}
+                          </span>
+                        </Button>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>

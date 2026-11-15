@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   BarChart2,
   ExternalLink,
+  Table,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,6 +100,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   const [jqMatchKey, setJqMatchKey] = useState<string>('');
   const [jqTransformedReq, setJqTransformedReq] = useState<PushMetricValuesRequest | null>(null);
   const [jqTransformError, setJqTransformError] = useState<string>('');
+  const [jqPreviewMode, setJqPreviewMode] = useState<'table' | 'payload'>('table');
+  const [copiedPayload, setCopiedPayload] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState<string>('');
   const [confirmDeleteTransformation, setConfirmDeleteTransformation] = useState(false);
@@ -458,6 +461,13 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   };
 
   // ── Copy Helpers ───────────────────────────────────────────────────────────
+  const handleCopyTransformedPayload = () => {
+    if (!jqTransformedReq) return;
+    navigator.clipboard.writeText(JSON.stringify(jqTransformedReq, null, 2));
+    setCopiedPayload(true);
+    setTimeout(() => setCopiedPayload(false), 2000);
+  };
+
   const handleCopyCurl = () => {
     if (!metric || !currentMap) return;
     const req = parseDirectRequest() || { matchBy: directMatchBy, values: [] };
@@ -535,12 +545,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         <div className="flex items-stretch border-b border-border shrink-0">
           <div className="flex items-center gap-2 px-4 py-2.5 text-md font-semibold text-foreground flex-1 min-w-0">
             <BarChart2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="truncate">REST API Push Values: {metric.name}</span>
-            {metric.description && (
-                <div className="px-4 py-2 text-xs text-muted-foreground  bg-muted/20">
-                  {metric.description}
-                </div>
-            )}
+            <span className="truncate" title={metric.description}>REST API Push Values: {metric.name}</span>
           </div>
 
           {/* Metric Selector Dropdown (when multiple metrics exist) */}
@@ -569,6 +574,23 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
               </select>
             </div>
           )}
+
+          {/* Active Tab Toggle Button */}
+          <button
+            type="button"
+            className={cardBtnCls}
+            onClick={() => setActiveTab(activeTab === 'jq' ? 'direct' : 'jq')}
+          >
+            {activeTab === 'jq' ? (
+              <>
+                <FileCode className="h-3.5 w-3.5" /> Direct JSON Push
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5" /> JQ Transformation Builder
+              </>
+            )}
+          </button>
 
           <Link
             to={sessionId ? `/session/${sessionId}/metrics` : '/lobby'}
@@ -688,16 +710,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   {copiedDirectCurl ? 'Copied cURL' : 'Copy cURL Command'}
                 </Button>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs flex items-center gap-1.5"
-                    onClick={() => setActiveTab('jq')}
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Back to JQ Transformation Builder
-                  </Button>
                   <Button size="sm" onClick={handleExecuteDirectPush} disabled={submitting} className="h-8 text-xs">
                     {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
                     Push Metric Values
@@ -714,25 +726,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
               {/* Template & Transformation Selector Bar */}
               <div className="flex flex-col gap-3 p-3 bg-muted/20 rounded-lg border border-border">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground font-medium">Built-in Template:</span>
-                    <select
-                      value={selectedTemplateId}
-                      onChange={(e) => handleSelectTemplate(e.target.value)}
-                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                      aria-label="Transformation Template"
-                    >
-                      <option value="">-- Choose Built-in Template... --</option>
-                      {TRANSFORMATION_TEMPLATES.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="text-muted-foreground font-medium">Saved Transformation:</span>
                     <select
@@ -847,6 +840,25 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   </div>
                 </div>
 
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground font-medium">Built-in Template:</span>
+                    <select
+                      value={selectedTemplateId}
+                      onChange={(e) => handleSelectTemplate(e.target.value)}
+                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
+                      aria-label="Transformation Template"
+                    >
+                      <option value="">-- Choose Built-in Template... --</option>
+                      {TRANSFORMATION_TEMPLATES.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Save Feedback Alert */}
                 {saveFeedback && (
                   <div
@@ -916,7 +928,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
               {/* Foreign JSON Sample & JQ Filter */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-muted-foreground font-medium text-xs">Input Data Sample:</label>
+                  <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
                   <Textarea
                     value={samplePayload}
                     onChange={(e) => setSamplePayload(e.target.value)}
@@ -947,6 +959,52 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 </div>
               </div>
 
+              {/* ── Preview Section ───────────────────────────────────────────── */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <h3>Preview</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  {jqTransformedReq && (
+                    <div className="flex items-center bg-muted/60 p-0.5 rounded-md border border-border">
+                      <button
+                        type="button"
+                        onClick={() => setJqPreviewMode('table')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                          jqPreviewMode === 'table'
+                            ? 'bg-background text-foreground font-medium shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        aria-label="Table Preview"
+                      >
+                        <Table className="h-3.5 w-3.5" />
+                        <span>Table</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setJqPreviewMode('payload')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                          jqPreviewMode === 'payload'
+                            ? 'bg-background text-foreground font-medium shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        aria-label="Inspect Payload"
+                      >
+                        <FileCode className="h-3.5 w-3.5" />
+                        <span>Inspect Payload</span>
+                      </button>
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleRunJqTransform}
+                    className="h-8 text-xs flex items-center gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Execute JQ Dry-Run
+                  </Button>
+                </div>
+              </div>
+
               {jqTransformError && (
                 <Alert variant="destructive" className="py-2">
                   <AlertCircle className="h-4 w-4" />
@@ -954,12 +1012,52 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 </Alert>
               )}
 
-              {jqReconciliation && (
-                <div className="mt-2">
+              {jqTransformedReq && jqPreviewMode === 'payload' && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      Transformed JSON Payload ({jqTransformedReq.values.length} element
+                      {jqTransformedReq.values.length === 1 ? '' : 's'}):
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={handleCopyTransformedPayload}
+                    >
+                      {copiedPayload ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-400 mr-1" /> Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3 mr-1" /> Copy Payload
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <pre
+                    className="font-mono text-xs p-3 bg-background rounded-md border border-border overflow-x-auto max-h-64 select-all text-foreground whitespace-pre"
+                    data-testid="transformed-payload-preview"
+                  >
+                    {JSON.stringify(jqTransformedReq, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {jqTransformedReq && jqPreviewMode === 'table' && jqReconciliation && (
+                <div className="mt-1">
                   <MetricDryRunPreview summary={jqReconciliation} metricName={metric.name} />
                 </div>
               )}
 
+              {!jqTransformedReq && !jqTransformError && (
+                <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-md">
+                  Click &ldquo;Execute JQ Dry-Run&rdquo; to evaluate the transformation, preview matched elements, or inspect the payload.
+                </div>
+              )}
+
+              <h3>Push</h3>
               {/* Endpoint Information Banner */}
               <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-muted/40 rounded-lg border border-border text-xs">
                 <div className="flex flex-wrap items-center gap-2">
@@ -979,25 +1077,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   {copiedScript ? 'Copied CI Script' : 'Copy CI/CD Automation Script'}
                 </Button>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs flex items-center gap-1.5"
-                    onClick={() => setActiveTab('direct')}
-                  >
-                    <FileCode className="h-3.5 w-3.5" />
-                    Direct JSON Push
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleRunJqTransform}
-                    className="h-8 text-xs flex items-center gap-1.5"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Execute JQ Dry-Run
-                  </Button>
                   <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
                     {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
                     Push Transformed Values
