@@ -73,7 +73,7 @@ export default function MapPage() {
 
   // ── Sidebar visibility: hide on full-panel routes ─────────────────────────
   // useMatch must be called unconditionally so we call it for each panel route.
-  const matchMetrics     = useMatch('/session/:id/metrics');
+  const matchMetrics     = useMatch({ path: '/session/:id/metrics', end: false });
   const matchMatrix      = useMatch('/session/:id/matrix');
   const matchChores      = useMatch('/session/:id/chores');
   const matchGreenkeeping = useMatch({ path: '/session/:id/greenkeeping', end: false });

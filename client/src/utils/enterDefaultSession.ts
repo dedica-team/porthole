@@ -5,9 +5,9 @@ import { resolveDefaultSessionId } from './sessionCookies';
 
 /**
  * After login: loads the session list, determines the user's default
- * session (previously chosen one via cookie, or the first session in the
- * store) and navigates straight into it. Falls back to the lobby if no
- * session is available or the list could not be loaded.
+ * session (previously chosen one via cookie, if the user is a collaborator
+ * in it) and navigates straight into it. Falls back to the lobby if no
+ * matching session is available or the list could not be loaded.
  */
 export async function enterDefaultSession(
   userId: string,
@@ -20,7 +20,7 @@ export async function enterDefaultSession(
     setMaps(maps);
     const defaultId = resolveDefaultSessionId(maps, userId);
     const map = defaultId ? maps.find((m) => m.id === defaultId) : undefined;
-    if (map) {
+    if (map && map.collaborators?.some((c) => c.id === userId)) {
       setCurrentMap(map);
       navigate(`/session/${map.id}`, { replace: true });
       return;

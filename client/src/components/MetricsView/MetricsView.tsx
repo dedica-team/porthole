@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import {
-  BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle, Trash2,
+  BarChart2, Plus, Loader2, Check, X, AlertTriangle, Users, HelpCircle, Trash2, Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,10 +64,11 @@ interface MetricDefEditDialogProps {
   readOnly?: boolean;
   onSave: (metricId: string, name: string, description: string, link?: string, clearLink?: boolean) => void;
   onDelete: (metricId: string) => void;
+  onPushValues?: (metric: QualityMetric) => void;
   onClose: () => void;
 }
 
-function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave, onDelete, onClose }: MetricDefEditDialogProps) {
+function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave, onDelete, onPushValues, onClose }: MetricDefEditDialogProps) {
   const [name, setName] = useState(metric?.name ?? '');
   const [desc, setDesc] = useState(metric?.description ?? '');
   const [link, setLink] = useState(metric?.link ?? '');
@@ -124,6 +126,21 @@ function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave,
                 placeholder="Link URL (optional)"
                 type="url"
               />
+            )}
+            {!readOnly && onPushValues && (
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth={true}
+                className="gap-1.5 text-xs h-8"
+                onClick={() => {
+                  handleClose();
+                  onPushValues(metric);
+                }}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Import Values
+              </Button>
             )}
             <div className="flex justify-end gap-2 pt-1">
               {readOnly ? (
@@ -450,6 +467,7 @@ function LandmarkEditDialog({ landmark, groups, loading, onSave, onRemove, onClo
 }
 
 export default function MetricsView() {
+  const navigate = useNavigate();
   const {
     handleCreateMetric: onCreateMetric,
     handleCreateUnpositionedLandmark: onCreateUnpositionedLandmark,
@@ -667,6 +685,21 @@ export default function MetricsView() {
           </button>
           {isCollaborator && (
             <>
+              {metrics.length > 0 && (
+                <button
+                  className={cardBtnCls}
+                  onClick={() => {
+                    if (metrics.length > 0) {
+                      navigate(`/session/${currentMap.id}/metrics/${metrics[0].id}/push`);
+                    } else {
+                      navigate(`/session/${currentMap.id}/metrics/push`);
+                    }
+                  }}
+                  title="Push metric values via REST API or JQ"
+                >
+                  <Send className="h-3.5 w-3.5" /> Push Values
+                </button>
+              )}
               <button className={cardBtnCls} onClick={() => setShowCreateLandmarkDialog(true)} title="Create a new element without position">
                 <Plus className="h-3.5 w-3.5" /> Element
               </button>
@@ -723,6 +756,10 @@ export default function MetricsView() {
         onDelete={(id) => {
           onRemoveMetric(id);
           setEditingMetricDef(null);
+        }}
+        onPushValues={(m) => {
+          setEditingMetricDef(null);
+          navigate(`/session/${currentMap.id}/metrics/${m.id}/push`);
         }}
         onClose={() => setEditingMetricDef(null)}
       />
@@ -791,19 +828,31 @@ export default function MetricsView() {
                       </svg>
                       {totalHiddenFilters > 0 ? `${totalHiddenFilters} hidden` : 'Filter'}
                     </Button></th>
-                  {visibleMetrics.map((m) => (
-                    <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium bg-transparent align-bottom">
-                      <Button
-                        variant="ghost"
-                        fullWidth={true}
-                        title={m.description || undefined}
-                        className={isCollaborator ? undefined : 'metrics-metric-trigger text-muted-foreground normal-case'}
-                        onClick={() => openMetricDef(m, !isCollaborator)}
-                      >
-                        {m.name}
-                      </Button>
-                    </th>
-                  ))}
+                  {visibleMetrics.map((m) => {
+                    const hasTransformations = Boolean(m.transformations && m.transformations.length > 0);
+                    return (
+                      <th key={m.id} className="metrics-metric-header-cell text-left px-3 py-2 font-medium bg-transparent align-bottom">
+                        <Button
+                          variant="ghost"
+                          fullWidth={true}
+                          title={m.description || undefined}
+                          className={isCollaborator ? undefined : 'metrics-metric-trigger text-muted-foreground normal-case'}
+                          onClick={() => openMetricDef(m, !isCollaborator)}
+                        >
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <span className="truncate">{m.name}</span>
+                            {hasTransformations && (
+                              <Send
+                                className="h-3.5 w-3.5 text-primary shrink-0"
+                                aria-label="Has transformations"
+                                data-testid="metric-has-transformations"
+                              />
+                            )}
+                          </span>
+                        </Button>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -1047,8 +1096,8 @@ export default function MetricsView() {
         open={showCreateLandmarkDialog}
         loading={loading}
         groups={groups}
-        onSubmit={(name, type, description, groupId, link) => {
-          onCreateUnpositionedLandmark(name, type, description, groupId, link);
+        onSubmit={(name, type, description, groupId, link, links, aliases) => {
+          onCreateUnpositionedLandmark(name, type, description, groupId, link, links, aliases);
         }}
         onClose={() => setShowCreateLandmarkDialog(false)}
       />

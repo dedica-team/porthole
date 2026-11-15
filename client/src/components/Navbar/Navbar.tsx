@@ -212,7 +212,7 @@ export default function Navbar() {
   // ── Active-tab detection via route matching ───────────────────────────────
   // Each tab corresponds to a sub-route; useMatch drives the active highlight.
   const mapId = currentMap?.id;
-  const matchMetrics      = useMatch('/session/:id/metrics');
+  const matchMetrics      = useMatch({ path: '/session/:id/metrics', end: false });
   const matchMatrix       = useMatch('/session/:id/matrix');
   const matchChores       = useMatch('/session/:id/chores');
   const matchGreenkeeping = useMatch({ path: '/session/:id/greenkeeping', end: false });

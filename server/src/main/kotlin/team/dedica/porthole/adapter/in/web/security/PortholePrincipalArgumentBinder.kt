@@ -1,6 +1,5 @@
 package team.dedica.porthole.adapter.`in`.web.security
 
-import io.micronaut.core.bind.ArgumentBinder
 import io.micronaut.core.bind.ArgumentBinder.BindingResult
 import io.micronaut.core.convert.ArgumentConversionContext
 import io.micronaut.core.type.Argument
@@ -9,6 +8,7 @@ import io.micronaut.http.bind.binders.TypedRequestArgumentBinder
 import io.micronaut.security.authentication.Authentication
 import io.micronaut.security.filters.SecurityFilter
 import jakarta.inject.Singleton
+import team.dedica.porthole.application.port.UserPort
 import java.util.*
 
 /**
@@ -26,7 +26,9 @@ import java.util.*
  * to protected routes before the controller is reached).
  */
 @Singleton
-class PortholePrincipalArgumentBinder : TypedRequestArgumentBinder<PortholePrincipal> {
+class PortholePrincipalArgumentBinder(
+    private val userRepository: UserPort? = null,
+) : TypedRequestArgumentBinder<PortholePrincipal> {
 
     private val argumentType: Argument<PortholePrincipal> = Argument.of(PortholePrincipal::class.java)
 
@@ -48,8 +50,35 @@ class PortholePrincipalArgumentBinder : TypedRequestArgumentBinder<PortholePrinc
     }
 
     private fun Authentication.toPortholePrincipal(): PortholePrincipal? {
-        val rawUserId = attributes[PortholePrincipal.USER_ID_ATTRIBUTE] ?: return null
-        val userId = runCatching { UUID.fromString(rawUserId.toString()) }.getOrNull() ?: return null
-        return PortholePrincipal(userId = userId, username = name)
+        val rawLocalUserId = attributes[PortholePrincipal.USER_ID_ATTRIBUTE]
+        if (rawLocalUserId != null) {
+            val userId = runCatching { UUID.fromString(rawLocalUserId.toString()) }.getOrNull()
+                ?: return null
+            val username = (attributes["preferred_username"] as? String)?.takeIf { it.isNotBlank() }
+                ?: (attributes["name"] as? String)?.takeIf { it.isNotBlank() }
+                ?: (attributes["user_name"] as? String)?.takeIf { it.isNotBlank() }
+                ?: name
+                ?: "unknown"
+            return PortholePrincipal(userId = userId, username = username)
+        }
+
+        val subject = attributes["sub"]?.toString()
+            ?: attributes["id"]?.toString()
+            ?: name
+            ?: return null
+
+        val localUser = userRepository?.findByKeycloakId(subject)
+        val userId = localUser?.id ?: runCatching { UUID.fromString(subject) }.getOrElse {
+            UUID.nameUUIDFromBytes(subject.toByteArray())
+        }
+
+        val username = localUser?.username
+            ?: (attributes["preferred_username"] as? String)?.takeIf { it.isNotBlank() }
+            ?: (attributes["name"] as? String)?.takeIf { it.isNotBlank() }
+            ?: (attributes["user_name"] as? String)?.takeIf { it.isNotBlank() }
+            ?: name
+            ?: "unknown"
+
+        return PortholePrincipal(userId = userId, username = username)
     }
 }

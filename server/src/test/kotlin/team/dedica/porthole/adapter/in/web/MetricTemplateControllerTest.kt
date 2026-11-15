@@ -8,7 +8,7 @@ import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.GetMetricTemplatesPort
 import team.dedica.porthole.application.port.UserPort
@@ -29,7 +29,7 @@ class MetricTemplateControllerTest {
     lateinit var objectMapper: ObjectMapper
 
     @Inject
-    lateinit var jwtTokenProvider: JwtTokenProvider
+    lateinit var userSessionStore: UserSessionStore
 
     @Inject
     lateinit var getMetricTemplatesPort: GetMetricTemplatesPort
@@ -82,7 +82,7 @@ class MetricTemplateControllerTest {
     private fun token(): String {
         val testUserId = UUID.nameUUIDFromBytes("test-user-id".toByteArray())
         whenever(userPort.findById(testUserId)).thenReturn(UserRecord(id = testUserId, username = "testuser"))
-        return jwtTokenProvider.generateToken(testUserId, "testuser")
+        return userSessionStore.createSession(testUserId, "testuser")
     }
 
     private fun get(path: String, bearer: String? = null): HttpResponse<String> {

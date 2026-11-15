@@ -1,6 +1,9 @@
 package team.dedica.porthole.application.session.metrics
 
 import jakarta.inject.Singleton
+import team.dedica.porthole.application.DataSanitationUtils.cleanAliases
+import team.dedica.porthole.application.DataSanitationUtils.cleanLink
+import team.dedica.porthole.application.DataSanitationUtils.cleanLinks
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -27,7 +30,9 @@ class CreateUnpositionedLandmarkUseCase(
         type: LandmarkType = LandmarkType.KEEP,
         description: String? = null,
         groupId: UUID? = null,
+        links: Map<String, String>? = null,
         link: String? = null,
+        aliases: List<String>? = null,
     ): SessionState {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
 
@@ -36,6 +41,14 @@ class CreateUnpositionedLandmarkUseCase(
         require(state.landmarks.values.none { it.name == name.trim() }) { "A landmark named '$name' already exists" }
 
         val id = UUID.randomUUID()
+        val resolvedLinks = when {
+            links != null -> cleanLinks(links)
+            link != null -> {
+                val cleaned = cleanLink(link)
+                if (cleaned != null) mapOf("default" to cleaned) else emptyMap()
+            }
+            else -> emptyMap()
+        }
 
         state.landmarks[id] = Landmark(
             id = id,
@@ -45,7 +58,8 @@ class CreateUnpositionedLandmarkUseCase(
             type = type,
             description = description,
             groupId = groupId,
-            link = link,
+            links = resolvedLinks,
+            aliases = aliases?.let { cleanAliases(it) } ?: emptyList(),
         )
 
         sessionStatePort.save(state)

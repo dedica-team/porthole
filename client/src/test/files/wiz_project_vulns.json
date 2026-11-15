@@ -1,0 +1,55 @@
+{
+  "data": {
+    "projects": {
+      "nodes": [
+        {
+          "id": "8a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+          "name": "Production Web Infrastructure",
+          "slug": "prod-web-infra",
+          "businessUnit": "E-Commerce",
+          "riskScore": 850,
+          "vulnerabilitySummary": {
+            "critical": 3,
+            "high": 12,
+            "medium": 27,
+            "low": 15,
+            "total": 57
+          }
+        },
+        {
+          "id": "1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+          "name": "Payment Gateway Service",
+          "slug": "payment-gateway",
+          "businessUnit": "Fintech",
+          "riskScore": 320,
+          "vulnerabilitySummary": {
+            "critical": 0,
+            "high": 4,
+            "medium": 9,
+            "low": 2,
+            "total": 15
+          }
+        },
+        {
+          "id": "2c3d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f",
+          "name": "Analytics Pipeline",
+          "slug": "analytics-pipeline",
+          "businessUnit": "Data Platform",
+          "riskScore": 50,
+          "vulnerabilitySummary": {
+            "critical": 0,
+            "high": 0,
+            "medium": 2,
+            "low": 8,
+            "total": 10
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "eyJpZCI6IjJjM2Q0ZTVmIn0="
+      },
+      "totalCount": 3
+    }
+  }
+}

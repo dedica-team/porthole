@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Pencil, ExternalLink, Check, Trash2, MoreHorizontal, ClipboardList } from 'lucide-react';
+import { Pencil, ExternalLink, Check, Trash2, MoreHorizontal, ClipboardList, X } from 'lucide-react';
 import { Popup } from '@/components/ui/popup';
 import { Separator } from '@/components/ui/separator';
 import { StatusBadge, StatusIndicator, qualityLevelToStatus, matrixLevelToStatus, choreStateToStatus } from '@/components/ui/status-badge';
@@ -29,6 +29,10 @@ interface Props {
     link?: string,
     clearLink?: boolean,
     ownerId?: string | null,
+    links?: Record<string, string>,
+    clearLinks?: boolean,
+    aliases?: string[],
+    clearAliases?: boolean,
   ) => void;
   onRemoveLandmark: (landmarkId: string) => void;
   onEditConnection?: (
@@ -83,9 +87,9 @@ export default function LandmarkInfoPopover({
   const [editType, setEditType] = useState<LandmarkType>('KEEP');
   const [editDescription, setEditDescription] = useState('');
   const [editGroupId, setEditGroupId] = useState('');
-  const [editLink, setEditLink] = useState('');
-  const [linkError, setLinkError] = useState('');
   const [editOwnerId, setEditOwnerId] = useState('');
+  const [editLinks, setEditLinks] = useState<{ key: string; url: string; error?: string }[]>([]);
+  const [editAliases, setEditAliases] = useState('');
 
   // ── Connection edit state ────────────────────────────────────────────────────
   const [connEditOpen, setConnEditOpen] = useState(false);
@@ -127,9 +131,14 @@ export default function LandmarkInfoPopover({
     setEditType(landmark.type);
     setEditDescription(landmark.description ?? '');
     setEditGroupId(landmark.groupId ?? '');
-    setEditLink(landmark.link ?? '');
     setEditOwnerId(landmark.ownerId ?? '');
-    setLinkError('');
+    const currentLinks = landmark.links && Object.keys(landmark.links).length > 0
+      ? Object.entries(landmark.links).map(([key, url]) => ({ key, url, error: '' }))
+      : landmark.link
+      ? [{ key: 'repository', url: landmark.link, error: '' }]
+      : [];
+    setEditLinks(currentLinks);
+    setEditAliases((landmark.aliases ?? []).join(', '));
     setInfoOpen(false);
     setEditOpen(true);
   };
@@ -138,11 +147,26 @@ export default function LandmarkInfoPopover({
     e.preventDefault();
     const trimmed = editName.trim();
     if (!isDecorative(editType) && !trimmed) return;
-    const trimmedLink = editLink.trim();
-    if (trimmedLink && !isValidUrl(trimmedLink)) {
-      setLinkError('Must be a valid http/https URL');
+
+    const validatedLinks = editLinks.map((l) => {
+      const key = l.key.trim();
+      const url = l.url.trim();
+      if (!key && url) return { ...l, error: 'Key required' };
+      if (url && !isValidUrl(url)) return { ...l, error: 'Must be a valid http/https URL' };
+      return { ...l, error: '' };
+    });
+    if (validatedLinks.some((l) => l.error)) {
+      setEditLinks(validatedLinks);
       return;
     }
+
+    const linksMap: Record<string, string> = {};
+    for (const l of validatedLinks) {
+      if (l.key.trim() && l.url.trim()) {
+        linksMap[l.key.trim()] = l.url.trim();
+      }
+    }
+
     const prevGroupId = landmark.groupId ?? null;
     const newGroupId = editGroupId || null;
     const groupChanged = newGroupId !== prevGroupId;
@@ -150,6 +174,18 @@ export default function LandmarkInfoPopover({
     const prevOwnerId = landmark.ownerId ?? null;
     const newOwnerId = editOwnerId || null;
     const ownerChanged = newOwnerId !== prevOwnerId;
+
+    const hasLinks = Object.keys(linksMap).length > 0;
+    const hadLinks = (landmark.links && Object.keys(landmark.links).length > 0) || !!landmark.link;
+
+    const parsedAliases = editAliases
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+    const hadAliases = (landmark.aliases ?? []).length > 0;
+    const clearAliases = parsedAliases.length === 0 && hadAliases;
+    const aliasesChanged = JSON.stringify(parsedAliases) !== JSON.stringify(landmark.aliases ?? []);
+
     onEditLandmark(
       landmark.id,
       trimmed || undefined,
@@ -157,9 +193,13 @@ export default function LandmarkInfoPopover({
       editDescription.trim() || undefined,
       groupChanged && newGroupId ? newGroupId : undefined,
       clearGroup,
-      trimmedLink || undefined,
-      trimmedLink === '' && !!landmark.link,
+      undefined,
+      false,
       ownerChanged ? newOwnerId : undefined,
+      hasLinks ? linksMap : undefined,
+      !hasLinks && hadLinks,
+      aliasesChanged ? parsedAliases : undefined,
+      clearAliases,
     );
     setEditOpen(false);
   };
@@ -216,18 +256,57 @@ export default function LandmarkInfoPopover({
             <p className="text-foreground/80 leading-relaxed">{landmark.description}</p>
           )}
 
-          {landmark.link && (
-            <a
-              href={landmark.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-foreground hover:opacity-70 truncate"
-              title={landmark.link}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink className="h-3 w-3 shrink-0" />
-              <span className="truncate">{landmark.link}</span>
-            </a>
+          {((landmark.links && Object.keys(landmark.links).length > 0) || landmark.link) && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs text-muted-foreground font-medium">Links</span>
+              <div className="flex flex-col gap-1">
+                {landmark.links && Object.keys(landmark.links).length > 0 ? (
+                  Object.entries(landmark.links).map(([key, url]) => (
+                    <div key={key} className="flex items-center gap-1.5 min-w-0 text-xs">
+                      <span className="font-mono text-muted-foreground uppercase px-1 py-0.5 rounded bg-muted/60 shrink-0 text-[10px]">
+                        {key}
+                      </span>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-foreground hover:opacity-70 truncate flex-1"
+                        title={url}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{url}</span>
+                      </a>
+                    </div>
+                  ))
+                ) : landmark.link ? (
+                  <a
+                    href={landmark.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-foreground hover:opacity-70 truncate"
+                    title={landmark.link}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{landmark.link}</span>
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {landmark.aliases && landmark.aliases.length > 0 && (
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs text-muted-foreground font-medium">Aliases</span>
+              <div className="flex flex-wrap gap-1">
+                {landmark.aliases.map((alias) => (
+                  <span key={alias} className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted text-foreground border border-border">
+                    {alias}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
@@ -428,6 +507,13 @@ export default function LandmarkInfoPopover({
             placeholder={isDecorative(editType) ? 'Name (optional)' : 'Name'}
           />
 
+          <Input
+            value={editAliases}
+            onChange={(e) => setEditAliases(e.target.value)}
+            className="h-8 text-sm"
+            placeholder="Aliases (comma-separated, optional)"
+          />
+
           <select
             value={editType}
             onChange={(e) => setEditType(e.target.value as LandmarkType)}
@@ -472,15 +558,56 @@ export default function LandmarkInfoPopover({
             </select>
           )}
 
-          <div className="flex flex-col gap-0.5">
-            <Input
-              value={editLink}
-              onChange={(e) => { setEditLink(e.target.value); setLinkError(''); }}
-              className={`h-8 text-sm${linkError ? ' border-destructive' : ''}`}
-              placeholder="Link (optional, https://…)"
-              type="url"
-            />
-            {linkError && <span className="text-sm text-destructive px-1">{linkError}</span>}
+          <div className="flex flex-col gap-1.5 pt-1">
+            <span className="text-xs font-semibold text-foreground">Links</span>
+            {editLinks.map((l, index) => (
+              <div key={index} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={l.key}
+                    onChange={(e) => {
+                      const n = [...editLinks];
+                      n[index].key = e.target.value;
+                      setEditLinks(n);
+                    }}
+                    className="h-8 text-sm w-24 shrink-0"
+                    placeholder="Key (repo)"
+                  />
+                  <Input
+                    value={l.url}
+                    onChange={(e) => {
+                      const n = [...editLinks];
+                      n[index].url = e.target.value;
+                      n[index].error = '';
+                      setEditLinks(n);
+                    }}
+                    className={`h-8 text-sm flex-1${l.error ? ' border-destructive' : ''}`}
+                    placeholder="https://..."
+                    type="url"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 p-0 shrink-0"
+                    onClick={() => setEditLinks((prev) => prev.filter((_, i) => i !== index))}
+                    title="Remove link"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                {l.error && <span className="text-xs text-destructive px-1">{l.error}</span>}
+              </div>
+            ))}
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="w-full h-7 text-xs"
+              onClick={() => setEditLinks((prev) => [...prev, { key: prev.length === 0 ? 'repository' : '', url: '' }])}
+            >
+              + Add Link
+            </Button>
           </div>
 
           <div className="flex flex-col gap-2 pt-2">

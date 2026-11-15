@@ -16,8 +16,8 @@ import org.mockito.kotlin.whenever
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
 import team.dedica.porthole.adapter.`in`.web.security.GitHubOAuthStateService
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
@@ -26,7 +26,7 @@ import java.util.UUID
 class OAuthControllerTest {
 
     private val gitHubOAuthService = mock<GitHubOAuthService>()
-    private val jwtTokenProvider = mock<JwtTokenProvider>()
+    private val userSessionStore = UserSessionStore()
     private val userRepository = mock<UserPort>()
     private val gitHubOAuthStateService = GitHubOAuthStateService()
     private val props = PortholeAuthPropertiesTestFactory.withGitHub()
@@ -39,7 +39,7 @@ class OAuthControllerTest {
         controller = OAuthController(
             gitHubOAuthService,
             gitHubOAuthStateService,
-            jwtTokenProvider,
+            userSessionStore,
             authCookieService,
             userRepository,
             adminService,
@@ -48,13 +48,18 @@ class OAuthControllerTest {
     }
 
     @Test
-    fun `existing user by githubId gets a JWT`() {
+    fun `existing user by githubId gets a session token`() {
         val id = UUID.nameUUIDFromBytes("u1".toByteArray())
-        whenever(jwtTokenProvider.generateToken(id, "alice")).thenReturn("token-alice")
+        val token = userSessionStore.createSession(id, "alice")
+        assertNotNull(token)
+        assertEquals("alice", userSessionStore.getSession(token)?.username)
+    }
 
-        val token = jwtTokenProvider.generateToken(id, "alice")
-        assertEquals("token-alice", token)
-        verify(jwtTokenProvider).generateToken(id, "alice")
+    @Test
+    fun `expired session token is evicted and returns null`() {
+        val id = UUID.nameUUIDFromBytes("u1".toByteArray())
+        val token = userSessionStore.createSession(id, "alice", ttl = java.time.Duration.ofMillis(-10))
+        assertNull(userSessionStore.getSession(token))
     }
 
     @Test
@@ -103,7 +108,6 @@ class OAuthControllerTest {
         whenever(gitHubOAuthService.exchangeCodeForToken("valid-code", "http://localhost:5173/auth/github/callback")).thenReturn("gh-access")
         whenever(gitHubOAuthService.fetchUserInfo("gh-access")).thenReturn(userInfo)
         whenever(gitHubOAuthService.upsertUser(userInfo)).thenReturn(userRecord)
-        whenever(jwtTokenProvider.generateToken(id, "alice")).thenReturn("jwt-alice")
 
         val response = controller.githubCallback("valid-code", "expected-state", requestWithStateCookie("expected-state"))
         assertEquals(HttpStatus.OK, response.status)
@@ -118,7 +122,8 @@ class OAuthControllerTest {
 
         val authCookie = response.cookies.findCookie(props.cookie.cookieName).orElse(null)
         assertNotNull(authCookie, "Auth cookie must be set")
-        assertEquals("jwt-alice", authCookie!!.value)
+        assertTrue(authCookie!!.value.isNotBlank())
+        assertEquals("alice", userSessionStore.getSession(authCookie.value)?.username)
     }
 
     @Test
@@ -144,12 +149,29 @@ class OAuthControllerTest {
 
     @Test
     fun `logout clears auth cookie`() {
-        val response = controller.logout()
+        val id = UUID.randomUUID()
+        val token = userSessionStore.createSession(id, "alice")
+        val req = SimpleHttpRequestFactory().post("/api/auth/logout", "")
+            .cookie(Cookie.of(props.cookie.cookieName, token))
+        val response = controller.logout(req)
 
         assertEquals(HttpStatus.NO_CONTENT, response.status)
         val authCookie = response.cookies.findCookie(props.cookie.cookieName).orElse(null)
         assertNotNull(authCookie, "Auth cookie must be cleared")
         assertEquals("", authCookie!!.value)
+        assertNull(userSessionStore.getSession(token))
+    }
+
+    @Test
+    fun `logout removes session via Authorization Bearer header`() {
+        val id = UUID.randomUUID()
+        val token = userSessionStore.createSession(id, "alice")
+        val req = SimpleHttpRequestFactory().post("/api/auth/logout", "")
+            .header(io.micronaut.http.HttpHeaders.AUTHORIZATION, "Bearer $token")
+        val response = controller.logout(req)
+
+        assertEquals(HttpStatus.NO_CONTENT, response.status)
+        assertNull(userSessionStore.getSession(token))
     }
 
     @Test

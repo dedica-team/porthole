@@ -2,12 +2,12 @@ package team.dedica.porthole.config
 
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.core.annotation.Introspected
+import java.time.Duration
 
 @ConfigurationProperties("porthole.auth")
 @Introspected
 class PortholeAuthProperties {
     var cookie: Cookie = Cookie()
-    var jwt: Jwt = Jwt()
     var allowedOrigins: String = "http://localhost:5173,http://localhost:8080"
     var github: GitHub = GitHub()
     var keycloak: Keycloak = Keycloak()
@@ -21,21 +21,7 @@ class PortholeAuthProperties {
         var cookiePath: String = "/"
         var cookieSameSite: String = "Lax"
         var cookieSecure: Boolean = false
-    }
-
-    @Introspected
-    @ConfigurationProperties("jwt")
-    class Jwt {
-        var secret: String = INSECURE_DEFAULT
-        var expirationMs: Long = 86_400_000L
-        var issuer: String = "porthole"
-        var audience: String = "porthole-api"
-
-        fun isUsingDefaultSecret(): Boolean = secret.trim() == INSECURE_DEFAULT
-
-        companion object {
-            const val INSECURE_DEFAULT = "change-me-in-production-this-is-not-a-real-secret!!"
-        }
+        var maxAge: Duration = Duration.ofDays(1)
     }
 
     @Introspected

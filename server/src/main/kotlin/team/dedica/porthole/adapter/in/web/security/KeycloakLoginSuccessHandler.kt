@@ -36,7 +36,7 @@ import java.net.URI
 @Singleton
 class KeycloakLoginSuccessHandler(
     private val keycloakOAuthService: KeycloakOAuthService,
-    private val jwtTokenProvider: JwtTokenProvider,
+    private val userSessionStore: UserSessionStore,
     private val authCookieService: AuthCookieService,
     props: PortholeAuthProperties,
 ) : RedirectingLoginHandler<HttpRequest<*>, MutableHttpResponse<*>> {
@@ -65,7 +65,19 @@ class KeycloakLoginSuccessHandler(
                 avatarUrl = attributes[CLAIM_PICTURE] as? String,
             ),
         )
-        val token = jwtTokenProvider.generateToken(user.id, user.username)
+
+        val token = (attributes["id_token"] as? String)
+            ?: (attributes["access_token"] as? String)
+            ?: (attributes["token"] as? String)
+            ?: (attributes["raw_token"] as? String)
+            ?: (attributes["openIdToken"]?.let { obj ->
+                runCatching {
+                    (obj.javaClass.methods.firstOrNull { it.name == "getIdToken" }?.invoke(obj) as? String)
+                        ?: (obj.javaClass.methods.firstOrNull { it.name == "getAccessToken" }?.invoke(obj) as? String)
+                }.getOrNull()
+            })
+            ?: userSessionStore.createSession(user.id, user.username)
+
         log.debug("Keycloak login established a Porthole session for user {}", user.username)
         return redirectToFrontend().cookie(authCookieService.createAuthCookie(token))
     }

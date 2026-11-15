@@ -205,7 +205,21 @@ interface Props {
   onStartConnection: (type: ConnectionType, name?: string, description?: string) => void;
   onCancelConnection: () => void;
   onRemoveLandmark: () => void;
-  onEditLandmark: (landmarkId: string, name?: string, type?: LandmarkType, description?: string, groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean, ownerId?: string | null) => void;
+  onEditLandmark: (
+    landmarkId: string,
+    name?: string,
+    type?: LandmarkType,
+    description?: string,
+    groupId?: string,
+    clearGroup?: boolean,
+    link?: string,
+    clearLink?: boolean,
+    ownerId?: string | null,
+    links?: Record<string, string>,
+    clearLinks?: boolean,
+    aliases?: string[],
+    clearAliases?: boolean,
+  ) => void;
   onEditConnection: (connectionId: string, type?: ConnectionType, name?: string, description?: string, clearName?: boolean, clearDescription?: boolean) => void;
   onRemoveConnection: (connectionId: string) => void;
   onCreateMetric: (name: string, description: string) => void;

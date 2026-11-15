@@ -118,9 +118,9 @@ micronaut:
         # (DefaultReactiveOpenIdTokenResponseValidator requires JwtTokenValidator).
         enabled: true
         signatures:
-          secret:
-            generator:
-              secret: ${PORTHOLE_JWT_SECRET:${porthole.auth.jwt.secret}}
+          jwks:
+            keycloak:
+              url: '${PORTHOLE_KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/porthole}/protocol/openid-connect/certs'
 
 jackson:
   # Use reflection + jackson-module-kotlin for (de)serialization so Kotlin
@@ -145,11 +145,6 @@ porthole:
       cookie-path: ${PORTHOLE_AUTH_COOKIE_PATH:/}
       cookie-same-site: ${PORTHOLE_AUTH_COOKIE_SAME_SITE:Lax}
       cookie-secure: ${PORTHOLE_AUTH_COOKIE_SECURE:false}
-    jwt:
-      secret: ${PORTHOLE_JWT_SECRET:change-me-in-production-this-is-not-a-real-secret!!}
-      expiration-ms: ${PORTHOLE_JWT_EXPIRATION_MS:86400000}
-      issuer: ${PORTHOLE_JWT_ISSUER:porthole}
-      audience: ${PORTHOLE_JWT_AUDIENCE:porthole-api}
     allowed-origins: ${PORTHOLE_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
     github:
       client-id: ${PORTHOLE_GITHUB_CLIENT_ID:}

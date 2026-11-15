@@ -16,6 +16,7 @@ const MapPage = lazy(() => import('./pages/MapPage/MapPage'));
 const RegularMapView = lazy(() => import('./pages/MapPage/RegularMapView'));
 const ProcessMapView = lazy(() => import('./pages/MapPage/ProcessMapView'));
 const MetricsView = lazy(() => import('./components/MetricsView/MetricsView'));
+const MetricPushView = lazy(() => import('./components/MetricsView/MetricPushView'));
 const CollaboratorMatrixView = lazy(() => import('./components/CollaboratorMatrixView/CollaboratorMatrixView'));
 const ChoreListsView = lazy(() => import('./components/ChoreListsView/ChoreListsView'));
 const GreenkeepingRotationsView = lazy(() => import('./components/GreenkeepingRotationsView/GreenkeepingRotationsView'));
@@ -62,6 +63,8 @@ function App() {
                 <Route path="processes" element={<ProcessMapView />} />
                 <Route path="editor" element={<EditorMapView />} />
                 <Route path="metrics" element={<MetricsView />} />
+                <Route path="metrics/push" element={<MetricPushView />} />
+                <Route path="metrics/:metricId/push" element={<MetricPushView />} />
                 <Route path="matrix" element={<CollaboratorMatrixView />} />
                 <Route path="chores" element={<ChoreListsView />} />
                 <Route path="greenkeeping" element={<GreenkeepingRotationsView />} />

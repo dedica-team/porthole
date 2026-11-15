@@ -57,20 +57,4 @@ class KeycloakEnabledTest {
         val kc = PortholeAuthProperties.Keycloak()
         assertFalse(kc.isEnabled())
     }
-
-    @Test
-    fun `jwt isUsingDefaultSecret returns true for default secret`() {
-        val jwt = PortholeAuthProperties.Jwt().apply {
-            secret = PortholeAuthProperties.Jwt.INSECURE_DEFAULT
-        }
-        assertTrue(jwt.isUsingDefaultSecret())
-    }
-
-    @Test
-    fun `jwt isUsingDefaultSecret returns false for custom secret`() {
-        val jwt = PortholeAuthProperties.Jwt().apply {
-            secret = "my-very-secure-custom-secret-for-production-use!!"
-        }
-        assertFalse(jwt.isUsingDefaultSecret())
-    }
 }

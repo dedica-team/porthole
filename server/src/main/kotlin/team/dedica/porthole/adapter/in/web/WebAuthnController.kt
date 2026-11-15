@@ -13,7 +13,7 @@ import io.micronaut.http.annotation.Post
 import org.slf4j.LoggerFactory
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.adapter.out.repository.YubicoCredentialRepository
@@ -88,14 +88,14 @@ data class AssertionResponse(
 // ── Pending session cache ─────────────────────────────────────────────────────
 
 private data class PendingRegistration(
-    val options: com.yubico.webauthn.data.PublicKeyCredentialCreationOptions,
+    val options: PublicKeyCredentialCreationOptions,
     val pendingUserId: UUID,
     val pendingUsername: String,
     val createdAt: Long = System.currentTimeMillis(),
 )
 
 private data class PendingAssertion(
-    val request: com.yubico.webauthn.AssertionRequest,
+    val request: AssertionRequest,
     val expectedUsername: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
 )
@@ -107,7 +107,7 @@ private const val SESSION_TTL_MS = 5 * 60 * 1_000L
 @Controller("/api/auth/webauthn")
 class WebAuthnController(
     private val userRepository: UserPort,
-    private val jwtTokenProvider: JwtTokenProvider,
+    private val userSessionStore: UserSessionStore,
     private val authCookieService: AuthCookieService,
     private val adminService: AdminService,
     props: PortholeAuthProperties,
@@ -236,7 +236,7 @@ class WebAuthnController(
         )
         userRepository.save(userRecord)
 
-        val token = jwtTokenProvider.generateToken(userRecord.id, userRecord.username)
+        val token = userSessionStore.createSession(userRecord.id, userRecord.username)
         return HttpResponse.ok(AuthResponse(userRecord.id, userRecord.username, userRecord.avatarUrl, isAdmin = adminService.isAdmin(userRecord.id)))
             .cookie(authCookieService.createAuthCookie(token))
     }
@@ -330,7 +330,7 @@ class WebAuthnController(
             userRepository.save(user.copy(passkeyCredential = updatedCred))
         }
 
-        val token = jwtTokenProvider.generateToken(user.id, user.username)
+        val token = userSessionStore.createSession(user.id, user.username)
         return HttpResponse.ok(AuthResponse(user.id, user.username, user.avatarUrl, isAdmin = adminService.isAdmin(user.id)))
             .cookie(authCookieService.createAuthCookie(token))
     }

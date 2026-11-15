@@ -1,6 +1,7 @@
 package team.dedica.porthole.application.session.landscaping
 
 import jakarta.inject.Singleton
+import team.dedica.porthole.application.DataSanitationUtils
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
@@ -32,6 +33,7 @@ class PlaceLandmarkUseCase(
         coordinate: HexCoordinate,
         name: String,
         type: LandmarkType = LandmarkType.KEEP,
+        aliases: List<String>? = null,
     ): SessionState {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
 
@@ -42,7 +44,14 @@ class PlaceLandmarkUseCase(
         require(state.getLandmarkAt(coordinate) == null) { "A landmark already exists at $coordinate" }
 
         val id = UUID.randomUUID()
-        val landmark = Landmark(id = id, name = name, ownerId = null, coordinate = coordinate, type = type)
+        val landmark = Landmark(
+            id = id,
+            name = name,
+            ownerId = null,
+            coordinate = coordinate,
+            type = type,
+            aliases = aliases?.let { DataSanitationUtils.cleanAliases(it) } ?: emptyList(),
+        )
         state.landmarks[landmark.id] = landmark
 
         // Reroute any existing connections whose path now crosses the newly occupied tile.

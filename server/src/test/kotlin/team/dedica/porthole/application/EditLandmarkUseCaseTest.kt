@@ -138,7 +138,17 @@ class EditLandmarkUseCaseTest {
     @Test
     fun `owner can set a valid link`() {
         val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, link = "https://example.com")
-        assertEquals("https://example.com", result.landmarks[t1Key]!!.link)
+        assertEquals("https://example.com", result.landmarks[t1Key]!!.links["default"])
+    }
+
+    @Test
+    fun `owner can set multiple valid links`() {
+        val result = useCase.execute(
+            state.id, collaborator1.id, t1Id, null, null,
+            links = mapOf("repo" to "https://github.com/repo", "docs" to "https://docs.example.com")
+        )
+        assertEquals("https://github.com/repo", result.landmarks[t1Key]!!.links["repo"])
+        assertEquals("https://docs.example.com", result.landmarks[t1Key]!!.links["docs"])
     }
 
     @Test
@@ -156,17 +166,25 @@ class EditLandmarkUseCaseTest {
     }
 
     @Test
-    fun `blank link is stored as null`() {
+    fun `blank link is stored as emptyMap`() {
         val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, link = "   ")
-        assertNull(result.landmarks[t1Key]!!.link)
+        assertTrue(result.landmarks[t1Key]!!.links.isEmpty())
     }
 
     @Test
     fun `owner can clear link with clearLink flag`() {
-        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(link = "https://example.com")
+        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(links = mapOf("default" to "https://example.com"))
         mapStatePort.save(state)
         val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, clearLink = true)
-        assertNull(result.landmarks[t1Key]!!.link)
+        assertTrue(result.landmarks[t1Key]!!.links.isEmpty())
+    }
+
+    @Test
+    fun `owner can clear links with clearLinks flag`() {
+        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(links = mapOf("repo" to "https://example.com"))
+        mapStatePort.save(state)
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, clearLinks = true)
+        assertTrue(result.landmarks[t1Key]!!.links.isEmpty())
     }
 
     // ── Owner ─────────────────────────────────────────────────────────────────
@@ -247,5 +265,27 @@ class EditLandmarkUseCaseTest {
         val result = useCase.execute(state.id, collaborator1.id, t1Id, "Old Ruins", null)
         assertEquals(LandmarkType.RUINS, result.landmarks[t1Key]!!.type)
         assertEquals(0, result.gameState.buildingHealth[t1Id])
+    }
+
+    @Test
+    fun `owner can set aliases and duplicates or empty entries are cleaned`() {
+        val result = useCase.execute(
+            state.id,
+            collaborator1.id,
+            t1Id,
+            null,
+            null,
+            aliases = listOf(" auth-service ", "auth-svc", "auth-service", "   ", "auth-v1")
+        )
+        assertEquals(listOf("auth-service", "auth-svc", "auth-v1"), result.landmarks[t1Key]!!.aliases)
+    }
+
+    @Test
+    fun `owner can clear aliases with clearAliases flag`() {
+        state.landmarks[t1Key] = state.landmarks[t1Key]!!.copy(aliases = listOf("alias-1", "alias-2"))
+        mapStatePort.save(state)
+
+        val result = useCase.execute(state.id, collaborator1.id, t1Id, null, null, clearAliases = true)
+        assertTrue(result.landmarks[t1Key]!!.aliases.isEmpty())
     }
 }

@@ -1,27 +1,25 @@
 package team.dedica.porthole.adapter.`in`.web
 
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import team.dedica.porthole.adapter.`in`.web.security.AdminService
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import team.dedica.porthole.adapter.out.repository.PasskeyCredential
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.port.UserPort
 import team.dedica.porthole.config.PortholeAuthPropertiesTestFactory
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 class WebAuthnControllerTest {
 
     private val userRepository = mock<UserPort>()
-    private val jwtTokenProvider = mock<JwtTokenProvider>()
+    private val userSessionStore = UserSessionStore()
     private val props = PortholeAuthPropertiesTestFactory.withWebAuthn()
     private val authCookieService = AuthCookieService(props)
     private val adminService = AdminService("")
@@ -31,12 +29,11 @@ class WebAuthnControllerTest {
     fun setUp() {
         controller = WebAuthnController(
             userRepository = userRepository,
-            jwtTokenProvider = jwtTokenProvider,
+            userSessionStore = userSessionStore,
             authCookieService = authCookieService,
             adminService = adminService,
             props = props,
         )
-        whenever(jwtTokenProvider.generateToken(any(), any())).thenAnswer { "token-${it.arguments[1]}" }
     }
 
     private val HttpResponse<*>.code: Int get() = status.code

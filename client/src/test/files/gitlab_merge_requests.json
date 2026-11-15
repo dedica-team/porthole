@@ -1,0 +1,50 @@
+[
+  {
+    "id": 278964,
+    "name": "Production Web Infrastructure",
+    "name_with_namespace": "Infrastructure / Production Web Infrastructure",
+    "path": "prod-web-infra",
+    "path_with_namespace": "infra/prod-web-infra",
+    "created_at": "2026-01-10T08:00:00.000Z",
+    "default_branch": "main",
+    "web_url": "https://gitlab.example.com/infra/prod-web-infra",
+    "open_issues_count": 8,
+    "open_merge_requests_count": 5,
+    "star_count": 14,
+    "forks_count": 3,
+    "last_activity_at": "2026-11-14T20:15:00.000Z",
+    "visibility": "private"
+  },
+  {
+    "id": 278965,
+    "name": "Payment Gateway Service",
+    "name_with_namespace": "Fintech / Payment Gateway Service",
+    "path": "payment-gateway",
+    "path_with_namespace": "services/payment-gateway",
+    "created_at": "2026-02-15T10:30:00.000Z",
+    "default_branch": "main",
+    "web_url": "https://gitlab.example.com/services/payment-gateway",
+    "open_issues_count": 3,
+    "open_merge_requests_count": 2,
+    "star_count": 7,
+    "forks_count": 1,
+    "last_activity_at": "2026-11-14T18:40:00.000Z",
+    "visibility": "private"
+  },
+  {
+    "id": 278966,
+    "name": "Analytics Pipeline",
+    "name_with_namespace": "Data Platform / Analytics Pipeline",
+    "path": "analytics-pipeline",
+    "path_with_namespace": "data/analytics-pipeline",
+    "created_at": "2026-03-01T14:00:00.000Z",
+    "default_branch": "main",
+    "web_url": "https://gitlab.example.com/data/analytics-pipeline",
+    "open_issues_count": 0,
+    "open_merge_requests_count": 0,
+    "star_count": 22,
+    "forks_count": 5,
+    "last_activity_at": "2026-11-14T16:10:00.000Z",
+    "visibility": "private"
+  }
+]

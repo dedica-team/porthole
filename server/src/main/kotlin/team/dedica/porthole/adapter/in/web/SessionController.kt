@@ -192,7 +192,8 @@ class SessionController(
                 user.userId,
                 HexCoordinate(request.q, request.r),
                 request.name,
-                type
+                type,
+                request.aliases,
             )
         )
     }
@@ -213,7 +214,9 @@ class SessionController(
                 type,
                 request.description,
                 request.groupId?.let { UUID.fromString(it) },
-                request.link
+                request.links,
+                request.link,
+                request.aliases,
             )
         )
     }
@@ -237,7 +240,7 @@ class SessionController(
     fun removeLandmark(
         @PathVariable id: String,
         @PathVariable landmarkId: String,
-         user: PortholePrincipal,
+        user: PortholePrincipal,
     ) = HttpResponse.ok(
         removeLandmarkUseCase.execute(
             UUID.fromString(id),
@@ -267,10 +270,14 @@ class SessionController(
                 request.description,
                 request.groupId?.let { UUID.fromString(it) },
                 request.clearGroup,
+                request.links,
+                request.clearLinks,
                 request.link,
                 request.clearLink,
                 request.ownerId?.let { UUID.fromString(it) },
                 request.clearOwner,
+                request.aliases,
+                request.clearAliases,
             )
         )
     }

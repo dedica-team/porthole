@@ -338,11 +338,12 @@ export async function placeLandmark(
   r: number,
   name: string,
   type: LandmarkType = 'KEEP',
+  aliases?: string[],
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ q, r, name, type }),
+    body: JSON.stringify({ q, r, name, type, aliases: aliases ?? null }),
   });
   return handleResponse<SessionState>(res);
 }
@@ -369,6 +370,10 @@ export async function editLandmark(
   link?: string,
   clearLink?: boolean,
   ownerId?: string | null,
+  links?: Record<string, string>,
+  clearLinks?: boolean,
+  aliases?: string[],
+  clearAliases?: boolean,
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
     method: 'PATCH',
@@ -379,10 +384,14 @@ export async function editLandmark(
       description: description ?? null,
       groupId: groupId ?? null,
       clearGroup: clearGroup ?? false,
+      links: links ?? null,
+      clearLinks: clearLinks ?? false,
       link: link ?? null,
       clearLink: clearLink ?? false,
       ownerId: ownerId !== undefined ? ownerId : null,
       clearOwner: ownerId === null,
+      aliases: aliases ?? null,
+      clearAliases: clearAliases ?? false,
     }),
   });
   return handleResponse<SessionState>(res);
@@ -567,6 +576,53 @@ export async function clearLandmarkMetric(
   return handleResponse<SessionState>(res);
 }
 
+export async function pushMetricValues(
+  mapId: string,
+  metricIdentifier: string,
+  request: import('@/types/landmark').PushMetricValuesRequest,
+): Promise<import('@/types/landmark').PushMetricValuesResponse> {
+  const res = await fetch(
+    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricIdentifier)}/values`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(request),
+    },
+  );
+  return handleResponse<import('@/types/landmark').PushMetricValuesResponse>(res);
+}
+
+export async function saveMetricTransformation(
+  mapId: string,
+  metricId: string,
+  transformation: Partial<import('@/types/landmark').MetricTransformation> & { name: string; requestUrl: string },
+): Promise<SessionState> {
+  const res = await fetch(
+    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/transformations`,
+    {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(transformation),
+    },
+  );
+  return handleResponse<SessionState>(res);
+}
+
+export async function deleteMetricTransformation(
+  mapId: string,
+  metricId: string,
+  transformationId: string,
+): Promise<SessionState> {
+  const res = await fetch(
+    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/transformations/${encodeURIComponent(transformationId)}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+  );
+  return handleResponse<SessionState>(res);
+}
+
 // ── Metric Templates ────────────────────────────────────────────────────────
 
 export async function fetchMetricTemplates(): Promise<MetricTemplate[]> {
@@ -583,6 +639,8 @@ export async function createUnpositionedLandmark(
   description?: string,
   groupId?: string,
   link?: string,
+  links?: Record<string, string>,
+  aliases?: string[],
 ): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/unpositioned`, {
     method: 'POST',
@@ -593,6 +651,8 @@ export async function createUnpositionedLandmark(
       description: description ?? null,
       groupId: groupId ?? null,
       link: link ?? null,
+      links: links ?? null,
+      aliases: aliases ?? null,
     }),
   });
   return handleResponse<SessionState>(res);

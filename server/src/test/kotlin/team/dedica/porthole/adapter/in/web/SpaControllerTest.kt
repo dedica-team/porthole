@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.adapter.`in`.web.security.AuthCookieService
-import team.dedica.porthole.adapter.`in`.web.security.JwtTokenProvider
+import team.dedica.porthole.adapter.`in`.web.security.UserSessionStore
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -28,7 +28,7 @@ class SpaControllerTest {
     lateinit var server: EmbeddedServer
 
     @Inject
-    lateinit var jwtTokenProvider: JwtTokenProvider
+    lateinit var userSessionStore: UserSessionStore
 
     @Inject
     lateinit var authCookieService: AuthCookieService
@@ -44,7 +44,7 @@ class SpaControllerTest {
     }
 
     private fun authCookieHeader(): String {
-        val token = jwtTokenProvider.generateToken(UUID.randomUUID(), "spa-tester")
+        val token = userSessionStore.createSession(UUID.randomUUID(), "spa-tester")
         val cookie = authCookieService.createAuthCookie(token)
         return "${cookie.name}=${cookie.value}"
     }

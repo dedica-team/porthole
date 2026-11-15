@@ -350,10 +350,13 @@ describe('AuthPage – automatically enters the default session after login', ()
     await waitFor(() => expect(screen.getByTestId('lobby-page')).toBeInTheDocument());
   });
 
-  it('respects a previously chosen default session stored in the cookie', async () => {
+  it('respects a previously chosen default session stored in the cookie when the user is a collaborator', async () => {
     const { setDefaultSessionId } = await import('../utils/sessionCookies');
     setDefaultSessionId('u1', 'm2');
-    vi.mocked(mapApi.listMaps).mockResolvedValue([makeMap('m1'), makeMap('m2')]);
+    vi.mocked(mapApi.listMaps).mockResolvedValue([
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: 'u1', username: 'alice' }] },
+    ]);
     vi.mocked(mapApi.webauthnAuthStart).mockResolvedValue({
       sessionId: 's1',
       challenge: 'Y2hhbGxlbmdl',
@@ -370,6 +373,31 @@ describe('AuthPage – automatically enters the default session after login', ()
 
     await waitFor(() => expect(screen.getByTestId('session-page')).toBeInTheDocument());
     expect(useMapStore.getState().currentMap?.id).toBe('m2');
+  });
+
+  it('falls back to the lobby when the stored default session does not have the user as collaborator', async () => {
+    const { setDefaultSessionId } = await import('../utils/sessionCookies');
+    setDefaultSessionId('u1', 'm2');
+    vi.mocked(mapApi.listMaps).mockResolvedValue([
+      makeMap('m1'),
+      { ...makeMap('m2'), collaborators: [{ id: 'u2', username: 'bob' }] },
+    ]);
+    vi.mocked(mapApi.webauthnAuthStart).mockResolvedValue({
+      sessionId: 's1',
+      challenge: 'Y2hhbGxlbmdl',
+      allowCredentials: [],
+      userVerification: 'preferred',
+      timeout: 60000,
+    });
+    const mockCred = { id: 'cred-id', rawId: new ArrayBuffer(8), type: 'public-key', response: { clientDataJSON: new ArrayBuffer(0), authenticatorData: new ArrayBuffer(0), signature: new ArrayBuffer(0), userHandle: null } };
+    vi.stubGlobal('navigator', { credentials: { get: vi.fn().mockResolvedValue(mockCred) } });
+    vi.mocked(mapApi.webauthnAuthFinish).mockResolvedValue(mockAuthResponse);
+
+    renderAuthPage();
+    fireEvent.click(screen.getByRole('button', { name: /sign in with passkey/i }));
+
+    await waitFor(() => expect(screen.getByTestId('lobby-page')).toBeInTheDocument());
+    expect(screen.queryByTestId('session-page')).not.toBeInTheDocument();
   });
 });
 

@@ -33,6 +33,7 @@ data class PlaceLandmarkRequest(
     val r: Int,
     @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val name: String,
     val type: String = "KEEP",
+    val aliases: List<@Size(max = NAME_MAX_LENGTH) String>? = null,
 )
 
 @Introspected
@@ -42,10 +43,14 @@ data class EditLandmarkRequest(
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     val groupId: String? = null,
     val clearGroup: Boolean = false,
+    val links: Map<String, String>? = null,
+    val clearLinks: Boolean = false,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val link: String? = null,
     val clearLink: Boolean = false,
     val ownerId: String? = null,
     val clearOwner: Boolean = false,
+    val aliases: List<@Size(max = NAME_MAX_LENGTH) String>? = null,
+    val clearAliases: Boolean = false,
 )
 
 @Introspected
@@ -127,7 +132,9 @@ data class CreateUnpositionedLandmarkRequest(
     val type: String = "KEEP",
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     val groupId: String? = null,
+    val links: Map<String, String>? = null,
     @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
+    val aliases: List<@Size(max = NAME_MAX_LENGTH) String>? = null,
 )
 
 @Introspected

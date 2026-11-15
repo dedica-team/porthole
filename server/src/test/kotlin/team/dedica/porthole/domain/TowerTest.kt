@@ -24,6 +24,13 @@ class LandmarkTest {
     fun `default type is KEEP`() {
         val landmark = Landmark(l1Id, "Test", p1Id, coord)
         assertEquals(LandmarkType.KEEP, landmark.type)
+        assertTrue(landmark.aliases.isEmpty())
+    }
+
+    @Test
+    fun `landmark stores aliases`() {
+        val landmark = Landmark(l1Id, "Test", p1Id, coord, aliases = listOf("alias-1", "alias-2"))
+        assertEquals(listOf("alias-1", "alias-2"), landmark.aliases)
     }
 
     @Test

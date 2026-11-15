@@ -1,10 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import MetricsView from '../components/MetricsView/MetricsView';
 import { useMapStore, useAuthStore } from '../store/mapStore';
 import * as mapApi from '../api/mapApi';
 import type {Landmark, LandmarkGroup, QualityMetric} from '../types/landmark';
 import * as MapActionsContext from '../pages/MapPage/MapActionsContext';
+
+function render(ui: React.ReactElement = <MetricsView />) {
+  return rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+}
 // ── shared fixtures ────────────────────────────────────────────────────────
 
 const METRIC_AVAIL = { id: 'm1', name: 'Availability', description: 'Uptime %' };
@@ -795,6 +800,37 @@ describe('MetricsView', () => {
     expect(stored).toContain('m2');
     localStorage.removeItem('landmarks.metrics.hiddenGroups');
     localStorage.removeItem('landmarks.metrics.hiddenMetrics');
+  });
+
+  // ── transformations indicator ─────────────────────────────────────────────
+
+  it('renders transformation symbol in column header when metric has transformations', () => {
+    const metricWithTransformations: QualityMetric = {
+      ...METRIC_AVAIL,
+      transformations: [
+        {
+          id: 't1',
+          name: 'Prometheus Uptime',
+          metricId: 'm1',
+          requestUrl: 'https://prom.example.com/api/v1/query',
+          httpMethod: 'GET',
+          jqFilter: '.',
+          matchBy: 'NAME',
+        },
+      ],
+    };
+    setup({ m1: metricWithTransformations, m2: METRIC_COVERAGE }, { lm1: LM_IN_A });
+    render(<MetricsView />);
+
+    expect(screen.getByTestId('metric-has-transformations')).toBeInTheDocument();
+    expect(screen.getAllByTestId('metric-has-transformations')).toHaveLength(1);
+  });
+
+  it('does not render transformation symbol when metric has no transformations', () => {
+    setup({ m1: METRIC_AVAIL, m2: METRIC_COVERAGE }, { lm1: LM_IN_A });
+    render(<MetricsView />);
+
+    expect(screen.queryByTestId('metric-has-transformations')).not.toBeInTheDocument();
   });
 });
 

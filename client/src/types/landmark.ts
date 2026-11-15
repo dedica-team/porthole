@@ -39,11 +39,62 @@ export function worstLevel(entries: LandmarkMetricEntry[]): QualityLevel {
   );
 }
 
+export type MatchStrategy = 'NAME' | 'LINK' | 'ALIAS';
+
+export interface MetricTransformation {
+  id: string;
+  name: string;
+  metricId: string;
+  requestUrl: string;
+  httpMethod: string;
+  jqFilter: string;
+  matchBy: MatchStrategy;
+  matchKey?: string;
+  lastPayloadSample?: string;
+  updatedAt?: string;
+}
+
+export interface MetricTransformationTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  requestUrl: string;
+  httpMethod: string;
+  jqFilter: string;
+  matchBy: MatchStrategy;
+  matchKey?: string;
+  samplePayload: string;
+  directPayloadSample?: PushMetricValuesRequest;
+}
+
+export interface MetricElementValueDto {
+  element: string;
+  value?: string;
+  level?: QualityLevel;
+  description?: string;
+  link?: string;
+  linkText?: string;
+  badges?: Record<string, string>;
+}
+
+export interface PushMetricValuesRequest {
+  matchBy: MatchStrategy;
+  matchKey?: string;
+  values: MetricElementValueDto[];
+}
+
+export interface PushMetricValuesResponse {
+  updatedCount: number;
+  unmatchedElements: string[];
+  warnings: string[];
+}
+
 export interface QualityMetric {
   id: string;
   name: string;
   description: string;
   link?: string;
+  transformations?: MetricTransformation[];
 }
 
 export interface MetricTemplate {
@@ -134,6 +185,8 @@ export interface Landmark {
   description?: string;
   groupId?: string;
   link?: string;
+  links?: Record<string, string>;
   metrics?: Record<string, LandmarkMetricEntry>;
+  aliases?: string[];
 }
 

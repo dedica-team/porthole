@@ -521,14 +521,33 @@ class JsonSessionStateRepositoryTest {
             val repo = JsonSessionStateRepository(store)
             val state = SessionState(map = HexMap.createHexagonal(radius = 2, elevationFn = { 1 }))
             val metricId = UUID.nameUUIDFromBytes("m1".toByteArray())
-            val metric = QualityMetric(id = metricId, name = "Availability", description = "Uptime %")
+            val transformationId = UUID.randomUUID()
+            val transformation = MetricTransformation(
+                id = transformationId,
+                name = "SonarQube Scan",
+                metricId = metricId,
+                requestUrl = "https://sonar.example.com/api/measures",
+                httpMethod = "GET",
+                jqFilter = "[.component.measures[] | { element: .component, value: .value }]",
+                matchBy = MatchStrategy.NAME,
+            )
+            val metric = QualityMetric(
+                id = metricId,
+                name = "Availability",
+                description = "Uptime %",
+                transformations = listOf(transformation),
+            )
             state.metrics[metric.id] = metric
             repo.save(state)
             flush(store)
 
             val loaded = repoAt(dir).findById(state.id)!!
             assertEquals(1, loaded.metrics.size)
-            assertEquals("Availability", loaded.metrics[metricId]!!.name)
+            val loadedMetric = loaded.metrics[metricId]!!
+            assertEquals("Availability", loadedMetric.name)
+            assertEquals(1, loadedMetric.transformations.size)
+            assertEquals("SonarQube Scan", loadedMetric.transformations.first().name)
+            assertEquals("https://sonar.example.com/api/measures", loadedMetric.transformations.first().requestUrl)
         }
 
         @Test

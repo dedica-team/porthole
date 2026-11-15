@@ -132,14 +132,16 @@ export function useMapPageActions() {
 
   // ── Landmark handlers ────────────────────────────────────────────────────────
 
-  const handlePlaceLandmark = useCallback((q: number, r: number, name: string, type: LandmarkType) => {
-    withAction(() => placeLandmark(currentMap!.id, q, r, name, type));
+  const handlePlaceLandmark = useCallback((q: number, r: number, name: string, type: LandmarkType, aliases?: string[]) => {
+    withAction(() => (aliases !== undefined
+      ? placeLandmark(currentMap!.id, q, r, name, type, aliases)
+      : placeLandmark(currentMap!.id, q, r, name, type)));
   }, [currentMap, withAction]);
 
   const handleCreateUnpositionedLandmark = useCallback((
-    name: string, type: LandmarkType, description?: string, groupId?: string, link?: string,
+    name: string, type: LandmarkType, description?: string, groupId?: string, link?: string, links?: Record<string, string>, aliases?: string[],
   ) => {
-    withAction(() => createUnpositionedLandmark(currentMap!.id, name, type, description, groupId, link));
+    withAction(() => createUnpositionedLandmark(currentMap!.id, name, type, description, groupId, link, links, aliases));
   }, [currentMap, withAction]);
 
   const handlePositionLandmark = useCallback((landmarkId: string, q: number, r: number) => {
@@ -160,9 +162,10 @@ export function useMapPageActions() {
   const handleEditLandmark = useCallback((
     landmarkId: string, name?: string, type?: LandmarkType, description?: string,
     groupId?: string, clearGroup?: boolean, link?: string, clearLink?: boolean,
-    ownerId?: string | null,
+    ownerId?: string | null, links?: Record<string, string>, clearLinks?: boolean,
+    aliases?: string[], clearAliases?: boolean,
   ) => {
-    withAction(() => editLandmark(currentMap!.id, landmarkId, name, type, description, groupId, clearGroup, link, clearLink, ownerId));
+    withAction(() => editLandmark(currentMap!.id, landmarkId, name, type, description, groupId, clearGroup, link, clearLink, ownerId, links, clearLinks, aliases, clearAliases));
   }, [currentMap, withAction]);
 
   const handleEditLandmarkGroup = useCallback((landmarkId: string, groupId: string | null) => {
