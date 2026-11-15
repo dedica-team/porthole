@@ -1,6 +1,7 @@
 package team.dedica.porthole.adapter.`in`.web.dto
 
 import io.micronaut.core.annotation.Introspected
+import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import team.dedica.porthole.domain.MatchStrategy
@@ -23,6 +24,7 @@ data class MetricElementValueDto(
 data class PushMetricValuesRequest(
     val matchBy: MatchStrategy = MatchStrategy.NAME,
     val matchKey: String? = null,
+    @field:Valid
     val values: List<MetricElementValueDto> = emptyList(),
 )
 

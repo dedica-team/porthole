@@ -106,6 +106,42 @@ describe('jqEvaluator & jqWorker', () => {
     expect(res.success).toBe(true);
     expect(res.data).toEqual(input);
   });
+
+  it('traverses nested arrays preserving iterator tokens in .groups[].items[].name', () => {
+    const input = {
+      groups: [
+        { items: [{ name: 'svc-auth' }, { name: 'svc-billing' }] },
+        { items: [{ name: 'svc-gateway' }] },
+      ],
+    };
+    const res = evaluateJq(input, '[.groups[].items[].name]');
+    expect(res.success).toBe(true);
+    expect(res.data).toEqual(['svc-auth', 'svc-billing', 'svc-gateway']);
+  });
+
+  it('models empty streams through pipelines and drops non-matching items in select(...)', () => {
+    const input = [
+      { name: 'svc-a', active: true, score: 90 },
+      { name: 'svc-b', active: false, score: 40 },
+      { name: 'svc-c', active: true, score: 85 },
+    ];
+    const res = evaluateJq(
+      input,
+      '[.[] | select(.active == true) | { element: .name, value: (.score | tostring) }]',
+    );
+    expect(res.success).toBe(true);
+    expect(res.data).toEqual([
+      { element: 'svc-a', value: '90' },
+      { element: 'svc-c', value: '85' },
+    ]);
+  });
+
+  it('explicitly rejects unrecognized or misspelled expressions instead of returning identity', () => {
+    const input = [{ name: 'test' }];
+    const res = evaluateJq(input, 'sort_by(.name)');
+    expect(res.success).toBe(false);
+    expect(res.error).toContain('Unsupported JQ filter: sort_by(.name)');
+  });
 });
 
 describe('metricService', () => {
@@ -114,6 +150,27 @@ describe('metricService', () => {
     expect(canonicalUrl('http://gitlab.example.com/team/service.git/')).toBe('https://gitlab.example.com/team/service');
     expect(canonicalUrl('https://GITHUB.COM/team/repo/')).toBe('https://github.com/team/repo');
     expect(canonicalUrl('ssh://git@gitlab.com/group/project.git')).toBe('https://gitlab.com/group/project');
+  });
+
+  it('reconciles batch push elements gracefully when items are malformed or non-string', () => {
+    const landmarks: Landmark[] = [
+      { id: 'lm1', name: 'Auth Service', type: 'KEEP', ownerId: null },
+    ];
+
+    const req: PushMetricValuesRequest = {
+      matchBy: 'NAME',
+      values: [
+        // @ts-expect-error testing runtime malformed data from custom JQ
+        null,
+        // @ts-expect-error testing runtime number element
+        { element: 12345, value: '10' },
+        { element: 'Auth Service', value: '99%' },
+      ],
+    };
+
+    const summary = reconcileMetricPush(landmarks, req);
+    expect(summary.matchedCount).toBe(1);
+    expect(summary.unmatchedCount).toBe(1);
   });
 
   it('reconciles batch push elements against map landmarks by name', () => {
@@ -161,7 +218,7 @@ describe('metricService', () => {
     expect(summary.rows[0].status).toBe('MATCHED');
   });
 
-  it('generates sample payload, cURL snippets, and automation scripts', () => {
+  it('generates sample payload, cURL snippets, and shell-quoted automation scripts', () => {
     const landmarks: Landmark[] = [
       { id: 'lm1', name: 'Gateway', type: 'KEEP', ownerId: null },
     ];
@@ -175,16 +232,17 @@ describe('metricService', () => {
     expect(curl).toContain('Authorization: Bearer jwt_token');
 
     const script = generateAutomationScript(
-      'https://api.test/prs',
-      'GET',
-      '[.[] | { element: .name, value: .count }]',
+      'https://api.test/prs?query=foo bar',
+      'POST',
+      "[.[] | { element: .name, value: .count }]",
       'sess123',
-      'Coverage',
-      'NAME',
-      undefined,
+      'Coverage Area',
+      'ALIAS',
+      'repo key',
       'https://porthole.test',
     );
-    expect(script).toContain('curl -s "https://api.test/prs"');
-    expect(script).toContain('https://porthole.test/api/sessions/sess123/metrics/Coverage/values');
+    expect(script).toContain("curl -s -X 'POST' 'https://api.test/prs?query=foo bar'");
+    expect(script).toContain("--arg matchBy 'ALIAS' --arg matchKey 'repo key'");
+    expect(script).toContain("https://porthole.test/api/sessions/sess123/metrics/Coverage%20Area/values");
   });
 });

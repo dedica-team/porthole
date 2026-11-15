@@ -35,10 +35,18 @@ class AuthCookieService(private val props: PortholeAuthProperties) {
             .path(cookiePath)
             .maxAge(Duration.ZERO)
 
-    fun resolveToken(request: HttpRequest<*>): String? =
+    fun resolveCookieToken(request: HttpRequest<*>): String? =
         request.cookies.findCookie(cookieName)
             .map { it.value }
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .orElse(null)
+
+    fun resolveToken(request: HttpRequest<*>): String? =
+        request.headers.get(io.micronaut.http.HttpHeaders.AUTHORIZATION)
+            ?.takeIf { it.startsWith("Bearer ", ignoreCase = true) }
+            ?.substring("Bearer ".length)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: resolveCookieToken(request)
 }

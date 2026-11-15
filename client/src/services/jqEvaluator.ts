@@ -1,12 +1,14 @@
 /**
  * Pure client-side JQ transformation engine for arbitrary JSON payloads.
- * Supports standard JQ filter constructs:
+ * Supports standard JQ filter constructs with stream and iterator semantics:
  * - Field access: `.field`, `.foo.bar`, `.["key"]`
- * - Array operations: `.[]`, `.[0]`, `.[0:2]`
+ * - Nested array iterators: `.groups[].items[].name`
+ * - Array operations: `.[]`, `.[0]`
  * - Array construction: `[ .[] | ... ]`
  * - Object construction: `{ element: .title, value: .count, ... }`
- * - Pipe chaining: `expr1 | expr2`
+ * - Pipe chaining with stream propagation: `expr1 | expr2`
  * - Functions: `tostring`, `tonumber`, `length`, `keys`, `map(...)`, `select(...)`
+ * - Conditionals & fallbacks: `if ... then ... elif ... else ... end`, `expr1 // expr2`
  */
 
 export interface JqEvaluationResult {
@@ -31,108 +33,191 @@ export function evaluateJq(inputJson: unknown, filterStr: string): JqEvaluationR
 }
 
 function executeFilter(input: unknown, filter: string): unknown {
+  const stream = executeFilterStream(input, filter);
+  if (stream.length === 1) return stream[0];
+  if (stream.length === 0) return null;
+  return stream;
+}
+
+function executeFilterStream(input: unknown, filter: string): unknown[] {
   const trimmed = filter.trim();
-  if (trimmed === '.') return input;
+  if (!trimmed || trimmed === '.') return [input];
 
   // Handle fallback operator: expr1 // expr2
   const fallbackIdx = findTopLevelFallbackIndex(trimmed);
   if (fallbackIdx !== -1) {
     const left = trimmed.slice(0, fallbackIdx).trim();
     const right = trimmed.slice(fallbackIdx + 2).trim();
-    const leftRes = executeFilter(input, left);
-    if (leftRes !== null && leftRes !== undefined && leftRes !== false && leftRes !== '') {
-      return leftRes;
+    const leftStream = executeFilterStream(input, left);
+    const valid = leftStream.filter((v) => v !== null && v !== undefined && v !== false && v !== '');
+    if (valid.length > 0) {
+      return valid;
     }
-    return executeFilter(input, right);
+    return executeFilterStream(input, right);
   }
 
   // Handle if-then-elif-else-end conditionals
   if (trimmed.startsWith('if ') && trimmed.endsWith('end')) {
-    return evaluateIfElse(input, trimmed);
+    return [evaluateIfElse(input, trimmed)];
   }
 
   // Handle top-level array construction: [ ... ]
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     const inner = trimmed.slice(1, -1).trim();
-    if (!inner) return [];
-    const elements = evalMultiExpression(input, inner);
-    return Array.isArray(elements) ? elements : [elements];
+    if (!inner) return [[]];
+    const elements = executeFilterStream(input, inner);
+    return [elements];
   }
 
-  // Handle pipe: expr1 | expr2 (taking care of braces and brackets)
+  // Handle pipe: expr1 | expr2
   const pipeSegments = splitByTopLevelPipe(trimmed);
   if (pipeSegments.length > 1) {
-    let current = input;
+    let currentStream = [input];
     for (const seg of pipeSegments) {
-      current = executeFilter(current, seg);
+      currentStream = currentStream.flatMap((item) => executeFilterStream(item, seg));
     }
-    return current;
+    return currentStream;
   }
 
   // Handle map(expr)
   if (trimmed.startsWith('map(') && trimmed.endsWith(')')) {
     if (!Array.isArray(input)) throw new Error('Cannot apply map() to non-array');
     const expr = trimmed.slice(4, -1).trim();
-    return input.map((item) => executeFilter(item, expr));
+    const mapped = input.flatMap((item) => executeFilterStream(item, expr));
+    return [mapped];
   }
 
   // Handle select(condition)
   if (trimmed.startsWith('select(') && trimmed.endsWith(')')) {
     const condition = trimmed.slice(7, -1).trim();
     const condResult = evaluateCondition(input, condition);
-    return condResult ? input : null;
+    return condResult ? [input] : [];
   }
 
   // Handle built-ins
   if (trimmed === 'tostring') {
-    if (input === null || input === undefined) return '';
-    if (typeof input === 'object') return JSON.stringify(input);
-    return String(input);
+    if (input === null || input === undefined) return [''];
+    if (typeof input === 'object') return [JSON.stringify(input)];
+    return [String(input)];
   }
   if (trimmed === 'tonumber') {
-    return Number(input);
+    return [Number(input)];
   }
   if (trimmed === 'length') {
-    if (Array.isArray(input)) return input.length;
-    if (typeof input === 'string') return input.length;
-    if (input && typeof input === 'object') return Object.keys(input).length;
-    return 0;
+    if (Array.isArray(input)) return [input.length];
+    if (typeof input === 'string') return [input.length];
+    if (input && typeof input === 'object') return [Object.keys(input).length];
+    return [0];
   }
   if (trimmed === 'keys') {
-    if (input && typeof input === 'object') return Object.keys(input);
-    return [];
+    if (input && typeof input === 'object') return [Object.keys(input)];
+    return [[]];
   }
 
   // Handle array iterator: .[]
   if (trimmed === '.[]') {
-    if (Array.isArray(input)) return input;
+    if (Array.isArray(input)) return [...input];
     if (input && typeof input === 'object') return Object.values(input);
     throw new Error('Cannot iterate over non-iterable value');
   }
 
   // Handle object construction: { key: expr, key2: expr }
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-    return buildObject(input, trimmed.slice(1, -1));
+    return [buildObject(input, trimmed.slice(1, -1))];
   }
 
-  // Handle field access: .foo or .foo.bar or .["foo"]
+  // Handle field access: .foo or .foo.bar or .groups[].items[].name
   if (trimmed.startsWith('.')) {
-    return accessPath(input, trimmed.slice(1));
+    return evaluatePathStream(input, trimmed.slice(1));
   }
 
   // Literal value with interpolation
   if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
     const inner = trimmed.slice(1, -1);
-    return interpolateString(input, inner);
+    return [interpolateString(input, inner)];
   }
   if (!isNaN(Number(trimmed))) {
-    return Number(trimmed);
+    return [Number(trimmed)];
   }
-  if (trimmed === 'true') return true;
-  if (trimmed === 'false') return false;
-  if (trimmed === 'null') return null;
+  if (trimmed === 'true') return [true];
+  if (trimmed === 'false') return [false];
+  if (trimmed === 'null') return [null];
 
   throw new Error(`Unsupported JQ filter: ${trimmed}`);
+}
+
+function evaluatePathStream(input: unknown, path: string): unknown[] {
+  if (!path) return [input];
+  const tokens = parsePathTokens(path);
+  let stream: unknown[] = [input];
+
+  for (const token of tokens) {
+    if (token === '[]') {
+      stream = stream.flatMap((item) => {
+        if (Array.isArray(item)) return item;
+        if (item && typeof item === 'object') return Object.values(item);
+        return [];
+      });
+    } else if (typeof token === 'number') {
+      stream = stream.map((item) => (Array.isArray(item) ? item[token] : null));
+    } else {
+      stream = stream.map((item) => {
+        if (item && typeof item === 'object') {
+          return (item as Record<string, unknown>)[token] ?? null;
+        }
+        return null;
+      });
+    }
+  }
+  return stream;
+}
+
+function parsePathTokens(path: string): (string | number)[] {
+  const tokens: (string | number)[] = [];
+  let i = 0;
+  let curr = '';
+
+  while (i < path.length) {
+    const ch = path[i];
+    if (ch === '.') {
+      if (curr) {
+        tokens.push(curr);
+        curr = '';
+      }
+      i++;
+    } else if (ch === '[') {
+      if (curr) {
+        tokens.push(curr);
+        curr = '';
+      }
+      const closeIdx = path.indexOf(']', i);
+      if (closeIdx === -1) {
+        curr += path.slice(i);
+        break;
+      }
+      const bracketContent = path.slice(i + 1, closeIdx).trim();
+      if (bracketContent === '') {
+        tokens.push('[]');
+      } else if (/^\d+$/.test(bracketContent)) {
+        tokens.push(parseInt(bracketContent, 10));
+      } else if (
+        (bracketContent.startsWith('"') && bracketContent.endsWith('"')) ||
+        (bracketContent.startsWith("'") && bracketContent.endsWith("'"))
+      ) {
+        tokens.push(bracketContent.slice(1, -1));
+      } else {
+        tokens.push(bracketContent);
+      }
+      i = closeIdx + 1;
+    } else {
+      curr += ch;
+      i++;
+    }
+  }
+  if (curr) {
+    tokens.push(curr);
+  }
+  return tokens;
 }
 
 function interpolateString(input: unknown, str: string): string {
@@ -206,7 +291,11 @@ function tokenizeIfExpr(expr: string): { type: string; value: string }[] {
           const sub = expr.slice(i, i + kw.length);
           const nextChar = expr[i + kw.length];
           const prevChar = i > 0 ? expr[i - 1] : ' ';
-          if (sub === kw && (nextChar === undefined || /\s/.test(nextChar)) && (prevChar === undefined || /\s/.test(prevChar))) {
+          if (
+            sub === kw &&
+            (nextChar === undefined || /\s/.test(nextChar)) &&
+            (prevChar === undefined || /\s/.test(prevChar))
+          ) {
             matchedKw = kw;
             break;
           }
@@ -254,72 +343,6 @@ function findTopLevelFallbackIndex(str: string): number {
   return -1;
 }
 
-function evalMultiExpression(input: unknown, expr: string): unknown[] {
-  // If expression is of form: .[] | { ... } or something | something
-  const pipeIdx = findTopLevelPipeIndex(expr);
-  if (pipeIdx !== -1) {
-    const left = expr.slice(0, pipeIdx).trim();
-    const right = expr.slice(pipeIdx + 1).trim();
-    const leftRes = executeFilter(input, left);
-    if (Array.isArray(leftRes)) {
-      return leftRes.map((item) => executeFilter(item, right)).filter((x) => x !== null);
-    } else {
-      const rightRes = executeFilter(leftRes, right);
-      return Array.isArray(rightRes) ? rightRes : [rightRes];
-    }
-  }
-
-  const res = executeFilter(input, expr);
-  return Array.isArray(res) ? res : [res];
-}
-
-function accessPath(input: unknown, path: string): unknown {
-  if (!path) return input;
-  let curr: unknown = input;
-
-  // Tokenize path tokens: e.g. "foo.bar[0]" -> ["foo", "bar", 0]
-  const tokens = parsePathTokens(path);
-  for (const token of tokens) {
-    if (curr === null || curr === undefined) return null;
-    if (typeof token === 'number') {
-      if (Array.isArray(curr)) {
-        curr = curr[token];
-      } else {
-        return null;
-      }
-    } else if (token === '[]') {
-      if (Array.isArray(curr)) {
-        curr = curr.flat();
-      }
-    } else {
-      if (typeof curr === 'object' && curr !== null) {
-        curr = (curr as Record<string, unknown>)[token];
-      } else {
-        return null;
-      }
-    }
-  }
-  return curr;
-}
-
-function parsePathTokens(path: string): (string | number)[] {
-  const tokens: (string | number)[] = [];
-  const parts = path.split('.');
-  for (const part of parts) {
-    if (!part) continue;
-    // Check for array index e.g. foo[0] or [0] or []
-    const subParts = part.split(/[[\]]/).filter(Boolean);
-    for (const sub of subParts) {
-      if (/^\d+$/.test(sub)) {
-        tokens.push(parseInt(sub, 10));
-      } else {
-        tokens.push(sub.replace(/^['"]|['"]$/g, ''));
-      }
-    }
-  }
-  return tokens;
-}
-
 function buildObject(input: unknown, body: string): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   const entries = splitObjectEntries(body);
@@ -336,7 +359,8 @@ function buildObject(input: unknown, body: string): Record<string, unknown> {
       const rawKey = entry.slice(0, colonIdx).trim().replace(/^['"]|['"]$/g, '');
       const rawVal = entry.slice(colonIdx + 1).trim();
       // If rawVal is parenthesized like `(.upvotes | tostring)`
-      const cleanVal = rawVal.startsWith('(') && rawVal.endsWith(')') ? rawVal.slice(1, -1).trim() : rawVal;
+      const cleanVal =
+        rawVal.startsWith('(') && rawVal.endsWith(')') ? rawVal.slice(1, -1).trim() : rawVal;
       result[rawKey] = executeFilter(input, cleanVal);
     }
   }
@@ -403,31 +427,6 @@ function splitByTopLevelPipe(str: string): string[] {
   return segments;
 }
 
-function findTopLevelPipeIndex(str: string): number {
-  let depth = 0;
-  let inString = false;
-  let stringChar = '';
-
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i];
-    if (inString) {
-      if (ch === stringChar && str[i - 1] !== '\\') inString = false;
-    } else {
-      if (ch === '"' || ch === "'") {
-        inString = true;
-        stringChar = ch;
-      } else if (ch === '{' || ch === '[' || ch === '(') {
-        depth++;
-      } else if (ch === '}' || ch === ']' || ch === ')') {
-        depth--;
-      } else if (ch === '|' && depth === 0) {
-        return i;
-      }
-    }
-  }
-  return -1;
-}
-
 function evaluateCondition(input: unknown, condition: string): boolean {
   const trimmed = condition.trim();
   if (/\sor\s/i.test(trimmed)) {
@@ -438,30 +437,41 @@ function evaluateCondition(input: unknown, condition: string): boolean {
     const parts = trimmed.split(/\s+and\s+/i);
     return parts.every((p) => evaluateCondition(input, p));
   }
-  if (trimmed.includes('==')) {
-    const [left, right] = trimmed.split('==').map((s) => s.trim());
-    return executeFilter(input, left) === executeFilter(input, right);
+
+  // Handle ==, !=, >=, <=, >, <
+  const opMatch = trimmed.match(/^(.*?)\s*(==|!=|>=|<=|>|<)\s*(.*)$/);
+  if (opMatch) {
+    const leftRaw = opMatch[1].trim();
+    const op = opMatch[2];
+    const rightRaw = opMatch[3].trim();
+
+    const leftVal = resolveValue(input, leftRaw);
+    const rightVal = resolveValue(input, rightRaw);
+
+    if (op === '==') return String(leftVal) === String(rightVal);
+    if (op === '!=') return String(leftVal) !== String(rightVal);
+    if (op === '>') return Number(leftVal) > Number(rightVal);
+    if (op === '<') return Number(leftVal) < Number(rightVal);
+    if (op === '>=') return Number(leftVal) >= Number(rightVal);
+    if (op === '<=') return Number(leftVal) <= Number(rightVal);
   }
-  if (trimmed.includes('!=')) {
-    const [left, right] = trimmed.split('!=').map((s) => s.trim());
-    return executeFilter(input, left) !== executeFilter(input, right);
+
+  // Check truthiness of a single path e.g. .hasExploit or .hasExploit == true
+  const val = resolveValue(input, trimmed);
+  return val !== null && val !== undefined && val !== false && val !== 0 && val !== '';
+}
+
+function resolveValue(input: unknown, raw: string): unknown {
+  const trimmed = raw.trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1);
   }
-  if (trimmed.includes('>=')) {
-    const [left, right] = trimmed.split('>=').map((s) => s.trim());
-    return Number(executeFilter(input, left)) >= Number(executeFilter(input, right));
+  if (!isNaN(Number(trimmed))) {
+    return Number(trimmed);
   }
-  if (trimmed.includes('<=')) {
-    const [left, right] = trimmed.split('<=').map((s) => s.trim());
-    return Number(executeFilter(input, left)) <= Number(executeFilter(input, right));
-  }
-  if (trimmed.includes('>')) {
-    const [left, right] = trimmed.split('>').map((s) => s.trim());
-    return Number(executeFilter(input, left)) > Number(executeFilter(input, right));
-  }
-  if (trimmed.includes('<')) {
-    const [left, right] = trimmed.split('<').map((s) => s.trim());
-    return Number(executeFilter(input, left)) < Number(executeFilter(input, right));
-  }
-  const val = executeFilter(input, trimmed);
-  return !!val;
+  if (trimmed === 'true') return true;
+  if (trimmed === 'false') return false;
+  if (trimmed === 'null') return null;
+
+  return executeFilter(input, trimmed);
 }

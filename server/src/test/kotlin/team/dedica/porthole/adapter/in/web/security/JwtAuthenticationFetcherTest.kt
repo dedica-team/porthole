@@ -121,4 +121,39 @@ class JwtAuthenticationFetcherTest {
         assertEquals("oidc-user", principal.username)
         assertEquals(listOf("USER"), principal.roles)
     }
+
+    @Test
+    fun `binder maps OIDC sub to local UserRecord id via findByKeycloakId`() {
+        val localUserId = UUID.randomUUID()
+        val keycloakSub = "kc-subject-12345"
+        val mockUserRepo = mock<team.dedica.porthole.application.port.UserPort>()
+        whenever(mockUserRepo.findByKeycloakId(keycloakSub)).thenReturn(
+            team.dedica.porthole.adapter.out.repository.UserRecord(
+                id = localUserId,
+                username = "local-alice",
+                keycloakId = keycloakSub,
+            )
+        )
+
+        val binder = PortholePrincipalArgumentBinder(mockUserRepo)
+        val auth = Authentication.build(
+            keycloakSub,
+            listOf("USER"),
+            mapOf("sub" to keycloakSub, "preferred_username" to "ignored-remote-username"),
+        )
+
+        val request = mock<HttpRequest<*>>()
+        whenever(request.getAttribute(SecurityFilter.AUTHENTICATION, Authentication::class.java))
+            .thenReturn(Optional.of(auth))
+
+        val context = mock<ArgumentConversionContext<PortholePrincipal>>()
+        whenever(context.argument).thenReturn(Argument.of(PortholePrincipal::class.java))
+
+        val bindingResult = binder.bind(context, request)
+        assertTrue(bindingResult.isSatisfied)
+        val principal = bindingResult.get()
+        assertNotNull(principal)
+        assertEquals(localUserId, principal.userId)
+        assertEquals("local-alice", principal.username)
+    }
 }

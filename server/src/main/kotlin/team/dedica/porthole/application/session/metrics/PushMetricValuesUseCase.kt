@@ -37,7 +37,27 @@ class PushMetricValuesUseCase(
             ?: state.metrics.values.firstOrNull { it.name.equals(trimmedIdentifier, ignoreCase = true) })
             ?: throw NoSuchElementException("Metric '$metricIdentifier' not found")
 
-        var updatedCount = 0
+        val landmarksByLookupKey: Map<String, List<Landmark>> = when (request.matchBy) {
+            MatchStrategy.NAME -> state.landmarks.values.groupBy { it.name.trim().lowercase() }
+            MatchStrategy.ALIAS -> state.landmarks.values.flatMap { landmark ->
+                landmark.aliases.map { it.trim().lowercase() to landmark }
+            }.groupBy({ it.first }, { it.second })
+            MatchStrategy.LINK -> {
+                val matchKey = request.matchKey
+                state.landmarks.values.flatMap { landmark ->
+                    val linksToCheck = if (matchKey != null) {
+                        landmark.links[matchKey]?.let { listOf(it) } ?: emptyList()
+                    } else {
+                        landmark.links.values
+                    }
+                    linksToCheck.mapNotNull { linkVal ->
+                        runCatching { DataSanitationUtils.normalizeCanonicalUrl(linkVal) }.getOrNull()?.let { it to landmark }
+                    }
+                }.groupBy({ it.first }, { it.second })
+            }
+        }
+
+        val stagedUpdates = mutableListOf<Pair<UUID, LandmarkMetricEntry>>()
         val unmatchedElements = mutableListOf<String>()
         val warnings = mutableListOf<String>()
 
@@ -66,29 +86,13 @@ class PushMetricValuesUseCase(
                 "Either a value, a link, or at least one badge URL must be provided for element '$elementKey'"
             }
 
-            val matchingLandmarks: List<Landmark> = when (request.matchBy) {
-                MatchStrategy.NAME -> {
-                    state.landmarks.values.filter { it.name.trim().equals(elementKey, ignoreCase = true) }
-                }
-                MatchStrategy.ALIAS -> {
-                    state.landmarks.values.filter { landmark ->
-                        landmark.aliases.any { it.trim().equals(elementKey, ignoreCase = true) }
-                    }
-                }
-                MatchStrategy.LINK -> {
-                    val canonicalTarget = DataSanitationUtils.normalizeCanonicalUrl(elementKey)
-                    state.landmarks.values.filter { landmark ->
-                        if (request.matchKey != null) {
-                            val linkVal = landmark.links[request.matchKey]
-                            linkVal != null && DataSanitationUtils.normalizeCanonicalUrl(linkVal) == canonicalTarget
-                        } else {
-                            landmark.links.values.any { linkVal ->
-                                DataSanitationUtils.normalizeCanonicalUrl(linkVal) == canonicalTarget
-                            }
-                        }
-                    }
-                }
+            val lookupKey = if (request.matchBy == MatchStrategy.LINK) {
+                DataSanitationUtils.normalizeCanonicalUrl(elementKey)
+            } else {
+                elementKey.lowercase()
             }
+
+            val matchingLandmarks = landmarksByLookupKey[lookupKey] ?: emptyList()
 
             if (matchingLandmarks.isEmpty()) {
                 unmatchedElements.add(item.element)
@@ -106,21 +110,24 @@ class PushMetricValuesUseCase(
                     badges = validatedBadges,
                 )
                 for (landmark in matchingLandmarks) {
-                    state.landmarks[landmark.id] = landmark.copy(
-                        metrics = landmark.metrics + (metric.id to entry)
-                    )
-                    updatedCount++
+                    stagedUpdates.add(landmark.id to entry)
                 }
             }
         }
 
-        if (updatedCount > 0) {
+        if (stagedUpdates.isNotEmpty()) {
+            for ((landmarkId, entry) in stagedUpdates) {
+                val current = state.landmarks[landmarkId] ?: continue
+                state.landmarks[landmarkId] = current.copy(
+                    metrics = current.metrics + (metric.id to entry)
+                )
+            }
             sessionStatePort.save(state)
             broadcastPort.send(sessionId, state)
         }
 
         return PushMetricValuesResponse(
-            updatedCount = updatedCount,
+            updatedCount = stagedUpdates.size,
             unmatchedElements = unmatchedElements,
             warnings = warnings,
         )

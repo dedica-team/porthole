@@ -83,8 +83,12 @@ export function reconcileMetricPush(
   let unmatchedCount = 0;
   let multipleMatchesCount = 0;
 
-  for (const item of request.values) {
-    const elemKey = item.element.trim();
+  const values = Array.isArray(request.values) ? request.values : [];
+
+  for (const item of values) {
+    if (!item || typeof item !== 'object') continue;
+    const elemRaw = typeof item.element === 'string' ? item.element : String(item.element ?? '');
+    const elemKey = elemRaw.trim();
     if (!elemKey) continue;
 
     let matching: Landmark[] = [];
@@ -220,6 +224,13 @@ export {
 } from './transformationTemplates';
 
 /**
+ * Helper to safely single-quote arbitrary strings for Bourne/Bash shells.
+ */
+function shellQuote(str: string): string {
+  return `'${str.replace(/'/g, "'\\''")}'`;
+}
+
+/**
  * Synthesizes a CI/CD pipeline automation script combining foreign fetch, jq transformation, and batch push.
  */
 export function generateAutomationScript(
@@ -233,7 +244,15 @@ export function generateAutomationScript(
   origin: string = window.location.origin,
 ): string {
   const targetUrl = `${origin}/api/sessions/${encodeURIComponent(sessionId)}/metrics/${encodeURIComponent(metricIdentifier)}/values`;
-  const methodFlag = httpMethod !== 'GET' ? ` -X ${httpMethod}` : '';
+  const quotedUrl = shellQuote(requestUrl);
+  const quotedTargetUrl = shellQuote(targetUrl);
+  const methodFlag =
+    httpMethod && httpMethod.trim().toUpperCase() !== 'GET'
+      ? ` -X ${shellQuote(httpMethod.trim())}`
+      : '';
+  const matchByArg = `--arg matchBy ${shellQuote(matchBy)}`;
+  const matchKeyArg = matchKey ? ` --arg matchKey ${shellQuote(matchKey)}` : '';
+  const wrapperFilter = `{ matchBy: $matchBy, ${matchKey ? 'matchKey: $matchKey, ' : ''}values: (if type == "array" then . else [.] end) }`;
 
   return `#!/usr/bin/env bash
 set -euo pipefail
@@ -242,10 +261,10 @@ set -euo pipefail
 # 2. Transform into Porthole PushMetricValuesRequest
 # 3. Post batch update to Porthole session
 
-curl -s${methodFlag} "${requestUrl}" \\
-  | jq '${jqFilter.replace(/'/g, "'\\''")}' \\
-  | jq --arg matchBy "${matchBy}" ${matchKey ? `--arg matchKey "${matchKey}" ` : ''}'{ matchBy: $matchBy, ${matchKey ? 'matchKey: $matchKey, ' : ''}values: (if type == "array" then . else [.] end) }' \\
-  | curl -X POST "${targetUrl}" \\
+curl -s${methodFlag} ${quotedUrl} \\
+  | jq ${shellQuote(jqFilter)} \\
+  | jq ${matchByArg}${matchKeyArg} ${shellQuote(wrapperFilter)} \\
+  | curl -X POST ${quotedTargetUrl} \\
       -H "Authorization: Bearer \${PORTHOLE_TOKEN:-}" \\
       -H "Content-Type: application/json" \\
       -d @-

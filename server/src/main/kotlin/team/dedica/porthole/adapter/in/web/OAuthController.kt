@@ -86,7 +86,6 @@ class OAuthController(
                 user.id,
                 user.username,
                 user.avatarUrl,
-                token = token,
                 isAdmin = adminService.isAdmin(user.id),
                 githubEnabled = githubEnabled,
                 keycloakEnabled = keycloakEnabled

@@ -12,8 +12,6 @@ import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.metrics.*
 import team.dedica.porthole.domain.QualityLevel
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 import java.util.*
 
 @Controller("/api/sessions/{id}/metrics")
@@ -80,11 +78,10 @@ class MetricController(
         @Valid @Body request: PushMetricValuesRequest,
         user: PortholePrincipal,
     ): HttpResponse<PushMetricValuesResponse> {
-        val decodedIdentifier = metricIdentifier
         val result = pushMetricValuesUseCase.execute(
             sessionId = UUID.fromString(id),
             callerId = user.userId,
-            metricIdentifier = decodedIdentifier,
+            metricIdentifier = metricIdentifier,
             request = request,
         )
         return HttpResponse.ok(result)

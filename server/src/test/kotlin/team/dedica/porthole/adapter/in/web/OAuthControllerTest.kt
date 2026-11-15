@@ -56,6 +56,13 @@ class OAuthControllerTest {
     }
 
     @Test
+    fun `expired session token is evicted and returns null`() {
+        val id = UUID.nameUUIDFromBytes("u1".toByteArray())
+        val token = userSessionStore.createSession(id, "alice", ttl = java.time.Duration.ofMillis(-10))
+        assertNull(userSessionStore.getSession(token))
+    }
+
+    @Test
     fun `githubStart returns authorization url and state cookie`() {
         whenever(gitHubOAuthService.buildAuthorizationUrl(any(), any()))
             .thenReturn("https://github.com/login/oauth/authorize?state=s")
@@ -105,7 +112,7 @@ class OAuthControllerTest {
         val response = controller.githubCallback("valid-code", "expected-state", requestWithStateCookie("expected-state"))
         assertEquals(HttpStatus.OK, response.status)
         val body = response.body.get()
-        assertNotNull(body.token)
+        assertNull(body.token)
         assertEquals(id, body.userId)
         assertEquals("alice", body.username)
 
@@ -142,14 +149,29 @@ class OAuthControllerTest {
 
     @Test
     fun `logout clears auth cookie`() {
+        val id = UUID.randomUUID()
+        val token = userSessionStore.createSession(id, "alice")
         val req = SimpleHttpRequestFactory().post("/api/auth/logout", "")
-            .cookie(Cookie.of(props.cookie.cookieName, "some-token"))
+            .cookie(Cookie.of(props.cookie.cookieName, token))
         val response = controller.logout(req)
 
         assertEquals(HttpStatus.NO_CONTENT, response.status)
         val authCookie = response.cookies.findCookie(props.cookie.cookieName).orElse(null)
         assertNotNull(authCookie, "Auth cookie must be cleared")
         assertEquals("", authCookie!!.value)
+        assertNull(userSessionStore.getSession(token))
+    }
+
+    @Test
+    fun `logout removes session via Authorization Bearer header`() {
+        val id = UUID.randomUUID()
+        val token = userSessionStore.createSession(id, "alice")
+        val req = SimpleHttpRequestFactory().post("/api/auth/logout", "")
+            .header(io.micronaut.http.HttpHeaders.AUTHORIZATION, "Bearer $token")
+        val response = controller.logout(req)
+
+        assertEquals(HttpStatus.NO_CONTENT, response.status)
+        assertNull(userSessionStore.getSession(token))
     }
 
     @Test
