@@ -132,7 +132,7 @@ function executeFilter(input: unknown, filter: string): unknown {
   if (trimmed === 'false') return false;
   if (trimmed === 'null') return null;
 
-  return input;
+  throw new Error(`Unsupported JQ filter: ${trimmed}`);
 }
 
 function interpolateString(input: unknown, str: string): string {
