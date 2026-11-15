@@ -80,7 +80,7 @@ class MetricController(
         @Valid @Body request: PushMetricValuesRequest,
         user: PortholePrincipal,
     ): HttpResponse<PushMetricValuesResponse> {
-        val decodedIdentifier = URLDecoder.decode(metricIdentifier, StandardCharsets.UTF_8)
+        val decodedIdentifier = metricIdentifier
         val result = pushMetricValuesUseCase.execute(
             sessionId = UUID.fromString(id),
             callerId = user.userId,
