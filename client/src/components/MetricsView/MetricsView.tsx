@@ -155,7 +155,9 @@ function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave,
               <div className="border-t border-border pt-3 mt-1">
                 {!confirmDelete ? (
                   <Button
-                    variant="destructive" fullWidth={true}
+                    type="button"
+                    variant="destructive"
+                    fullWidth={true}
                     onClick={() => setConfirmDelete(true)}
                   >
                     Remove metric…

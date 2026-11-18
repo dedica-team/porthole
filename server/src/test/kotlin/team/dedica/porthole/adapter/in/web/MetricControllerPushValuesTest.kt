@@ -177,4 +177,28 @@ class MetricControllerPushValuesTest {
         val stateAfterDelete = sessionStatePort.findById(sessionId)!!
         assertTrue(stateAfterDelete.metrics[metricId]!!.transformations.isEmpty())
     }
+
+    @Test
+    fun `DELETE metric deletes metric and its transformations`() {
+        val body = mapOf(
+            "name" to "GitLab MRs Ingestion",
+            "requestUrl" to "https://gitlab.example.com/api/graphql",
+            "httpMethod" to "POST",
+            "jqFilter" to "[.data.group.projects.nodes[]]",
+            "matchBy" to "NAME",
+        )
+
+        val putResponse = send("PUT", "/api/sessions/$sessionId/metrics/$metricId/transformations", body)
+        assertEquals(200, putResponse.statusCode())
+
+        val stateAfterPut = sessionStatePort.findById(sessionId)!!
+        assertEquals(1, stateAfterPut.metrics[metricId]!!.transformations.size)
+
+        val deleteMetricResponse = send("DELETE", "/api/sessions/$sessionId/metrics/$metricId")
+        assertEquals(200, deleteMetricResponse.statusCode())
+
+        val stateAfterDelete = sessionStatePort.findById(sessionId)!!
+        assertFalse(stateAfterDelete.metrics.containsKey(metricId))
+        assertNull(stateAfterDelete.metrics[metricId])
+    }
 }
