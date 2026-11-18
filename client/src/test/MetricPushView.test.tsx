@@ -87,7 +87,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByText(/POST \/api\/sessions\/sess-abc\/metrics\/m-123\/values/i)).toBeInTheDocument();
   });
 
-  it('allows switching metrics via dropdown in header', () => {
+  it('allows switching metrics via select dropdown in transformation section without reloading', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -100,10 +100,11 @@ describe('MetricPushView (Subpage)', () => {
     expect(selector).toHaveValue('m-123');
 
     fireEvent.change(selector, { target: { value: 'm-456' } });
-    expect(selector).toBeInTheDocument();
+    expect(selector).toHaveValue('m-456');
+    expect(screen.getByText(/REST API Push Values: Security Vulnerabilities/i)).toBeInTheDocument();
   });
 
-  it('renders JQ Transformation Builder by default and toggles Direct JSON Push view via header button', () => {
+  it('opens modal on Load Transformation button click and lists saved transformations plus new option', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -112,28 +113,39 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    // JQ Transformation Builder is visible by default
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    expect(loadBtn).toBeInTheDocument();
+
+    fireEvent.click(loadBtn);
+
+    expect(screen.getByRole('heading', { name: /Load Transformation/i })).toBeInTheDocument();
+    expect(screen.getByText(/-- New \/ Custom Transformation --/i)).toBeInTheDocument();
+    expect(screen.getByText('GitLab CI Coverage')).toBeInTheDocument();
+
+    // Selecting a transformation loads it and closes modal
+    fireEvent.click(screen.getByText('GitLab CI Coverage'));
+    expect(screen.queryByRole('heading', { name: /Load Transformation/i })).not.toBeInTheDocument();
+  });
+
+  it('renders JQ Transformation Builder view by default and displays Transformed Data field in Preview section', () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Transformation Builder is visible by default
     expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
     expect(screen.getByText(/JQ Filter Expression:/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Transformed Data/i)).toBeInTheDocument();
 
-    // Button in top right of card header to switch to Direct JSON Push
-    const directBtn = screen.getByRole('button', { name: /Direct JSON Push/i });
-    expect(directBtn).toBeInTheDocument();
-
-    // Click to display Direct JSON Push view
-    fireEvent.click(directBtn);
-    expect(screen.getByLabelText(/Direct Match Strategy/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Paste JSON payload here.../i)).toBeInTheDocument();
-
-    // Header toggle now says "JQ Transformation Builder"
-    const headerJqBtn = screen.getByRole('button', { name: /JQ Transformation Builder/i });
-    expect(headerJqBtn).toBeInTheDocument();
-    fireEvent.click(headerJqBtn);
-
-    expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
+    // Direct JSON Push tab toggle button is removed
+    expect(screen.queryByRole('button', { name: /Direct JSON Push/i })).not.toBeInTheDocument();
   });
 
-  it('supports selecting ALIAS match strategy in JQ Builder and Direct JSON views', () => {
+  it('supports selecting ALIAS match strategy in Transformation view', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -142,20 +154,10 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    // JQ builder is default
     const jqMatchSelect = screen.getByLabelText(/JQ Match Strategy/i);
     expect(jqMatchSelect).toBeInTheDocument();
     fireEvent.change(jqMatchSelect, { target: { value: 'ALIAS' } });
     expect(jqMatchSelect).toHaveValue('ALIAS');
-
-    // Toggle to Direct JSON Push
-    const directToggleBtn = screen.getByRole('button', { name: /Direct JSON Push/i });
-    fireEvent.click(directToggleBtn);
-
-    const directMatchSelect = screen.getByLabelText(/Direct Match Strategy/i);
-    expect(directMatchSelect).toBeInTheDocument();
-    fireEvent.change(directMatchSelect, { target: { value: 'ALIAS' } });
-    expect(directMatchSelect).toHaveValue('ALIAS');
   });
 
   it('renders empty state when no metrics exist', () => {
@@ -203,8 +205,10 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    const transformationSelect = screen.getByLabelText(/^Transformation$/i);
-    fireEvent.change(transformationSelect, { target: { value: '' } });
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
 
     expect(screen.getByTestId('transformation-status-unsaved')).toHaveTextContent(/Unsaved transformation/i);
   });
@@ -255,9 +259,11 @@ describe('MetricPushView (Subpage)', () => {
     fireEvent.change(nameInput, { target: { value: 'github actions' } });
     expect(screen.queryByText(/Name already in use/i)).not.toBeInTheDocument();
 
-    // Switch to new transformation (no transformation selected)
-    const transformationSelect = screen.getByLabelText(/^Transformation$/i);
-    fireEvent.change(transformationSelect, { target: { value: '' } });
+    // Switch to new transformation via Load Transformation modal
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
 
     // Typing an existing transformation name for a new transformation flags as duplicate
     fireEvent.change(nameInput, { target: { value: 'github actions' } });
@@ -302,9 +308,11 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    // Switch to new transformation
-    const transformationSelect = screen.getByLabelText(/^Transformation$/i);
-    fireEvent.change(transformationSelect, { target: { value: '' } });
+    // Switch to new transformation via modal
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
 
     const nameInput = screen.getByPlaceholderText('Transformation Name');
     fireEvent.change(nameInput, { target: { value: 'Brand New Transformation' } });
@@ -319,9 +327,6 @@ describe('MetricPushView (Subpage)', () => {
       name: 'Brand New Transformation',
       requestUrl: 'https://api.example.com/data',
     }));
-
-    const feedback = await screen.findByTestId('transformation-save-feedback');
-    expect(feedback).toHaveTextContent(/Transformation "Brand New Transformation" saved successfully/i);
   });
 
   it('saves transformation with the chosen target metric when changed', async () => {
@@ -374,9 +379,6 @@ describe('MetricPushView (Subpage)', () => {
       name: 'Security Scanner',
       requestUrl: 'https://sec.example.com/api',
     }));
-
-    const feedback = await screen.findByTestId('transformation-save-feedback');
-    expect(feedback).toHaveTextContent(/Transformation "Security Scanner" saved successfully/i);
   });
 
   it('requires confirmation before deleting a transformation and supports cancelling', async () => {
@@ -462,11 +464,11 @@ describe('MetricPushView (Subpage)', () => {
     // Click "Inspect Payload"
     fireEvent.click(inspectPayloadBtn);
 
-    // Should show transformed JSON payload
-    const payloadPre = screen.getByTestId('transformed-payload-preview');
-    expect(payloadPre).toBeInTheDocument();
-    expect(payloadPre.textContent).toContain('"element": "Auth Service"');
-    expect(payloadPre.textContent).toContain('"value": "88"');
+    // Should show transformed JSON payload in transformed data textarea
+    const payloadTextarea = screen.getByTestId('transformed-payload-preview') as HTMLTextAreaElement;
+    expect(payloadTextarea).toBeInTheDocument();
+    expect(payloadTextarea.value).toContain('"element": "Auth Service"');
+    expect(payloadTextarea.value).toContain('"value": "88"');
 
     // Click "Copy Payload"
     const copyPayloadBtn = screen.getByRole('button', { name: /Copy Payload/i });
@@ -477,6 +479,53 @@ describe('MetricPushView (Subpage)', () => {
     const tableBtn = screen.getByRole('button', { name: /Table Preview/i });
     fireEvent.click(tableBtn);
     expect(screen.getByText(/Dry-Run Preview:/i)).toBeInTheDocument();
+  });
+
+  it('supports directly editing transformed data field for dry-run preview and push execution', async () => {
+    const { pushMetricValues } = await import('@/api/mapApi');
+    vi.mocked(pushMetricValues).mockResolvedValueOnce({
+      updatedCount: 2,
+      unmatchedElements: [],
+      warnings: [],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Transformed data textarea is present in Preview section
+    const transformedDataTextarea = screen.getByLabelText(/Transformed Data/i);
+    expect(transformedDataTextarea).toBeInTheDocument();
+
+    // Directly paste or edit transformed JSON
+    const customPayload = JSON.stringify([
+      { element: 'Auth Service', value: '99', level: 'OK' },
+      { element: 'prod-web-server-01', value: '42', level: 'WARNING' },
+    ], null, 2);
+
+    fireEvent.change(transformedDataTextarea, { target: { value: customPayload } });
+
+    // Dry-run preview immediately reconciles and renders
+    expect(screen.getByText(/Dry-Run Preview:/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 Matched/i)).toBeInTheDocument();
+
+    // Push Transformed Values button pushes the edited transformed data
+    const pushBtn = screen.getByRole('button', { name: /Push Transformed Values/i });
+    fireEvent.click(pushBtn);
+
+    expect(pushMetricValues).toHaveBeenCalledWith('sess-abc', 'm-123', expect.objectContaining({
+      matchBy: 'NAME',
+      values: [
+        { element: 'Auth Service', value: '99', level: 'OK' },
+        { element: 'prod-web-server-01', value: '42', level: 'WARNING' },
+      ],
+    }));
+
+    expect(await screen.findByText(/Batch push completed successfully! Updated 2 element\(s\)\./i)).toBeInTheDocument();
   });
 
   it('displays error when jq dry-run output does not evaluate to an array', async () => {
@@ -499,5 +548,291 @@ describe('MetricPushView (Subpage)', () => {
     fireEvent.click(dryRunBtn);
 
     expect(await screen.findByText(/JQ Transformation output must evaluate to an array of metric elements, but got object\./i)).toBeInTheDocument();
+  });
+
+  it('supports editing parameters and request body and saving them with transformation', async () => {
+    const { saveMetricTransformation } = await import('@/api/mapApi');
+    vi.mocked(saveMetricTransformation).mockResolvedValueOnce({
+      id: 'sess-abc',
+      createdAt: '',
+      collaborators: [],
+      connections: {},
+      landmarks: {},
+      groups: {},
+      map: { tiles: [] },
+      metrics: {
+        'm-123': {
+          ...mockMetric1,
+          transformations: [
+            {
+              id: 'transformation-saved-graphql',
+              name: 'GraphQL MRs Ingestion',
+              metricId: 'm-123',
+              requestUrl: 'https://gitlab.example.com/api/graphql',
+              httpMethod: 'POST',
+              parameters: { group_path: 'my-group' },
+              requestBody: '{"query": "query { group { id } }"}',
+              jqFilter: '.',
+              matchBy: 'NAME',
+            },
+          ],
+        },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Switch to new transformation
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
+
+    const nameInput = screen.getByPlaceholderText('Transformation Name');
+    fireEvent.change(nameInput, { target: { value: 'GraphQL MRs Ingestion' } });
+
+    const urlInput = screen.getByPlaceholderText(/https:\/\/gitlab.example.com/i);
+    fireEvent.change(urlInput, { target: { value: 'https://gitlab.example.com/api/graphql' } });
+
+    const methodSelect = screen.getByDisplayValue('GET');
+    fireEvent.change(methodSelect, { target: { value: 'POST' } });
+
+    // Add a parameter row
+    const addParamBtn = screen.getByRole('button', { name: /Add Parameter/i });
+    fireEvent.click(addParamBtn);
+
+    const paramKeyInput = screen.getByPlaceholderText('Key (e.g. group_path)');
+    fireEvent.change(paramKeyInput, { target: { value: 'group_path' } });
+
+    const paramValInput = screen.getByPlaceholderText('Value');
+    fireEvent.change(paramValInput, { target: { value: 'my-group' } });
+
+    const authHeaderInput = screen.getByLabelText('Auth Header');
+    fireEvent.change(authHeaderInput, { target: { value: 'PRIVATE-TOKEN: secret-token-xyz' } });
+
+    const requestBodyInput = screen.getByLabelText('Request Body');
+    fireEvent.change(requestBodyInput, { target: { value: '{"query": "query { group { id } }"}' } });
+
+    const saveBtn = screen.getByRole('button', { name: /Save Transformation/i });
+    fireEvent.click(saveBtn);
+
+    expect(saveMetricTransformation).toHaveBeenCalledWith('sess-abc', 'm-123', expect.objectContaining({
+      name: 'GraphQL MRs Ingestion',
+      requestUrl: 'https://gitlab.example.com/api/graphql',
+      httpMethod: 'POST',
+      parameters: { group_path: 'my-group' },
+      authHeader: 'PRIVATE-TOKEN: secret-token-xyz',
+      requestBody: '{"query": "query { group { id } }"}',
+    }));
+  });
+
+  it('shows Load Template dropdown only for unsaved transformations', async () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Initial render has saved transformation selected -> Load Template should NOT be visible
+    expect(screen.queryByLabelText(/Transformation Template/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Load Template:/i)).not.toBeInTheDocument();
+
+    // Switch to New / Custom Transformation via Load Transformation modal
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
+
+    // Unsaved transformation -> Load Template should be visible
+    expect(screen.getByLabelText(/Transformation Template/i)).toBeInTheDocument();
+    expect(screen.getByText(/Load Template:/i)).toBeInTheDocument();
+
+    // Loading a saved transformation hides it again
+    fireEvent.click(loadBtn);
+    fireEvent.click(screen.getByText('GitLab CI Coverage'));
+    expect(screen.queryByLabelText(/Transformation Template/i)).not.toBeInTheDocument();
+  });
+
+  it('populates parameters and request body when a built-in template is selected for unsaved transformation', async () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Switch to new transformation
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
+
+    const templateSelect = screen.getByLabelText(/Transformation Template/i);
+    fireEvent.change(templateSelect, { target: { value: 'gitlab-open-pull-requests' } });
+
+    const paramsInput = screen.getByLabelText('group_id') as HTMLInputElement;
+    expect(paramsInput.value).toBe('1385');
+
+    const perPageInput = screen.getByLabelText('per_page') as HTMLInputElement;
+    expect(perPageInput.value).toBe('100');
+
+    const authHeaderInput = screen.getByLabelText('Auth Header') as HTMLInputElement;
+    expect(authHeaderInput.value).toBe('PRIVATE-TOKEN: $PRIVATE_TOKEN');
+
+    const requestBodyInput = screen.getByLabelText('Request Body') as HTMLTextAreaElement;
+    expect(requestBodyInput.value).toBe('');
+  });
+
+  it('copies foreign curl request with inserted parameters and auth headers when copy button is clicked', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Switch to new transformation
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
+
+    const templateSelect = screen.getByLabelText(/Transformation Template/i);
+    fireEvent.change(templateSelect, { target: { value: 'gitlab-open-pull-requests' } });
+
+    const paramsInput = screen.getByLabelText('group_id');
+    fireEvent.change(paramsInput, { target: { value: '9999' } });
+
+    const copyCurlBtn = screen.getByRole('button', { name: /Copy curl Request/i });
+    fireEvent.click(copyCurlBtn);
+
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('while :; do'),
+    );
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('https://gitlab.netrtl.com/api/v4/groups/9999/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page'),
+    );
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('-H "PRIVATE-TOKEN: $PRIVATE_TOKEN"'),
+    );
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('| jq \'group_by(.project_id)'),
+    );
+  });
+
+  it('supports adding and removing parameter fields in key value map', async () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Switch to new transformation
+    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    fireEvent.click(loadBtn);
+    const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
+    fireEvent.click(newOption);
+
+    const templateSelect = screen.getByLabelText(/Transformation Template/i);
+    fireEvent.change(templateSelect, { target: { value: 'github-pull-requests' } });
+
+    // GitHub template has 3 parameters: owner, repo, state
+    expect(screen.getByLabelText('owner')).toHaveValue('owner');
+    expect(screen.getByLabelText('repo')).toHaveValue('repo');
+    expect(screen.getByLabelText('state')).toHaveValue('open');
+
+    // Remove state parameter
+    const removeStateBtn = screen.getByLabelText('Remove Parameter state');
+    fireEvent.click(removeStateBtn);
+    expect(screen.queryByLabelText('state')).not.toBeInTheDocument();
+
+    // Add another parameter
+    const addParamBtn = screen.getByRole('button', { name: /Add Parameter/i });
+    fireEvent.click(addParamBtn);
+
+    const keyInputs = screen.getAllByPlaceholderText('Key (e.g. group_path)');
+    const lastKeyInput = keyInputs[keyInputs.length - 1];
+    fireEvent.change(lastKeyInput, { target: { value: 'per_page' } });
+
+    const perPageValInput = screen.getByLabelText('per_page');
+    fireEvent.change(perPageValInput, { target: { value: '50' } });
+    expect(perPageValInput).toHaveValue('50');
+  });
+
+  it('updates existing transformation with auth header and clears unsaved changes badge after clicking update', async () => {
+    const { saveMetricTransformation } = await import('@/api/mapApi');
+    const existingTrans = mockMetric1.transformations![0];
+
+    vi.mocked(saveMetricTransformation).mockResolvedValueOnce({
+      id: 'sess-abc',
+      createdAt: '',
+      collaborators: [],
+      connections: {},
+      landmarks: {},
+      groups: {},
+      map: { tiles: [] },
+      metrics: {
+        'm-123': {
+          ...mockMetric1,
+          transformations: [
+            {
+              ...existingTrans,
+              authHeader: 'PRIVATE-TOKEN: updated-secret-token',
+            },
+          ],
+        },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Initially saved transformation is clean
+    expect(screen.getByTestId('transformation-status-saved')).toBeInTheDocument();
+    expect(screen.queryByTestId('transformation-status-dirty')).not.toBeInTheDocument();
+
+    // Modify Auth Header
+    const authHeaderInput = screen.getByLabelText('Auth Header');
+    fireEvent.change(authHeaderInput, { target: { value: 'PRIVATE-TOKEN: updated-secret-token' } });
+
+    // Status changes to Unsaved changes
+    expect(screen.getByTestId('transformation-status-dirty')).toBeInTheDocument();
+    expect(screen.queryByTestId('transformation-status-saved')).not.toBeInTheDocument();
+
+    const updateBtn = screen.getByRole('button', { name: /Update Transformation/i });
+    fireEvent.click(updateBtn);
+
+    expect(saveMetricTransformation).toHaveBeenCalledWith('sess-abc', 'm-123', expect.objectContaining({
+      id: existingTrans.id,
+      authHeader: 'PRIVATE-TOKEN: updated-secret-token',
+    }));
+
+    // After successful update, status badge returns to Saved and unsaved changes badge is removed
+    expect(await screen.findByTestId('transformation-status-saved')).toBeInTheDocument();
+    expect(screen.queryByTestId('transformation-status-dirty')).not.toBeInTheDocument();
   });
 });

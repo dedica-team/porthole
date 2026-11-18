@@ -45,6 +45,13 @@ class SaveMetricTransformationUseCase(
             metricId = metricId,
             requestUrl = transformationDto.requestUrl.trim(),
             httpMethod = transformationDto.httpMethod.trim().uppercase(),
+            parameters = transformationDto.parameters.mapNotNull { (k, v) ->
+                val tk = k.trim()
+                val tv = v.trim()
+                if (tk.isNotEmpty()) tk to tv else null
+            }.toMap(),
+            authHeader = transformationDto.authHeader?.trim()?.ifBlank { null },
+            requestBody = transformationDto.requestBody?.trim()?.ifBlank { null },
             jqFilter = transformationDto.jqFilter.trim().ifBlank { "." },
             matchBy = transformationDto.matchBy,
             matchKey = transformationDto.matchKey?.trim()?.ifBlank { null },

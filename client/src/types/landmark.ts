@@ -47,6 +47,9 @@ export interface MetricTransformation {
   metricId: string;
   requestUrl: string;
   httpMethod: string;
+  parameters?: Record<string, string>;
+  authHeader?: string;
+  requestBody?: string;
   jqFilter: string;
   matchBy: MatchStrategy;
   matchKey?: string;
@@ -60,6 +63,9 @@ export interface MetricTransformationTemplate {
   description?: string;
   requestUrl: string;
   httpMethod: string;
+  parameters?: Record<string, string>;
+  authHeader?: string;
+  requestBody?: string;
   jqFilter: string;
   matchBy: MatchStrategy;
   matchKey?: string;

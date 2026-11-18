@@ -527,7 +527,10 @@ class JsonSessionStateRepositoryTest {
                 name = "SonarQube Scan",
                 metricId = metricId,
                 requestUrl = "https://sonar.example.com/api/measures",
-                httpMethod = "GET",
+                httpMethod = "POST",
+                parameters = mapOf("projectKey" to "my_project"),
+                authHeader = "Authorization: Bearer secret-token",
+                requestBody = "{\"metricKeys\": \"coverage,bugs\"}",
                 jqFilter = "[.component.measures[] | { element: .component, value: .value }]",
                 matchBy = MatchStrategy.NAME,
             )
@@ -546,8 +549,13 @@ class JsonSessionStateRepositoryTest {
             val loadedMetric = loaded.metrics[metricId]!!
             assertEquals("Availability", loadedMetric.name)
             assertEquals(1, loadedMetric.transformations.size)
-            assertEquals("SonarQube Scan", loadedMetric.transformations.first().name)
-            assertEquals("https://sonar.example.com/api/measures", loadedMetric.transformations.first().requestUrl)
+            val loadedTransformation = loadedMetric.transformations.first()
+            assertEquals("SonarQube Scan", loadedTransformation.name)
+            assertEquals("https://sonar.example.com/api/measures", loadedTransformation.requestUrl)
+            assertEquals("POST", loadedTransformation.httpMethod)
+            assertEquals(mapOf("projectKey" to "my_project"), loadedTransformation.parameters)
+            assertEquals("Authorization: Bearer secret-token", loadedTransformation.authHeader)
+            assertEquals("{\"metricKeys\": \"coverage,bugs\"}", loadedTransformation.requestBody)
         }
 
         @Test

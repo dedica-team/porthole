@@ -43,6 +43,9 @@ data class MetricTransformationDto(
     @field:NotBlank
     val requestUrl: String,
     val httpMethod: String = "GET",
+    val parameters: Map<String, String> = emptyMap(),
+    val authHeader: String? = null,
+    val requestBody: String? = null,
     val jqFilter: String = ".",
     val matchBy: MatchStrategy = MatchStrategy.NAME,
     val matchKey: String? = null,

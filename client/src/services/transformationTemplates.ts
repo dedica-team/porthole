@@ -10,6 +10,18 @@ export const WIZ_VULNERABILITY_TEMPLATE: MetricTransformationTemplate = {
   description: 'Aggregates Wiz project CVE counts per severity (Critical, High, Medium, Low) into metric values with direct portal links.',
   requestUrl: 'https://api.wiz.io/graphql',
   httpMethod: 'POST',
+  parameters: {
+    first: '100',
+  },
+  authHeader: 'Authorization: Bearer $WIZ_TOKEN',
+  requestBody: JSON.stringify(
+    {
+      query:
+        'query { projects { nodes { id name slug businessUnit riskScore vulnerabilitySummary { critical high medium low total } } pageInfo { hasNextPage endCursor } totalCount } }',
+    },
+    null,
+    2,
+  ),
   matchBy: 'ALIAS',
   matchKey: '',
   jqFilter: `[.data.projects.nodes[] | {
@@ -140,6 +152,10 @@ export const GITLAB_CI_TEMPLATE: MetricTransformationTemplate = {
   description: 'Transforms GitLab CI pipeline status and test coverage into metric entries.',
   requestUrl: 'https://gitlab.example.com/api/v4/projects/123/pipelines',
   httpMethod: 'GET',
+  parameters: {
+    projectId: '123',
+  },
+  authHeader: 'PRIVATE-TOKEN: $GITLAB_TOKEN',
   matchBy: 'NAME',
   matchKey: '',
   jqFilter: `[.[] | {
@@ -168,76 +184,73 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
   id: 'gitlab-open-pull-requests',
   name: 'GitLab Open Pull Requests',
   description:
-    'Transforms open merge requests / pull requests count across GitLab projects into metric values with direct web links.',
-  requestUrl: 'https://gitlab.example.com/api/v4/groups/123/projects',
+    'Transforms open merge requests / pull requests count across GitLab group projects via REST API into metric values with direct web links.',
+  requestUrl:
+    'https://gitlab.netrtl.com/api/v4/groups/$group_id/merge_requests?state=opened&include_subgroups=true&per_page=100',
   httpMethod: 'GET',
+  parameters: {
+    group_id: '1385',
+    per_page: '100',
+  },
+  authHeader: 'PRIVATE-TOKEN: $PRIVATE_TOKEN',
   matchBy: 'ALIAS',
   matchKey: '',
-  jqFilter: `[.[] | {
-  element: .path,
-  value: "\\(.open_merge_requests_count) open MRs",
+  jqFilter: `group_by(.project_id) | [.[] | {
+  element: (.[0].references.full | split("!")[0] | split("/")[-1]),
+  value: "\\(length) open MRs",
   level: (
-    if .open_merge_requests_count > 3 then "ERROR"
-    elif .open_merge_requests_count > 0 then "WARNING"
+    if length > 3 then "ERROR"
+    elif length > 0 then "WARNING"
     else "OK"
     end
   ),
-  description: "\\(.name): \\(.open_merge_requests_count) open merge request(s)",
-  link: "\\(.web_url)/-/merge_requests",
-  linkText: "MRs (\\(.open_merge_requests_count))",
+  description: "\\(.[0].references.full | split("!")[0]): \\(length) open merge request(s)",
+  link: "\\(.[0].web_url | split("/-/merge_requests/")[0])/-/merge_requests",
+  linkText: "MRs (\\(length))",
   badges: {
-    mrs: "\\(.web_url)/-/merge_requests"
+    mrs: "\\(.[0].web_url | split("/-/merge_requests/")[0])/-/merge_requests"
   }
 }]`,
   samplePayload: JSON.stringify(
     [
       {
-        id: 278964,
-        name: 'Production Web Infrastructure',
-        name_with_namespace: 'Infrastructure / Production Web Infrastructure',
-        path: 'prod-web-infra',
-        path_with_namespace: 'infra/prod-web-infra',
-        created_at: '2026-01-10T08:00:00.000Z',
-        default_branch: 'main',
-        web_url: 'https://gitlab.example.com/infra/prod-web-infra',
-        open_issues_count: 8,
-        open_merge_requests_count: 5,
-        star_count: 14,
-        forks_count: 3,
-        last_activity_at: '2026-11-14T20:15:00.000Z',
-        visibility: 'private',
+        id: 101,
+        iid: 1,
+        project_id: 456,
+        title: 'Production infrastructure improvements',
+        state: 'opened',
+        web_url: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests/1',
+        references: {
+          short: '!1',
+          relative: '!1',
+          full: 'infra/prod-web-infra!1',
+        },
       },
       {
-        id: 278965,
-        name: 'Payment Gateway Service',
-        name_with_namespace: 'Fintech / Payment Gateway Service',
-        path: 'payment-gateway',
-        path_with_namespace: 'services/payment-gateway',
-        created_at: '2026-02-15T10:30:00.000Z',
-        default_branch: 'main',
-        web_url: 'https://gitlab.example.com/services/payment-gateway',
-        open_issues_count: 3,
-        open_merge_requests_count: 2,
-        star_count: 7,
-        forks_count: 1,
-        last_activity_at: '2026-11-14T18:40:00.000Z',
-        visibility: 'private',
+        id: 102,
+        iid: 2,
+        project_id: 456,
+        title: 'Fix configuration drift',
+        state: 'opened',
+        web_url: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests/2',
+        references: {
+          short: '!2',
+          relative: '!2',
+          full: 'infra/prod-web-infra!2',
+        },
       },
       {
-        id: 278966,
-        name: 'Analytics Pipeline',
-        name_with_namespace: 'Data Platform / Analytics Pipeline',
-        path: 'analytics-pipeline',
-        path_with_namespace: 'data/analytics-pipeline',
-        created_at: '2026-03-01T14:00:00.000Z',
-        default_branch: 'main',
-        web_url: 'https://gitlab.example.com/data/analytics-pipeline',
-        open_issues_count: 0,
-        open_merge_requests_count: 0,
-        star_count: 22,
-        forks_count: 5,
-        last_activity_at: '2026-11-14T16:10:00.000Z',
-        visibility: 'private',
+        id: 103,
+        iid: 1,
+        project_id: 789,
+        title: 'Payment gateway integration',
+        state: 'opened',
+        web_url: 'https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests/1',
+        references: {
+          short: '!1',
+          relative: '!1',
+          full: 'services/payment-gateway!1',
+        },
       },
     ],
     null,
@@ -248,35 +261,24 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
     values: [
       {
         element: 'prod-web-infra',
-        value: '5 open MRs',
-        level: 'ERROR',
-        description: 'Production Web Infrastructure: 5 open merge request(s)',
-        link: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
-        linkText: 'MRs (5)',
+        value: '2 open MRs',
+        level: 'WARNING',
+        description: 'infra/prod-web-infra: 2 open merge request(s)',
+        link: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests',
+        linkText: 'MRs (2)',
         badges: {
-          mrs: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
+          mrs: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests',
         },
       },
       {
         element: 'payment-gateway',
-        value: '2 open MRs',
+        value: '1 open MRs',
         level: 'WARNING',
-        description: 'Payment Gateway Service: 2 open merge request(s)',
-        link: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
-        linkText: 'MRs (2)',
+        description: 'services/payment-gateway: 1 open merge request(s)',
+        link: 'https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests',
+        linkText: 'MRs (1)',
         badges: {
-          mrs: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
-        },
-      },
-      {
-        element: 'analytics-pipeline',
-        value: '0 open MRs',
-        level: 'OK',
-        description: 'Analytics Pipeline: 0 open merge request(s)',
-        link: 'https://gitlab.example.com/data/analytics-pipeline/-/merge_requests',
-        linkText: 'MRs (0)',
-        badges: {
-          mrs: 'https://gitlab.example.com/data/analytics-pipeline/-/merge_requests',
+          mrs: 'https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests',
         },
       },
     ],
@@ -289,6 +291,12 @@ export const GITHUB_PRS_TEMPLATE: MetricTransformationTemplate = {
   description: 'Extracts open pull request counts and titles from GitHub repository endpoints.',
   requestUrl: 'https://api.github.com/repos/owner/repo/pulls',
   httpMethod: 'GET',
+  parameters: {
+    owner: 'owner',
+    repo: 'repo',
+    state: 'open',
+  },
+  authHeader: 'Authorization: Bearer $GITHUB_TOKEN',
   matchBy: 'NAME',
   matchKey: '',
   jqFilter: `[.[] | {
@@ -318,6 +326,10 @@ export const SONARQUBE_QUALITY_GATE_TEMPLATE: MetricTransformationTemplate = {
   description: 'Parses SonarQube quality gate statuses and conditions into metric entries.',
   requestUrl: 'https://sonarqube.example.com/api/qualitygates/project_status?projectKey=my_project',
   httpMethod: 'GET',
+  parameters: {
+    projectKey: 'my_project',
+  },
+  authHeader: 'Authorization: Bearer $SONAR_TOKEN',
   matchBy: 'NAME',
   matchKey: '',
   jqFilter: `[{

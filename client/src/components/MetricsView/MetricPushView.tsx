@@ -6,24 +6,32 @@ import {
   Check,
   Send,
   Loader2,
-  RefreshCw,
   Save,
   Trash2,
+  Plus,
   AlertCircle,
   CheckCircle2,
-  X,
   FileCode,
   Sparkles,
   ArrowLeft,
   BarChart2,
   ExternalLink,
   Table,
+  FolderOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useMapStore, useAuthStore } from '@/store/mapStore';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { useMapStore } from '@/store/mapStore';
 import type {
   QualityMetric,
   MatchStrategy,
@@ -33,9 +41,10 @@ import type {
   Landmark,
 } from '@/types/landmark';
 import {
-  generateSamplePayload,
-  generateCurlSnippet,
-  generateAutomationScript,
+  generateForeignCurlSnippet,
+  parseParameters,
+  parameterEntriesToRecord,
+  recordToParameterEntries,
   reconcileMetricPush,
   TRANSFORMATION_TEMPLATES,
 } from '@/services/metricService';
@@ -57,53 +66,62 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
   const currentMap = useMapStore((s) => s.currentMap);
   const storeMetrics = useMapStore((s) => s.metrics);
-  const token = useAuthStore((s) => s.token);
+  const setMetrics = useMapStore((s) => s.setMetrics);
+  const updateMap = useMapStore((s) => s.updateMap);
 
   const sessionId = currentMap?.id || routeSessionId || '';
   const allMetrics: QualityMetric[] = useMemo(() => {
     return Object.values(storeMetrics || {});
   }, [storeMetrics]);
 
-  // Resolve active metric: from prop, from route param, or first available metric
+  const [selectedMetricId, setSelectedMetricId] = useState<string>(() => {
+    if (propMetric) return propMetric.id;
+    if (routeMetricId) return routeMetricId;
+    return '';
+  });
+
+  // Resolve active metric: from prop, from state, from route param, or first available metric
   const metric = useMemo(() => {
-    if (propMetric) return propMetric;
+    if (selectedMetricId) {
+      const found = allMetrics.find((m) => m.id === selectedMetricId);
+      if (found) return found;
+    }
+    if (propMetric) {
+      const found = allMetrics.find((m) => m.id === propMetric.id);
+      if (found) return found;
+      return propMetric;
+    }
     if (routeMetricId) {
       const found = allMetrics.find((m) => m.id === routeMetricId);
       if (found) return found;
     }
     return allMetrics[0] || null;
-  }, [propMetric, routeMetricId, allMetrics]);
+  }, [propMetric, selectedMetricId, routeMetricId, allMetrics]);
 
   const landmarks: Landmark[] = useMemo(() => {
     return Object.values(currentMap?.landmarks ?? {});
   }, [currentMap?.landmarks]);
 
-  const [activeTab, setActiveTab] = useState<'direct' | 'jq'>('jq');
+  const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
 
-  // ── Direct JSON Tab State ──────────────────────────────────────────────────
-  const [directMatchBy, setDirectMatchBy] = useState<MatchStrategy>('NAME');
-  const [directMatchKey, setDirectMatchKey] = useState<string>('');
-  const [directTemplateId, setDirectTemplateId] = useState<string>('');
-  const [directJson, setDirectJson] = useState<string>('');
-  const [directJsonError, setDirectJsonError] = useState<string>('');
-  const [copiedDirectCurl, setCopiedDirectCurl] = useState(false);
-
-  // ── JQ Builder Tab State ───────────────────────────────────────────────────
+  // ── Transformation Configuration State ─────────────────────────────────────
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedTransformationId, setSelectedTransformationId] = useState<string>('');
   const [transformationName, setTransformationName] = useState<string>('');
   const [requestUrl, setRequestUrl] = useState<string>('');
   const [httpMethod, setHttpMethod] = useState<string>('GET');
+  const [parameters, setParameters] = useState<Array<{ key: string; value: string }>>([]);
+  const [authHeader, setAuthHeader] = useState<string>('');
+  const [requestBody, setRequestBody] = useState<string>('');
   const [jqFilter, setJqFilter] = useState<string>('[.[] | { element: .name, value: (.count | tostring), level: "OK" }]');
   const [samplePayload, setSamplePayload] = useState<string>('[\n  { "name": "Auth Service", "count": 5 },\n  { "name": "Billing Service", "count": 12 }\n]');
   const [jqMatchBy, setJqMatchBy] = useState<MatchStrategy>('NAME');
   const [jqMatchKey, setJqMatchKey] = useState<string>('');
-  const [jqTransformedReq, setJqTransformedReq] = useState<PushMetricValuesRequest | null>(null);
+  const [transformedJson, setTransformedJson] = useState<string>('');
   const [jqTransformError, setJqTransformError] = useState<string>('');
   const [jqPreviewMode, setJqPreviewMode] = useState<'table' | 'payload'>('table');
   const [copiedPayload, setCopiedPayload] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
-  const [saveFeedback, setSaveFeedback] = useState<string>('');
   const [confirmDeleteTransformation, setConfirmDeleteTransformation] = useState(false);
 
   // ── Execution State ────────────────────────────────────────────────────────
@@ -118,17 +136,12 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   // Initialize sample payload when metric or landmarks change
   useEffect(() => {
     if (metric && landmarks.length >= 0) {
-      const sample = generateSamplePayload(landmarks, 'NAME');
-      setDirectJson(JSON.stringify(sample, null, 2));
-      setDirectMatchBy('NAME');
-      setDirectMatchKey('');
-      setDirectTemplateId('');
       setSelectedTemplateId('');
       setConfirmDeleteTransformation(false);
       setSubmitResult(null);
       setSubmitError('');
-      setDirectJsonError('');
       setJqTransformError('');
+      setTransformedJson('');
 
       // If metric has transformations, select the first transformation by default
       const list = metric.transformations || [];
@@ -138,6 +151,9 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         setTransformationName(first.name);
         setRequestUrl(first.requestUrl);
         setHttpMethod(first.httpMethod || 'GET');
+        setParameters(recordToParameterEntries(first.parameters));
+        setAuthHeader(first.authHeader || '');
+        setRequestBody(first.requestBody || '');
         setJqFilter(first.jqFilter || '.');
         setJqMatchBy(first.matchBy || 'NAME');
         setJqMatchKey(first.matchKey || '');
@@ -147,48 +163,46 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         setTransformationName('');
         setRequestUrl('');
         setHttpMethod('GET');
+        setParameters([]);
+        setAuthHeader('');
+        setRequestBody('');
         setJqFilter('[.[] | { element: .name, value: (.count | tostring), level: "OK" }]');
         setSamplePayload('[\n  { "name": "Auth Service", "count": 5 },\n  { "name": "Billing Service", "count": 12 }\n]');
         setJqMatchBy('NAME');
         setJqMatchKey('');
       }
-      setJqTransformedReq(null);
     }
   }, [metric?.id, landmarks.length]);
 
-  // ── Parse Direct JSON ──────────────────────────────────────────────────────
-  const parseDirectRequest = (): PushMetricValuesRequest | null => {
+  // Parse Transformed JSON into PushMetricValuesRequest
+  const parsedTransformedReq: PushMetricValuesRequest | null = useMemo(() => {
+    if (!transformedJson.trim()) return null;
     try {
-      const parsed = JSON.parse(directJson);
+      const parsed = JSON.parse(transformedJson);
       if (Array.isArray(parsed)) {
         return {
-          matchBy: directMatchBy,
-          matchKey: directMatchKey.trim() || undefined,
-          values: parsed,
+          matchBy: jqMatchBy,
+          matchKey: jqMatchKey.trim() || undefined,
+          values: parsed as MetricElementValueDto[],
         };
       } else if (parsed && typeof parsed === 'object') {
+        const obj = parsed as Record<string, unknown>;
         return {
-          matchBy: parsed.matchBy || directMatchBy,
-          matchKey: parsed.matchKey || (directMatchKey.trim() || undefined),
-          values: Array.isArray(parsed.values) ? parsed.values : [],
+          matchBy: (obj.matchBy as MatchStrategy) || jqMatchBy,
+          matchKey: (obj.matchKey as string) || (jqMatchKey.trim() || undefined),
+          values: Array.isArray(obj.values) ? (obj.values as MetricElementValueDto[]) : [],
         };
       }
       return null;
     } catch {
       return null;
     }
-  };
-
-  const directReq = parseDirectRequest();
-  const directReconciliation = useMemo(() => {
-    if (!directReq) return null;
-    return reconcileMetricPush(landmarks, directReq);
-  }, [landmarks, directReq]);
+  }, [transformedJson, jqMatchBy, jqMatchKey]);
 
   const jqReconciliation = useMemo(() => {
-    if (!jqTransformedReq) return null;
-    return reconcileMetricPush(landmarks, jqTransformedReq);
-  }, [landmarks, jqTransformedReq]);
+    if (!parsedTransformedReq) return null;
+    return reconcileMetricPush(landmarks, parsedTransformedReq);
+  }, [landmarks, parsedTransformedReq]);
 
   // ── Transformation State & Dirty Tracking ──────────────────────────────────
   const selectedTransformation = useMemo(() => {
@@ -205,24 +219,38 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   }, [transformationName, metric, selectedTransformationId, transformations]);
 
   const isTransformationDirty = useMemo(() => {
+    const currentParams = parameterEntriesToRecord(parameters);
     if (!selectedTransformation) {
-      return Boolean(transformationName.trim() || requestUrl.trim() || (jqFilter && jqFilter !== '.') || samplePayload.trim());
+      return Boolean(
+        transformationName.trim() ||
+        requestUrl.trim() ||
+        Object.keys(currentParams).length > 0 ||
+        authHeader.trim() ||
+        (requestBody && requestBody.trim()) ||
+        (jqFilter && jqFilter !== '.') ||
+        samplePayload.trim()
+      );
     }
+    const savedParams = parseParameters(selectedTransformation.parameters);
+    const paramsChanged = JSON.stringify(currentParams) !== JSON.stringify(savedParams);
+
     return (
       transformationName.trim() !== selectedTransformation.name.trim() ||
       requestUrl.trim() !== selectedTransformation.requestUrl.trim() ||
       (httpMethod || 'GET') !== (selectedTransformation.httpMethod || 'GET') ||
+      paramsChanged ||
+      (authHeader.trim() || '') !== (selectedTransformation.authHeader?.trim() || '') ||
+      (requestBody.trim() || '') !== (selectedTransformation.requestBody?.trim() || '') ||
       (jqFilter.trim() || '.') !== (selectedTransformation.jqFilter?.trim() || '.') ||
       jqMatchBy !== (selectedTransformation.matchBy || 'NAME') ||
       (jqMatchKey.trim() || '') !== (selectedTransformation.matchKey?.trim() || '') ||
       (samplePayload || '') !== (selectedTransformation.lastPayloadSample || '')
     );
-  }, [selectedTransformation, transformationName, requestUrl, httpMethod, jqFilter, jqMatchBy, jqMatchKey, samplePayload]);
+  }, [selectedTransformation, transformationName, requestUrl, httpMethod, parameters, authHeader, requestBody, jqFilter, jqMatchBy, jqMatchKey, samplePayload]);
 
   // ── Template Selection Handlers ───────────────────────────────────────────
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
-    setSaveFeedback('');
     setSubmitError('');
     setConfirmDeleteTransformation(false);
     if (!templateId) return;
@@ -231,6 +259,9 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
       setTransformationName(template.name);
       setRequestUrl(template.requestUrl);
       setHttpMethod(template.httpMethod);
+      setParameters(recordToParameterEntries(template.parameters));
+      setAuthHeader(template.authHeader || '');
+      setRequestBody(template.requestBody || '');
       setJqFilter(template.jqFilter);
       setSamplePayload(template.samplePayload);
       setJqMatchBy(template.matchBy);
@@ -239,30 +270,17 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
     }
   };
 
-  const handleSelectDirectTemplate = (templateId: string) => {
-    setDirectTemplateId(templateId);
-    if (!templateId) return;
-    const template = TRANSFORMATION_TEMPLATES.find((t) => t.id === templateId);
-    if (template) {
-      setDirectMatchBy(template.matchBy);
-      setDirectMatchKey(template.matchKey || '');
-      setDirectJson(
-        template.directPayloadSample
-          ? JSON.stringify(template.directPayloadSample, null, 2)
-          : template.samplePayload
-      );
-    }
-  };
-
   // ── Transformation Handlers ────────────────────────────────────────────────
   const handleSelectTransformation = (transformationId: string) => {
     setSelectedTransformationId(transformationId);
     setSelectedTemplateId('');
-    setSaveFeedback('');
     setSubmitError('');
     setConfirmDeleteTransformation(false);
     if (!transformationId) {
       setTransformationName('');
+      setParameters([]);
+      setAuthHeader('');
+      setRequestBody('');
       return;
     }
     const item = transformations.find((p) => p.id === transformationId);
@@ -270,6 +288,9 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
       setTransformationName(item.name);
       setRequestUrl(item.requestUrl);
       setHttpMethod(item.httpMethod || 'GET');
+      setParameters(recordToParameterEntries(item.parameters));
+      setAuthHeader(item.authHeader || '');
+      setRequestBody(item.requestBody || '');
       setJqFilter(item.jqFilter || '.');
       setJqMatchBy(item.matchBy || 'NAME');
       setJqMatchKey(item.matchKey || '');
@@ -279,7 +300,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
   const handleSaveTransformation = async () => {
     if (!metric || !currentMap) return;
-    setSaveFeedback('');
     setSubmitError('');
     setConfirmDeleteTransformation(false);
 
@@ -298,32 +318,36 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
     try {
       setSubmitting(true);
+      const paramMap = parameterEntriesToRecord(parameters);
       const updatedState = await saveMetricTransformation(currentMap.id, metric.id, {
         id: selectedTransformationId || undefined,
         name: trimmedName,
         requestUrl: trimmedUrl,
         httpMethod,
+        parameters: Object.keys(paramMap).length > 0 ? paramMap : undefined,
+        authHeader: authHeader.trim() || undefined,
+        requestBody: requestBody.trim() || undefined,
         jqFilter,
         matchBy: jqMatchBy,
         matchKey: jqMatchKey || undefined,
         lastPayloadSample: samplePayload || undefined,
       });
 
+      if (updatedState?.metrics) {
+        setMetrics(updatedState.metrics);
+      }
+      if (updatedState) {
+        updateMap(updatedState);
+      }
+
       // Update selectedTransformationId to the saved transformation's id
       const updatedMetric = updatedState.metrics?.[metric.id];
       const updatedList = updatedMetric?.transformations || [];
-      const saved = updatedList.find(
-        (p) => p.name.trim().toLowerCase() === trimmedName.toLowerCase()
-      );
+      const saved = (selectedTransformationId && updatedList.find((p) => p.id === selectedTransformationId))
+        || updatedList.find((p) => p.name.trim().toLowerCase() === trimmedName.toLowerCase());
       if (saved) {
         setSelectedTransformationId(saved.id);
       }
-
-      setSaveFeedback(
-        selectedTransformationId
-          ? `Transformation "${trimmedName}" updated successfully.`
-          : `Transformation "${trimmedName}" saved successfully.`
-      );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to save transformation.';
       setSubmitError(message);
@@ -334,22 +358,29 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
   const handleDeleteTransformation = async () => {
     if (!metric || !currentMap || !selectedTransformationId) return;
-    setSaveFeedback('');
     setSubmitError('');
     try {
       setSubmitting(true);
-      await deleteMetricTransformation(currentMap.id, metric.id, selectedTransformationId);
+      const updatedState = await deleteMetricTransformation(currentMap.id, metric.id, selectedTransformationId);
+      if (updatedState?.metrics) {
+        setMetrics(updatedState.metrics);
+      }
+      if (updatedState) {
+        updateMap(updatedState);
+      }
       setSelectedTransformationId('');
       setTransformationName('');
       setRequestUrl('');
       setHttpMethod('GET');
+      setParameters([]);
+      setAuthHeader('');
+      setRequestBody('');
       setJqFilter('[.[] | { element: .name, value: (.count | tostring), level: "OK" }]');
       setSamplePayload('[\n  { "name": "Auth Service", "count": 5 },\n  { "name": "Billing Service", "count": 12 }\n]');
       setJqMatchBy('NAME');
       setJqMatchKey('');
-      setJqTransformedReq(null);
+      setTransformedJson('');
       setConfirmDeleteTransformation(false);
-      setSaveFeedback('Transformation deleted successfully.');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete transformation.';
       setSubmitError(message);
@@ -361,7 +392,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   // ── Run JQ Dry-Run Transformation ──────────────────────────────────────────
   const handleRunJqTransform = async () => {
     setJqTransformError('');
-    setJqTransformedReq(null);
 
     let parsedPayload: unknown;
     try {
@@ -381,68 +411,23 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         setJqTransformError(`JQ Transformation output must evaluate to an array of metric elements, but got ${typeof transformed.data}.`);
         return;
       }
-      setJqTransformedReq({
-        matchBy: jqMatchBy,
-        matchKey: jqMatchKey.trim() || undefined,
-        values: transformed.data as MetricElementValueDto[],
-      });
+      setTransformedJson(JSON.stringify(transformed.data, null, 2));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'JQ Evaluation failed.';
       setJqTransformError(message);
     }
   };
 
-  // ── Execute Direct Batch Push ──────────────────────────────────────────────
-  const handleExecuteDirectPush = async () => {
-    if (!metric || !currentMap) return;
-    setDirectJsonError('');
-    setSubmitError('');
-    setSubmitResult(null);
-
-    let parsedBody: unknown;
-    try {
-      parsedBody = JSON.parse(directJson);
-    } catch {
-      setDirectJsonError('Invalid JSON format.');
-      return;
-    }
-
-    let requestBody: PushMetricValuesRequest;
-    if (Array.isArray(parsedBody)) {
-      requestBody = {
-        matchBy: directMatchBy,
-        matchKey: directMatchKey.trim() || undefined,
-        values: parsedBody,
-      };
-    } else if (parsedBody && typeof parsedBody === 'object') {
-      const obj = parsedBody as Record<string, unknown>;
-      requestBody = {
-        matchBy: (obj.matchBy as MatchStrategy) || directMatchBy,
-        matchKey: (obj.matchKey as string) || (directMatchKey.trim() || undefined),
-        values: Array.isArray(obj.values) ? obj.values : [],
-      };
-    } else {
-      setDirectJsonError('JSON must be an array of element values or a PushMetricValuesRequest object.');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      const res = await pushMetricValues(currentMap.id, metric.id, requestBody);
-      setSubmitResult(res);
-      if (onSuccess) onSuccess();
-    } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to push metric values.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // ── Execute JQ Batch Push ──────────────────────────────────────────────────
+  // ── Execute Batch Push ─────────────────────────────────────────────────────
   const handleExecuteJqPush = async () => {
     if (!metric || !currentMap) return;
-    if (!jqTransformedReq) {
-      await handleRunJqTransform();
+    let req = parsedTransformedReq;
+    if (!req) {
+      if (!transformedJson.trim()) {
+        await handleRunJqTransform();
+        return;
+      }
+      setSubmitError('Transformed data is not valid JSON or does not contain metric values.');
       return;
     }
 
@@ -450,7 +435,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
       setSubmitting(true);
       setSubmitError('');
       setSubmitResult(null);
-      const res = await pushMetricValues(currentMap.id, metric.id, jqTransformedReq);
+      const res = await pushMetricValues(currentMap.id, metric.id, req);
       setSubmitResult(res);
       if (onSuccess) onSuccess();
     } catch (err: unknown) {
@@ -462,34 +447,24 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
 
   // ── Copy Helpers ───────────────────────────────────────────────────────────
   const handleCopyTransformedPayload = () => {
-    if (!jqTransformedReq) return;
-    navigator.clipboard.writeText(JSON.stringify(jqTransformedReq, null, 2));
+    const payloadToCopy = transformedJson || (parsedTransformedReq ? JSON.stringify(parsedTransformedReq, null, 2) : '');
+    if (!payloadToCopy) return;
+    navigator.clipboard.writeText(payloadToCopy);
     setCopiedPayload(true);
     setTimeout(() => setCopiedPayload(false), 2000);
   };
 
-  const handleCopyCurl = () => {
-    if (!metric || !currentMap) return;
-    const req = parseDirectRequest() || { matchBy: directMatchBy, values: [] };
-    const curl = generateCurlSnippet(currentMap.id, metric.id, req, token || undefined);
-    navigator.clipboard.writeText(curl);
-    setCopiedDirectCurl(true);
-    setTimeout(() => setCopiedDirectCurl(false), 2000);
-  };
-
-  const handleCopyScript = () => {
-    if (!metric || !currentMap) return;
-    const script = generateAutomationScript(
+  const handleCopyForeignCurl = () => {
+    const paramMap = parameterEntriesToRecord(parameters);
+    const curl = generateForeignCurlSnippet(
       requestUrl || 'https://api.example.com/data',
       httpMethod,
+      paramMap,
+      requestBody || undefined,
+      authHeader || undefined,
       jqFilter,
-      currentMap.id,
-      metric.id,
-      jqMatchBy,
-      jqMatchKey || undefined,
-      token || undefined,
     );
-    navigator.clipboard.writeText(script);
+    navigator.clipboard.writeText(curl);
     setCopiedScript(true);
     setTimeout(() => setCopiedScript(false), 2000);
   };
@@ -499,7 +474,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   if (!metric) {
     return (
       <div className="flex h-full flex-col overflow-y-auto">
-        <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3">
+        <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3 shrink-0">
           {/* Card header */}
           <div className="flex items-stretch border-b border-border shrink-0">
             <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
@@ -540,7 +515,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       {/* ── Main card ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3">
+      <div className="flex flex-col rounded-lg bg-card overflow-hidden mx-3 sm:mx-6 my-3 shrink-0">
         {/* Card header */}
         <div className="flex items-stretch border-b border-border shrink-0">
           <div className="flex items-center gap-2 px-4 py-2.5 text-md font-semibold text-foreground flex-1 min-w-0">
@@ -548,48 +523,14 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
             <span className="truncate" title={metric.description}>REST API Push Values: {metric.name}</span>
           </div>
 
-          {/* Metric Selector Dropdown (when multiple metrics exist) */}
-          {allMetrics.length > 1 && (
-            <div className="flex items-center gap-1.5 px-3 text-xs text-foreground bg-secondary/70 border-l border-border shrink-0">
-              <label htmlFor="metric-selector" className="text-xs text-muted-foreground font-medium hidden sm:inline">
-                Switch Metric:
-              </label>
-              <select
-                id="metric-selector"
-                aria-label="Select Metric"
-                value={metric.id}
-                onChange={(e) => {
-                  const targetId = e.target.value;
-                  if (targetId && targetId !== metric.id && sessionId) {
-                    navigate(`/session/${sessionId}/metrics/${targetId}/push`);
-                  }
-                }}
-                className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-              >
-                {allMetrics.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Active Tab Toggle Button */}
+          {/* Load Transformation Button (opens modal) */}
           <button
             type="button"
             className={cardBtnCls}
-            onClick={() => setActiveTab(activeTab === 'jq' ? 'direct' : 'jq')}
+            onClick={() => setIsLoadModalOpen(true)}
+            aria-label="Load Transformation"
           >
-            {activeTab === 'jq' ? (
-              <>
-                <FileCode className="h-3.5 w-3.5" /> Direct JSON Push
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5" /> JQ Transformation Builder
-              </>
-            )}
+            <FolderOpen className="h-3.5 w-3.5" /> Load Transformation
           </button>
 
           <Link
@@ -601,248 +542,83 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         </div>
 
         <div className="p-4 sm:p-5 flex flex-col gap-4">
-
-          {/* ── TAB 1: Direct JSON Push ──────────────────────────────────────── */}
-          {activeTab === 'direct' && (
-            <div className="flex flex-col gap-4 pt-1">
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted/20 rounded-lg border border-border">
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-muted-foreground font-medium">Match Strategy:</span>
-                  <select
-                    aria-label="Direct Match Strategy"
-                    value={directMatchBy}
-                    onChange={(e) => {
-                      const next = e.target.value as MatchStrategy;
-                      setDirectMatchBy(next);
-                      const sample = generateSamplePayload(landmarks, next, directMatchKey);
-                      setDirectJson(JSON.stringify(sample, null, 2));
-                    }}
-                    className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                  >
-                    <option value="NAME">NAME (Element Name)</option>
-                    <option value="ALIAS">ALIAS (Element Alias)</option>
-                    <option value="LINK">LINK (Resource URL)</option>
-                  </select>
-
-                  {directMatchBy === 'LINK' && (
-                    <Input
-                      placeholder="Match Key (e.g. repository)"
-                      value={directMatchKey}
-                      onChange={(e) => setDirectMatchKey(e.target.value)}
-                      className="h-8 text-xs w-48"
-                    />
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground font-medium">Load Template:</span>
-                  <select
-                    value={directTemplateId}
-                    onChange={(e) => handleSelectDirectTemplate(e.target.value)}
-                    className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                  >
-                    <option value="">-- Choose Template... --</option>
-                    {TRANSFORMATION_TEMPLATES.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-muted-foreground font-medium text-xs">JSON Request Payload:</label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      const sample = generateSamplePayload(landmarks, directMatchBy, directMatchKey);
-                      setDirectJson(JSON.stringify(sample, null, 2));
-                      setDirectJsonError('');
-                    }}
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" /> Reset to Workspace Elements
-                  </Button>
-                </div>
-                <Textarea
-                  value={directJson}
-                  onChange={(e) => {
-                    setDirectJson(e.target.value);
-                    setDirectJsonError('');
-                  }}
-                  className="font-mono text-xs min-h-64 resize-y bg-background"
-                  placeholder="Paste JSON payload here..."
-                />
-              </div>
-
-              {directJsonError && (
-                <Alert variant="destructive" className="py-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">{directJsonError}</AlertDescription>
-                </Alert>
-              )}
-
-              {directReconciliation && (
-                <div className="mt-2">
-                  <MetricDryRunPreview summary={directReconciliation} metricName={metric.name} />
-                </div>
-              )}
-
-              {/* Endpoint Information Banner */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-muted/40 rounded-lg border border-border text-xs">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-muted-foreground">API Endpoint:</span>
-                  <span className="font-mono bg-muted text-foreground px-2 py-0.5 rounded border border-border text-[11px]">
-                    POST {endpointPath}
-                  </span>
-                </div>
-                <div className="text-muted-foreground font-mono text-[11px]">
-                  Session: {sessionId} • Metric: {metric.id}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
-                <Button variant="secondary" size="sm" onClick={handleCopyCurl} className="h-8 text-xs">
-                  {copiedDirectCurl ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-                  {copiedDirectCurl ? 'Copied cURL' : 'Copy cURL Command'}
-                </Button>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" onClick={handleExecuteDirectPush} disabled={submitting} className="h-8 text-xs">
-                    {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
-                    Push Metric Values
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── TAB 2: JQ Transformation Builder ────────────────────────────── */}
-          {activeTab === 'jq' && (
-            <div className="flex flex-col gap-4 pt-1">
-              <h3>Transformation</h3>
-              {/* Template & Transformation Selector Bar */}
-              <div className="flex flex-col gap-3 p-3 bg-muted/20 rounded-lg border border-border">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-muted-foreground font-medium">Saved Transformation:</span>
-                    <select
-                      value={selectedTransformationId}
-                      onChange={(e) => handleSelectTransformation(e.target.value)}
-                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                      aria-label="Transformation"
-                    >
-                      <option value="">-- New / Custom Transformation --</option>
-                      {transformations.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Persistence / Unsaved Status Badge */}
-                    {selectedTransformationId ? (
-                      !isTransformationDirty ? (
-                        <span
+          <div className="flex flex-col gap-4 pt-1">
+            <h3>Transformation "{transformationName}"
+              {/* Persistence / Unsaved Status Badge */}
+              {selectedTransformationId ? (
+                  !isTransformationDirty ? (
+                      <span
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                           title="This transformation matches the persisted configuration"
                           data-testid="transformation-status-saved"
-                        >
-                          <CheckCircle2 className="h-3 w-3" /> No changes
-                        </span>
-                      ) : (
-                        <span
+                      >
+                        <CheckCircle2 className="h-3 w-3" /> No changes
+                      </span>
+                  ) : (
+                      <span
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"
                           title="This transformation has unsaved modifications"
                           data-testid="transformation-status-dirty"
-                        >
-                          <AlertCircle className="h-3 w-3" /> Unsaved changes
-                        </span>
-                      )
-                    ) : (
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border"
-                        title="Transformation not yet saved to persistence"
-                        data-testid="transformation-status-unsaved"
                       >
-                        Unsaved transformation
+                        <AlertCircle className="h-3 w-3" /> Unsaved changes
                       </span>
-                    )}
+                  )
+              ) : (
+                  <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border"
+                      title="Transformation not yet saved to persistence"
+                      data-testid="transformation-status-unsaved"
+                  >
+                      Unsaved transformation
+                    </span>
+              )}
+            </h3>
 
-                    <div className="flex items-center gap-1.5">
-                      <Input
+            {/* Template & Transformation Configuration Bar */}
+            <div className="flex flex-col gap-3 p-3 bg-muted/20 rounded-lg border border-border">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground font-medium">Name:</span>
+                    <Input
                         placeholder="Transformation Name"
                         value={transformationName}
-                        onChange={(e) => {
-                          setTransformationName(e.target.value);
-                          if (saveFeedback) setSaveFeedback('');
-                        }}
+                        onChange={(e) => setTransformationName(e.target.value)}
                         className={`h-8 text-xs w-48 ${isDuplicateTransformationName ? 'border-destructive focus-visible:ring-destructive text-destructive' : ''}`}
-                      />
-                      {isDuplicateTransformationName && (
+                    />
+                    {isDuplicateTransformationName && (
                         <span className="text-[11px] text-destructive font-medium whitespace-nowrap">
-                          Name already in use
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      className="h-8 text-xs"
-                      onClick={handleSaveTransformation}
-                      disabled={submitting || isDuplicateTransformationName}
-                    >
-                      <Save className="h-3.5 w-3.5 mr-1.5" />
-                      {selectedTransformationId ? 'Update Transformation' : 'Save Transformation'}
-                    </Button>
-                    {selectedTransformationId && (
-                      !confirmDeleteTransformation ? (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="h-8 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                          onClick={() => setConfirmDeleteTransformation(true)}
-                          disabled={submitting}
-                          title="Delete Transformation"
-                          aria-label="Delete Transformation"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-1.5 bg-destructive/10 border border-destructive/30 px-2 py-0.5 rounded">
-                          <span className="text-xs text-destructive font-medium whitespace-nowrap">
-                            Delete transformation?
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="h-6 px-2 text-xs"
-                            onClick={handleDeleteTransformation}
-                            disabled={submitting}
-                          >
-                            Yes, delete
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                            onClick={() => setConfirmDeleteTransformation(false)}
-                            disabled={submitting}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      )
+                        Name already in use
+                      </span>
                     )}
                   </div>
-                </div>
 
+                  {/* Metric Selector Dropdown */}
+                  <div className="flex items-center gap-1.5">
+                    <label htmlFor="metric-selector" className="text-muted-foreground font-medium">
+                      Target Metric:
+                    </label>
+                    <select
+                      id="metric-selector"
+                      aria-label="Select Metric"
+                      value={metric.id}
+                      onChange={(e) => setSelectedMetricId(e.target.value)}
+                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
+                    >
+                      {allMetrics.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {!selectedTransformationId && (
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground font-medium">Built-in Template:</span>
+                    <span className="text-muted-foreground font-medium">Load Template:</span>
                     <select
                       value={selectedTemplateId}
                       onChange={(e) => handleSelectTemplate(e.target.value)}
@@ -858,233 +634,380 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     </select>
                   </div>
                 </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={handleSaveTransformation}
+                    disabled={submitting || isDuplicateTransformationName}
+                >
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  {selectedTransformationId ? 'Update Transformation' : 'Save Transformation'}
+                </Button>
+                {selectedTransformationId && (
+                    !confirmDeleteTransformation ? (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                            onClick={() => setConfirmDeleteTransformation(true)}
+                            disabled={submitting}
+                            title="Delete Transformation"
+                            aria-label="Delete Transformation"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                    ) : (
+                        <div className="flex items-center gap-1.5 bg-destructive/10 border border-destructive/30 px-2 py-0.5 rounded">
+                        <span className="text-xs text-destructive font-medium whitespace-nowrap">
+                          Delete transformation?
+                        </span>
+                          <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-6 px-2 text-xs"
+                              onClick={handleDeleteTransformation}
+                              disabled={submitting}
+                          >
+                            Yes, delete
+                          </Button>
+                          <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                              onClick={() => setConfirmDeleteTransformation(false)}
+                              disabled={submitting}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                    )
+                )}
+              </div>
+            </div>
 
-                {/* Save Feedback Alert */}
-                {saveFeedback && (
-                  <div
-                    className="flex items-center justify-between px-3 py-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs"
-                    data-testid="transformation-save-feedback"
-                  >
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                      <span>{saveFeedback}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSaveFeedback('')}
-                      className="text-muted-foreground hover:text-foreground ml-2 cursor-pointer"
-                      aria-label="Dismiss feedback"
+            <h3>Source and Data</h3>
+            {/* Foreign Request Parameters */}
+            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-center bg-muted/20 p-3 rounded-lg border border-border">
+              <span className="text-muted-foreground font-medium text-xs">Foreign Endpoint:</span>
+              <div className="flex items-center gap-2">
+                <select
+                  value={httpMethod}
+                  onChange={(e) => setHttpMethod(e.target.value)}
+                  className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                </select>
+                <Input
+                  placeholder="https://gitlab.example.com/api/v4/projects/123/merge_requests"
+                  value={requestUrl}
+                  onChange={(e) => setRequestUrl(e.target.value)}
+                  className="h-8 text-xs flex-1"
+                />
+              </div>
+
+              <span className="text-muted-foreground font-medium text-xs self-start pt-2">Parameters:</span>
+              <div className="flex flex-col gap-2">
+                {parameters.length === 0 ? (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground py-1">
+                    <span>No parameters configured.</span>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setParameters([{ key: '', value: '' }])}
                     >
-                      <X className="h-3 w-3" />
-                    </button>
+                      <Plus className="h-3 w-3 mr-1" /> Add Parameter
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {parameters.map((param, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          placeholder="Key (e.g. group_path)"
+                          value={param.key}
+                          onChange={(e) => {
+                            const updated = [...parameters];
+                            updated[index] = { ...updated[index], key: e.target.value };
+                            setParameters(updated);
+                          }}
+                          className="h-8 text-xs w-1/3"
+                          aria-label={`Parameter Key ${index + 1}`}
+                        />
+                        <Input
+                          placeholder="Value"
+                          value={param.value}
+                          onChange={(e) => {
+                            const updated = [...parameters];
+                            updated[index] = { ...updated[index], value: e.target.value };
+                            setParameters(updated);
+                          }}
+                          className="h-8 text-xs flex-1"
+                          aria-label={param.key.trim() || `Parameter Value ${index + 1}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            const updated = parameters.filter((_, i) => i !== index);
+                            setParameters(updated);
+                          }}
+                          aria-label={`Remove Parameter ${param.key || index + 1}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex justify-start">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setParameters([...parameters, { key: '', value: '' }])}
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Add Parameter
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <h3>Data</h3>
-              {/* Foreign Request Parameters */}
-              <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-center bg-muted/20 p-3 rounded-lg border border-border">
-                <span className="text-muted-foreground font-medium text-xs">Foreign Endpoint:</span>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={httpMethod}
-                    onChange={(e) => setHttpMethod(e.target.value)}
-                    className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                  >
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                  </select>
+              <span className="text-muted-foreground font-medium text-xs self-start pt-2">Auth Header:</span>
+              <div className="flex flex-col gap-1.5">
+                <Input
+                  placeholder="e.g. PRIVATE-TOKEN: $GITLAB_TOKEN or Authorization: Bearer <token>"
+                  value={authHeader}
+                  onChange={(e) => setAuthHeader(e.target.value)}
+                  className="h-8 text-xs bg-background"
+                  aria-label="Auth Header"
+                />
+              </div>
+
+              <span className="text-muted-foreground font-medium text-xs self-start pt-2">Request Body:</span>
+              <div className="flex flex-col gap-1.5">
+                <Textarea
+                  placeholder='{ "query": "..." } or payload body for POST requests'
+                  value={requestBody}
+                  onChange={(e) => setRequestBody(e.target.value)}
+                  className="font-mono text-xs min-h-24 resize-y bg-background"
+                  aria-label="Request Body"
+                />
+              </div>
+
+              <span className="text-muted-foreground font-medium text-xs">Match Strategy:</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  aria-label="JQ Match Strategy"
+                  value={jqMatchBy}
+                  onChange={(e) => setJqMatchBy(e.target.value as MatchStrategy)}
+                  className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
+                >
+                  <option value="NAME">NAME (Element Name)</option>
+                  <option value="ALIAS">ALIAS (Element Alias)</option>
+                  <option value="LINK">LINK (Resource URL)</option>
+                </select>
+                {jqMatchBy === 'LINK' && (
                   <Input
-                    placeholder="https://gitlab.example.com/api/v4/projects/123/merge_requests"
-                    value={requestUrl}
-                    onChange={(e) => setRequestUrl(e.target.value)}
-                    className="h-8 text-xs flex-1"
+                    placeholder="Key (e.g. repository)"
+                    value={jqMatchKey}
+                    onChange={(e) => setJqMatchKey(e.target.value)}
+                    className="h-8 text-xs w-48"
                   />
-                </div>
-
-                <span className="text-muted-foreground font-medium text-xs">Match Strategy:</span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    aria-label="JQ Match Strategy"
-                    value={jqMatchBy}
-                    onChange={(e) => setJqMatchBy(e.target.value as MatchStrategy)}
-                    className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                  >
-                    <option value="NAME">NAME (Element Name)</option>
-                    <option value="ALIAS">ALIAS (Element Alias)</option>
-                    <option value="LINK">LINK (Resource URL)</option>
-                  </select>
-                  {jqMatchBy === 'LINK' && (
-                    <Input
-                      placeholder="Key (e.g. repository)"
-                      value={jqMatchKey}
-                      onChange={(e) => setJqMatchKey(e.target.value)}
-                      className="h-8 text-xs w-48"
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Foreign JSON Sample & JQ Filter */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
-                  <Textarea
-                    value={samplePayload}
-                    onChange={(e) => setSamplePayload(e.target.value)}
-                    className="font-mono text-xs min-h-48 resize-y bg-background"
-                    placeholder="Paste response from GitLab / GitHub..."
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-muted-foreground font-medium text-xs">JQ Filter Expression:</label>
-                    <a
-                      href="https://jqlang.github.io/jq/manual/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-link hover:text-link-hover hover:underline inline-flex items-center gap-1"
-                      title="Open jq documentation"
-                    >
-                      <span>jq documentation</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                  <Textarea
-                    value={jqFilter}
-                    onChange={(e) => setJqFilter(e.target.value)}
-                    className="font-mono text-xs min-h-48 resize-y bg-background"
-                    placeholder="[.[] | { element: .title, value: (.upvotes | tostring), level: 'OK' }]"
-                  />
-                </div>
-              </div>
-
-              {/* ── Preview Section ───────────────────────────────────────────── */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <h3>Preview</h3>
-                <div className="flex flex-wrap items-center gap-2">
-                  {jqTransformedReq && (
-                    <div className="flex items-center bg-muted/60 p-0.5 rounded-md border border-border">
-                      <button
-                        type="button"
-                        onClick={() => setJqPreviewMode('table')}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
-                          jqPreviewMode === 'table'
-                            ? 'bg-background text-foreground font-medium shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        aria-label="Table Preview"
-                      >
-                        <Table className="h-3.5 w-3.5" />
-                        <span>Table</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setJqPreviewMode('payload')}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
-                          jqPreviewMode === 'payload'
-                            ? 'bg-background text-foreground font-medium shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        aria-label="Inspect Payload"
-                      >
-                        <FileCode className="h-3.5 w-3.5" />
-                        <span>Inspect Payload</span>
-                      </button>
-                    </div>
-                  )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleRunJqTransform}
-                    className="h-8 text-xs flex items-center gap-1.5"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Execute JQ Dry-Run
-                  </Button>
-                </div>
-              </div>
-
-              {jqTransformError && (
-                <Alert variant="destructive" className="py-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">{jqTransformError}</AlertDescription>
-                </Alert>
-              )}
-
-              {jqTransformedReq && jqPreviewMode === 'payload' && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      Transformed JSON Payload ({jqTransformedReq.values.length} element
-                      {jqTransformedReq.values.length === 1 ? '' : 's'}):
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={handleCopyTransformedPayload}
-                    >
-                      {copiedPayload ? (
-                        <>
-                          <Check className="h-3 w-3 text-emerald-400 mr-1" /> Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3 w-3 mr-1" /> Copy Payload
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <pre
-                    className="font-mono text-xs p-3 bg-background rounded-md border border-border overflow-x-auto max-h-64 select-all text-foreground whitespace-pre"
-                    data-testid="transformed-payload-preview"
-                  >
-                    {JSON.stringify(jqTransformedReq, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {jqTransformedReq && jqPreviewMode === 'table' && jqReconciliation && (
-                <div className="mt-1">
-                  <MetricDryRunPreview summary={jqReconciliation} metricName={metric.name} />
-                </div>
-              )}
-
-              {!jqTransformedReq && !jqTransformError && (
-                <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-md">
-                  Click &ldquo;Execute JQ Dry-Run&rdquo; to evaluate the transformation, preview matched elements, or inspect the payload.
-                </div>
-              )}
-
-              <h3>Push</h3>
-              {/* Endpoint Information Banner */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-muted/40 rounded-lg border border-border text-xs">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-muted-foreground">API Endpoint:</span>
-                  <span className="font-mono bg-muted text-foreground px-2 py-0.5 rounded border border-border text-[11px]">
-                    POST {endpointPath}
-                  </span>
-                </div>
-                <div className="text-muted-foreground font-mono text-[11px]">
-                  Session: {sessionId} • Metric: {metric.id}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
-                <Button variant="secondary" size="sm" onClick={handleCopyScript} className="h-8 text-xs">
-                  {copiedScript ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Terminal className="h-3.5 w-3.5 mr-1.5" />}
-                  {copiedScript ? 'Copied CI Script' : 'Copy CI/CD Automation Script'}
-                </Button>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
-                    {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
-                    Push Transformed Values
-                  </Button>
-                </div>
+                )}
               </div>
             </div>
-          )}
+
+            {/* Foreign JSON Sample & JQ Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
+                <Textarea
+                  value={samplePayload}
+                  onChange={(e) => setSamplePayload(e.target.value)}
+                  className="font-mono text-xs min-h-48 resize-y bg-background"
+                  placeholder="Paste response from GitLab / GitHub..."
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-muted-foreground font-medium text-xs">JQ Filter Expression:</label>
+                  <a
+                    href="https://jqlang.github.io/jq/manual/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-link hover:text-link-hover hover:underline inline-flex items-center gap-1"
+                    title="Open jq documentation"
+                  >
+                    <span>jq documentation</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <Textarea
+                  value={jqFilter}
+                  onChange={(e) => setJqFilter(e.target.value)}
+                  className="font-mono text-xs min-h-48 resize-y bg-background"
+                  placeholder="[.[] | { element: .title, value: (.upvotes | tostring), level: 'OK' }]"
+                />
+              </div>
+            </div>
+
+            {/* ── Preview Section ───────────────────────────────────────────── */}
+            <h3>Preview</h3>
+
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="text-muted-foreground font-medium">
+                  Transformed Data (JSON):
+                  {parsedTransformedReq && (
+                    <span className="ml-1.5 text-muted-foreground font-normal">
+                      ({parsedTransformedReq.values.length} element
+                      {parsedTransformedReq.values.length === 1 ? '' : 's'})
+                    </span>
+                  )}
+                </label>
+
+                {transformedJson && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={handleCopyTransformedPayload}
+                  >
+                    {copiedPayload ? (
+                      <>
+                        <Check className="h-3 w-3 text-emerald-400 mr-1" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3 mr-1" /> Copy Payload
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              <Textarea
+                value={transformedJson}
+                onChange={(e) => {
+                  setTransformedJson(e.target.value);
+                  setJqTransformError('');
+                }}
+                className="font-mono text-xs min-h-36 resize-y bg-background"
+                placeholder="Transformed metric element values (generated by Execute JQ Dry-Run or edited directly)..."
+                aria-label="Transformed Data"
+                data-testid="transformed-payload-preview"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+
+              <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleRunJqTransform}
+                  className="h-8 text-xs flex items-center gap-1.5"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Execute JQ Dry-Run
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleCopyForeignCurl} className="h-8 text-xs">
+                {copiedScript ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Terminal className="h-3.5 w-3.5 mr-1.5" />}
+                {copiedScript ? 'Copied curl Request' : 'Copy curl Request'}
+              </Button>
+            </div>
+
+            {jqTransformError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{jqTransformError}</AlertDescription>
+              </Alert>
+            )}
+
+            {parsedTransformedReq && jqPreviewMode === 'payload' && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    Transformed Request Payload ({parsedTransformedReq.values.length} element
+                    {parsedTransformedReq.values.length === 1 ? '' : 's'}):
+                  </span>
+                </div>
+                <pre
+                  className="font-mono text-xs p-3 bg-background rounded-md border border-border overflow-x-auto select-all text-foreground whitespace-pre"
+                >
+                  {JSON.stringify(parsedTransformedReq, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {parsedTransformedReq && (
+                <div className="flex items-center bg-muted/60 p-0.5 rounded-md border border-border">
+                  <button
+                      type="button"
+                      onClick={() => setJqPreviewMode('table')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                          jqPreviewMode === 'table'
+                              ? 'bg-background text-foreground font-medium shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      aria-label="Table Preview"
+                  >
+                    <Table className="h-3.5 w-3.5" />
+                    <span>Table</span>
+                  </button>
+                  <button
+                      type="button"
+                      onClick={() => setJqPreviewMode('payload')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                          jqPreviewMode === 'payload'
+                              ? 'bg-background text-foreground font-medium shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      aria-label="Inspect Payload"
+                  >
+                    <FileCode className="h-3.5 w-3.5" />
+                    <span>Inspect Payload</span>
+                  </button>
+                </div>
+            )}
+            {parsedTransformedReq && jqPreviewMode === 'table' && jqReconciliation && (
+              <div className="mt-1">
+                <MetricDryRunPreview summary={jqReconciliation} metricName={metric.name} />
+              </div>
+            )}
+
+            {!parsedTransformedReq && !jqTransformError && (
+              <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-md">
+                Click &ldquo;Execute JQ Dry-Run&rdquo; or enter transformed JSON data above to preview matched elements.
+              </div>
+            )}
+
+            <h3>Push</h3>
+            {/* Endpoint Information Banner */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-muted/40 rounded-lg border border-border text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-muted-foreground">API Endpoint:</span>
+                <span className="font-mono bg-muted text-foreground px-2 py-0.5 rounded border border-border text-[11px]">
+                  POST {endpointPath}
+                </span>
+              </div>
+              <div className="text-muted-foreground font-mono text-[11px]">
+                Session: {sessionId} • Metric: {metric.id}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+              <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
+                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
+                Push Transformed Values
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* ── Feedback & Diagnostic Banners ─────────────────────────────────── */}
@@ -1116,6 +1039,96 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* ── Load Transformation Modal ───────────────────────────────────────── */}
+      <Dialog open={isLoadModalOpen} onOpenChange={setIsLoadModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <FolderOpen className="h-4 w-4 text-primary" />
+              Load Transformation
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Select a saved transformation for {metric.name} or start with a new one.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2 py-2 max-h-80 overflow-y-auto">
+            {/* New Transformation Option */}
+            <button
+              type="button"
+              onClick={() => {
+                handleSelectTransformation('');
+                setIsLoadModalOpen(false);
+              }}
+              className={`flex items-center justify-between p-3 rounded-lg border text-left transition-colors cursor-pointer ${
+                !selectedTransformationId
+                  ? 'bg-primary/10 border-primary text-foreground'
+                  : 'bg-muted/30 border-border hover:bg-muted/60 text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Plus className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold">-- New / Custom Transformation --</span>
+                  <span className="text-[11px] text-muted-foreground">Start with a clean transformation configuration</span>
+                </div>
+              </div>
+              {!selectedTransformationId && (
+                <Check className="h-4 w-4 text-primary shrink-0" />
+              )}
+            </button>
+
+            {/* Saved Transformations List */}
+            {transformations.length === 0 ? (
+              <div className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
+                No saved transformations for this metric yet.
+              </div>
+            ) : (
+              transformations.map((t) => {
+                const isSelected = t.id === selectedTransformationId;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      handleSelectTransformation(t.id);
+                      setIsLoadModalOpen(false);
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-lg border text-left transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary/10 border-primary text-foreground'
+                        : 'bg-muted/30 border-border hover:bg-muted/60 text-foreground'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                      <span className="text-xs font-semibold truncate">{t.name}</span>
+                      <span className="text-[11px] text-muted-foreground truncate font-mono">
+                        {t.httpMethod || 'GET'} {t.requestUrl}
+                      </span>
+                    </div>
+                    {isSelected && (
+                      <Check className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => setIsLoadModalOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
