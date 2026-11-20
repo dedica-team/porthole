@@ -572,14 +572,14 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
             <span className="truncate" title={metric.description}>Transformation for {metric.name}</span>
           </div>
 
-          {/* Load Transformation Button (opens modal) */}
+          {/* Open Transformation Button (opens modal) */}
           <button
             type="button"
             className={cardBtnCls}
             onClick={() => setIsLoadModalOpen(true)}
-            aria-label="Load Transformation"
+            aria-label="Open Transformation"
           >
-            <FolderOpen className="h-3.5 w-3.5" /> Load Transformation
+            <FolderOpen className="h-3.5 w-3.5" /> Open Transformation
           </button>
 
           {/* Help Button (opens modal) */}

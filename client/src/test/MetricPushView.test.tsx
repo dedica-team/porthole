@@ -105,7 +105,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByText(/Transformation for Security Vulnerabilities/i)).toBeInTheDocument();
   });
 
-  it('opens modal on Load Transformation button click and lists saved transformations plus new option', () => {
+  it('opens modal on Open Transformation button click and lists saved transformations plus new option', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
         <Routes>
@@ -114,7 +114,7 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i });
     expect(loadBtn).toBeInTheDocument();
 
     fireEvent.click(loadBtn);
@@ -232,7 +232,7 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
@@ -287,7 +287,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.queryByText(/Name already in use/i)).not.toBeInTheDocument();
 
     // Switch to new transformation via Load Transformation modal
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
@@ -336,7 +336,7 @@ describe('MetricPushView (Subpage)', () => {
     );
 
     // Switch to new transformation via modal
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
@@ -616,7 +616,7 @@ describe('MetricPushView (Subpage)', () => {
     );
 
     // Switch to new transformation
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
@@ -673,7 +673,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.queryByText(/Load Template:/i)).not.toBeInTheDocument();
 
     // Switch to New / Custom Transformation via Load Transformation modal
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
@@ -698,7 +698,7 @@ describe('MetricPushView (Subpage)', () => {
     );
 
     // Switch to new transformation
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
@@ -736,7 +736,7 @@ describe('MetricPushView (Subpage)', () => {
     );
 
     // Switch to new transformation
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
@@ -774,7 +774,7 @@ describe('MetricPushView (Subpage)', () => {
     );
 
     // Switch to new transformation
-    const loadBtn = screen.getByRole('button', { name: /Load Transformation/i });
+    const loadBtn = screen.getByRole('button', { name: /Open Transformation/i  });
     fireEvent.click(loadBtn);
     const newOption = screen.getByText(/-- New \/ Custom Transformation --/i);
     fireEvent.click(newOption);
