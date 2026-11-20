@@ -81,7 +81,7 @@ class PushMetricValuesUseCaseTest {
             ),
         )
 
-        val response = useCase.execute(state.id, collaborator.id, "Open Merge Requests", request)
+        val response = useCase.execute(state.id, collaborator.id, metricId, request)
 
         assertEquals(1, response.updatedCount)
         assertEquals(listOf("Unknown Service"), response.unmatchedElements)
@@ -118,7 +118,7 @@ class PushMetricValuesUseCaseTest {
             ),
         )
 
-        val response = useCase.execute(state.id, collaborator.id, metricId.toString(), request)
+        val response = useCase.execute(state.id, collaborator.id, metricId, request)
 
         assertEquals(2, response.updatedCount)
         assertTrue(response.unmatchedElements.isEmpty())
@@ -138,7 +138,7 @@ class PushMetricValuesUseCaseTest {
             ),
         )
 
-        val response = useCase.execute(state.id, collaborator.id, "Open Merge Requests", request)
+        val response = useCase.execute(state.id, collaborator.id, metricId, request)
 
         assertEquals(0, response.updatedCount)
         assertEquals(listOf("NonExistent 1", "NonExistent 2"), response.unmatchedElements)
@@ -156,7 +156,7 @@ class PushMetricValuesUseCaseTest {
             values = listOf(MetricElementValueDto(element = "Auth Service", value = "42")),
         )
 
-        val response = useCase.execute(state.id, collaborator.id, "Open Merge Requests", request)
+        val response = useCase.execute(state.id, collaborator.id, metricId, request)
 
         assertEquals(2, response.updatedCount)
         assertEquals(1, response.warnings.size)
@@ -171,7 +171,7 @@ class PushMetricValuesUseCaseTest {
         )
 
         assertThrows(AccessDeniedException::class.java) {
-            useCase.execute(state.id, outsider.id, "Open Merge Requests", request)
+            useCase.execute(state.id, outsider.id, metricId, request)
         }
     }
 
@@ -197,7 +197,7 @@ class PushMetricValuesUseCaseTest {
             ),
         )
 
-        val response = useCase.execute(state.id, collaborator.id, metricId.toString(), request)
+        val response = useCase.execute(state.id, collaborator.id, metricId, request)
 
         assertEquals(2, response.updatedCount)
         assertEquals(listOf("non-existent-alias"), response.unmatchedElements)
@@ -211,14 +211,15 @@ class PushMetricValuesUseCaseTest {
     }
 
     @Test
-    fun `unknown metric name throws NoSuchElementException`() {
+    fun `unknown metric id throws NoSuchElementException`() {
         val request = PushMetricValuesRequest(
             matchBy = MatchStrategy.NAME,
             values = listOf(MetricElementValueDto(element = "Auth Service", value = "1")),
         )
 
+        val nonExistentMetricId = UUID.randomUUID()
         assertThrows(NoSuchElementException::class.java) {
-            useCase.execute(state.id, collaborator.id, "Non Existing Metric", request)
+            useCase.execute(state.id, collaborator.id, nonExistentMetricId, request)
         }
     }
 }

@@ -57,9 +57,10 @@ class PortholePrincipalArgumentBinder(
             val username = (attributes["preferred_username"] as? String)?.takeIf { it.isNotBlank() }
                 ?: (attributes["name"] as? String)?.takeIf { it.isNotBlank() }
                 ?: (attributes["user_name"] as? String)?.takeIf { it.isNotBlank() }
+                ?: (attributes["username"] as? String)?.takeIf { it.isNotBlank() }
                 ?: name
                 ?: "unknown"
-            return PortholePrincipal(userId = userId, username = username)
+            return PortholePrincipal(userId = userId, username = username, attributes = attributes)
         }
 
         val subject = attributes["sub"]?.toString()
@@ -76,9 +77,10 @@ class PortholePrincipalArgumentBinder(
             ?: (attributes["preferred_username"] as? String)?.takeIf { it.isNotBlank() }
             ?: (attributes["name"] as? String)?.takeIf { it.isNotBlank() }
             ?: (attributes["user_name"] as? String)?.takeIf { it.isNotBlank() }
+            ?: (attributes["username"] as? String)?.takeIf { it.isNotBlank() }
             ?: name
             ?: "unknown"
 
-        return PortholePrincipal(userId = userId, username = username)
+        return PortholePrincipal(userId = userId, username = username, attributes = attributes)
     }
 }

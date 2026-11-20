@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Table,
   FolderOpen,
+  Key,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ import type {
   Landmark,
 } from '@/types/landmark';
 import {
+  generateAutomationScript,
   generateForeignCurlSnippet,
   parseParameters,
   parameterEntriesToRecord,
@@ -49,7 +51,7 @@ import {
   TRANSFORMATION_TEMPLATES,
 } from '@/services/metricService';
 import { runJqTransform } from '@/services/jqWorker';
-import { pushMetricValues, saveMetricTransformation, deleteMetricTransformation } from '@/api/mapApi';
+import { pushMetricValues, saveMetricTransformation, deleteMetricTransformation, generatePushToken } from '@/api/mapApi';
 import MetricDryRunPreview from './MetricDryRunPreview';
 
 export interface MetricPushViewProps {
@@ -123,6 +125,13 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   const [copiedPayload, setCopiedPayload] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
   const [confirmDeleteTransformation, setConfirmDeleteTransformation] = useState(false);
+
+  // ── Push Token State ────────────────────────────────────────────────────────
+  const [pushToken, setPushToken] = useState<string>('');
+  const [copiedToken, setCopiedToken] = useState(false);
+  const [copiedCiScript, setCopiedCiScript] = useState(false);
+  const [generatingToken, setGeneratingToken] = useState(false);
+  const [tokenError, setTokenError] = useState<string>('');
 
   // ── Execution State ────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
@@ -467,6 +476,44 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
     navigator.clipboard.writeText(curl);
     setCopiedScript(true);
     setTimeout(() => setCopiedScript(false), 2000);
+  };
+
+  const handleGeneratePushToken = async () => {
+    if (!metric || !currentMap) return;
+    setGeneratingToken(true);
+    setTokenError('');
+    try {
+      const res = await generatePushToken(currentMap.id, metric.id);
+      setPushToken(res.token);
+      await navigator.clipboard.writeText(`PORTHOLE_TOKEN=${res.token}`);
+      setCopiedToken(true);
+      setTimeout(() => setCopiedToken(false), 2000);
+    } catch (err: unknown) {
+      setTokenError(err instanceof Error ? err.message : 'Failed to generate push token.');
+    } finally {
+      setGeneratingToken(false);
+    }
+  };
+
+  const handleCopyCiScript = async () => {
+    if (!metric || !currentMap) return;
+    const paramMap = parameterEntriesToRecord(parameters);
+    const script = generateAutomationScript(
+      requestUrl || 'https://api.example.com/data',
+      httpMethod,
+      jqFilter,
+      currentMap.id,
+      metric.name,
+      jqMatchBy,
+      jqMatchKey.trim() || undefined,
+      window.location.origin,
+      requestBody || undefined,
+      paramMap,
+      authHeader || undefined,
+    );
+    await navigator.clipboard.writeText(script);
+    setCopiedCiScript(true);
+    setTimeout(() => setCopiedCiScript(false), 2000);
   };
 
   const cardBtnCls = 'flex items-center gap-1.5 px-3 text-xs text-foreground bg-secondary/70 hover:text-muted-foreground hover:bg-secondary border-l border-border transition-colors cursor-pointer shrink-0';
@@ -999,6 +1046,78 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
               <div className="text-muted-foreground font-mono text-[11px]">
                 Session: {sessionId} • Metric: {metric.id}
               </div>
+            </div>
+
+            {/* Scoped JWT Token & CI Automation Section */}
+            <div className="flex flex-col gap-2 p-3 bg-muted/20 rounded-lg border border-border text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 font-medium text-foreground">
+                  <Key className="h-4 w-4 text-primary" />
+                  <span>Scoped Push Token (JWT)</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleGeneratePushToken}
+                    disabled={generatingToken}
+                    className="h-7 text-xs"
+                    data-testid="generate-push-token-btn"
+                  >
+                    {generatingToken ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                    ) : copiedToken ? (
+                      <Check className="h-3 w-3 text-emerald-400 mr-1.5" />
+                    ) : (
+                      <Key className="h-3 w-3 mr-1.5" />
+                    )}
+                    {copiedToken ? 'Copied Push JWT' : pushToken ? 'Regenerate & Copy JWT' : 'Generate & Copy Push JWT'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopyCiScript}
+                    className="h-7 text-xs"
+                    data-testid="copy-ci-script-btn"
+                  >
+                    {copiedCiScript ? <Check className="h-3 w-3 text-emerald-400 mr-1.5" /> : <Terminal className="h-3 w-3 mr-1.5" />}
+                    {copiedCiScript ? 'Copied CI Script' : 'Copy CI Automation Script'}
+                  </Button>
+                </div>
+              </div>
+
+              {pushToken && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    readOnly
+                    value={`PORTHOLE_TOKEN=${pushToken}`}
+                    className="font-mono text-[11px] h-7 bg-background select-all"
+                    data-testid="push-token-input"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`PORTHOLE_TOKEN=${pushToken}`);
+                      setCopiedToken(true);
+                      setTimeout(() => setCopiedToken(false), 2000);
+                    }}
+                    className="h-7 text-xs shrink-0"
+                  >
+                    {copiedToken ? <Check className="h-3 w-3 text-emerald-400 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                    Copy
+                  </Button>
+                </div>
+              )}
+
+              {tokenError && (
+                <div className="text-destructive text-[11px] mt-1">
+                  {tokenError}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">

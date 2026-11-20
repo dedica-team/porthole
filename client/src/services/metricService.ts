@@ -199,12 +199,12 @@ export function generateSamplePayload(
  */
 export function generateCurlSnippet(
   sessionId: string,
-  metricIdentifier: string,
+  metricId: string,
   request: PushMetricValuesRequest,
   token?: string,
   origin: string = window.location.origin,
 ): string {
-  const url = `${origin}/api/sessions/${encodeURIComponent(sessionId)}/metrics/${encodeURIComponent(metricIdentifier)}/values`;
+  const url = `${origin}/api/sessions/${encodeURIComponent(sessionId)}/metrics/${encodeURIComponent(metricId)}/values`;
   const jsonBody = JSON.stringify(request, null, 2);
   const authHeader = token ? ` -H "Authorization: Bearer ${token}"` : ' -H "Authorization: Bearer $PORTHOLE_TOKEN"';
 
@@ -489,7 +489,7 @@ export function generateAutomationScript(
   httpMethod: string = 'GET',
   jqFilter: string = '.',
   sessionId: string,
-  metricIdentifier: string,
+  metricId: string,
   matchBy: MatchStrategy = 'NAME',
   matchKey?: string,
   origin: string = window.location.origin,
@@ -503,7 +503,7 @@ export function generateAutomationScript(
     parameters,
     authHeader,
   );
-  const targetUrl = `${origin}/api/sessions/${encodeURIComponent(sessionId)}/metrics/${encodeURIComponent(metricIdentifier)}/values`;
+  const targetUrl = `${origin}/api/sessions/${encodeURIComponent(sessionId)}/metrics/${encodeURIComponent(metricId)}/values`;
   const quotedUrl = shellQuote(finalUrl);
   const quotedTargetUrl = shellQuote(targetUrl);
   const methodFlag =
@@ -571,7 +571,7 @@ ${fetchSection} \\
   | jq ${shellQuote(jqFilter)} \\
   | jq ${matchByArg}${matchKeyArg} ${shellQuote(wrapperFilter)} \\
   | curl -X POST ${quotedTargetUrl} \\
-      -H "Authorization: Bearer \${PORTHOLE_TOKEN:-}" \\
+      -H "Authorization: Bearer \$PORTHOLE_TOKEN" \\
       -H "Content-Type: application/json" \\
       -d @-
 `;

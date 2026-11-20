@@ -228,8 +228,8 @@ describe('metricService', () => {
     expect(payload.values.length).toBe(1);
     expect(payload.values[0].element).toBe('Gateway');
 
-    const curl = generateCurlSnippet('sess123', 'Coverage', payload, 'jwt_token', 'https://porthole.test');
-    expect(curl).toContain('POST "https://porthole.test/api/sessions/sess123/metrics/Coverage/values"');
+    const curl = generateCurlSnippet('sess123', 'm-cov-123', payload, 'jwt_token', 'https://porthole.test');
+    expect(curl).toContain('POST "https://porthole.test/api/sessions/sess123/metrics/m-cov-123/values"');
     expect(curl).toContain('Authorization: Bearer jwt_token');
 
     const foreignCurl = generateForeignCurlSnippet(
@@ -254,7 +254,7 @@ describe('metricService', () => {
     );
     expect(paginatedCurl).toContain('page=1');
     expect(paginatedCurl).toContain('while :; do');
-    expect(paginatedCurl).toContain('https://gitlab.netrtl.com/api/v4/groups/1385/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page');
+    expect(paginatedCurl).toContain('https://gitlab.netrtl.com/api/v4/groups/1234/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page');
     expect(paginatedCurl).toContain('-H "PRIVATE-TOKEN: $PRIVATE_TOKEN"');
     expect(paginatedCurl).toContain('jq -s \'add // []\'');
     expect(paginatedCurl).toContain('| jq \'group_by(.project_id)');
@@ -274,7 +274,7 @@ describe('metricService', () => {
       'POST',
       "[.[] | { element: .name, value: .count }]",
       'sess123',
-      'Coverage Area',
+      'm-cov-456',
       'ALIAS',
       'repo key',
       'https://porthole.test',
@@ -287,7 +287,8 @@ describe('metricService', () => {
     expect(script).toContain('-H "Authorization: Bearer $MY_TOKEN"');
     expect(script).toContain("-H \"Content-Type: application/json\" \\\n      -d '{\"query\": \"query { group(fullPath: \\\"my-group\\\") { id } }\"}'");
     expect(script).toContain("--arg matchBy 'ALIAS' --arg matchKey 'repo key'");
-    expect(script).toContain("https://porthole.test/api/sessions/sess123/metrics/Coverage%20Area/values");
+    expect(script).toContain("https://porthole.test/api/sessions/sess123/metrics/m-cov-456/values");
+    expect(script).toContain('-H "Authorization: Bearer $PORTHOLE_TOKEN"');
   });
 
   it('parses and formats parameter key-value maps accurately', () => {

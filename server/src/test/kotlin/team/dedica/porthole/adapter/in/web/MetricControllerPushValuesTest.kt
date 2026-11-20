@@ -100,7 +100,7 @@ class MetricControllerPushValuesTest {
     private fun json(response: HttpResponse<String>): JsonNode = objectMapper.readTree(response.body())
 
     @Test
-    fun `POST push metric values by metric name returns 200 OK and summary`() {
+    fun `POST push metric values by metric id returns 200 OK and summary`() {
         val body = mapOf(
             "matchBy" to "NAME",
             "values" to listOf(
@@ -117,7 +117,7 @@ class MetricControllerPushValuesTest {
             )
         )
 
-        val response = send("POST", "/api/sessions/$sessionId/metrics/Code%20Coverage/values", body)
+        val response = send("POST", "/api/sessions/$sessionId/metrics/$metricId/values", body)
         assertEquals(200, response.statusCode())
 
         val root = json(response)
@@ -130,6 +130,22 @@ class MetricControllerPushValuesTest {
         assertNotNull(updatedMetric)
         assertEquals("92%", updatedMetric?.value)
         assertEquals(QualityLevel.OK, updatedMetric?.level)
+    }
+
+    @Test
+    fun `POST push metric values by metric name returns error`() {
+        val body = mapOf(
+            "matchBy" to "NAME",
+            "values" to listOf(
+                mapOf(
+                    "element" to "Payment Gateway",
+                    "value" to "92%",
+                )
+            )
+        )
+
+        val response = send("POST", "/api/sessions/$sessionId/metrics/Code%20Coverage/values", body)
+        assertTrue(response.statusCode() in listOf(400, 404, 500))
     }
 
     @Test
@@ -200,5 +216,131 @@ class MetricControllerPushValuesTest {
         val stateAfterDelete = sessionStatePort.findById(sessionId)!!
         assertFalse(stateAfterDelete.metrics.containsKey(metricId))
         assertNull(stateAfterDelete.metrics[metricId])
+    }
+
+    @Test
+    fun `POST generate push token returns 200 OK and valid JWT`() {
+        val response = send("POST", "/api/sessions/$sessionId/metrics/$metricId/token")
+        assertEquals(200, response.statusCode())
+
+        val root = json(response)
+        assertTrue(root.has("token"))
+        val pushToken = root["token"].asString()
+        assertTrue(pushToken.isNotBlank())
+        assertEquals(3, pushToken.split(".").size)
+    }
+
+    @Test
+    fun `POST push values with scoped JWT succeeds`() {
+        val tokenResponse = send("POST", "/api/sessions/$sessionId/metrics/$metricId/token")
+        assertEquals(200, tokenResponse.statusCode())
+        val pushJwt = json(tokenResponse)["token"].asString()
+
+        val body = mapOf(
+            "matchBy" to "NAME",
+            "values" to listOf(
+                mapOf(
+                    "element" to "Payment Gateway",
+                    "value" to "99%",
+                    "level" to "OK"
+                )
+            )
+        )
+
+        val pushResponse = send(
+            method = "POST",
+            path = "/api/sessions/$sessionId/metrics/$metricId/values",
+            body = body,
+            bearer = pushJwt,
+        )
+        assertEquals(200, pushResponse.statusCode())
+        assertEquals(1, json(pushResponse)["updatedCount"].asInt())
+
+        val state = sessionStatePort.findById(sessionId)!!
+        assertEquals("99%", state.landmarks[landmarkId]?.metrics?.get(metricId)?.value)
+    }
+
+    @Test
+    fun `POST push values with scoped JWT to different session returns 403 Forbidden`() {
+        val tokenResponse = send("POST", "/api/sessions/$sessionId/metrics/$metricId/token")
+        assertEquals(200, tokenResponse.statusCode())
+        val pushJwt = json(tokenResponse)["token"].asString()
+
+        val otherSessionId = UUID.randomUUID()
+        val user = userPort.findByUsername("metricuser")!!
+        val otherState = SessionState(id = otherSessionId, map = HexMap.createHexagonal(radius = 1, elevationFn = { 1 })).apply {
+            collaborators.add(Collaborator(id = user.id, username = user.username))
+            metrics[metricId] = QualityMetric(id = metricId, name = "Code Coverage", description = "Test coverage")
+        }
+        sessionStatePort.save(otherState)
+
+        val body = mapOf(
+            "matchBy" to "NAME",
+            "values" to listOf(
+                mapOf(
+                    "element" to "Payment Gateway",
+                    "value" to "99%",
+                )
+            )
+        )
+
+        val pushResponse = send(
+            method = "POST",
+            path = "/api/sessions/$otherSessionId/metrics/$metricId/values",
+            body = body,
+            bearer = pushJwt,
+        )
+        assertEquals(403, pushResponse.statusCode())
+    }
+
+    @Test
+    fun `POST push values with scoped JWT to different metric returns 403 Forbidden`() {
+        val tokenResponse = send("POST", "/api/sessions/$sessionId/metrics/$metricId/token")
+        assertEquals(200, tokenResponse.statusCode())
+        val pushJwt = json(tokenResponse)["token"].asString()
+
+        val otherMetricId = UUID.randomUUID()
+        val state = sessionStatePort.findById(sessionId)!!
+        state.metrics[otherMetricId] = QualityMetric(id = otherMetricId, name = "Bugs", description = "Bug count")
+        sessionStatePort.save(state)
+
+        val body = mapOf(
+            "matchBy" to "NAME",
+            "values" to listOf(
+                mapOf(
+                    "element" to "Payment Gateway",
+                    "value" to "0",
+                )
+            )
+        )
+
+        val pushResponse = send(
+            method = "POST",
+            path = "/api/sessions/$sessionId/metrics/$otherMetricId/values",
+            body = body,
+            bearer = pushJwt,
+        )
+        assertEquals(403, pushResponse.statusCode())
+    }
+
+    @Test
+    fun `non-push endpoints with scoped JWT return 403 Forbidden`() {
+        val tokenResponse = send("POST", "/api/sessions/$sessionId/metrics/$metricId/token")
+        assertEquals(200, tokenResponse.statusCode())
+        val pushJwt = json(tokenResponse)["token"].asString()
+
+        val getMetricsResponse = send(
+            method = "GET",
+            path = "/api/sessions/$sessionId/metrics",
+            bearer = pushJwt,
+        )
+        assertEquals(403, getMetricsResponse.statusCode())
+
+        val deleteResponse = send(
+            method = "DELETE",
+            path = "/api/sessions/$sessionId/metrics/$metricId",
+            bearer = pushJwt,
+        )
+        assertEquals(403, deleteResponse.statusCode())
     }
 }

@@ -9,6 +9,7 @@ object PortholeAuthPropertiesTestFactory {
 
     fun build(
         cookie: PortholeAuthProperties.Cookie = PortholeAuthProperties.Cookie(),
+        jwt: PortholeAuthProperties.Jwt = PortholeAuthProperties.Jwt(),
         allowedOrigins: String = "http://localhost:5173",
         github: PortholeAuthProperties.GitHub = PortholeAuthProperties.GitHub(),
         keycloak: PortholeAuthProperties.Keycloak = PortholeAuthProperties.Keycloak(),
@@ -16,6 +17,7 @@ object PortholeAuthPropertiesTestFactory {
         tagline: String = "for teams",
     ) = PortholeAuthProperties().apply {
         this.cookie = cookie
+        this.jwt = jwt
         this.allowedOrigins = allowedOrigins
         this.github = github
         this.keycloak = keycloak

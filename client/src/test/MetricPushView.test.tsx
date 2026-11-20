@@ -9,6 +9,7 @@ vi.mock('@/api/mapApi', () => ({
   pushMetricValues: vi.fn(),
   saveMetricTransformation: vi.fn(),
   deleteMetricTransformation: vi.fn(),
+  generatePushToken: vi.fn(),
 }));
 
 const mockMetric1: QualityMetric = {
@@ -680,7 +681,7 @@ describe('MetricPushView (Subpage)', () => {
     fireEvent.change(templateSelect, { target: { value: 'gitlab-open-pull-requests' } });
 
     const paramsInput = screen.getByLabelText('group_id') as HTMLInputElement;
-    expect(paramsInput.value).toBe('1385');
+    expect(paramsInput.value).toBe('1234');
 
     const perPageInput = screen.getByLabelText('per_page') as HTMLInputElement;
     expect(perPageInput.value).toBe('100');
@@ -834,5 +835,59 @@ describe('MetricPushView (Subpage)', () => {
     // After successful update, status badge returns to Saved and unsaved changes badge is removed
     expect(await screen.findByTestId('transformation-status-saved')).toBeInTheDocument();
     expect(screen.queryByTestId('transformation-status-dirty')).not.toBeInTheDocument();
+  });
+
+  it('generates and copies scoped push token shell command on button click', async () => {
+    const { generatePushToken } = await import('@/api/mapApi');
+    vi.mocked(generatePushToken).mockResolvedValueOnce({
+      token: 'mock-scoped-push-jwt-xyz',
+    });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const generateBtn = screen.getByTestId('generate-push-token-btn');
+    fireEvent.click(generateBtn);
+
+    expect(generatePushToken).toHaveBeenCalledWith('sess-abc', 'm-123');
+    expect(await screen.findByDisplayValue('PORTHOLE_TOKEN=mock-scoped-push-jwt-xyz')).toBeInTheDocument();
+    expect(writeTextMock).toHaveBeenCalledWith('PORTHOLE_TOKEN=mock-scoped-push-jwt-xyz');
+  });
+
+  it('generates and copies CI automation script with $PORTHOLE_TOKEN placeholder', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const copyCiBtn = screen.getByTestId('copy-ci-script-btn');
+    fireEvent.click(copyCiBtn);
+
+    expect(await screen.findByText('Copied CI Script')).toBeInTheDocument();
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Bearer $PORTHOLE_TOKEN'),
+    );
   });
 });

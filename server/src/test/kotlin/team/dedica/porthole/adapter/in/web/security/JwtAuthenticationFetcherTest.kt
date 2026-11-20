@@ -25,16 +25,46 @@ class JwtAuthenticationFetcherTest {
     private lateinit var authProperties: PortholeAuthProperties
     private lateinit var authCookieService: AuthCookieService
     private lateinit var userSessionStore: UserSessionStore
+    private lateinit var scopedJwtService: ScopedJwtService
     private lateinit var mockTokenValidator: TokenValidator<HttpRequest<*>>
     private lateinit var fetcher: JwtAuthenticationFetcher
 
     @BeforeEach
     fun setUp() {
-        authProperties = PortholeAuthProperties()
+        authProperties = PortholeAuthProperties().apply {
+            jwt.secret = "test-secret-key-for-unit-tests-only-do-not-use-in-production-256bit!!"
+        }
         authCookieService = AuthCookieService(authProperties)
         userSessionStore = UserSessionStore()
+        scopedJwtService = ScopedJwtService(authProperties)
         mockTokenValidator = mock()
-        fetcher = JwtAuthenticationFetcher(listOf(mockTokenValidator), authCookieService, userSessionStore)
+        fetcher = JwtAuthenticationFetcher(listOf(mockTokenValidator), authCookieService, userSessionStore, scopedJwtService)
+    }
+
+    @Test
+    fun `fetches authentication from Bearer token via scoped JWT service`() {
+        val userId = UUID.randomUUID()
+        val sessionId = UUID.randomUUID()
+        val metricId = UUID.randomUUID()
+        val token = scopedJwtService.generatePushToken(
+            userId = userId,
+            username = "ci-metric-push",
+            sessionId = sessionId,
+            metricId = metricId,
+        )
+
+        val request = mock<HttpRequest<*>>()
+        val headers = mock<HttpHeaders>()
+        whenever(headers.get(HttpHeaders.AUTHORIZATION)).thenReturn("Bearer $token")
+        whenever(request.headers).thenReturn(headers)
+
+        val result = Mono.from(fetcher.fetchAuthentication(request)).block()
+        assertNotNull(result)
+        assertEquals("ci-metric-push", result?.name)
+        assertEquals(userId.toString(), result?.attributes?.get(PortholePrincipal.USER_ID_ATTRIBUTE))
+        assertEquals(sessionId.toString(), result?.attributes?.get(PortholePrincipal.SESSION_ID_ATTRIBUTE))
+        assertEquals(metricId.toString(), result?.attributes?.get(PortholePrincipal.METRIC_ID_ATTRIBUTE))
+        assertEquals(PortholePrincipal.SCOPE_PUSH_METRIC, result?.attributes?.get(PortholePrincipal.SCOPE_ATTRIBUTE))
     }
 
     @Test

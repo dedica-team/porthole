@@ -36,6 +36,11 @@ data class PushMetricValuesResponse(
 )
 
 @Introspected
+data class PushTokenResponse(
+    val token: String,
+)
+
+@Introspected
 data class MetricTransformationDto(
     val id: UUID? = null,
     @field:NotBlank @field:Size(max = 200)

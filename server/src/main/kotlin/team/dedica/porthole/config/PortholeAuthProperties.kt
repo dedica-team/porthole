@@ -8,6 +8,7 @@ import java.time.Duration
 @Introspected
 class PortholeAuthProperties {
     var cookie: Cookie = Cookie()
+    var jwt: Jwt = Jwt()
     var allowedOrigins: String = "http://localhost:5173,http://localhost:8080"
     var github: GitHub = GitHub()
     var keycloak: Keycloak = Keycloak()
@@ -22,6 +23,15 @@ class PortholeAuthProperties {
         var cookieSameSite: String = "Lax"
         var cookieSecure: Boolean = false
         var maxAge: Duration = Duration.ofDays(1)
+    }
+
+    @Introspected
+    @ConfigurationProperties("jwt")
+    class Jwt {
+        var secret: String = "change-me-in-production-this-is-not-a-real-secret!!"
+        var expirationMs: Long = 86400000L * 30L
+        var issuer: String = "porthole"
+        var audience: String = "porthole-api"
     }
 
     @Introspected

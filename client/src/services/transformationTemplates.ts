@@ -189,7 +189,7 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
     'https://gitlab.netrtl.com/api/v4/groups/$group_id/merge_requests?state=opened&include_subgroups=true&per_page=100',
   httpMethod: 'GET',
   parameters: {
-    group_id: '1385',
+    group_id: '1234',
     per_page: '100',
   },
   authHeader: 'PRIVATE-TOKEN: $PRIVATE_TOKEN',
