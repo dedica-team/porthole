@@ -128,6 +128,32 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.queryByRole('heading', { name: /Load Transformation/i })).not.toBeInTheDocument();
   });
 
+  it('opens Help modal on Help button click and displays explanations', () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const helpBtn = screen.getByRole('button', { name: 'Help' });
+    expect(helpBtn).toBeInTheDocument();
+
+    fireEvent.click(helpBtn);
+
+    expect(screen.getByRole('heading', { name: /Transformation & Ingestion Guide/i })).toBeInTheDocument();
+    expect(screen.getByText(/Overview & Data Flow/i)).toBeInTheDocument();
+    expect(screen.getByText(/Parameters & Placeholders/i)).toBeInTheDocument();
+    expect(screen.getByText(/JQ Filter & Payload Schema/i)).toBeInTheDocument();
+    expect(screen.getByText(/Automated CI\/CD Pushes/i)).toBeInTheDocument();
+
+    // Close button dismisses modal
+    const closeBtns = screen.getAllByRole('button', { name: /Close/i });
+    fireEvent.click(closeBtns[0]);
+    expect(screen.queryByRole('heading', { name: /Transformation & Ingestion Guide/i })).not.toBeInTheDocument();
+  });
+
   it('renders JQ Transformation Builder view by default and displays Transformed Data field in Preview section', () => {
     render(
       <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>

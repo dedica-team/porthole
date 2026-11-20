@@ -19,6 +19,7 @@ import {
   Table,
   FolderOpen,
   Key,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +106,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   }, [currentMap?.landmarks]);
 
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   // ── Transformation Configuration State ─────────────────────────────────────
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -578,6 +580,17 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
             aria-label="Load Transformation"
           >
             <FolderOpen className="h-3.5 w-3.5" /> Load Transformation
+          </button>
+
+          {/* Help Button (opens modal) */}
+          <button
+            type="button"
+            className={cardBtnCls}
+            onClick={() => setIsHelpModalOpen(true)}
+            aria-label="Help"
+            title="Help & Explanations"
+          >
+            <HelpCircle className="h-3.5 w-3.5" /> Help
           </button>
 
           <Link
@@ -1235,6 +1248,99 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
               size="sm"
               className="text-xs"
               onClick={() => setIsLoadModalOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Help / Explanations Modal ────────────────────────────────────────── */}
+      <Dialog open={isHelpModalOpen} onOpenChange={setIsHelpModalOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden" aria-describedby="help-dialog-description">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <HelpCircle className="h-4 w-4 text-primary" />
+              Transformation & Ingestion Guide
+            </DialogTitle>
+            <DialogDescription id="help-dialog-description" className="text-xs text-muted-foreground">
+              Learn how to configure external data sources, write JQ filters, and automate metric pushes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-5 flex flex-col gap-4 overflow-y-auto text-xs text-foreground leading-relaxed">
+            {/* Section 1: Overview */}
+            <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border">
+              <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                1. Overview & Data Flow
+              </h4>
+              <p className="text-muted-foreground">
+                Transformations allow you to ingest metrics from third-party tools (such as GitLab, GitHub, SonarQube, or Wiz) and map them onto your hexagonal map landmarks. Data is fetched or provided as JSON, processed through a JQ filter, and then pushed as element values.
+              </p>
+            </div>
+
+            {/* Section 2: Parameters & Substitution */}
+            <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border">
+              <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                2. Parameters & Placeholders
+              </h4>
+              <p className="text-muted-foreground">
+                Define reusable key-value parameters (e.g. <code className="px-1 py-0.5 rounded bg-muted text-foreground font-mono">group_id: 1385</code> or <code className="px-1 py-0.5 rounded bg-muted text-foreground font-mono">group_path: my-org/team</code>). Placeholders like <code className="px-1 py-0.5 rounded bg-muted text-foreground font-mono">$group_id</code> or <code className="px-1 py-0.5 rounded bg-muted text-foreground font-mono">${'{group_id}'}</code> in the request URL, request body, and authorization headers are automatically substituted when running queries and copying cURL commands.
+              </p>
+            </div>
+
+            {/* Section 3: JQ Filter & Output Schema */}
+            <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border">
+              <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                3. JQ Filter & Payload Schema
+              </h4>
+              <p className="text-muted-foreground">
+                The JQ filter shapes the raw API response into a JSON array of metric element objects. Each object in the array supports:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground pl-1 mt-1">
+                <li><code className="text-foreground font-mono font-medium">element</code> <span className="text-muted-foreground">(string, required)</span>: Landmark name or identifier to match.</li>
+                <li><code className="text-foreground font-mono font-medium">value</code> <span className="text-muted-foreground">(string, required)</span>: Display value (e.g. <span className="font-mono text-foreground">"92% coverage"</span>, <span className="font-mono text-foreground">"3 open MRs"</span>).</li>
+                <li><code className="text-foreground font-mono font-medium">level</code> <span className="text-muted-foreground">(string, required)</span>: Status severity &mdash; <span className="font-mono text-emerald-400">"OK"</span>, <span className="font-mono text-amber-400">"WARNING"</span>, <span className="font-mono text-rose-400">"ERROR"</span>, or <span className="font-mono text-muted-foreground">"UNKNOWN"</span>.</li>
+                <li><code className="text-foreground font-mono font-medium">description</code> <span className="text-muted-foreground">(string, optional)</span>: Detailed tooltip or hover text.</li>
+                <li><code className="text-foreground font-mono font-medium">link</code> <span className="text-muted-foreground">(string, optional)</span>: External dashboard, pull request, or report URL.</li>
+                <li><code className="text-foreground font-mono font-medium">linkText</code> <span className="text-muted-foreground">(string, optional)</span>: Custom label for the external link.</li>
+                <li><code className="text-foreground font-mono font-medium">badges</code> <span className="text-muted-foreground">(object, optional)</span>: Map of badge identifiers to links.</li>
+              </ul>
+            </div>
+
+            {/* Section 4: Testing with Dry-Run */}
+            <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border">
+              <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                4. Dry-Run & Reconciliation
+              </h4>
+              <p className="text-muted-foreground">
+                Paste a sample JSON payload in the <strong>Sample Input Payload</strong> box and click <strong>Execute JQ Dry-Run</strong>. The client evaluates the filter and compares matched element names against the current session landmarks, highlighting any unmatched or missing elements before sending data.
+              </p>
+            </div>
+
+            {/* Section 5: Automation in CI/CD */}
+            <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border">
+              <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                5. Automated CI/CD Pushes (Scoped Token)
+              </h4>
+              <p className="text-muted-foreground">
+                For headless pipeline execution:
+              </p>
+              <ol className="list-decimal list-inside space-y-1 text-muted-foreground pl-1 mt-1">
+                <li>Generate a <strong>Scoped Push Token (JWT)</strong> restricted exclusively to this session and metric.</li>
+                <li>Copy the ready-to-run <strong>cURL / CI Automation Script</strong> from the Push section.</li>
+                <li>Set <code className="px-1 py-0.5 rounded bg-muted text-foreground font-mono">PORTHOLE_TOKEN</code> in your CI runner variables to authenticate sessionless pushes securely.</li>
+              </ol>
+            </div>
+          </div>
+
+          <DialogFooter className="px-5 py-3 border-t border-border shrink-0 bg-muted/20 flex justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="text-xs"
+              onClick={() => setIsHelpModalOpen(false)}
             >
               Close
             </Button>
