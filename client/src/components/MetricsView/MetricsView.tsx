@@ -139,7 +139,7 @@ function MetricDefinitionEditDialog({ metric, loading, readOnly = false, onSave,
                 }}
               >
                 <Send className="h-3.5 w-3.5" />
-                Import Values
+                Transformations
               </Button>
             )}
             <div className="flex justify-end gap-2 pt-1">
@@ -699,7 +699,7 @@ export default function MetricsView() {
                   }}
                   title="Push metric values via REST API or JQ"
                 >
-                  <Send className="h-3.5 w-3.5" /> Push Values
+                  <Send className="h-3.5 w-3.5" /> Transformations
                 </button>
               )}
               <button className={cardBtnCls} onClick={() => setShowCreateLandmarkDialog(true)} title="Create a new element without position">

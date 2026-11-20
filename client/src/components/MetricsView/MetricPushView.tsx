@@ -526,7 +526,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
           <div className="flex items-stretch border-b border-border shrink-0">
             <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-foreground flex-1">
               <BarChart2 className="h-3.5 w-3.5 text-muted-foreground" />
-              REST API Push Values
+              Transformations
             </div>
             <Link
               to={sessionId ? `/session/${sessionId}/metrics` : '/lobby'}
@@ -567,7 +567,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         <div className="flex items-stretch border-b border-border shrink-0">
           <div className="flex items-center gap-2 px-4 py-2.5 text-md font-semibold text-foreground flex-1 min-w-0">
             <BarChart2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="truncate" title={metric.description}>REST API Push Values: {metric.name}</span>
+            <span className="truncate" title={metric.description}>Transformation for {metric.name}</span>
           </div>
 
           {/* Load Transformation Button (opens modal) */}
@@ -595,7 +595,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
               {selectedTransformationId ? (
                   !isTransformationDirty ? (
                       <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                          className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                           title="This transformation matches the persisted configuration"
                           data-testid="transformation-status-saved"
                       >
@@ -603,7 +603,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                       </span>
                   ) : (
                       <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                          className="inline-flex items-center gap-1  mx-1  px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"
                           title="This transformation has unsaved modifications"
                           data-testid="transformation-status-dirty"
                       >
@@ -612,7 +612,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   )
               ) : (
                   <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border"
+                      className="inline-flex items-center gap-1  mx-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border"
                       title="Transformation not yet saved to persistence"
                       data-testid="transformation-status-unsaved"
                   >
@@ -622,54 +622,47 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
             </h3>
 
             {/* Template & Transformation Configuration Bar */}
-            <div className="flex flex-col gap-3 p-3 bg-muted/20 rounded-lg border border-border">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-3 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-muted-foreground font-medium">Name:</span>
-                    <Input
-                        placeholder="Transformation Name"
-                        value={transformationName}
-                        onChange={(e) => setTransformationName(e.target.value)}
-                        className={`h-8 text-xs w-48 ${isDuplicateTransformationName ? 'border-destructive focus-visible:ring-destructive text-destructive' : ''}`}
-                    />
-                    {isDuplicateTransformationName && (
-                        <span className="text-[11px] text-destructive font-medium whitespace-nowrap">
-                        Name already in use
-                      </span>
-                    )}
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-center bg-muted/20 p-3 rounded-lg border border-border">
+              <span className="text-muted-foreground font-medium text-xs">Name:</span>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Transformation Name"
+                  value={transformationName}
+                  onChange={(e) => setTransformationName(e.target.value)}
+                  className={`h-8 text-xs flex-1 ${isDuplicateTransformationName ? 'border-destructive focus-visible:ring-destructive text-destructive' : ''}`}
+                />
+                {isDuplicateTransformationName && (
+                  <span className="text-[11px] text-destructive font-medium whitespace-nowrap">
+                    Name already in use
+                  </span>
+                )}
+              </div>
 
-                  {/* Metric Selector Dropdown */}
-                  <div className="flex items-center gap-1.5">
-                    <label htmlFor="metric-selector" className="text-muted-foreground font-medium">
-                      Target Metric:
-                    </label>
-                    <select
-                      id="metric-selector"
-                      aria-label="Select Metric"
-                      value={metric.id}
-                      onChange={(e) => setSelectedMetricId(e.target.value)}
-                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                    >
-                      {allMetrics.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+              <span className="text-muted-foreground font-medium text-xs">Target Metric:</span>
+              <div className="flex items-center gap-2">
+                <select
+                  id="metric-selector"
+                  aria-label="Select Metric"
+                  value={metric.id}
+                  onChange={(e) => setSelectedMetricId(e.target.value)}
+                  className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground flex-1"
+                >
+                  {allMetrics.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {!selectedTransformationId && (
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground font-medium">Load Template:</span>
+                <>
+                  <span className="text-muted-foreground font-medium text-xs">Load Template:</span>
+                  <div className="flex items-center gap-2">
                     <select
                       value={selectedTemplateId}
                       onChange={(e) => handleSelectTemplate(e.target.value)}
-                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
+                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground flex-1"
                       aria-label="Transformation Template"
                     >
                       <option value="">-- Choose Built-in Template... --</option>
@@ -680,56 +673,57 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                       ))}
                     </select>
                   </div>
-                </div>
+                </>
               )}
-              <div className="flex items-center gap-2">
+
+              <div className="col-span-1 md:col-span-2 flex items-center justify-end gap-2 pt-2 border-t border-border/50">
                 <Button
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={handleSaveTransformation}
-                    disabled={submitting || isDuplicateTransformationName}
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={handleSaveTransformation}
+                  disabled={submitting || isDuplicateTransformationName}
                 >
                   <Save className="h-3.5 w-3.5 mr-1.5" />
                   {selectedTransformationId ? 'Update Transformation' : 'Save Transformation'}
                 </Button>
                 {selectedTransformationId && (
-                    !confirmDeleteTransformation ? (
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            className="h-8 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                            onClick={() => setConfirmDeleteTransformation(true)}
-                            disabled={submitting}
-                            title="Delete Transformation"
-                            aria-label="Delete Transformation"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                    ) : (
-                        <div className="flex items-center gap-1.5 bg-destructive/10 border border-destructive/30 px-2 py-0.5 rounded">
-                        <span className="text-xs text-destructive font-medium whitespace-nowrap">
-                          Delete transformation?
-                        </span>
-                          <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-6 px-2 text-xs"
-                              onClick={handleDeleteTransformation}
-                              disabled={submitting}
-                          >
-                            Yes, delete
-                          </Button>
-                          <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                              onClick={() => setConfirmDeleteTransformation(false)}
-                              disabled={submitting}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                    )
+                  !confirmDeleteTransformation ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                      onClick={() => setConfirmDeleteTransformation(true)}
+                      disabled={submitting}
+                      title="Delete Transformation"
+                      aria-label="Delete Transformation"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-1.5 bg-destructive/10 border border-destructive/30 px-2 py-0.5 rounded">
+                      <span className="text-xs text-destructive font-medium whitespace-nowrap">
+                        Delete transformation?
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-6 px-2 text-xs"
+                        onClick={handleDeleteTransformation}
+                        disabled={submitting}
+                      >
+                        Yes, delete
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => setConfirmDeleteTransformation(false)}
+                        disabled={submitting}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -871,6 +865,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
             </div>
 
             {/* Foreign JSON Sample & JQ Filter */}
+            <h3>Transformation</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
@@ -905,8 +900,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
             </div>
 
             {/* ── Preview Section ───────────────────────────────────────────── */}
-            <h3>Preview</h3>
-
 
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-xs">

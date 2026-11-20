@@ -157,7 +157,7 @@ export default function MetricsPanel({ onCreateMetric, onEditMetric, onRemoveMet
                 </div>
                 {isCollaborator && (
                   <div className="flex gap-1 shrink-0">
-                    <Button className="text-muted-foreground hover:text-foreground transition-colors p-0.5" onClick={() => navigate(`/session/${currentMap.id}/metrics/${metric.id}/push`)} title="Push values (REST API / JQ)">
+                    <Button className="text-muted-foreground hover:text-foreground transition-colors p-0.5" onClick={() => navigate(`/session/${currentMap.id}/metrics/${metric.id}/push`)} title="Transformations">
                       <Send className="h-3 w-3" />
                     </Button>
                     <Button className="text-muted-foreground hover:text-foreground transition-colors p-0.5" onClick={() => startEdit(metric)} title="Edit metric">

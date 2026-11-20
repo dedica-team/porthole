@@ -83,7 +83,7 @@ describe('MetricPushView (Subpage)', () => {
     );
 
     expect(screen.getByRole('link', { name: /Back to Metrics/i })).toHaveAttribute('href', '/session/sess-abc/metrics');
-    expect(screen.getByText(/REST API Push Values: Code Coverage/i)).toBeInTheDocument();
+    expect(screen.getByText(/Transformation for Code Coverage/i)).toBeInTheDocument();
     expect(screen.getByTitle(/Test coverage percentage/i)).toBeInTheDocument();
     expect(screen.getByText(/POST \/api\/sessions\/sess-abc\/metrics\/m-123\/values/i)).toBeInTheDocument();
   });
@@ -102,7 +102,7 @@ describe('MetricPushView (Subpage)', () => {
 
     fireEvent.change(selector, { target: { value: 'm-456' } });
     expect(selector).toHaveValue('m-456');
-    expect(screen.getByText(/REST API Push Values: Security Vulnerabilities/i)).toBeInTheDocument();
+    expect(screen.getByText(/Transformation for Security Vulnerabilities/i)).toBeInTheDocument();
   });
 
   it('opens modal on Load Transformation button click and lists saved transformations plus new option', () => {
@@ -447,8 +447,8 @@ describe('MetricPushView (Subpage)', () => {
       </MemoryRouter>
     );
 
-    // Verify Preview heading exists
-    expect(screen.getByRole('heading', { name: /Preview/i, level: 3 })).toBeInTheDocument();
+    // Verify Transformation heading exists
+    expect(screen.getByRole('heading', { name: 'Transformation', level: 3 })).toBeInTheDocument();
 
     // Click "Execute JQ Dry-Run" with existing template / payload
     const dryRunBtn = screen.getByRole('button', { name: /Execute JQ Dry-Run/i });
