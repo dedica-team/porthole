@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Stage 1: Build frontend ---
-FROM node:22.23.5 AS frontend
+FROM node:26.13.1 AS frontend
 WORKDIR /app/client
 
 
