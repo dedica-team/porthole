@@ -77,22 +77,18 @@ describe('jqEvaluator & jqWorker', () => {
     expect(rows.length).toBe(2);
 
     expect(rows[0].element).toBe('prod-web-infra');
-    expect(rows[0].value).toBe('2 open MRs');
-    expect(rows[0].level).toBe('WARNING');
+    expect(rows[0].value).toBe('2');
+    expect(rows[0].level).toBe('OK');
     expect(rows[0].link).toBe('https://gitlab.example.com/infra/prod-web-infra/-/merge_requests');
     expect(rows[0].linkText).toBe('MRs (2)');
-    expect(rows[0].badges).toEqual({
-      mrs: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
-    });
+    expect(rows[0].badges).toEqual({});
 
     expect(rows[1].element).toBe('payment-gateway');
-    expect(rows[1].value).toBe('1 open MRs');
-    expect(rows[1].level).toBe('WARNING');
+    expect(rows[1].value).toBe('1');
+    expect(rows[1].level).toBe('OK');
     expect(rows[1].link).toBe('https://gitlab.example.com/services/payment-gateway/-/merge_requests');
     expect(rows[1].linkText).toBe('MRs (1)');
-    expect(rows[1].badges).toEqual({
-      mrs: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
-    });
+    expect(rows[1].badges).toEqual({});
   });
 
   it('includes built-in transformation templates', () => {

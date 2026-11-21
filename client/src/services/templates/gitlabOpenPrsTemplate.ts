@@ -17,19 +17,17 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
   matchKey: '',
   jqFilter: `group_by(.project_id) | [.[] | {
   element: (.[0].references.full | split("!")[0] | split("/")[-1]),
-  value: "\\(length) open MRs",
+  value: "\\(length)",
   level: (
-    if length > 3 then "ERROR"
-    elif length > 0 then "WARNING"
+    if length > 10 then "ERROR"
+    elif length > 3 then "WARNING"
     else "OK"
     end
   ),
   description: "\\(.[0].references.full | split("!")[0]): \\(length) open merge request(s)",
   link: "\\(.[0].web_url | split("/-/merge_requests/")[0])/-/merge_requests",
   linkText: "MRs (\\(length))",
-  badges: {
-    mrs: "\\(.[0].web_url | split("/-/merge_requests/")[0])/-/merge_requests"
-  }
+  badges: {}
 }]`,
   samplePayload: JSON.stringify(
     [
@@ -81,25 +79,21 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
     values: [
       {
         element: 'prod-web-infra',
-        value: '2 open MRs',
-        level: 'WARNING',
+        value: '2',
+        level: 'OK',
         description: 'infra/prod-web-infra: 2 open merge request(s)',
         link: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
         linkText: 'MRs (2)',
-        badges: {
-          mrs: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
-        },
+        badges: {},
       },
       {
         element: 'payment-gateway',
-        value: '1 open MRs',
+        value: '7',
         level: 'WARNING',
         description: 'services/payment-gateway: 1 open merge request(s)',
         link: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
         linkText: 'MRs (1)',
-        badges: {
-          mrs: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
-        },
+        badges: {},
       },
     ],
   },
