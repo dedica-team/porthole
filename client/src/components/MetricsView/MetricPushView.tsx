@@ -1219,6 +1219,14 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                       </div>
                     )}
                   </div>
+
+                  {/* Push Transformed Values Action */}
+                  <div className="flex justify-end pt-2 border-t border-border/60">
+                    <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
+                      {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
+                      Push Transformed Values
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1276,11 +1284,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   )
                 )}
               </div>
-
-              <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
-                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
-                Push Transformed Values
-              </Button>
             </div>
 
             {/* ── Feedback & Diagnostic Banners ─────────────────────────────────── */}
