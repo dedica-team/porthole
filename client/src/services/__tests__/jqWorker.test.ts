@@ -79,19 +79,19 @@ describe('jqEvaluator & jqWorker', () => {
     expect(rows[0].element).toBe('prod-web-infra');
     expect(rows[0].value).toBe('2 open MRs');
     expect(rows[0].level).toBe('WARNING');
-    expect(rows[0].link).toBe('https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests');
+    expect(rows[0].link).toBe('https://gitlab.example.com/infra/prod-web-infra/-/merge_requests');
     expect(rows[0].linkText).toBe('MRs (2)');
     expect(rows[0].badges).toEqual({
-      mrs: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests',
+      mrs: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
     });
 
     expect(rows[1].element).toBe('payment-gateway');
     expect(rows[1].value).toBe('1 open MRs');
     expect(rows[1].level).toBe('WARNING');
-    expect(rows[1].link).toBe('https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests');
+    expect(rows[1].link).toBe('https://gitlab.example.com/services/payment-gateway/-/merge_requests');
     expect(rows[1].linkText).toBe('MRs (1)');
     expect(rows[1].badges).toEqual({
-      mrs: 'https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests',
+      mrs: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
     });
   });
 
@@ -254,7 +254,7 @@ describe('metricService', () => {
     );
     expect(paginatedCurl).toContain('page=1');
     expect(paginatedCurl).toContain('while :; do');
-    expect(paginatedCurl).toContain('https://gitlab.netrtl.com/api/v4/groups/1234/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page');
+    expect(paginatedCurl).toContain('https://gitlab.example.com/api/v4/groups/1234/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page');
     expect(paginatedCurl).toContain('-H "PRIVATE-TOKEN: $PRIVATE_TOKEN"');
     expect(paginatedCurl).toContain('jq -s \'add // []\'');
     expect(paginatedCurl).toContain('| jq \'group_by(.project_id)');

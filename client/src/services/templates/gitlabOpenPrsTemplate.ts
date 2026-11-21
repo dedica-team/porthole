@@ -6,7 +6,7 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
   description:
     'Transforms open merge requests / pull requests count across GitLab group projects via REST API into metric values with direct web links.',
   requestUrl:
-    'https://gitlab.netrtl.com/api/v4/groups/$group_id/merge_requests?state=opened&include_subgroups=true&per_page=100',
+    'https://gitlab.example.com/api/v4/groups/$group_id/merge_requests?state=opened&include_subgroups=true&per_page=100',
   httpMethod: 'GET',
   parameters: {
     group_id: '1234',
@@ -39,7 +39,7 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
         project_id: 456,
         title: 'Production infrastructure improvements',
         state: 'opened',
-        web_url: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests/1',
+        web_url: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests/1',
         references: {
           short: '!1',
           relative: '!1',
@@ -52,7 +52,7 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
         project_id: 456,
         title: 'Fix configuration drift',
         state: 'opened',
-        web_url: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests/2',
+        web_url: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests/2',
         references: {
           short: '!2',
           relative: '!2',
@@ -65,7 +65,7 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
         project_id: 789,
         title: 'Payment gateway integration',
         state: 'opened',
-        web_url: 'https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests/1',
+        web_url: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests/1',
         references: {
           short: '!1',
           relative: '!1',
@@ -84,10 +84,10 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
         value: '2 open MRs',
         level: 'WARNING',
         description: 'infra/prod-web-infra: 2 open merge request(s)',
-        link: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests',
+        link: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
         linkText: 'MRs (2)',
         badges: {
-          mrs: 'https://gitlab.netrtl.com/infra/prod-web-infra/-/merge_requests',
+          mrs: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
         },
       },
       {
@@ -95,10 +95,10 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
         value: '1 open MRs',
         level: 'WARNING',
         description: 'services/payment-gateway: 1 open merge request(s)',
-        link: 'https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests',
+        link: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
         linkText: 'MRs (1)',
         badges: {
-          mrs: 'https://gitlab.netrtl.com/services/payment-gateway/-/merge_requests',
+          mrs: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
         },
       },
     ],
