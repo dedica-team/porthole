@@ -241,6 +241,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   }, [landmarks, parsedTransformedReq]);
 
   // ── Transformation State & Dirty Tracking ──────────────────────────────────
+  const isSamplePayloadError = jqTransformError === 'Input data sample is not valid JSON.';
+
   const selectedTransformation = useMemo(() => {
     return transformations.find((p) => p.id === selectedTransformationId) || null;
   }, [transformations, selectedTransformationId]);
@@ -950,13 +952,35 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 <div className="p-4 border-t border-border/60 flex flex-col gap-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
+                        {isSamplePayloadError && (
+                          <span className="text-[11px] text-destructive flex items-center gap-1 font-medium">
+                            <AlertCircle className="h-3 w-3" />
+                            Invalid JSON
+                          </span>
+                        )}
+                      </div>
                       <Textarea
                         value={samplePayload}
-                        onChange={(e) => setSamplePayload(e.target.value)}
-                        className="font-mono text-xs min-h-48 resize-y bg-background"
+                        onChange={(e) => {
+                          setSamplePayload(e.target.value);
+                          if (jqTransformError === 'Input data sample is not valid JSON.') {
+                            setJqTransformError('');
+                          }
+                        }}
+                        className={`font-mono text-xs min-h-48 resize-y bg-background ${
+                          isSamplePayloadError ? 'border-destructive focus-visible:ring-destructive' : ''
+                        }`}
                         placeholder="Paste response from GitLab / GitHub..."
+                        aria-invalid={isSamplePayloadError ? true : undefined}
                       />
+                      {isSamplePayloadError && (
+                        <p className="text-xs text-destructive flex items-center gap-1 mt-0.5" role="alert">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          <span>Input data sample is not valid JSON.</span>
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
@@ -1042,7 +1066,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     </Button>
                   </div>
 
-                  {jqTransformError && (
+                  {jqTransformError && !isSamplePayloadError && (
                     <Alert variant="destructive" className="py-2">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription className="text-xs">{jqTransformError}</AlertDescription>

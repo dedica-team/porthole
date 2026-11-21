@@ -617,6 +617,35 @@ describe('MetricPushView (Subpage)', () => {
     expect(await screen.findByText(/JQ Transformation output must evaluate to an array of metric elements, but got object\./i)).toBeInTheDocument();
   });
 
+  it('displays invalid JSON error close to input field and marks input textarea red', async () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const sampleTextarea = screen.getByDisplayValue(mockMetric1.transformations![0].lastPayloadSample!);
+    fireEvent.change(sampleTextarea, { target: { value: '{ invalid json sample ' } });
+
+    const dryRunBtn = screen.getByRole('button', { name: /Execute JQ Dry-Run/i });
+    fireEvent.click(dryRunBtn);
+
+    // Error message rendered close to the input field
+    const errorMsg = await screen.findByText('Input data sample is not valid JSON.');
+    expect(errorMsg).toBeInTheDocument();
+
+    // Textarea is marked red with border-destructive
+    expect(sampleTextarea).toHaveClass('border-destructive');
+    expect(sampleTextarea).toHaveAttribute('aria-invalid', 'true');
+
+    // Editing sample field clears the error state
+    fireEvent.change(sampleTextarea, { target: { value: '[]' } });
+    expect(screen.queryByText('Input data sample is not valid JSON.')).not.toBeInTheDocument();
+    expect(sampleTextarea).not.toHaveClass('border-destructive');
+  });
+
   it('supports editing parameters and request body and saving them with transformation', async () => {
     const { saveMetricTransformation } = await import('@/api/mapApi');
     vi.mocked(saveMetricTransformation).mockResolvedValueOnce({
