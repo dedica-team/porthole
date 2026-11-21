@@ -6,7 +6,11 @@ import {
   reconcileMetricPush,
   generateSamplePayload,
   generateCurlSnippet,
+  generateForeignCurlSnippet,
   generateAutomationScript,
+  insertParameters,
+  parseParameters,
+  formatParameters,
   WIZ_VULNERABILITY_TEMPLATE,
   GITLAB_OPEN_PRS_TEMPLATE,
   TRANSFORMATION_TEMPLATES,
@@ -70,28 +74,21 @@ describe('jqEvaluator & jqWorker', () => {
     expect(res.success).toBe(true);
     expect(Array.isArray(res.data)).toBe(true);
     const rows = res.data as Array<Record<string, unknown>>;
-    expect(rows.length).toBe(3);
+    expect(rows.length).toBe(2);
 
     expect(rows[0].element).toBe('prod-web-infra');
-    expect(rows[0].value).toBe('5 open MRs');
-    expect(rows[0].level).toBe('ERROR');
+    expect(rows[0].value).toBe('2');
+    expect(rows[0].level).toBe('OK');
     expect(rows[0].link).toBe('https://gitlab.example.com/infra/prod-web-infra/-/merge_requests');
-    expect(rows[0].linkText).toBe('MRs (5)');
-    expect(rows[0].badges).toEqual({
-      mrs: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
-    });
+    expect(rows[0].linkText).toBe('MRs (2)');
+    expect(rows[0].badges).toEqual({});
 
     expect(rows[1].element).toBe('payment-gateway');
-    expect(rows[1].value).toBe('2 open MRs');
-    expect(rows[1].level).toBe('WARNING');
+    expect(rows[1].value).toBe('1');
+    expect(rows[1].level).toBe('OK');
     expect(rows[1].link).toBe('https://gitlab.example.com/services/payment-gateway/-/merge_requests');
-    expect(rows[1].linkText).toBe('MRs (2)');
-
-    expect(rows[2].element).toBe('analytics-pipeline');
-    expect(rows[2].value).toBe('0 open MRs');
-    expect(rows[2].level).toBe('OK');
-    expect(rows[2].link).toBe('https://gitlab.example.com/data/analytics-pipeline/-/merge_requests');
-    expect(rows[2].linkText).toBe('MRs (0)');
+    expect(rows[1].linkText).toBe('MRs (1)');
+    expect(rows[1].badges).toEqual({});
   });
 
   it('includes built-in transformation templates', () => {
@@ -227,22 +224,93 @@ describe('metricService', () => {
     expect(payload.values.length).toBe(1);
     expect(payload.values[0].element).toBe('Gateway');
 
-    const curl = generateCurlSnippet('sess123', 'Coverage', payload, 'jwt_token', 'https://porthole.test');
-    expect(curl).toContain('POST "https://porthole.test/api/sessions/sess123/metrics/Coverage/values"');
+    const curl = generateCurlSnippet('sess123', 'm-cov-123', payload, 'jwt_token', 'https://porthole.test');
+    expect(curl).toContain('POST "https://porthole.test/api/sessions/sess123/metrics/m-cov-123/values"');
+    expect(curl).toContain('-H "X-Requested-With: XMLHttpRequest"');
     expect(curl).toContain('Authorization: Bearer jwt_token');
+
+    const foreignCurl = generateForeignCurlSnippet(
+      'https://gitlab.example.com/api/graphql',
+      'POST',
+      'group_path=my-backend-group',
+      '{"query": "query { group(fullPath: \\"$group_path\\") { id } }"}',
+      'PRIVATE-TOKEN: glpat-secret-123',
+    );
+    expect(foreignCurl).toContain('curl -s -X POST "https://gitlab.example.com/api/graphql"');
+    expect(foreignCurl).toContain('-H "PRIVATE-TOKEN: glpat-secret-123"');
+    expect(foreignCurl).toContain('-H "Content-Type: application/json"');
+    expect(foreignCurl).toContain('-d \'{"query": "query { group(fullPath: \\"my-backend-group\\") { id } }"}\'');
+
+    const paginatedCurl = generateForeignCurlSnippet(
+      GITLAB_OPEN_PRS_TEMPLATE.requestUrl,
+      GITLAB_OPEN_PRS_TEMPLATE.httpMethod,
+      GITLAB_OPEN_PRS_TEMPLATE.parameters,
+      undefined,
+      GITLAB_OPEN_PRS_TEMPLATE.authHeader,
+      GITLAB_OPEN_PRS_TEMPLATE.jqFilter,
+    );
+    expect(paginatedCurl).toContain('page=1');
+    expect(paginatedCurl).toContain('while :; do');
+    expect(paginatedCurl).toContain('https://gitlab.example.com/api/v4/groups/1234/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page');
+    expect(paginatedCurl).toContain('-H "PRIVATE-TOKEN: $PRIVATE_TOKEN"');
+    expect(paginatedCurl).toContain('jq -s \'add // []\'');
+    expect(paginatedCurl).toContain('| jq \'group_by(.project_id)');
+
+    const substituted = insertParameters(
+      'https://gitlab.example.com/api/v4/projects/:projectId/pipelines',
+      'query { group(fullPath: "$group_path") { id } }',
+      'projectId=789, group_path=custom-group',
+      'PRIVATE-TOKEN: $group_path-token',
+    );
+    expect(substituted.url).toBe('https://gitlab.example.com/api/v4/projects/789/pipelines');
+    expect(substituted.body).toBe('query { group(fullPath: "custom-group") { id } }');
+    expect(substituted.authHeader).toBe('PRIVATE-TOKEN: custom-group-token');
 
     const script = generateAutomationScript(
       'https://api.test/prs?query=foo bar',
       'POST',
       "[.[] | { element: .name, value: .count }]",
       'sess123',
-      'Coverage Area',
+      'm-cov-456',
       'ALIAS',
       'repo key',
       'https://porthole.test',
+      '{"query": "query { group(fullPath: \\"$group_path\\") { id } }"}',
+      'group_path=my-group',
+      'Authorization: Bearer $MY_TOKEN',
     );
     expect(script).toContain("curl -s -X 'POST' 'https://api.test/prs?query=foo bar'");
+    expect(script).toContain('# Request Parameters: group_path=my-group');
+    expect(script).toContain('-H "Authorization: Bearer $MY_TOKEN"');
+    expect(script).toContain("-H \"Content-Type: application/json\" \\\n      -d '{\"query\": \"query { group(fullPath: \\\"my-group\\\") { id } }\"}'");
     expect(script).toContain("--arg matchBy 'ALIAS' --arg matchKey 'repo key'");
-    expect(script).toContain("https://porthole.test/api/sessions/sess123/metrics/Coverage%20Area/values");
+    expect(script).toContain("https://porthole.test/api/sessions/sess123/metrics/m-cov-456/values");
+    expect(script).toContain('-H "Authorization: Bearer $PORTHOLE_TOKEN"');
+    expect(script).toContain('-H "X-Requested-With: XMLHttpRequest"');
+  });
+
+  it('parses and formats parameter key-value maps accurately', () => {
+    expect(parseParameters('group_path=my-org/my-group, state=open')).toEqual({
+      group_path: 'my-org/my-group',
+      state: 'open',
+    });
+    expect(parseParameters('single-bare-value')).toEqual({
+      group_path: 'single-bare-value',
+    });
+    expect(parseParameters({ projectKey: 'my-key', branch: 'main' })).toEqual({
+      projectKey: 'my-key',
+      branch: 'main',
+    });
+    expect(formatParameters({ projectKey: 'my-key', branch: 'main' })).toBe('projectKey=my-key, branch=main');
+    expect(formatParameters('projectKey=my-key')).toBe('projectKey=my-key');
+    expect(formatParameters(undefined)).toBe('');
+
+    const substitutedMap = insertParameters(
+      'https://gitlab.example.com/api/v4/projects/:projectId/pipelines',
+      'query { group(fullPath: "group-path") { id } }',
+      { projectId: '456', group_path: 'custom-team' },
+    );
+    expect(substitutedMap.url).toBe('https://gitlab.example.com/api/v4/projects/456/pipelines');
+    expect(substitutedMap.body).toBe('query { group(fullPath: "custom-team") { id } }');
   });
 });

@@ -578,11 +578,11 @@ export async function clearLandmarkMetric(
 
 export async function pushMetricValues(
   mapId: string,
-  metricIdentifier: string,
+  metricId: string,
   request: import('@/types/landmark').PushMetricValuesRequest,
 ): Promise<import('@/types/landmark').PushMetricValuesResponse> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricIdentifier)}/values`,
+    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/values`,
     {
       method: 'POST',
       headers: authHeaders(),
@@ -590,6 +590,20 @@ export async function pushMetricValues(
     },
   );
   return handleResponse<import('@/types/landmark').PushMetricValuesResponse>(res);
+}
+
+export async function generatePushToken(
+  mapId: string,
+  metricId: string,
+): Promise<{ token: string }> {
+  const res = await fetch(
+    `${BASE_URL}/sessions/${mapId}/metrics/${encodeURIComponent(metricId)}/token`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+    },
+  );
+  return handleResponse<{ token: string }>(res);
 }
 
 export async function saveMetricTransformation(

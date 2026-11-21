@@ -53,6 +53,30 @@ class RemoveMetricUseCaseTest {
     }
 
     @Test
+    fun `removes metric and its transformations from state`() {
+        val transformation = MetricTransformation(
+            id = UUID.randomUUID(),
+            name = "GitLab MRs Ingestion",
+            metricId = metricId,
+            requestUrl = "https://gitlab.example.com/api/graphql",
+            httpMethod = "POST",
+            parameters = mapOf("group_path" to "group/project"),
+            authHeader = "PRIVATE-TOKEN: secret",
+            requestBody = "{\"query\": \"...\"}",
+            jqFilter = "[.data.group.projects.nodes[]]",
+            matchBy = MatchStrategy.NAME,
+        )
+        val s = mapStatePort.findById(state.id)!!
+        s.metrics[metricId] = s.metrics[metricId]!!.copy(transformations = listOf(transformation))
+        mapStatePort.save(s)
+
+        val result = useCase.execute(state.id, collaborator.id, metricId)
+
+        assertFalse(result.metrics.containsKey(metricId))
+        assertNull(result.metrics[metricId])
+    }
+
+    @Test
     fun `cascades removal to all landmark entries`() {
         val result = useCase.execute(state.id, collaborator.id, metricId)
         assertFalse(result.landmarks[landmarkKey]!!.metrics.containsKey(metricId))

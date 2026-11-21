@@ -8,6 +8,7 @@ import team.dedica.porthole.adapter.`in`.web.dto.EditMetricRequest
 import team.dedica.porthole.adapter.`in`.web.dto.MetricTransformationDto
 import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesRequest
 import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesResponse
+import team.dedica.porthole.adapter.`in`.web.dto.PushTokenResponse
 import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.metrics.*
@@ -23,18 +24,22 @@ class MetricController(
     private val pushMetricValuesUseCase: PushMetricValuesUseCase,
     private val saveMetricTransformationUseCase: SaveMetricTransformationUseCase,
     private val deleteMetricTransformationUseCase: DeleteMetricTransformationUseCase,
+    private val generatePushTokenUseCase: GeneratePushTokenUseCase,
 ) {
     @Get
-    fun listMetrics(@PathVariable id: String, user: PortholePrincipal): HttpResponse<*> =
-        HttpResponse.ok(listMetricsUseCase.execute(UUID.fromString(id), user.userId))
+    fun listMetrics(@PathVariable id: String, user: PortholePrincipal): HttpResponse<*> {
+        user.requireFullAccess()
+        return HttpResponse.ok(listMetricsUseCase.execute(UUID.fromString(id), user.userId))
+    }
 
     @Post
     fun createMetric(
         @PathVariable id: String,
         @Valid @Body request: CreateMetricRequest,
         user: PortholePrincipal
-    ): HttpResponse<*> =
-        HttpResponse.ok(
+    ): HttpResponse<*> {
+        user.requireFullAccess()
+        return HttpResponse.ok(
             createMetricUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
@@ -43,6 +48,7 @@ class MetricController(
                 request.link
             )
         )
+    }
 
     @Patch("/{metricId}")
     fun editMetric(
@@ -50,8 +56,9 @@ class MetricController(
         @PathVariable metricId: String,
         @Valid @Body request: EditMetricRequest,
         user: PortholePrincipal
-    ): HttpResponse<*> =
-        HttpResponse.ok(
+    ): HttpResponse<*> {
+        user.requireFullAccess()
+        return HttpResponse.ok(
             editMetricUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
@@ -62,27 +69,48 @@ class MetricController(
                 request.clearLink
             )
         )
+    }
 
     @Delete("/{metricId}")
     fun removeMetric(
         @PathVariable id: String,
         @PathVariable metricId: String,
         user: PortholePrincipal
-    ): HttpResponse<*> =
-        HttpResponse.ok(removeMetricUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(metricId)))
+    ): HttpResponse<*> {
+        user.requireFullAccess()
+        return HttpResponse.ok(removeMetricUseCase.execute(UUID.fromString(id), user.userId, UUID.fromString(metricId)))
+    }
 
-    @Post("/{metricIdentifier}/values")
+    @Post("/{metricId}/token")
+    fun generatePushToken(
+        @PathVariable id: String,
+        @PathVariable metricId: String,
+        user: PortholePrincipal,
+    ): HttpResponse<PushTokenResponse> {
+        user.requireFullAccess()
+        val token = generatePushTokenUseCase.execute(
+            sessionId = UUID.fromString(id),
+            callerId = user.userId,
+            metricId = UUID.fromString(metricId),
+        )
+        return HttpResponse.ok(PushTokenResponse(token = token))
+    }
+
+    @Post("/{metricId}/values")
     fun pushMetricValues(
         @PathVariable id: String,
-        @PathVariable metricIdentifier: String,
+        @PathVariable metricId: String,
         @Valid @Body request: PushMetricValuesRequest,
         user: PortholePrincipal,
     ): HttpResponse<PushMetricValuesResponse> {
         val result = pushMetricValuesUseCase.execute(
             sessionId = UUID.fromString(id),
             callerId = user.userId,
-            metricIdentifier = metricIdentifier,
+            metricId = UUID.fromString(metricId),
             request = request,
+            scopedSessionId = user.scopedSessionId,
+            scopedMetricId = user.scopedMetricId,
+            isPushToken = user.isPushToken(),
         )
         return HttpResponse.ok(result)
     }
@@ -93,8 +121,9 @@ class MetricController(
         @PathVariable metricId: String,
         @Valid @Body transformationDto: MetricTransformationDto,
         user: PortholePrincipal,
-    ): HttpResponse<*> =
-        HttpResponse.ok(
+    ): HttpResponse<*> {
+        user.requireFullAccess()
+        return HttpResponse.ok(
             saveMetricTransformationUseCase.execute(
                 sessionId = UUID.fromString(id),
                 callerId = user.userId,
@@ -102,6 +131,7 @@ class MetricController(
                 transformationDto = transformationDto,
             )
         )
+    }
 
     @Delete("/{metricId}/transformations/{transformationId}")
     fun deleteTransformation(
@@ -109,8 +139,9 @@ class MetricController(
         @PathVariable metricId: String,
         @PathVariable transformationId: String,
         user: PortholePrincipal,
-    ): HttpResponse<*> =
-        HttpResponse.ok(
+    ): HttpResponse<*> {
+        user.requireFullAccess()
+        return HttpResponse.ok(
             deleteMetricTransformationUseCase.execute(
                 sessionId = UUID.fromString(id),
                 callerId = user.userId,
@@ -118,6 +149,7 @@ class MetricController(
                 transformationId = UUID.fromString(transformationId),
             )
         )
+    }
 }
 
 @Controller("/api/sessions/{id}/landmarks/{landmarkId}/metrics")
@@ -133,6 +165,7 @@ class LandmarkMetricController(
         @Valid @Body request: SetLandmarkMetricRequest,
         user: PortholePrincipal
     ): HttpResponse<*> {
+        user.requireFullAccess()
         val level = runCatching { QualityLevel.valueOf(request.level.uppercase()) }.getOrElse {
             return HttpResponse.badRequest("Unknown quality level: ${request.level}")
         }
@@ -158,8 +191,9 @@ class LandmarkMetricController(
         @PathVariable landmarkId: String,
         @PathVariable metricId: String,
         user: PortholePrincipal
-    ): HttpResponse<*> =
-        HttpResponse.ok(
+    ): HttpResponse<*> {
+        user.requireFullAccess()
+        return HttpResponse.ok(
             clearLandmarkMetricUseCase.execute(
                 UUID.fromString(id),
                 UUID.fromString(landmarkId),
@@ -167,4 +201,5 @@ class LandmarkMetricController(
                 user.userId
             )
         )
+    }
 }

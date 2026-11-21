@@ -116,6 +116,32 @@ describe('MetricsView', () => {
     expect(screen.queryByRole('button', { name: /remove metric/i })).not.toBeInTheDocument();
   });
 
+  it('collaborator can remove a metric and its transformations via edit dialog', () => {
+    const metricWithTransformation: QualityMetric = {
+      ...METRIC_AVAIL,
+      transformations: [
+        {
+          id: 'trans-1',
+          name: 'GitLab MRs',
+          metricId: 'm1',
+          requestUrl: 'https://gitlab.example.com',
+          httpMethod: 'POST',
+          jqFilter: '.',
+          matchBy: 'NAME',
+        },
+      ],
+    };
+    setup({ m1: metricWithTransformation }, { lm1: LM_IN_A });
+    render(<MetricsView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /availability/i }));
+    fireEvent.click(screen.getByRole('button', { name: /remove metric/i }));
+    expect(screen.getByText(/remove.*availability/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /yes.*remove/i }));
+    expect(mockActions.handleRemoveMetric).toHaveBeenCalledWith('m1');
+  });
+
 
   // ── + button opens template selector ─────────────────────────────────────
 

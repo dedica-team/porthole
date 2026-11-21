@@ -17,6 +17,7 @@ server/target
 /nbdist/
 /.nb-gradle/
 build/
+node_modules
 !**/src/main/**/build/
 !**/src/test/**/build/
 

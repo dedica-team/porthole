@@ -24,6 +24,7 @@ class JwtAuthenticationFetcher(
     private val tokenValidators: Collection<TokenValidator<HttpRequest<*>>>,
     private val authCookieService: AuthCookieService,
     private val userSessionStore: UserSessionStore,
+    private val scopedJwtService: ScopedJwtService,
 ) : AuthenticationFetcher<HttpRequest<*>> {
 
     override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
@@ -40,6 +41,11 @@ class JwtAuthenticationFetcher(
                     mapOf(PortholePrincipal.USER_ID_ATTRIBUTE to session.userId.toString()),
                 ),
             )
+        }
+
+        val scopedAuth = scopedJwtService.validateToken(token)
+        if (scopedAuth != null) {
+            return Mono.just(scopedAuth)
         }
 
         return Flux.fromIterable(tokenValidators)

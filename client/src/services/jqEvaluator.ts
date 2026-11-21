@@ -43,6 +43,36 @@ function executeFilterStream(input: unknown, filter: string): unknown[] {
   const trimmed = filter.trim();
   if (!trimmed || trimmed === '.') return [input];
 
+  // Handle top-level balanced parentheses: ( ... )
+  if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    let depth = 0;
+    let inString = false;
+    let stringChar = '';
+    let isFullyEnclosed = true;
+    for (let i = 0; i < trimmed.length; i++) {
+      const ch = trimmed[i];
+      if (inString) {
+        if (ch === stringChar && trimmed[i - 1] !== '\\') inString = false;
+      } else {
+        if (ch === '"' || ch === "'") {
+          inString = true;
+          stringChar = ch;
+        } else if (ch === '(') {
+          depth++;
+        } else if (ch === ')') {
+          depth--;
+          if (depth === 0 && i < trimmed.length - 1) {
+            isFullyEnclosed = false;
+            break;
+          }
+        }
+      }
+    }
+    if (isFullyEnclosed && depth === 0) {
+      return executeFilterStream(input, trimmed.slice(1, -1).trim());
+    }
+  }
+
   // Handle fallback operator: expr1 // expr2
   const fallbackIdx = findTopLevelFallbackIndex(trimmed);
   if (fallbackIdx !== -1) {
@@ -85,6 +115,47 @@ function executeFilterStream(input: unknown, filter: string): unknown[] {
     const expr = trimmed.slice(4, -1).trim();
     const mapped = input.flatMap((item) => executeFilterStream(item, expr));
     return [mapped];
+  }
+
+  // Handle group_by(expr)
+  if (trimmed.startsWith('group_by(') && trimmed.endsWith(')')) {
+    if (!Array.isArray(input)) throw new Error('Cannot apply group_by() to non-array');
+    const expr = trimmed.slice(9, -1).trim();
+    const groupsMap = new Map<string, unknown[]>();
+    for (const item of input) {
+      const keyVal = executeFilter(item, expr);
+      const groupKey =
+        typeof keyVal === 'object' && keyVal !== null ? JSON.stringify(keyVal) : String(keyVal);
+      let group = groupsMap.get(groupKey);
+      if (!group) {
+        group = [];
+        groupsMap.set(groupKey, group);
+      }
+      group.push(item);
+    }
+    return [Array.from(groupsMap.values())];
+  }
+
+  // Handle split(delimiter) and split(delimiter)[index]
+  if (trimmed.startsWith('split(')) {
+    const closeParenIdx = trimmed.indexOf(')');
+    if (closeParenIdx !== -1) {
+      const rawDelim = trimmed.slice(6, closeParenIdx).trim();
+      const delim =
+        (rawDelim.startsWith('"') && rawDelim.endsWith('"')) ||
+        (rawDelim.startsWith("'") && rawDelim.endsWith("'"))
+          ? rawDelim.slice(1, -1)
+          : rawDelim;
+      if (typeof input !== 'string') {
+        throw new Error('Cannot apply split() to non-string');
+      }
+      const splitArr = input.split(delim);
+      const remainder = trimmed.slice(closeParenIdx + 1).trim();
+      if (!remainder) {
+        return [splitArr];
+      }
+      return executeFilterStream(splitArr, remainder.startsWith('.') ? remainder : `.${remainder}`);
+    }
   }
 
   // Handle select(condition)
@@ -159,7 +230,11 @@ function evaluatePathStream(input: unknown, path: string): unknown[] {
         return [];
       });
     } else if (typeof token === 'number') {
-      stream = stream.map((item) => (Array.isArray(item) ? item[token] : null));
+      stream = stream.map((item) => {
+        if (!Array.isArray(item)) return null;
+        const idx = token < 0 ? item.length + token : token;
+        return item[idx] ?? null;
+      });
     } else {
       stream = stream.map((item) => {
         if (item && typeof item === 'object') {
@@ -198,7 +273,7 @@ function parsePathTokens(path: string): (string | number)[] {
       const bracketContent = path.slice(i + 1, closeIdx).trim();
       if (bracketContent === '') {
         tokens.push('[]');
-      } else if (/^\d+$/.test(bracketContent)) {
+      } else if (/^-?\d+$/.test(bracketContent)) {
         tokens.push(parseInt(bracketContent, 10));
       } else if (
         (bracketContent.startsWith('"') && bracketContent.endsWith('"')) ||
@@ -221,10 +296,45 @@ function parsePathTokens(path: string): (string | number)[] {
 }
 
 function interpolateString(input: unknown, str: string): string {
-  return str.replace(/\\\((.*?)\)/g, (_, expr) => {
-    const res = executeFilter(input, expr.trim());
-    return res === null || res === undefined ? '' : String(res);
-  });
+  let result = '';
+  let i = 0;
+  while (i < str.length) {
+    if (str[i] === '\\' && str[i + 1] === '(') {
+      let depth = 1;
+      let inQuote = false;
+      let quoteChar = '';
+      let j = i + 2;
+      while (j < str.length && depth > 0) {
+        const ch = str[j];
+        if (inQuote) {
+          if (ch === quoteChar && str[j - 1] !== '\\') {
+            inQuote = false;
+          }
+        } else {
+          if (ch === '"' || ch === "'") {
+            inQuote = true;
+            quoteChar = ch;
+          } else if (ch === '(') {
+            depth++;
+          } else if (ch === ')') {
+            depth--;
+            if (depth === 0) {
+              break;
+            }
+          }
+        }
+        j++;
+      }
+      const expr = str.slice(i + 2, j).trim();
+      const res = executeFilter(input, expr);
+      result += res === null || res === undefined ? '' : String(res);
+      i = j + 1;
+    } else {
+      result += str[i];
+      i++;
+    }
+  }
+  return result;
 }
 
 function evaluateIfElse(input: unknown, expr: string): unknown {

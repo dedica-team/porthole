@@ -8,6 +8,7 @@ import team.dedica.porthole.application.DataSanitationUtils.cleanLink
 import team.dedica.porthole.application.port.AuthorizationPort
 import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
+import team.dedica.porthole.domain.AccessDeniedException
 import team.dedica.porthole.domain.Landmark
 import team.dedica.porthole.domain.LandmarkMetricEntry
 import team.dedica.porthole.domain.MatchStrategy
@@ -26,16 +27,25 @@ class PushMetricValuesUseCase(
     fun execute(
         sessionId: UUID,
         callerId: UUID,
-        metricIdentifier: String,
+        metricId: UUID,
         request: PushMetricValuesRequest,
+        scopedSessionId: UUID? = null,
+        scopedMetricId: UUID? = null,
+        isPushToken: Boolean = false,
     ): PushMetricValuesResponse {
         val state = authorizationPort.accessSession(callerId, sessionId, SessionRole.COLLABORATOR)
 
-        val trimmedIdentifier = metricIdentifier.trim()
-        val metricIdFromUuid = runCatching { UUID.fromString(trimmedIdentifier) }.getOrNull()
-        val metric: QualityMetric = (metricIdFromUuid?.let { state.metrics[it] }
-            ?: state.metrics.values.firstOrNull { it.name.equals(trimmedIdentifier, ignoreCase = true) })
-            ?: throw NoSuchElementException("Metric '$metricIdentifier' not found")
+        val metric: QualityMetric = state.metrics[metricId]
+            ?: throw NoSuchElementException("Metric '$metricId' not found")
+
+        if (isPushToken) {
+            if (scopedSessionId != null && scopedSessionId != sessionId) {
+                throw AccessDeniedException("Push token is not scoped to session '$sessionId'")
+            }
+            if (scopedMetricId != null && scopedMetricId != metric.id) {
+                throw AccessDeniedException("Push token is not scoped to metric '${metric.name}' (${metric.id})")
+            }
+        }
 
         val landmarksByLookupKey: Map<String, List<Landmark>> = when (request.matchBy) {
             MatchStrategy.NAME -> state.landmarks.values.groupBy { it.name.trim().lowercase() }

@@ -41,9 +41,12 @@ class SaveAndDeleteMetricTransformationUseCaseTest {
     fun `save transformation adds new transformation`() {
         val transformationDto = MetricTransformationDto(
             name = "GitLab MRs Ingestion",
-            requestUrl = "https://gitlab.example.com/api/v4/projects/12/merge_requests",
-            httpMethod = "GET",
-            jqFilter = "[.[] | {element: .title, value: .upvotes | tostring}]",
+            requestUrl = "https://gitlab.example.com/api/graphql",
+            httpMethod = "POST",
+            parameters = mapOf("group_path" to "group-path"),
+            authHeader = "PRIVATE-TOKEN: glpat-secret",
+            requestBody = "{\"query\": \"query { group(fullPath: \\\"group-path\\\") { projects { nodes { name } } } }\"}",
+            jqFilter = "[.data.group.projects.nodes[] | {element: .name, value: .count | tostring}]",
             matchBy = MatchStrategy.NAME,
             lastPayloadSample = "[{\"title\": \"Auth Service\", \"upvotes\": 3}]",
         )
@@ -53,7 +56,11 @@ class SaveAndDeleteMetricTransformationUseCaseTest {
         assertEquals(1, metric.transformations.size)
         val transformation = metric.transformations.first()
         assertEquals("GitLab MRs Ingestion", transformation.name)
-        assertEquals("https://gitlab.example.com/api/v4/projects/12/merge_requests", transformation.requestUrl)
+        assertEquals("https://gitlab.example.com/api/graphql", transformation.requestUrl)
+        assertEquals("POST", transformation.httpMethod)
+        assertEquals(mapOf("group_path" to "group-path"), transformation.parameters)
+        assertEquals("PRIVATE-TOKEN: glpat-secret", transformation.authHeader)
+        assertEquals("{\"query\": \"query { group(fullPath: \\\"group-path\\\") { projects { nodes { name } } } }\"}", transformation.requestBody)
         assertEquals(MatchStrategy.NAME, transformation.matchBy)
     }
 

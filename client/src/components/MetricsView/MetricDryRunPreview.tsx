@@ -44,7 +44,7 @@ export const MetricDryRunPreview: React.FC<Props> = ({ summary }) => {
       </div>
 
       {/* ── Reconciled Table ────────────────────────────────────────────── */}
-      <div className="border border-border rounded-md overflow-x-auto max-h-56">
+      <div className="border border-border rounded-md overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead className="bg-muted/50 text-muted-foreground border-b border-border sticky top-0">
             <tr>
