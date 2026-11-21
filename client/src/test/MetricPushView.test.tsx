@@ -794,7 +794,7 @@ describe('MetricPushView (Subpage)', () => {
       expect.stringContaining('while :; do'),
     );
     expect(writeTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('https://gitlab.example.com/api/v4/groups/9999/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page'),
+      expect.stringContaining('https://gitlab.example.com/api/v4/groups/9999/merge_requests?state=opened&include_subgroups=true&per_page=100&page=${page}'),
     );
     expect(writeTextMock).toHaveBeenCalledWith(
       expect.stringContaining('-H "PRIVATE-TOKEN: $PRIVATE_TOKEN"'),

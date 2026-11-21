@@ -453,14 +453,36 @@ export function generateForeignCurlSnippet(
       ? ` \\\n  | jq ${shellQuote(jqFilter)}`
       : '';
 
-  const isPaginatedGet = isGet && (finalUrl.includes('per_page') || finalUrl.includes('page='));
+  const isPaginatedGet = isGet && (finalUrl.includes('per_page') || /[?&]page=/.test(finalUrl));
 
   if (isPaginatedGet) {
     const headersFlag = headerLines.length > 0 ? ` \\\n    ${headerLines.join(' \\\n    ')}` : '';
     const separator = finalUrl.includes('?') ? '&' : '?';
-    const baseUrlWithPage = `${finalUrl}${separator}page=$page`;
+    const pageParam = 'page=${page}';
+    const baseUrlWithPage = /[?&]page=/.test(finalUrl)
+      ? finalUrl.replace(/([?&])page=[^&#]*/, `$1${pageParam}`)
+      : `${finalUrl}${separator}${pageParam}`;
 
-    return `page=1\nwhile :; do\n  res=$(curl -s "${baseUrlWithPage}"${headersFlag})\n  count=$(echo "$res" | jq 'if type=="array" then length else 0 end' 2>/dev/null || echo 0)\n  [ "$count" -eq 0 ] && break\n  echo "$res"\n  [ "$count" -lt 100 ] && break\n  page=$((page+1))\ndone | jq -s 'add // []'${jqPipe}`;
+    return `page=1
+all_items_file=$(mktemp)
+printf '[]\\n' > "$all_items_file"
+
+while :; do
+  res=$(curl -s "${baseUrlWithPage}"${headersFlag})
+  count=$(printf '%s\\n' "$res" | jq 'if type=="array" then length else 0 end' 2>/dev/null || echo 0)
+  [ "$count" -eq 0 ] && break
+
+  printf '%s\\n' "$res" | jq -s '.[0] + .[1]' "$all_items_file" - > "\${all_items_file}.next"
+  mv "\${all_items_file}.next" "$all_items_file"
+
+  [ "$count" -lt 100 ] && break
+  page=$((page + 1))
+done
+
+all_items=$(cat "$all_items_file")
+rm -f "$all_items_file" "\${all_items_file}.next"
+
+echo "$all_items"${jqPipe}`;
   }
 
   if (finalBody && finalBody.trim() && !isGet) {
@@ -519,9 +541,9 @@ export function generateAutomationScript(
     const lines = finalAuth.split('\n').map((l) => l.trim()).filter(Boolean);
     for (const line of lines) {
       if (!line.includes(':') && !line.toLowerCase().startsWith('authorization')) {
-        foreignHeaders.push(` \\\n      -H "Authorization: ${line.replace(/"/g, '\\"')}"`);
+        foreignHeaders.push(` \\\n    -H "Authorization: ${line.replace(/"/g, '\\"')}"`);
       } else {
-        foreignHeaders.push(` \\\n      -H "${line.replace(/"/g, '\\"')}"`);
+        foreignHeaders.push(` \\\n    -H "${line.replace(/"/g, '\\"')}"`);
       }
     }
   }
@@ -530,7 +552,7 @@ export function generateAutomationScript(
 
   const bodyFlag =
     finalBody && finalBody.trim()
-      ? ` \\\n      -H "Content-Type: application/json" \\\n      -d ${shellQuote(finalBody.trim())}`
+      ? ` \\\n    -H "Content-Type: application/json" \\\n    -d ${shellQuote(finalBody.trim())}`
       : '';
 
   const formattedParams = formatParameters(parameters);
@@ -541,21 +563,32 @@ export function generateAutomationScript(
 
   const isPaginatedGet =
     (!httpMethod || httpMethod.trim().toUpperCase() === 'GET') &&
-    (finalUrl.includes('per_page') || finalUrl.includes('page='));
+    (finalUrl.includes('per_page') || /[?&]page=/.test(finalUrl));
   const separator = finalUrl.includes('?') ? '&' : '?';
-  const baseUrlWithPage = `${finalUrl}${separator}page=\\$page`;
+  const pageParam = 'page=${page}';
+  const baseUrlWithPage = /[?&]page=/.test(finalUrl)
+    ? finalUrl.replace(/([?&])page=[^&#]*/, `$1${pageParam}`)
+    : `${finalUrl}${separator}${pageParam}`;
 
   const fetchSection = isPaginatedGet
     ? `page=1
-all_items="[]"
+all_items_file=$(mktemp)
+printf '[]\\n' > "$all_items_file"
+
 while :; do
   res=$(curl -s "${baseUrlWithPage}"${authHeaderFlags})
-  count=$(echo "$res" | jq 'if type=="array" then length else 0 end' 2>/dev/null || echo 0)
+  count=$(printf '%s\\n' "$res" | jq 'if type=="array" then length else 0 end' 2>/dev/null || echo 0)
   [ "$count" -eq 0 ] && break
-  all_items=$(jq -s 'add' <(echo "$all_items") <(echo "$res"))
+
+  printf '%s\\n' "$res" | jq -s '.[0] + .[1]' "$all_items_file" - > "\${all_items_file}.next"
+  mv "\${all_items_file}.next" "$all_items_file"
+
   [ "$count" -lt 100 ] && break
-  page=$((page+1))
+  page=$((page + 1))
 done
+
+all_items=$(cat "$all_items_file")
+rm -f "$all_items_file" "\${all_items_file}.next"
 
 echo "$all_items"`
     : `curl -s${methodFlag} ${quotedUrl}${authHeaderFlags}${bodyFlag}`;
