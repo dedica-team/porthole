@@ -208,7 +208,7 @@ export function generateCurlSnippet(
   const jsonBody = JSON.stringify(request, null, 2);
   const authHeader = token ? ` -H "Authorization: Bearer ${token}"` : ' -H "Authorization: Bearer $PORTHOLE_TOKEN"';
 
-  return `curl -X POST "${url}" \\\n  -H "Content-Type: application/json"${authHeader} \\\n  -d '${jsonBody.replace(/'/g, "'\\''")}'`;
+  return `curl -X POST "${url}" \\\n  -H "Content-Type: application/json" \\\n  -H "X-Requested-With: XMLHttpRequest"${authHeader} \\\n  -d '${jsonBody.replace(/'/g, "'\\''")}'`;
 }
 
 /**
@@ -573,6 +573,7 @@ ${fetchSection} \\
   | curl -X POST ${quotedTargetUrl} \\
       -H "Authorization: Bearer \$PORTHOLE_TOKEN" \\
       -H "Content-Type: application/json" \\
+      -H "X-Requested-With: XMLHttpRequest" \\
       -d @-
 `;
 }

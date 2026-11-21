@@ -230,6 +230,7 @@ describe('metricService', () => {
 
     const curl = generateCurlSnippet('sess123', 'm-cov-123', payload, 'jwt_token', 'https://porthole.test');
     expect(curl).toContain('POST "https://porthole.test/api/sessions/sess123/metrics/m-cov-123/values"');
+    expect(curl).toContain('-H "X-Requested-With: XMLHttpRequest"');
     expect(curl).toContain('Authorization: Bearer jwt_token');
 
     const foreignCurl = generateForeignCurlSnippet(
@@ -289,6 +290,7 @@ describe('metricService', () => {
     expect(script).toContain("--arg matchBy 'ALIAS' --arg matchKey 'repo key'");
     expect(script).toContain("https://porthole.test/api/sessions/sess123/metrics/m-cov-456/values");
     expect(script).toContain('-H "Authorization: Bearer $PORTHOLE_TOKEN"');
+    expect(script).toContain('-H "X-Requested-With: XMLHttpRequest"');
   });
 
   it('parses and formats parameter key-value maps accurately', () => {

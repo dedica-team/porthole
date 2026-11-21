@@ -505,7 +505,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
       httpMethod,
       jqFilter,
       currentMap.id,
-      metric.name,
+      metric.id,
       jqMatchBy,
       jqMatchKey.trim() || undefined,
       window.location.origin,

@@ -915,5 +915,11 @@ describe('MetricPushView (Subpage)', () => {
     expect(writeTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Bearer $PORTHOLE_TOKEN'),
     );
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('X-Requested-With: XMLHttpRequest'),
+    );
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('/metrics/m-123/values'),
+    );
   });
 });
