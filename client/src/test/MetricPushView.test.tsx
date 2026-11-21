@@ -85,7 +85,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByRole('link', { name: /Back to Metrics/i })).toHaveAttribute('href', '/session/sess-abc/metrics');
     expect(screen.getByText(/Transformation for Code Coverage/i)).toBeInTheDocument();
     expect(screen.getByTitle(/Test coverage percentage/i)).toBeInTheDocument();
-    expect(screen.getByText(/POST \/api\/sessions\/sess-abc\/metrics\/m-123\/values/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/POST \/api\/sessions\/sess-abc\/metrics\/m-123\/values/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it('allows switching metrics via select dropdown in transformation section without reloading', () => {
@@ -152,6 +152,46 @@ describe('MetricPushView (Subpage)', () => {
     const closeBtns = screen.getAllByRole('button', { name: /Close/i });
     fireEvent.click(closeBtns[0]);
     expect(screen.queryByRole('heading', { name: /Transformation & Ingestion Guide/i })).not.toBeInTheDocument();
+  });
+
+  it('renders workflow steps as collapsible accordion cards and supports expand/collapse all', () => {
+    render(
+      <MemoryRouter initialEntries={['/session/sess-abc/metrics/m-123/push']}>
+        <Routes>
+          <Route path="/session/:id/metrics/:metricId/push" element={<MetricPushView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Step headers exist
+    expect(screen.getByRole('button', { name: /Toggle Step 1: Transformation Details/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Toggle Step 2: Source and Data/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Toggle Step 3: Transformation/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Toggle Step 4: Push/i })).toBeInTheDocument();
+
+    // Initially open
+    expect(screen.getByPlaceholderText('Transformation Name')).toBeInTheDocument();
+    expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
+
+    // Toggle individual step 1 closed
+    fireEvent.click(screen.getByRole('button', { name: /Toggle Step 1: Transformation Details/i }));
+    expect(screen.queryByPlaceholderText('Transformation Name')).not.toBeInTheDocument();
+
+    // Re-open step 1
+    fireEvent.click(screen.getByRole('button', { name: /Toggle Step 1: Transformation Details/i }));
+    expect(screen.getByPlaceholderText('Transformation Name')).toBeInTheDocument();
+
+    // Collapse All toggles all step bodies off
+    const collapseAllBtn = screen.getByRole('button', { name: /Collapse All/i });
+    fireEvent.click(collapseAllBtn);
+    expect(screen.queryByPlaceholderText('Transformation Name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/JQ Match Strategy/i)).not.toBeInTheDocument();
+
+    // Expand All brings them back
+    const expandAllBtn = screen.getByRole('button', { name: /Expand All/i });
+    fireEvent.click(expandAllBtn);
+    expect(screen.getByPlaceholderText('Transformation Name')).toBeInTheDocument();
+    expect(screen.getByLabelText(/JQ Match Strategy/i)).toBeInTheDocument();
   });
 
   it('renders JQ Transformation Builder view by default and displays Transformed Data field in Preview section', () => {

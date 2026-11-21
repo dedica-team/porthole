@@ -20,6 +20,7 @@ import {
   FolderOpen,
   Key,
   HelpCircle,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,6 +135,30 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   const [copiedCiScript, setCopiedCiScript] = useState(false);
   const [generatingToken, setGeneratingToken] = useState(false);
   const [tokenError, setTokenError] = useState<string>('');
+
+  // ── Collapsible Steps State ────────────────────────────────────────────────
+  const [openSteps, setOpenSteps] = useState<Record<string, boolean>>({
+    details: true,
+    source: true,
+    transformation: true,
+    push: true,
+  });
+
+  const toggleStep = (step: string) => {
+    setOpenSteps((prev) => ({ ...prev, [step]: !prev[step] }));
+  };
+
+  const allStepsOpen = Object.values(openSteps).every(Boolean);
+
+  const toggleAllSteps = () => {
+    const nextState = !allStepsOpen;
+    setOpenSteps({
+      details: nextState,
+      source: nextState,
+      transformation: nextState,
+      push: nextState,
+    });
+  };
 
   // ── Execution State ────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
@@ -602,94 +627,620 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
         </div>
 
         <div className="p-4 sm:p-5 flex flex-col gap-4">
-          <div className="flex flex-col gap-4 pt-1">
-            <h3>Transformation "{transformationName}"
-              {/* Persistence / Unsaved Status Badge */}
-              {selectedTransformationId ? (
-                  !isTransformationDirty ? (
+          <div className="flex items-center justify-between text-xs text-muted-foreground pb-0.5">
+            <span className="font-medium text-foreground">Transformation Steps</span>
+            <button
+              type="button"
+              onClick={toggleAllSteps}
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline cursor-pointer transition-colors"
+            >
+              {allStepsOpen ? 'Collapse All' : 'Expand All'}
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {/* ── Step 1: Transformation Details ──────────────────────────── */}
+            <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">
+              <button
+                type="button"
+                onClick={() => toggleStep('details')}
+                className="w-full flex items-center justify-between p-3 sm:px-4 bg-muted/30 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                aria-expanded={openSteps.details}
+                aria-label="Toggle Step 1: Transformation Details"
+              >
+                <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                    1
+                  </span>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Transformation Details
+                  </h3>
+                  <span className="text-xs text-muted-foreground font-normal truncate max-w-50">
+                    {transformationName ? `"${transformationName}"` : 'Untitled'}
+                  </span>
+                  {/* Persistence / Unsaved Status Badge */}
+                  {selectedTransformationId ? (
+                    !isTransformationDirty ? (
                       <span
-                          className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                          title="This transformation matches the persisted configuration"
-                          data-testid="transformation-status-saved"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                        title="This transformation matches the persisted configuration"
+                        data-testid="transformation-status-saved"
                       >
                         <CheckCircle2 className="h-3 w-3" /> No changes
                       </span>
-                  ) : (
+                    ) : (
                       <span
-                          className="inline-flex items-center gap-1  mx-1  px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                          title="This transformation has unsaved modifications"
-                          data-testid="transformation-status-dirty"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                        title="This transformation has unsaved modifications"
+                        data-testid="transformation-status-dirty"
                       >
                         <AlertCircle className="h-3 w-3" /> Unsaved changes
                       </span>
-                  )
-              ) : (
-                  <span
-                      className="inline-flex items-center gap-1  mx-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border"
+                    )
+                  ) : (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border"
                       title="Transformation not yet saved to persistence"
                       data-testid="transformation-status-unsaved"
-                  >
+                    >
                       Unsaved transformation
                     </span>
-              )}
-            </h3>
-
-            {/* Template & Transformation Configuration Bar */}
-            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-center bg-muted/20 p-3 rounded-lg border border-border">
-              <span className="text-muted-foreground font-medium text-xs">Name:</span>
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Transformation Name"
-                  value={transformationName}
-                  onChange={(e) => setTransformationName(e.target.value)}
-                  className={`h-8 text-xs flex-1 ${isDuplicateTransformationName ? 'border-destructive focus-visible:ring-destructive text-destructive' : ''}`}
+                  )}
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+                    openSteps.details ? 'rotate-180' : ''
+                  }`}
                 />
-                {isDuplicateTransformationName && (
-                  <span className="text-[11px] text-destructive font-medium whitespace-nowrap">
-                    Name already in use
-                  </span>
-                )}
-              </div>
+              </button>
 
-              <span className="text-muted-foreground font-medium text-xs">Target Metric:</span>
-              <div className="flex items-center gap-2">
-                <select
-                  id="metric-selector"
-                  aria-label="Select Metric"
-                  value={metric.id}
-                  onChange={(e) => setSelectedMetricId(e.target.value)}
-                  className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground flex-1"
-                >
-                  {allMetrics.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {openSteps.details && (
+                <div className="p-4 border-t border-border/60">
+                  <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-center">
+                    <span className="text-muted-foreground font-medium text-xs">Name:</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Transformation Name"
+                        value={transformationName}
+                        onChange={(e) => setTransformationName(e.target.value)}
+                        className={`h-8 text-xs flex-1 ${isDuplicateTransformationName ? 'border-destructive focus-visible:ring-destructive text-destructive' : ''}`}
+                      />
+                      {isDuplicateTransformationName && (
+                        <span className="text-[11px] text-destructive font-medium whitespace-nowrap">
+                          Name already in use
+                        </span>
+                      )}
+                    </div>
 
-              {!selectedTransformationId && (
-                <>
-                  <span className="text-muted-foreground font-medium text-xs">Load Template:</span>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={selectedTemplateId}
-                      onChange={(e) => handleSelectTemplate(e.target.value)}
-                      className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground flex-1"
-                      aria-label="Transformation Template"
-                    >
-                      <option value="">-- Choose Built-in Template... --</option>
-                      {TRANSFORMATION_TEMPLATES.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
+                    <span className="text-muted-foreground font-medium text-xs">Target Metric:</span>
+                    <div className="flex items-center gap-2">
+                      <select
+                        id="metric-selector"
+                        aria-label="Select Metric"
+                        value={metric.id}
+                        onChange={(e) => setSelectedMetricId(e.target.value)}
+                        className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground flex-1"
+                      >
+                        {allMetrics.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {!selectedTransformationId && (
+                      <>
+                        <span className="text-muted-foreground font-medium text-xs">Load Template:</span>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={selectedTemplateId}
+                            onChange={(e) => handleSelectTemplate(e.target.value)}
+                            className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground flex-1"
+                            aria-label="Transformation Template"
+                          >
+                            <option value="">-- Choose Built-in Template... --</option>
+                            {TRANSFORMATION_TEMPLATES.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </>
+                </div>
               )}
+            </div>
 
-              <div className="col-span-1 md:col-span-2 flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+            {/* ── Step 2: Source and Data ───────────────────────────────────── */}
+            <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">
+              <button
+                type="button"
+                onClick={() => toggleStep('source')}
+                className="w-full flex items-center justify-between p-3 sm:px-4 bg-muted/30 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                aria-expanded={openSteps.source}
+                aria-label="Toggle Step 2: Source and Data"
+              >
+                <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                    2
+                  </span>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Source and Data
+                  </h3>
+                  <span className="text-xs text-muted-foreground font-normal truncate max-w-sm">
+                    {httpMethod} {requestUrl ? requestUrl.split('?')[0] : 'No endpoint URL'}
+                  </span>
+                  {parameters.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground border border-border font-mono">
+                      {parameters.filter((p) => p.key.trim()).length} param{parameters.filter((p) => p.key.trim()).length === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+                    openSteps.source ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openSteps.source && (
+                <div className="p-4 border-t border-border/60">
+                  <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-center">
+                    <span className="text-muted-foreground font-medium text-xs">Foreign Endpoint:</span>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={httpMethod}
+                        onChange={(e) => setHttpMethod(e.target.value)}
+                        className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
+                      >
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                      </select>
+                      <Input
+                        placeholder="https://gitlab.example.com/api/v4/projects/123/merge_requests"
+                        value={requestUrl}
+                        onChange={(e) => setRequestUrl(e.target.value)}
+                        className="h-8 text-xs flex-1"
+                      />
+                    </div>
+
+                    <span className="text-muted-foreground font-medium text-xs self-start pt-2">Parameters:</span>
+                    <div className="flex flex-col gap-2">
+                      {parameters.length === 0 ? (
+                        <div className="flex items-center justify-between text-xs text-muted-foreground py-1">
+                          <span>No parameters configured.</span>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => setParameters([{ key: '', value: '' }])}
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Add Parameter
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {parameters.map((param, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Input
+                                placeholder="Key (e.g. group_path)"
+                                value={param.key}
+                                onChange={(e) => {
+                                  const updated = [...parameters];
+                                  updated[index] = { ...updated[index], key: e.target.value };
+                                  setParameters(updated);
+                                }}
+                                className="h-8 text-xs w-1/3"
+                                aria-label={`Parameter Key ${index + 1}`}
+                              />
+                              <Input
+                                placeholder="Value"
+                                value={param.value}
+                                onChange={(e) => {
+                                  const updated = [...parameters];
+                                  updated[index] = { ...updated[index], value: e.target.value };
+                                  setParameters(updated);
+                                }}
+                                className="h-8 text-xs flex-1"
+                                aria-label={param.key.trim() || `Parameter Value ${index + 1}`}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => {
+                                  const updated = parameters.filter((_, i) => i !== index);
+                                  setParameters(updated);
+                                }}
+                                aria-label={`Remove Parameter ${param.key || index + 1}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ))}
+                          <div className="flex justify-start">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => setParameters([...parameters, { key: '', value: '' }])}
+                            >
+                              <Plus className="h-3 w-3 mr-1" /> Add Parameter
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="text-muted-foreground font-medium text-xs self-start pt-2">Auth Header:</span>
+                    <div className="flex flex-col gap-1.5">
+                      <Input
+                        placeholder="e.g. PRIVATE-TOKEN: $GITLAB_TOKEN or Authorization: Bearer <token>"
+                        value={authHeader}
+                        onChange={(e) => setAuthHeader(e.target.value)}
+                        className="h-8 text-xs bg-background"
+                        aria-label="Auth Header"
+                      />
+                    </div>
+
+                    <span className="text-muted-foreground font-medium text-xs self-start pt-2">Request Body:</span>
+                    <div className="flex flex-col gap-1.5">
+                      <Textarea
+                        placeholder='{ "query": "..." } or payload body for POST requests'
+                        value={requestBody}
+                        onChange={(e) => setRequestBody(e.target.value)}
+                        className="font-mono text-xs min-h-24 resize-y bg-background"
+                        aria-label="Request Body"
+                      />
+                    </div>
+
+                    <span className="text-muted-foreground font-medium text-xs">Match Strategy:</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        aria-label="JQ Match Strategy"
+                        value={jqMatchBy}
+                        onChange={(e) => setJqMatchBy(e.target.value as MatchStrategy)}
+                        className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
+                      >
+                        <option value="NAME">NAME (Element Name)</option>
+                        <option value="ALIAS">ALIAS (Element Alias)</option>
+                        <option value="LINK">LINK (Resource URL)</option>
+                      </select>
+                      {jqMatchBy === 'LINK' && (
+                        <Input
+                          placeholder="Key (e.g. repository)"
+                          value={jqMatchKey}
+                          onChange={(e) => setJqMatchKey(e.target.value)}
+                          className="h-8 text-xs w-48"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Step 3: Transformation ────────────────────────────────────── */}
+            <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">
+              <button
+                type="button"
+                onClick={() => toggleStep('transformation')}
+                className="w-full flex items-center justify-between p-3 sm:px-4 bg-muted/30 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                aria-expanded={openSteps.transformation}
+                aria-label="Toggle Step 3: Transformation"
+              >
+                <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                    3
+                  </span>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Transformation
+                  </h3>
+                  {parsedTransformedReq ? (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                      {parsedTransformedReq.values.length} item{parsedTransformedReq.values.length === 1 ? '' : 's'} transformed
+                    </span>
+                  ) : samplePayload ? (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground border border-border">
+                      Sample payload loaded
+                    </span>
+                  ) : null}
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+                    openSteps.transformation ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openSteps.transformation && (
+                <div className="p-4 border-t border-border/60 flex flex-col gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
+                      <Textarea
+                        value={samplePayload}
+                        onChange={(e) => setSamplePayload(e.target.value)}
+                        className="font-mono text-xs min-h-48 resize-y bg-background"
+                        placeholder="Paste response from GitLab / GitHub..."
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-muted-foreground font-medium text-xs">JQ Filter Expression:</label>
+                        <a
+                          href="https://jqlang.github.io/jq/manual/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-link hover:text-link-hover hover:underline inline-flex items-center gap-1"
+                          title="Open jq documentation"
+                        >
+                          <span>jq documentation</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                      <Textarea
+                        value={jqFilter}
+                        onChange={(e) => setJqFilter(e.target.value)}
+                        className="font-mono text-xs min-h-48 resize-y bg-background"
+                        placeholder="[.[] | { element: .title, value: (.upvotes | tostring), level: 'OK' }]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Transformed Data Preview ───────────────────────────────── */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <label className="text-muted-foreground font-medium">
+                        Transformed Data (JSON):
+                        {parsedTransformedReq && (
+                          <span className="ml-1.5 text-muted-foreground font-normal">
+                            ({parsedTransformedReq.values.length} element
+                            {parsedTransformedReq.values.length === 1 ? '' : 's'})
+                          </span>
+                        )}
+                      </label>
+
+                      {transformedJson && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          onClick={handleCopyTransformedPayload}
+                        >
+                          {copiedPayload ? (
+                            <>
+                              <Check className="h-3 w-3 text-emerald-400 mr-1" /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3 mr-1" /> Copy Payload
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea
+                      value={transformedJson}
+                      onChange={(e) => {
+                        setTransformedJson(e.target.value);
+                        setJqTransformError('');
+                      }}
+                      className="font-mono text-xs min-h-36 resize-y bg-background"
+                      placeholder="Transformed metric element values (generated by Execute JQ Dry-Run or edited directly)..."
+                      aria-label="Transformed Data"
+                      data-testid="transformed-payload-preview"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleRunJqTransform}
+                      className="h-8 text-xs flex items-center gap-1.5"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Execute JQ Dry-Run
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleCopyForeignCurl} className="h-8 text-xs">
+                      {copiedScript ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Terminal className="h-3.5 w-3.5 mr-1.5" />}
+                      {copiedScript ? 'Copied curl Request' : 'Copy curl Request'}
+                    </Button>
+                  </div>
+
+                  {jqTransformError && (
+                    <Alert variant="destructive" className="py-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">{jqTransformError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {parsedTransformedReq && jqPreviewMode === 'payload' && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                          Transformed Request Payload ({parsedTransformedReq.values.length} element
+                          {parsedTransformedReq.values.length === 1 ? '' : 's'}):
+                        </span>
+                      </div>
+                      <pre className="font-mono text-xs p-3 bg-background rounded-md border border-border overflow-x-auto select-all text-foreground whitespace-pre">
+                        {JSON.stringify(parsedTransformedReq, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+
+                  {parsedTransformedReq && (
+                    <div className="flex items-center bg-muted/60 p-0.5 rounded-md border border-border">
+                      <button
+                        type="button"
+                        onClick={() => setJqPreviewMode('table')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                          jqPreviewMode === 'table'
+                            ? 'bg-background text-foreground font-medium shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        aria-label="Table Preview"
+                      >
+                        <Table className="h-3.5 w-3.5" />
+                        <span>Table</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setJqPreviewMode('payload')}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
+                          jqPreviewMode === 'payload'
+                            ? 'bg-background text-foreground font-medium shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        aria-label="Inspect Payload"
+                      >
+                        <FileCode className="h-3.5 w-3.5" />
+                        <span>Inspect Payload</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {parsedTransformedReq && jqPreviewMode === 'table' && jqReconciliation && (
+                    <div className="mt-1">
+                      <MetricDryRunPreview summary={jqReconciliation} metricName={metric.name} />
+                    </div>
+                  )}
+
+                  {!parsedTransformedReq && !jqTransformError && (
+                    <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-md">
+                      Click &ldquo;Execute JQ Dry-Run&rdquo; or enter transformed JSON data above to preview matched elements.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Step 4: Push ─────────────────────────────────────────────── */}
+            <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">
+              <button
+                type="button"
+                onClick={() => toggleStep('push')}
+                className="w-full flex items-center justify-between p-3 sm:px-4 bg-muted/30 hover:bg-muted/50 transition-colors text-left cursor-pointer"
+                aria-expanded={openSteps.push}
+                aria-label="Toggle Step 4: Push"
+              >
+                <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                    4
+                  </span>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Push
+                  </h3>
+                  <span className="font-mono text-[11px] text-muted-foreground truncate max-w-sm">
+                    POST {endpointPath}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+                    openSteps.push ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openSteps.push && (
+                <div className="p-4 border-t border-border/60 flex flex-col gap-4">
+                  {/* Endpoint Information Banner */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-muted-foreground">API Endpoint:</span>
+                      <span className="font-mono bg-muted text-foreground px-2 py-0.5 rounded border border-border text-[11px]">
+                        POST {endpointPath}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground font-mono text-[11px]">
+                      Session: {sessionId} • Metric: {metric.id}
+                    </div>
+                  </div>
+
+                  {/* Scoped JWT Token & CI Automation Section */}
+                  <div className="flex flex-col gap-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 font-medium text-foreground">
+                        <Key className="h-4 w-4 text-primary" />
+                        <span>Scoped Push Token (JWT)</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleGeneratePushToken}
+                          disabled={generatingToken}
+                          className="h-7 text-xs"
+                          data-testid="generate-push-token-btn"
+                        >
+                          {generatingToken ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                          ) : copiedToken ? (
+                            <Check className="h-3 w-3 text-emerald-400 mr-1.5" />
+                          ) : (
+                            <Key className="h-3 w-3 mr-1.5" />
+                          )}
+                          {copiedToken ? 'Copied Push JWT' : pushToken ? 'Regenerate & Copy JWT' : 'Generate & Copy Push JWT'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCopyCiScript}
+                          className="h-7 text-xs"
+                          data-testid="copy-ci-script-btn"
+                        >
+                          {copiedCiScript ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Terminal className="h-3.5 w-3.5 mr-1.5" />}
+                          {copiedCiScript ? 'Copied CI Script' : 'Copy CI Automation Script'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {pushToken && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <Input
+                          readOnly
+                          value={`PORTHOLE_TOKEN=${pushToken}`}
+                          className="font-mono text-[11px] h-7 bg-background select-all"
+                          data-testid="push-token-input"
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`PORTHOLE_TOKEN=${pushToken}`);
+                            setCopiedToken(true);
+                            setTimeout(() => setCopiedToken(false), 2000);
+                          }}
+                          className="h-7 text-xs shrink-0"
+                        >
+                          {copiedToken ? <Check className="h-3 w-3 text-emerald-400 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                          Copy
+                        </Button>
+                      </div>
+                    )}
+
+                    {tokenError && (
+                      <div className="text-destructive text-[11px] mt-1">
+                        {tokenError}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
+              <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   className="h-8 text-xs"
@@ -710,7 +1261,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                       title="Delete Transformation"
                       aria-label="Delete Transformation"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                      Delete
                     </Button>
                   ) : (
                     <div className="flex items-center gap-1.5 bg-destructive/10 border border-destructive/30 px-2 py-0.5 rounded">
@@ -739,431 +1291,43 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   )
                 )}
               </div>
-            </div>
 
-            <h3>Source and Data</h3>
-            {/* Foreign Request Parameters */}
-            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-center bg-muted/20 p-3 rounded-lg border border-border">
-              <span className="text-muted-foreground font-medium text-xs">Foreign Endpoint:</span>
-              <div className="flex items-center gap-2">
-                <select
-                  value={httpMethod}
-                  onChange={(e) => setHttpMethod(e.target.value)}
-                  className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                >
-                  <option value="GET">GET</option>
-                  <option value="POST">POST</option>
-                </select>
-                <Input
-                  placeholder="https://gitlab.example.com/api/v4/projects/123/merge_requests"
-                  value={requestUrl}
-                  onChange={(e) => setRequestUrl(e.target.value)}
-                  className="h-8 text-xs flex-1"
-                />
-              </div>
-
-              <span className="text-muted-foreground font-medium text-xs self-start pt-2">Parameters:</span>
-              <div className="flex flex-col gap-2">
-                {parameters.length === 0 ? (
-                  <div className="flex items-center justify-between text-xs text-muted-foreground py-1">
-                    <span>No parameters configured.</span>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => setParameters([{ key: '', value: '' }])}
-                    >
-                      <Plus className="h-3 w-3 mr-1" /> Add Parameter
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {parameters.map((param, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Input
-                          placeholder="Key (e.g. group_path)"
-                          value={param.key}
-                          onChange={(e) => {
-                            const updated = [...parameters];
-                            updated[index] = { ...updated[index], key: e.target.value };
-                            setParameters(updated);
-                          }}
-                          className="h-8 text-xs w-1/3"
-                          aria-label={`Parameter Key ${index + 1}`}
-                        />
-                        <Input
-                          placeholder="Value"
-                          value={param.value}
-                          onChange={(e) => {
-                            const updated = [...parameters];
-                            updated[index] = { ...updated[index], value: e.target.value };
-                            setParameters(updated);
-                          }}
-                          className="h-8 text-xs flex-1"
-                          aria-label={param.key.trim() || `Parameter Value ${index + 1}`}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => {
-                            const updated = parameters.filter((_, i) => i !== index);
-                            setParameters(updated);
-                          }}
-                          aria-label={`Remove Parameter ${param.key || index + 1}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))}
-                    <div className="flex justify-start">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => setParameters([...parameters, { key: '', value: '' }])}
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> Add Parameter
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <span className="text-muted-foreground font-medium text-xs self-start pt-2">Auth Header:</span>
-              <div className="flex flex-col gap-1.5">
-                <Input
-                  placeholder="e.g. PRIVATE-TOKEN: $GITLAB_TOKEN or Authorization: Bearer <token>"
-                  value={authHeader}
-                  onChange={(e) => setAuthHeader(e.target.value)}
-                  className="h-8 text-xs bg-background"
-                  aria-label="Auth Header"
-                />
-              </div>
-
-              <span className="text-muted-foreground font-medium text-xs self-start pt-2">Request Body:</span>
-              <div className="flex flex-col gap-1.5">
-                <Textarea
-                  placeholder='{ "query": "..." } or payload body for POST requests'
-                  value={requestBody}
-                  onChange={(e) => setRequestBody(e.target.value)}
-                  className="font-mono text-xs min-h-24 resize-y bg-background"
-                  aria-label="Request Body"
-                />
-              </div>
-
-              <span className="text-muted-foreground font-medium text-xs">Match Strategy:</span>
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  aria-label="JQ Match Strategy"
-                  value={jqMatchBy}
-                  onChange={(e) => setJqMatchBy(e.target.value as MatchStrategy)}
-                  className="h-8 text-xs bg-muted border border-border rounded-md px-2 text-foreground"
-                >
-                  <option value="NAME">NAME (Element Name)</option>
-                  <option value="ALIAS">ALIAS (Element Alias)</option>
-                  <option value="LINK">LINK (Resource URL)</option>
-                </select>
-                {jqMatchBy === 'LINK' && (
-                  <Input
-                    placeholder="Key (e.g. repository)"
-                    value={jqMatchKey}
-                    onChange={(e) => setJqMatchKey(e.target.value)}
-                    className="h-8 text-xs w-48"
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Foreign JSON Sample & JQ Filter */}
-            <h3>Transformation</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
-                <Textarea
-                  value={samplePayload}
-                  onChange={(e) => setSamplePayload(e.target.value)}
-                  className="font-mono text-xs min-h-48 resize-y bg-background"
-                  placeholder="Paste response from GitLab / GitHub..."
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-muted-foreground font-medium text-xs">JQ Filter Expression:</label>
-                  <a
-                    href="https://jqlang.github.io/jq/manual/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-link hover:text-link-hover hover:underline inline-flex items-center gap-1"
-                    title="Open jq documentation"
-                  >
-                    <span>jq documentation</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-                <Textarea
-                  value={jqFilter}
-                  onChange={(e) => setJqFilter(e.target.value)}
-                  className="font-mono text-xs min-h-48 resize-y bg-background"
-                  placeholder="[.[] | { element: .title, value: (.upvotes | tostring), level: 'OK' }]"
-                />
-              </div>
-            </div>
-
-            {/* ── Preview Section ───────────────────────────────────────────── */}
-
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <label className="text-muted-foreground font-medium">
-                  Transformed Data (JSON):
-                  {parsedTransformedReq && (
-                    <span className="ml-1.5 text-muted-foreground font-normal">
-                      ({parsedTransformedReq.values.length} element
-                      {parsedTransformedReq.values.length === 1 ? '' : 's'})
-                    </span>
-                  )}
-                </label>
-
-                {transformedJson && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={handleCopyTransformedPayload}
-                  >
-                    {copiedPayload ? (
-                      <>
-                        <Check className="h-3 w-3 text-emerald-400 mr-1" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3 mr-1" /> Copy Payload
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-              <Textarea
-                value={transformedJson}
-                onChange={(e) => {
-                  setTransformedJson(e.target.value);
-                  setJqTransformError('');
-                }}
-                className="font-mono text-xs min-h-36 resize-y bg-background"
-                placeholder="Transformed metric element values (generated by Execute JQ Dry-Run or edited directly)..."
-                aria-label="Transformed Data"
-                data-testid="transformed-payload-preview"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-
-              <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleRunJqTransform}
-                  className="h-8 text-xs flex items-center gap-1.5"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                Execute JQ Dry-Run
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleCopyForeignCurl} className="h-8 text-xs">
-                {copiedScript ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1.5" /> : <Terminal className="h-3.5 w-3.5 mr-1.5" />}
-                {copiedScript ? 'Copied curl Request' : 'Copy curl Request'}
-              </Button>
-            </div>
-
-            {jqTransformError && (
-              <Alert variant="destructive" className="py-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">{jqTransformError}</AlertDescription>
-              </Alert>
-            )}
-
-            {parsedTransformedReq && jqPreviewMode === 'payload' && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    Transformed Request Payload ({parsedTransformedReq.values.length} element
-                    {parsedTransformedReq.values.length === 1 ? '' : 's'}):
-                  </span>
-                </div>
-                <pre
-                  className="font-mono text-xs p-3 bg-background rounded-md border border-border overflow-x-auto select-all text-foreground whitespace-pre"
-                >
-                  {JSON.stringify(parsedTransformedReq, null, 2)}
-                </pre>
-              </div>
-            )}
-
-            {parsedTransformedReq && (
-                <div className="flex items-center bg-muted/60 p-0.5 rounded-md border border-border">
-                  <button
-                      type="button"
-                      onClick={() => setJqPreviewMode('table')}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
-                          jqPreviewMode === 'table'
-                              ? 'bg-background text-foreground font-medium shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      aria-label="Table Preview"
-                  >
-                    <Table className="h-3.5 w-3.5" />
-                    <span>Table</span>
-                  </button>
-                  <button
-                      type="button"
-                      onClick={() => setJqPreviewMode('payload')}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded transition-colors cursor-pointer ${
-                          jqPreviewMode === 'payload'
-                              ? 'bg-background text-foreground font-medium shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      aria-label="Inspect Payload"
-                  >
-                    <FileCode className="h-3.5 w-3.5" />
-                    <span>Inspect Payload</span>
-                  </button>
-                </div>
-            )}
-            {parsedTransformedReq && jqPreviewMode === 'table' && jqReconciliation && (
-              <div className="mt-1">
-                <MetricDryRunPreview summary={jqReconciliation} metricName={metric.name} />
-              </div>
-            )}
-
-            {!parsedTransformedReq && !jqTransformError && (
-              <div className="p-4 text-center text-xs text-muted-foreground border border-dashed border-border rounded-md">
-                Click &ldquo;Execute JQ Dry-Run&rdquo; or enter transformed JSON data above to preview matched elements.
-              </div>
-            )}
-
-            <h3>Push</h3>
-            {/* Endpoint Information Banner */}
-            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-muted/40 rounded-lg border border-border text-xs">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-muted-foreground">API Endpoint:</span>
-                <span className="font-mono bg-muted text-foreground px-2 py-0.5 rounded border border-border text-[11px]">
-                  POST {endpointPath}
-                </span>
-              </div>
-              <div className="text-muted-foreground font-mono text-[11px]">
-                Session: {sessionId} • Metric: {metric.id}
-              </div>
-            </div>
-
-            {/* Scoped JWT Token & CI Automation Section */}
-            <div className="flex flex-col gap-2 p-3 bg-muted/20 rounded-lg border border-border text-xs">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2 font-medium text-foreground">
-                  <Key className="h-4 w-4 text-primary" />
-                  <span>Scoped Push Token (JWT)</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleGeneratePushToken}
-                    disabled={generatingToken}
-                    className="h-7 text-xs"
-                    data-testid="generate-push-token-btn"
-                  >
-                    {generatingToken ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                    ) : copiedToken ? (
-                      <Check className="h-3 w-3 text-emerald-400 mr-1.5" />
-                    ) : (
-                      <Key className="h-3 w-3 mr-1.5" />
-                    )}
-                    {copiedToken ? 'Copied Push JWT' : pushToken ? 'Regenerate & Copy JWT' : 'Generate & Copy Push JWT'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyCiScript}
-                    className="h-7 text-xs"
-                    data-testid="copy-ci-script-btn"
-                  >
-                    {copiedCiScript ? <Check className="h-3 w-3 text-emerald-400 mr-1.5" /> : <Terminal className="h-3 w-3 mr-1.5" />}
-                    {copiedCiScript ? 'Copied CI Script' : 'Copy CI Automation Script'}
-                  </Button>
-                </div>
-              </div>
-
-              {pushToken && (
-                <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    readOnly
-                    value={`PORTHOLE_TOKEN=${pushToken}`}
-                    className="font-mono text-[11px] h-7 bg-background select-all"
-                    data-testid="push-token-input"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`PORTHOLE_TOKEN=${pushToken}`);
-                      setCopiedToken(true);
-                      setTimeout(() => setCopiedToken(false), 2000);
-                    }}
-                    className="h-7 text-xs shrink-0"
-                  >
-                    {copiedToken ? <Check className="h-3 w-3 text-emerald-400 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                    Copy
-                  </Button>
-                </div>
-              )}
-
-              {tokenError && (
-                <div className="text-destructive text-[11px] mt-1">
-                  {tokenError}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
                 {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
                 Push Transformed Values
               </Button>
             </div>
+
+            {/* ── Feedback & Diagnostic Banners ─────────────────────────────────── */}
+            {submitError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{submitError}</AlertDescription>
+              </Alert>
+            )}
+
+            {submitResult && (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex flex-col gap-1.5 text-xs text-foreground">
+                <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                  <Check className="h-4 w-4" />
+                  Batch push completed successfully! Updated {submitResult.updatedCount} element(s).
+                </div>
+                {submitResult.unmatchedElements && submitResult.unmatchedElements.length > 0 && (
+                  <div className="text-amber-400 text-xs mt-1">
+                    ⚠️ Unmatched element(s): {submitResult.unmatchedElements.join(', ')}
+                  </div>
+                )}
+                {submitResult.warnings && submitResult.warnings.length > 0 && (
+                  <div className="text-muted-foreground text-xs mt-1">
+                    {submitResult.warnings.map((w, i) => (
+                      <div key={i}>• {w}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* ── Feedback & Diagnostic Banners ─────────────────────────────────── */}
-        {submitError && (
-          <Alert variant="destructive" className="py-2">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">{submitError}</AlertDescription>
-          </Alert>
-        )}
-
-        {submitResult && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex flex-col gap-1.5 text-xs text-foreground">
-            <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-              <Check className="h-4 w-4" />
-              Batch push completed successfully! Updated {submitResult.updatedCount} element(s).
-            </div>
-            {submitResult.unmatchedElements && submitResult.unmatchedElements.length > 0 && (
-              <div className="text-amber-400 text-xs mt-1">
-                ⚠️ Unmatched element(s): {submitResult.unmatchedElements.join(', ')}
-              </div>
-            )}
-            {submitResult.warnings && submitResult.warnings.length > 0 && (
-              <div className="text-muted-foreground text-xs mt-1">
-                {submitResult.warnings.map((w, i) => (
-                  <div key={i}>• {w}</div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* ── Load Transformation Modal ───────────────────────────────────────── */}
       <Dialog open={isLoadModalOpen} onOpenChange={setIsLoadModalOpen}>
