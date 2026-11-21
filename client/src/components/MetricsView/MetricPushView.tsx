@@ -770,14 +770,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   <h3 className="text-sm font-semibold text-foreground">
                     Source and Data
                   </h3>
-                  <span className="text-xs text-muted-foreground font-normal truncate max-w-sm">
-                    {httpMethod} {requestUrl ? requestUrl.split('?')[0] : 'No endpoint URL'}
-                  </span>
-                  {parameters.length > 0 && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground border border-border font-mono">
-                      {parameters.filter((p) => p.key.trim()).length} param{parameters.filter((p) => p.key.trim()).length === 1 ? '' : 's'}
-                    </span>
-                  )}
                 </div>
                 <ChevronDown
                   className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
@@ -944,10 +936,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   {parsedTransformedReq ? (
                     <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
                       {parsedTransformedReq.values.length} item{parsedTransformedReq.values.length === 1 ? '' : 's'} transformed
-                    </span>
-                  ) : samplePayload ? (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground border border-border">
-                      Sample payload loaded
                     </span>
                   ) : null}
                 </div>
@@ -1137,9 +1125,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   <h3 className="text-sm font-semibold text-foreground">
                     Push
                   </h3>
-                  <span className="font-mono text-[11px] text-muted-foreground truncate max-w-sm">
-                    POST {endpointPath}
-                  </span>
                 </div>
                 <ChevronDown
                   className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
