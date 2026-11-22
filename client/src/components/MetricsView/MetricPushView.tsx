@@ -1474,7 +1474,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 The JQ filter shapes the raw API response into a JSON array of metric element objects. Each object in the array supports:
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground pl-1 mt-1">
-                <li><code className="text-foreground font-mono font-medium">element</code> <span className="text-muted-foreground">(string, required)</span>: Element name or identifier to match.</li>
+                <li><code className="text-foreground font-mono font-medium">element</code> <span className="text-muted-foreground">(string, required)</span>: Element name or identifier to match. Multiple aliases can be set as a comma-separated list on an element (e.g. <span className="font-mono text-foreground">service-a, repo-slug, group:project</span>).</li>
                 <li><code className="text-foreground font-mono font-medium">value</code> <span className="text-muted-foreground">(string, required)</span>: Display value (e.g. <span className="font-mono text-foreground">"92% coverage"</span>, <span className="font-mono text-foreground">"3 open MRs"</span>).</li>
                 <li><code className="text-foreground font-mono font-medium">level</code> <span className="text-muted-foreground">(string, required)</span>: Status severity &mdash; <span className="font-mono text-emerald-400">"OK"</span>, <span className="font-mono text-amber-400">"WARNING"</span>, <span className="font-mono text-rose-400">"ERROR"</span>, or <span className="font-mono text-muted-foreground">"UNKNOWN"</span>.</li>
                 <li><code className="text-foreground font-mono font-medium">description</code> <span className="text-muted-foreground">(string, optional)</span>: Detailed tooltip or hover text.</li>
@@ -1490,7 +1490,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 4. Dry-Run & Reconciliation
               </h4>
               <p className="text-muted-foreground">
-                Paste a sample JSON payload in the <strong>Sample Input Payload</strong> box and click <strong>Execute JQ Dry-Run</strong>. The client evaluates the filter and compares matched element names against the current session elements, highlighting any unmatched or missing elements before sending data.
+                Paste a sample JSON payload in the <strong>Sample Input Payload</strong> box and click <strong>Execute JQ Dry-Run</strong>. The client evaluates the filter and compares matched element names against the current session elements, highlighting any unmatched or missing elements before sending data. If an element uses different identifiers across tools, add them as comma-separated aliases in the element settings.
               </p>
             </div>
 

@@ -146,6 +146,7 @@ describe('MetricPushView (Subpage)', () => {
     expect(screen.getByText(/Overview & Data Flow/i)).toBeInTheDocument();
     expect(screen.getByText(/Parameters & Placeholders/i)).toBeInTheDocument();
     expect(screen.getByText(/JQ Filter & Payload Schema/i)).toBeInTheDocument();
+    expect(screen.getByText(/Multiple aliases can be set as a comma-separated list/i)).toBeInTheDocument();
     expect(screen.getByText(/Automated CI\/CD Pushes/i)).toBeInTheDocument();
 
     // Close button dismisses modal
