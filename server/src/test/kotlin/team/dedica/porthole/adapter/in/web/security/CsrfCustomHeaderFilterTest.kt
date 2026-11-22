@@ -65,7 +65,7 @@ class CsrfCustomHeaderFilterTest {
 
     @Test
     fun `PUT to api without custom header returns 403`() {
-        val res = doFilter(put("/api/sessions/1/landmarks/2/metrics/3"))
+        val res = doFilter(put("/api/sessions/1/elements/2/metrics/3"))
         assertEquals(HttpStatus.FORBIDDEN, res.status)
     }
 
@@ -77,7 +77,7 @@ class CsrfCustomHeaderFilterTest {
 
     @Test
     fun `DELETE to api without custom header returns 403`() {
-        val res = doFilter(delete("/api/sessions/1/landmarks/2"))
+        val res = doFilter(delete("/api/sessions/1/elements/2"))
         assertEquals(HttpStatus.FORBIDDEN, res.status)
     }
 

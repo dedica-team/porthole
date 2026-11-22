@@ -9,7 +9,7 @@ import team.dedica.porthole.adapter.`in`.web.dto.MetricTransformationDto
 import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesRequest
 import team.dedica.porthole.adapter.`in`.web.dto.PushMetricValuesResponse
 import team.dedica.porthole.adapter.`in`.web.dto.PushTokenResponse
-import team.dedica.porthole.adapter.`in`.web.dto.SetLandmarkMetricRequest
+import team.dedica.porthole.adapter.`in`.web.dto.SetElementMetricRequest
 import team.dedica.porthole.adapter.`in`.web.security.PortholePrincipal
 import team.dedica.porthole.application.session.metrics.*
 import team.dedica.porthole.domain.QualityLevel
@@ -152,17 +152,17 @@ class MetricController(
     }
 }
 
-@Controller("/api/sessions/{id}/landmarks/{landmarkId}/metrics")
-class LandmarkMetricController(
+@Controller("/api/sessions/{id}/elements/{elementId}/metrics")
+class ElementMetricController(
     private val setLandmarkMetricUseCase: SetLandmarkMetricUseCase,
     private val clearLandmarkMetricUseCase: ClearLandmarkMetricUseCase,
 ) {
     @Put("/{metricId}")
-    fun setLandmarkMetric(
+    fun setElementMetric(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         @PathVariable metricId: String,
-        @Valid @Body request: SetLandmarkMetricRequest,
+        @Valid @Body request: SetElementMetricRequest,
         user: PortholePrincipal
     ): HttpResponse<*> {
         user.requireFullAccess()
@@ -172,7 +172,7 @@ class LandmarkMetricController(
         return HttpResponse.ok(
             setLandmarkMetricUseCase.execute(
                 UUID.fromString(id),
-                UUID.fromString(landmarkId),
+                UUID.fromString(elementId),
                 UUID.fromString(metricId),
                 request.value,
                 level,
@@ -186,9 +186,9 @@ class LandmarkMetricController(
     }
 
     @Delete("/{metricId}")
-    fun clearLandmarkMetric(
+    fun clearElementMetric(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         @PathVariable metricId: String,
         user: PortholePrincipal
     ): HttpResponse<*> {
@@ -196,7 +196,7 @@ class LandmarkMetricController(
         return HttpResponse.ok(
             clearLandmarkMetricUseCase.execute(
                 UUID.fromString(id),
-                UUID.fromString(landmarkId),
+                UUID.fromString(elementId),
                 UUID.fromString(metricId),
                 user.userId
             )

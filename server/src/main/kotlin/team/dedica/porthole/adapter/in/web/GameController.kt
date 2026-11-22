@@ -30,31 +30,31 @@ class GameController(
         return HttpResponse.ok(if (state.gameEnabled) state.gameState else GameState())
     }
 
-    @Post("/watchtower/{landmarkId}/enter")
+    @Post("/watchtower/{elementId}/enter")
     fun enterWatchtower(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             enterWatchtowerUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
-                UUID.fromString(landmarkId),
+                UUID.fromString(elementId),
             )
         )
 
-    @Post("/watchtower/{landmarkId}/leave")
+    @Post("/watchtower/{elementId}/leave")
     fun leaveWatchtower(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             leaveWatchtowerUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
-                UUID.fromString(landmarkId),
+                UUID.fromString(elementId),
             )
         )
 

@@ -31,6 +31,7 @@ Porthole is a collaborative application landscape mapping and quality tracking p
 - **Metric Definitions**: Map-wide quality metrics (e.g., Twelve-Factor criteria, SLOs, latency, test coverage) creatable manually or via built-in templates.
 - **Metric Evaluations**: Per-landmark evaluations with a value, external link (dashboard/runbook), and level (`NONE`, `OK`, `WARNING`, `ERROR`).
 - **Worst-of Roll-up**: Landmarks display a status indicator reflecting their most severe metric level (`ERROR` > `WARNING` > `OK` > `NONE`), radiating heatmaps in X-ray view.
+- **Automated Metric Push & Ingestion API**: Headless REST API (`POST /api/sessions/{id}/metrics/{metricId}/values`) and JQ transformation pipeline for batch ingestion from CI/CD runners (GitLab, GitHub, SonarQube, Wiz) authenticated via scoped HMAC JWTs. Complete OpenAPI specification available in `server/src/main/resources/openapi.yaml` and served live at `GET /api/openapi.yaml`.
 
 ### 5. Collaboration, Matrix & Chores
 - **Collaborator Matrix**: Responsibility grid mapping team members to landmarks with engagement levels (`NONE`, `LOW`, `MEDIUM`, `HIGH`).

@@ -28,16 +28,17 @@ private const val DESCRIPTION_MAX_LENGTH = 2000
 private const val LINK_MAX_LENGTH = 2000
 
 @Introspected
-data class PlaceLandmarkRequest(
+data class PlaceElementRequest(
     val q: Int,
     val r: Int,
     @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val name: String,
     val type: String = "KEEP",
     val aliases: List<@Size(max = NAME_MAX_LENGTH) String>? = null,
 )
+typealias PlaceLandmarkRequest = PlaceElementRequest
 
 @Introspected
-data class EditLandmarkRequest(
+data class EditElementRequest(
     @field:Size(max = NAME_MAX_LENGTH) val name: String?,
     val type: String?,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
@@ -52,6 +53,7 @@ data class EditLandmarkRequest(
     val aliases: List<@Size(max = NAME_MAX_LENGTH) String>? = null,
     val clearAliases: Boolean = false,
 )
+typealias EditLandmarkRequest = EditElementRequest
 
 @Introspected
 data class CreateConnectionRequest(
@@ -115,7 +117,7 @@ data class EditMetricRequest(
     val clearLink: Boolean = false,
 )
 @Introspected
-data class SetLandmarkMetricRequest(
+data class SetElementMetricRequest(
     @field:Size(max = 500) val value: String? = null,
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
     @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
@@ -123,11 +125,13 @@ data class SetLandmarkMetricRequest(
     val level: String,   // "NONE" | "OK" | "WARNING" | "ERROR"
     val badges: Map<@Size(max = 100) String, @Size(max = DESCRIPTION_MAX_LENGTH) String> = emptyMap(),
 )
+typealias SetLandmarkMetricRequest = SetElementMetricRequest
+
 @Introspected
 data class SetCollaborationModeRequest(val mode: String) // "OPEN" | "REQUEST" | "PRIVATE"
 
 @Introspected
-data class CreateUnpositionedLandmarkRequest(
+data class CreateUnpositionedElementRequest(
     @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val name: String,
     val type: String = "KEEP",
     @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
@@ -136,12 +140,14 @@ data class CreateUnpositionedLandmarkRequest(
     @field:Size(max = LINK_MAX_LENGTH) val link: String? = null,
     val aliases: List<@Size(max = NAME_MAX_LENGTH) String>? = null,
 )
+typealias CreateUnpositionedLandmarkRequest = CreateUnpositionedElementRequest
 
 @Introspected
-data class PositionLandmarkRequest(
+data class PositionElementRequest(
     val q: Int,
     val r: Int,
 )
+typealias PositionLandmarkRequest = PositionElementRequest
 
 @Introspected
 data class EditCollaboratorMatrixRequest(

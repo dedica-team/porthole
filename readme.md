@@ -130,3 +130,15 @@ Admins gain the following additional capabilities:
 - Admin status is resolved server-side on every request. The `isAdmin` flag sent to the frontend is informational only — it cannot be used to escalate privileges.
 - To revoke access: remove the UUID from `PORTHOLE_ADMIN_USER_IDS` and restart the server.
 
+---
+
+## REST API & OpenAPI Specification
+
+Porthole serves its full OpenAPI 3.0.3 specification for metric ingestion and map automation over HTTP:
+
+- **OpenAPI Spec URL**: `/api/openapi.yaml` (also available at `/openapi.yaml`)
+- **Local development URL**: `http://localhost:8080/api/openapi.yaml`
+- **File path in repository**: `server/src/main/resources/openapi.yaml`
+
+The specification covers endpoints for batch metric pushes (`POST /api/sessions/{id}/metrics/{metricId}/values`), scoped JWT push tokens (`POST /api/sessions/{id}/metrics/{metricId}/token`), transformations, and single element metrics.
+
