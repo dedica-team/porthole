@@ -332,7 +332,7 @@ export async function setCollaborationMode(id: string, mode: CollaborationMode):
   return handleResponse<SessionState>(res);
 }
 
-export async function placeLandmark(
+export async function placeElement(
   mapId: string,
   q: number,
   r: number,
@@ -340,28 +340,30 @@ export async function placeLandmark(
   type: LandmarkType = 'KEEP',
   aliases?: string[],
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/elements`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ q, r, name, type, aliases: aliases ?? null }),
   });
   return handleResponse<SessionState>(res);
 }
+export const placeLandmark = placeElement;
 
-export async function removeLandmark(
+export async function removeElement(
   mapId: string,
-  landmarkId: string,
+  elementId: string,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/elements/${encodeURIComponent(elementId)}`, {
     method: 'DELETE',
     headers: authHeaders(),
   });
   return handleResponse<SessionState>(res);
 }
+export const removeLandmark = removeElement;
 
-export async function editLandmark(
+export async function editElement(
   mapId: string,
-  landmarkId: string,
+  elementId: string,
   name?: string,
   type?: LandmarkType,
   description?: string,
@@ -375,7 +377,7 @@ export async function editLandmark(
   aliases?: string[],
   clearAliases?: boolean,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/elements/${encodeURIComponent(elementId)}`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({
@@ -396,6 +398,7 @@ export async function editLandmark(
   });
   return handleResponse<SessionState>(res);
 }
+export const editLandmark = editElement;
 
 export async function createGroup(mapId: string, name: string, color: string, description?: string, link?: string): Promise<SessionState> {
   const res = await fetch(`${BASE_URL}/sessions/${mapId}/groups`, {
@@ -539,9 +542,9 @@ export async function removeMetric(mapId: string, metricId: string): Promise<Ses
   return handleResponse<SessionState>(res);
 }
 
-export async function setLandmarkMetric(
+export async function setElementMetric(
   mapId: string,
-  landmarkId: string,
+  elementId: string,
   metricId: string,
   value: string | undefined,
   level: QualityLevel,
@@ -551,7 +554,7 @@ export async function setLandmarkMetric(
   description?: string,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
+    `${BASE_URL}/sessions/${mapId}/elements/${encodeURIComponent(elementId)}/metrics/${encodeURIComponent(metricId)}`,
     {
       method: 'PUT',
       headers: authHeaders(),
@@ -560,14 +563,15 @@ export async function setLandmarkMetric(
   );
   return handleResponse<SessionState>(res);
 }
+export const setLandmarkMetric = setElementMetric;
 
-export async function clearLandmarkMetric(
+export async function clearElementMetric(
   mapId: string,
-  landmarkId: string,
+  elementId: string,
   metricId: string,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/metrics/${encodeURIComponent(metricId)}`,
+    `${BASE_URL}/sessions/${mapId}/elements/${encodeURIComponent(elementId)}/metrics/${encodeURIComponent(metricId)}`,
     {
       method: 'DELETE',
       headers: authHeaders(),
@@ -575,6 +579,7 @@ export async function clearLandmarkMetric(
   );
   return handleResponse<SessionState>(res);
 }
+export const clearLandmarkMetric = clearElementMetric;
 
 export async function pushMetricValues(
   mapId: string,
@@ -646,7 +651,7 @@ export async function fetchMetricTemplates(): Promise<MetricTemplate[]> {
   return handleResponse<MetricTemplate[]>(res);
 }
 
-export async function createUnpositionedLandmark(
+export async function createUnpositionedElement(
   mapId: string,
   name: string,
   type: LandmarkType = 'KEEP',
@@ -656,7 +661,7 @@ export async function createUnpositionedLandmark(
   links?: Record<string, string>,
   aliases?: string[],
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/unpositioned`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/elements/unpositioned`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
@@ -671,20 +676,22 @@ export async function createUnpositionedLandmark(
   });
   return handleResponse<SessionState>(res);
 }
+export const createUnpositionedLandmark = createUnpositionedElement;
 
-export async function positionLandmark(
+export async function positionElement(
   mapId: string,
-  landmarkId: string,
+  elementId: string,
   q: number,
   r: number,
 ): Promise<SessionState> {
-  const res = await fetch(`${BASE_URL}/sessions/${mapId}/landmarks/${encodeURIComponent(landmarkId)}/position`, {
+  const res = await fetch(`${BASE_URL}/sessions/${mapId}/elements/${encodeURIComponent(elementId)}/position`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({ q, r }),
   });
   return handleResponse<SessionState>(res);
 }
+export const positionLandmark = positionElement;
 
 // ── Collaborator Matrix ──────────────────────────────────────────────────────
 
@@ -703,12 +710,12 @@ export async function editCollaboratorMatrix(
 
 export async function setMatrixEntry(
   mapId: string,
-  landmarkId: string,
+  elementId: string,
   collaboratorId: string,
   level: MatrixLevel,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
+    `${BASE_URL}/sessions/${mapId}/collaborator-matrix/elements/${encodeURIComponent(elementId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     {
       method: 'PUT',
       headers: authHeaders(),
@@ -720,11 +727,11 @@ export async function setMatrixEntry(
 
 export async function clearMatrixEntry(
   mapId: string,
-  landmarkId: string,
+  elementId: string,
   collaboratorId: string,
 ): Promise<SessionState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${mapId}/collaborator-matrix/landmarks/${encodeURIComponent(landmarkId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
+    `${BASE_URL}/sessions/${mapId}/collaborator-matrix/elements/${encodeURIComponent(elementId)}/collaborators/${encodeURIComponent(collaboratorId)}`,
     {
       method: 'DELETE',
       headers: authHeaders(),
@@ -979,11 +986,11 @@ export async function deleteChoreList(mapId: string, listId: string): Promise<vo
 export async function updateChoreEntry(
   mapId: string,
   listId: string,
-  landmarkId: string,
+  elementId: string,
   patch: { state?: ChoreEntryState; assigneeId?: string | null; clearAssignee?: boolean; link?: string | null; clearLink?: boolean; note?: string | null; clearNote?: boolean },
 ): Promise<ChoreList> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/entries/${encodeURIComponent(landmarkId)}`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/chore-lists/${encodeURIComponent(listId)}/entries/${encodeURIComponent(elementId)}`,
     {
       method: 'PATCH',
       headers: authHeaders(),
@@ -1124,17 +1131,17 @@ export async function fetchGameState(mapId: string): Promise<GameState> {
   return handleResponse<GameState>(res);
 }
 
-export async function enterWatchtower(mapId: string, landmarkId: string): Promise<GameState> {
+export async function enterWatchtower(mapId: string, elementId: string): Promise<GameState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game/watchtower/${encodeURIComponent(landmarkId)}/enter`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game/watchtower/${encodeURIComponent(elementId)}/enter`,
     { method: 'POST', headers: authHeaders() },
   );
   return handleResponse<GameState>(res);
 }
 
-export async function leaveWatchtower(mapId: string, landmarkId: string): Promise<GameState> {
+export async function leaveWatchtower(mapId: string, elementId: string): Promise<GameState> {
   const res = await fetch(
-    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game/watchtower/${encodeURIComponent(landmarkId)}/leave`,
+    `${BASE_URL}/sessions/${encodeURIComponent(mapId)}/game/watchtower/${encodeURIComponent(elementId)}/leave`,
     { method: 'POST', headers: authHeaders() },
   );
   return handleResponse<GameState>(res);

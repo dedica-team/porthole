@@ -39,6 +39,12 @@ micronaut:
       - pattern: /api/auth/**
         access:
           - isAnonymous()
+      - pattern: /api/openapi.yaml
+        access:
+          - isAnonymous()
+      - pattern: /openapi.yaml
+        access:
+          - isAnonymous()
       - pattern: /oauth2/**
         access:
           - isAnonymous()

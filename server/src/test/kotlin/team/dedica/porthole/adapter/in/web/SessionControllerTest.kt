@@ -128,7 +128,7 @@ class SessionControllerTest {
     fun `GET map by id returns 200`() {
         val response = get("/api/sessions/$mapId")
         assertEquals(200, response.statusCode())
-        assertEquals(mapId.toString(), json(response)["id"].asText())
+        assertEquals(mapId.toString(), json(response)["id"].asString())
     }
 
     @Test
@@ -144,7 +144,7 @@ class SessionControllerTest {
             "attachment; filename=\"session-$mapId.json\"",
             response.headers().firstValue("Content-Disposition").orElse(null)
         )
-        assertEquals(mapId.toString(), json(response)["id"].asText())
+        assertEquals(mapId.toString(), json(response)["id"].asString())
     }
 
     @Test
@@ -152,39 +152,39 @@ class SessionControllerTest {
         assertEquals(403, get("/api/sessions/$mapId/export", bearer = viewerToken).statusCode())
     }
 
-    // ── Landmarks ──────────────────────────────────────────────────────────────
+    // ── Elements ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `POST landmark places landmark and returns 200`() {
+    fun `POST element places element and returns 200`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Iron Keep", "type" to "KEEP")
-        val response = post("/api/sessions/$mapId/landmarks", body)
+        val response = post("/api/sessions/$mapId/elements", body)
         assertEquals(200, response.statusCode())
 
         val state = sessionStatePort.findById(mapId)!!
         val lm = state.landmarks.values.first { it.name == "Iron Keep" }
-        assertEquals("Iron Keep", json(response)["landmarks"][lm.id.toString()]["name"].asText())
+        assertEquals("Iron Keep", json(response)["landmarks"][lm.id.toString()]["name"].asString())
     }
 
     @Test
-    fun `POST landmark with unknown type returns 400`() {
+    fun `POST element with unknown type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Test", "type" to "DRAGON_LAIR")
-        assertEquals(400, post("/api/sessions/$mapId/landmarks", body).statusCode())
+        assertEquals(400, post("/api/sessions/$mapId/elements", body).statusCode())
     }
 
     @Test
-    fun `POST landmark with removed WELL type returns 400`() {
+    fun `POST element with removed WELL type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Old Well", "type" to "WELL")
-        assertEquals(400, post("/api/sessions/$mapId/landmarks", body).statusCode())
+        assertEquals(400, post("/api/sessions/$mapId/elements", body).statusCode())
     }
 
     @Test
-    fun `POST landmark with DEPRECATED_WELL type returns 400`() {
+    fun `POST element with DEPRECATED_WELL type returns 400`() {
         val body = mapOf("q" to 0, "r" to 0, "name" to "Old Well", "type" to "DEPRECATED_WELL")
-        assertEquals(400, post("/api/sessions/$mapId/landmarks", body).statusCode())
+        assertEquals(400, post("/api/sessions/$mapId/elements", body).statusCode())
     }
 
     @Test
-    fun `POST unpositioned landmark with null groupId creates landmark without group`() {
+    fun `POST unpositioned element with null groupId creates element without group`() {
         val body = mapOf(
             "name" to "Floating Tower",
             "type" to "KEEP",
@@ -192,7 +192,7 @@ class SessionControllerTest {
             "groupId" to null,
             "link" to null,
         )
-        assertEquals(200, post("/api/sessions/$mapId/landmarks/unpositioned", body).statusCode())
+        assertEquals(200, post("/api/sessions/$mapId/elements/unpositioned", body).statusCode())
 
         val landmark = sessionStatePort.findById(mapId)!!.landmarks.values.first { it.name == "Floating Tower" }
         assertNull(landmark.coordinate)
@@ -200,7 +200,7 @@ class SessionControllerTest {
     }
 
     @Test
-    fun `POST unpositioned landmark with groupId assigns group`() {
+    fun `POST unpositioned element with groupId assigns group`() {
         val groupId = UUID.randomUUID()
         val state = sessionStatePort.findById(mapId)!!
         state.groups[groupId] = LandmarkGroup(groupId, "Ops", "#00ffcc")
@@ -213,7 +213,7 @@ class SessionControllerTest {
             "groupId" to groupId.toString(),
             "link" to "https://example.test/ops-buffer",
         )
-        assertEquals(200, post("/api/sessions/$mapId/landmarks/unpositioned", body).statusCode())
+        assertEquals(200, post("/api/sessions/$mapId/elements/unpositioned", body).statusCode())
 
         val landmark = sessionStatePort.findById(mapId)!!.landmarks.values.first { it.name == "Ops Buffer" }
         assertEquals(groupId, landmark.groupId)
@@ -222,13 +222,13 @@ class SessionControllerTest {
     }
 
     @Test
-    fun `DELETE landmark removes it`() {
+    fun `DELETE element removes it`() {
         val lmId = UUID.nameUUIDFromBytes("my-tower".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "My Tower", coordinate = HexCoordinate(1, 0))
         sessionStatePort.save(state)
 
-        assertEquals(200, delete("/api/sessions/$mapId/landmarks/$lmId").statusCode())
+        assertEquals(200, delete("/api/sessions/$mapId/elements/$lmId").statusCode())
     }
 
     // ── Tiles ──────────────────────────────────────────────────────────────────
@@ -261,8 +261,8 @@ class SessionControllerTest {
         val response = patch("/api/sessions/$mapId", body)
         assertEquals(200, response.statusCode())
         val tree = json(response)
-        assertEquals("My Campaign", tree["name"].asText())
-        assertEquals("A great adventure", tree["description"].asText())
+        assertEquals("My Campaign", tree["name"].asString())
+        assertEquals("A great adventure", tree["description"].asString())
     }
 
     @Test
@@ -274,7 +274,7 @@ class SessionControllerTest {
         val response = patch("/api/sessions/$mapId", body)
         assertEquals(200, response.statusCode())
         val tree = json(response)
-        assertEquals("New Name", tree["name"].asText())
+        assertEquals("New Name", tree["name"].asString())
         assertTrue(isNullOrMissing(tree["description"]))
     }
 
@@ -320,7 +320,7 @@ class SessionControllerTest {
     }
 
     @Test
-    fun `PUT landmark metric sets entry and returns 200`() {
+    fun `PUT element metric sets entry and returns 200`() {
         val lmId = UUID.nameUUIDFromBytes("guard-tower".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Guard Tower", coordinate = HexCoordinate(0, 0))
@@ -332,7 +332,7 @@ class SessionControllerTest {
         val metricId = json(metricResponse)["metrics"].propertyNames().first()
 
         val entryBody = mapOf("value" to null, "level" to "NONE", "link" to "https://example.com/report", "linkText" to "Report")
-        val response = put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", entryBody)
+        val response = put("/api/sessions/$mapId/elements/$lmId/metrics/$metricId", entryBody)
         assertEquals(200, response.statusCode())
         val entry = json(response)["landmarks"][lmId.toString()]["metrics"][metricId]
         assertEquals("https://example.com/report", entry["link"].stringValue())
@@ -340,7 +340,7 @@ class SessionControllerTest {
     }
 
     @Test
-    fun `PUT landmark metric with unknown level returns 400`() {
+    fun `PUT element metric with unknown level returns 400`() {
         val lmId = UUID.nameUUIDFromBytes("beacon".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Beacon", coordinate = HexCoordinate(1, 1))
@@ -351,11 +351,11 @@ class SessionControllerTest {
         val metricId = json(metricResponse)["metrics"].propertyNames().first()
 
         val entryBody = mapOf("value" to "99 %", "level" to "CRITICAL")
-        assertEquals(400, put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", entryBody).statusCode())
+        assertEquals(400, put("/api/sessions/$mapId/elements/$lmId/metrics/$metricId", entryBody).statusCode())
     }
 
     @Test
-    fun `DELETE landmark metric clears entry`() {
+    fun `DELETE element metric clears entry`() {
         val lmId = UUID.nameUUIDFromBytes("scout-post".toByteArray())
         val state = sessionStatePort.findById(mapId)!!
         state.landmarks[lmId] = Landmark(id = lmId, name = "Scout Post", coordinate = HexCoordinate(0, 1))
@@ -365,8 +365,8 @@ class SessionControllerTest {
         val metricResponse = post("/api/sessions/$mapId/metrics", metricBody)
         val metricId = json(metricResponse)["metrics"].propertyNames().first()
 
-        assertEquals(200, put("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId", mapOf("value" to "ok", "level" to "OK")).statusCode())
-        assertEquals(200, delete("/api/sessions/$mapId/landmarks/$lmId/metrics/$metricId").statusCode())
+        assertEquals(200, put("/api/sessions/$mapId/elements/$lmId/metrics/$metricId", mapOf("value" to "ok", "level" to "OK")).statusCode())
+        assertEquals(200, delete("/api/sessions/$mapId/elements/$lmId/metrics/$metricId").statusCode())
     }
 
     // ── POST /api/sessions – mapType and mapSize ───────────────────────────────
@@ -386,7 +386,7 @@ class SessionControllerTest {
         assertEquals(200, response.statusCode())
         val tiles = json(response)["map"]["tiles"]
         assertEquals(625, tiles.size())
-        tiles.forEach { tile -> assertEquals("GRASS", tile["terrain"].asText()) }
+        tiles.forEach { tile -> assertEquals("GRASS", tile["terrain"].asString()) }
     }
 
     @Test
@@ -419,7 +419,7 @@ class SessionControllerTest {
         val response = post("/api/sessions", body)
         assertEquals(200, response.statusCode())
         val tiles = json(response)["map"]["tiles"]
-        val waterCount = tiles.count { it["terrain"].asText() == "WATER" }
+        val waterCount = tiles.count { it["terrain"].asString() == "WATER" }
         assertTrue(waterCount > tiles.size() / 2, "Sea map should be mostly water")
     }
 

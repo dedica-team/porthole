@@ -241,6 +241,8 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
   }, [landmarks, parsedTransformedReq]);
 
   // ── Transformation State & Dirty Tracking ──────────────────────────────────
+  const isSamplePayloadError = jqTransformError === 'Input data sample is not valid JSON.';
+
   const selectedTransformation = useMemo(() => {
     return transformations.find((p) => p.id === selectedTransformationId) || null;
   }, [transformations, selectedTransformationId]);
@@ -770,14 +772,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   <h3 className="text-sm font-semibold text-foreground">
                     Source and Data
                   </h3>
-                  <span className="text-xs text-muted-foreground font-normal truncate max-w-sm">
-                    {httpMethod} {requestUrl ? requestUrl.split('?')[0] : 'No endpoint URL'}
-                  </span>
-                  {parameters.length > 0 && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground border border-border font-mono">
-                      {parameters.filter((p) => p.key.trim()).length} param{parameters.filter((p) => p.key.trim()).length === 1 ? '' : 's'}
-                    </span>
-                  )}
                 </div>
                 <ChevronDown
                   className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
@@ -945,10 +939,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
                       {parsedTransformedReq.values.length} item{parsedTransformedReq.values.length === 1 ? '' : 's'} transformed
                     </span>
-                  ) : samplePayload ? (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground border border-border">
-                      Sample payload loaded
-                    </span>
                   ) : null}
                 </div>
                 <ChevronDown
@@ -962,13 +952,35 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 <div className="p-4 border-t border-border/60 flex flex-col gap-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-muted-foreground font-medium text-xs">Input Data / Sample:</label>
+                        {isSamplePayloadError && (
+                          <span className="text-[11px] text-destructive flex items-center gap-1 font-medium">
+                            <AlertCircle className="h-3 w-3" />
+                            Invalid JSON
+                          </span>
+                        )}
+                      </div>
                       <Textarea
                         value={samplePayload}
-                        onChange={(e) => setSamplePayload(e.target.value)}
-                        className="font-mono text-xs min-h-48 resize-y bg-background"
+                        onChange={(e) => {
+                          setSamplePayload(e.target.value);
+                          if (jqTransformError === 'Input data sample is not valid JSON.') {
+                            setJqTransformError('');
+                          }
+                        }}
+                        className={`font-mono text-xs min-h-48 resize-y bg-background ${
+                          isSamplePayloadError ? 'border-destructive focus-visible:ring-destructive' : ''
+                        }`}
                         placeholder="Paste response from GitLab / GitHub..."
+                        aria-invalid={isSamplePayloadError ? true : undefined}
                       />
+                      {isSamplePayloadError && (
+                        <p className="text-xs text-destructive flex items-center gap-1 mt-0.5" role="alert">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          <span>Input data sample is not valid JSON.</span>
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
@@ -1054,7 +1066,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                     </Button>
                   </div>
 
-                  {jqTransformError && (
+                  {jqTransformError && !isSamplePayloadError && (
                     <Alert variant="destructive" className="py-2">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription className="text-xs">{jqTransformError}</AlertDescription>
@@ -1137,9 +1149,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   <h3 className="text-sm font-semibold text-foreground">
                     Push
                   </h3>
-                  <span className="font-mono text-[11px] text-muted-foreground truncate max-w-sm">
-                    POST {endpointPath}
-                  </span>
                 </div>
                 <ChevronDown
                   className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
@@ -1234,6 +1243,14 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                       </div>
                     )}
                   </div>
+
+                  {/* Push Transformed Values Action */}
+                  <div className="flex justify-end pt-2 border-t border-border/60">
+                    <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
+                      {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
+                      Push Transformed Values
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1291,11 +1308,6 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                   )
                 )}
               </div>
-
-              <Button size="sm" onClick={handleExecuteJqPush} disabled={submitting} className="h-8 text-xs">
-                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
-                Push Transformed Values
-              </Button>
             </div>
 
             {/* ── Feedback & Diagnostic Banners ─────────────────────────────────── */}
@@ -1439,7 +1451,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 1. Overview & Data Flow
               </h4>
               <p className="text-muted-foreground">
-                Transformations allow you to ingest metrics from third-party tools (such as GitLab, GitHub, SonarQube, or Wiz) and map them onto your hexagonal map landmarks. Data is fetched or provided as JSON, processed through a JQ filter, and then pushed as element values.
+                Transformations allow you to ingest metrics from third-party tools (such as GitLab, GitHub, SonarQube, or Wiz) and map them to your elements. Data is fetched or provided as JSON, processed through a JQ filter, and then pushed as element values.
               </p>
             </div>
 
@@ -1462,7 +1474,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 The JQ filter shapes the raw API response into a JSON array of metric element objects. Each object in the array supports:
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground pl-1 mt-1">
-                <li><code className="text-foreground font-mono font-medium">element</code> <span className="text-muted-foreground">(string, required)</span>: Landmark name or identifier to match.</li>
+                <li><code className="text-foreground font-mono font-medium">element</code> <span className="text-muted-foreground">(string, required)</span>: Element name or identifier to match. Multiple aliases can be set as a comma-separated list on an element (e.g. <span className="font-mono text-foreground">service-a, repo-slug, group:project</span>).</li>
                 <li><code className="text-foreground font-mono font-medium">value</code> <span className="text-muted-foreground">(string, required)</span>: Display value (e.g. <span className="font-mono text-foreground">"92% coverage"</span>, <span className="font-mono text-foreground">"3 open MRs"</span>).</li>
                 <li><code className="text-foreground font-mono font-medium">level</code> <span className="text-muted-foreground">(string, required)</span>: Status severity &mdash; <span className="font-mono text-emerald-400">"OK"</span>, <span className="font-mono text-amber-400">"WARNING"</span>, <span className="font-mono text-rose-400">"ERROR"</span>, or <span className="font-mono text-muted-foreground">"UNKNOWN"</span>.</li>
                 <li><code className="text-foreground font-mono font-medium">description</code> <span className="text-muted-foreground">(string, optional)</span>: Detailed tooltip or hover text.</li>
@@ -1478,7 +1490,7 @@ export const MetricPushView: React.FC<MetricPushViewProps> = ({
                 4. Dry-Run & Reconciliation
               </h4>
               <p className="text-muted-foreground">
-                Paste a sample JSON payload in the <strong>Sample Input Payload</strong> box and click <strong>Execute JQ Dry-Run</strong>. The client evaluates the filter and compares matched element names against the current session landmarks, highlighting any unmatched or missing elements before sending data.
+                Paste a sample JSON payload in the <strong>Sample Input Payload</strong> box and click <strong>Execute JQ Dry-Run</strong>. The client evaluates the filter and compares matched element names against the current session elements, highlighting any unmatched or missing elements before sending data. If an element uses different identifiers across tools, add them as comma-separated aliases in the element settings.
               </p>
             </div>
 

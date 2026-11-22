@@ -88,11 +88,11 @@ class ChoreListController(
         return HttpResponse.noContent<Any>()
     }
 
-    @Patch("/{listId}/entries/{landmarkId}")
+    @Patch("/{listId}/entries/{elementId}")
     fun updateChoreEntry(
         @PathVariable id: String,
         @PathVariable listId: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         @Body request: UpdateChoreEntryRequest,
          user: PortholePrincipal
     ): HttpResponse<*> =
@@ -100,7 +100,7 @@ class ChoreListController(
             updateChoreEntryUseCase.execute(
                 sessionId = UUID.fromString(id),
                 listId = UUID.fromString(listId),
-                landmarkId = UUID.fromString(landmarkId),
+                landmarkId = UUID.fromString(elementId),
                 state = request.state,
                 assigneeId = request.assigneeId,
                 clearAssignee = request.clearAssignee,

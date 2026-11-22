@@ -250,11 +250,13 @@ describe('metricService', () => {
       GITLAB_OPEN_PRS_TEMPLATE.jqFilter,
     );
     expect(paginatedCurl).toContain('page=1');
+    expect(paginatedCurl).toContain('all_items_file=$(mktemp)');
     expect(paginatedCurl).toContain('while :; do');
-    expect(paginatedCurl).toContain('https://gitlab.example.com/api/v4/groups/1234/merge_requests?state=opened&include_subgroups=true&per_page=100&page=$page');
+    expect(paginatedCurl).toContain('https://gitlab.example.com/api/v4/groups/1234/merge_requests?state=opened&include_subgroups=true&per_page=100&page=${page}');
     expect(paginatedCurl).toContain('-H "PRIVATE-TOKEN: $PRIVATE_TOKEN"');
-    expect(paginatedCurl).toContain('jq -s \'add // []\'');
-    expect(paginatedCurl).toContain('| jq \'group_by(.project_id)');
+    expect(paginatedCurl).toContain('jq -s \'.[0] + .[1]\' "$all_items_file" - > "${all_items_file}.next"');
+    expect(paginatedCurl).toContain('mv "${all_items_file}.next" "$all_items_file"');
+    expect(paginatedCurl).toContain('echo "$all_items" \\\n  | jq \'group_by(.project_id)');
 
     const substituted = insertParameters(
       'https://gitlab.example.com/api/v4/projects/:projectId/pipelines',
@@ -282,11 +284,28 @@ describe('metricService', () => {
     expect(script).toContain("curl -s -X 'POST' 'https://api.test/prs?query=foo bar'");
     expect(script).toContain('# Request Parameters: group_path=my-group');
     expect(script).toContain('-H "Authorization: Bearer $MY_TOKEN"');
-    expect(script).toContain("-H \"Content-Type: application/json\" \\\n      -d '{\"query\": \"query { group(fullPath: \\\"my-group\\\") { id } }\"}'");
+    expect(script).toContain("-H \"Content-Type: application/json\" \\\n    -d '{\"query\": \"query { group(fullPath: \\\"my-group\\\") { id } }\"}'");
     expect(script).toContain("--arg matchBy 'ALIAS' --arg matchKey 'repo key'");
     expect(script).toContain("https://porthole.test/api/sessions/sess123/metrics/m-cov-456/values");
     expect(script).toContain('-H "Authorization: Bearer $PORTHOLE_TOKEN"');
     expect(script).toContain('-H "X-Requested-With: XMLHttpRequest"');
+
+    const paginatedScript = generateAutomationScript(
+      GITLAB_OPEN_PRS_TEMPLATE.requestUrl,
+      GITLAB_OPEN_PRS_TEMPLATE.httpMethod,
+      GITLAB_OPEN_PRS_TEMPLATE.jqFilter,
+      'sess123',
+      'm-prs-456',
+      'ALIAS',
+      undefined,
+      'https://porthole.test',
+      undefined,
+      GITLAB_OPEN_PRS_TEMPLATE.parameters,
+      GITLAB_OPEN_PRS_TEMPLATE.authHeader,
+    );
+    expect(paginatedScript).toContain('all_items_file=$(mktemp)');
+    expect(paginatedScript).toContain('echo "$all_items" \\');
+    expect(paginatedScript).toContain('https://porthole.test/api/sessions/sess123/metrics/m-prs-456/values');
   });
 
   it('parses and formats parameter key-value maps accurately', () => {

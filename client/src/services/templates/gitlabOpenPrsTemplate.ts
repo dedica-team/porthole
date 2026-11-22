@@ -24,7 +24,6 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
     else "OK"
     end
   ),
-  description: "\\(.[0].references.full | split("!")[0]): \\(length) open merge request(s)",
   link: "\\(.[0].web_url | split("/-/merge_requests/")[0])/-/merge_requests",
   linkText: "MRs (\\(length))",
   badges: {}
@@ -81,7 +80,6 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
         element: 'prod-web-infra',
         value: '2',
         level: 'OK',
-        description: 'infra/prod-web-infra: 2 open merge request(s)',
         link: 'https://gitlab.example.com/infra/prod-web-infra/-/merge_requests',
         linkText: 'MRs (2)',
         badges: {},
@@ -90,7 +88,6 @@ export const GITLAB_OPEN_PRS_TEMPLATE: MetricTransformationTemplate = {
         element: 'payment-gateway',
         value: '7',
         level: 'WARNING',
-        description: 'services/payment-gateway: 1 open merge request(s)',
         link: 'https://gitlab.example.com/services/payment-gateway/-/merge_requests',
         linkText: 'MRs (1)',
         badges: {},

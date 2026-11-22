@@ -42,10 +42,10 @@ class CollaboratorMatrixController(
         )
     }
 
-    @Put("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
+    @Put("/elements/{elementId}/collaborators/{collaboratorId}")
     fun setEntry(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         @PathVariable collaboratorId: String,
         @Body request: SetMatrixEntryRequest,
          user: PortholePrincipal
@@ -57,17 +57,17 @@ class CollaboratorMatrixController(
             setMatrixEntryUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
-                UUID.fromString(landmarkId),
+                UUID.fromString(elementId),
                 UUID.fromString(collaboratorId),
                 level
             )
         )
     }
 
-    @Delete("/landmarks/{landmarkId}/collaborators/{collaboratorId}")
+    @Delete("/elements/{elementId}/collaborators/{collaboratorId}")
     fun clearEntry(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         @PathVariable collaboratorId: String,
          user: PortholePrincipal
     ): HttpResponse<*> =
@@ -75,7 +75,7 @@ class CollaboratorMatrixController(
             clearMatrixEntryUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
-                UUID.fromString(landmarkId),
+                UUID.fromString(elementId),
                 UUID.fromString(collaboratorId)
             )
         )

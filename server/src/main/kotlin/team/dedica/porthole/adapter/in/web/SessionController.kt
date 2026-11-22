@@ -178,10 +178,10 @@ class SessionController(
         )
     )
 
-    @Post("/{id}/landmarks")
-    fun placeLandmark(
+    @Post("/{id}/elements")
+    fun placeElement(
         @PathVariable id: String,
-        @Valid @Body request: PlaceLandmarkRequest,
+        @Valid @Body request: PlaceElementRequest,
          user: PortholePrincipal,
     ): HttpResponse<*> {
         val type = runCatching { LandmarkType.valueOf(request.type.uppercase()) }
@@ -198,10 +198,10 @@ class SessionController(
         )
     }
 
-    @Post("/{id}/landmarks/unpositioned")
-    fun createUnpositionedLandmark(
+    @Post("/{id}/elements/unpositioned")
+    fun createUnpositionedElement(
         @PathVariable id: String,
-        @Valid @Body request: CreateUnpositionedLandmarkRequest,
+        @Valid @Body request: CreateUnpositionedElementRequest,
          user: PortholePrincipal,
     ): HttpResponse<*> {
         val type = runCatching { LandmarkType.valueOf(request.type.uppercase()) }
@@ -221,39 +221,39 @@ class SessionController(
         )
     }
 
-    @Patch("/{id}/landmarks/{landmarkId}/position")
-    fun positionLandmark(
+    @Patch("/{id}/elements/{elementId}/position")
+    fun positionElement(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
-        @Valid @Body request: PositionLandmarkRequest,
+        @PathVariable elementId: String,
+        @Valid @Body request: PositionElementRequest,
          user: PortholePrincipal,
     ) = HttpResponse.ok(
         positionLandmarkUseCase.execute(
             UUID.fromString(id),
             user.userId,
-            UUID.fromString(landmarkId),
+            UUID.fromString(elementId),
             HexCoordinate(request.q, request.r)
         )
     )
 
-    @Delete("/{id}/landmarks/{landmarkId}")
-    fun removeLandmark(
+    @Delete("/{id}/elements/{elementId}")
+    fun removeElement(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
+        @PathVariable elementId: String,
         user: PortholePrincipal,
     ) = HttpResponse.ok(
         removeLandmarkUseCase.execute(
             UUID.fromString(id),
             user.userId,
-            UUID.fromString(landmarkId)
+            UUID.fromString(elementId)
         )
     )
 
-    @Patch("/{id}/landmarks/{landmarkId}")
-    fun editLandmark(
+    @Patch("/{id}/elements/{elementId}")
+    fun editElement(
         @PathVariable id: String,
-        @PathVariable landmarkId: String,
-        @Valid @Body request: EditLandmarkRequest,
+        @PathVariable elementId: String,
+        @Valid @Body request: EditElementRequest,
          user: PortholePrincipal,
     ): HttpResponse<*> {
         val type = request.type?.let {
@@ -264,7 +264,7 @@ class SessionController(
             editLandmarkUseCase.execute(
                 UUID.fromString(id),
                 user.userId,
-                UUID.fromString(landmarkId),
+                UUID.fromString(elementId),
                 request.name,
                 type,
                 request.description,

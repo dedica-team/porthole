@@ -1,0 +1,715 @@
+openapi: 3.0.3
+info:
+  title: Porthole Quality Metrics Push & Ingestion API
+  version: 1.0.0
+  description: |
+    REST API for ingesting, transforming, and automating quality metric values into Porthole landscape maps.
+    
+    ### Overview
+    Porthole allows engineering teams to push automated quality metrics (such as test coverage, open merge requests, security vulnerabilities, or quality gate statuses) directly from CI/CD pipelines, cron jobs, or automated tools into hexagonal landscape maps.
+    
+    ### Authentication & Scoped Tokens
+    Ingestion endpoints support two authentication modes:
+    1. **Scoped Push Tokens (JWT)**: Headless, stateless JWTs generated via `POST /api/sessions/{id}/metrics/{metricId}/token` and signed with the server's HMAC secret (`PORTHOLE_JWT_SECRET`). Scoped push tokens are restricted strictly to pushing values for the specified session and metric without access to administrative or map-editing endpoints.
+    2. **Interactive User Sessions**: Standard authenticated user sessions using the `porthole_auth` cookie or user JWT.
+    
+    ### CSRF Protection Header
+    All mutating state operations (`POST`, `PUT`, `DELETE`) require the `X-Requested-With: XMLHttpRequest` custom header to satisfy server-side CSRF protection filters.
+    
+    ### Element Matching Strategies
+    When pushing metric values, elements are resolved to elements using one of three matching strategies:
+    - `NAME`: Matches the element's display name (case-insensitive).
+    - `ALIAS`: Matches against any configured alias in the element's alias list (case-insensitive, whitespace-trimmed). Multiple aliases can be configured on elements as a comma-separated list.
+    - `LINK`: Matches against external links configured on element using the specified `matchKey`.
+
+servers:
+  - url: /api
+    description: Current host API root
+  - url: http://localhost:8080/api
+    description: Local development server
+
+tags:
+  - name: Metric Push & Ingestion
+    description: Endpoints for headless CI/CD metric pushing and token generation
+  - name: Metric Transformations
+    description: Storing, managing, and executing data ingestion transformations and JQ filters
+  - name: Element Metrics
+    description: Direct single-element metric evaluation endpoints
+
+paths:
+  /sessions/{id}/metrics/{metricId}/values:
+    post:
+      tags:
+        - Metric Push & Ingestion
+      summary: Push batch metric values to elements
+      description: |
+        Ingests a batch array of evaluated metric elements and updates matching elements in the session map in real time.
+        Updates are broadcast immediately to all connected WebSocket clients.
+      operationId: pushMetricValues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique session UUID
+          schema:
+            type: string
+            format: uuid
+            example: "c7b1f47c-f757-3242-96ad-fa057795d0a1"
+        - name: metricId
+          in: path
+          required: true
+          description: Unique metric UUID
+          schema:
+            type: string
+            format: uuid
+            example: "1d9de74c-e6bb-4c65-a120-03e08ebb366c"
+        - name: X-Requested-With
+          in: header
+          required: true
+          description: Custom CSRF prevention header
+          schema:
+            type: string
+            enum: [XMLHttpRequest]
+            example: XMLHttpRequest
+      security:
+        - PushTokenAuth: []
+        - SessionCookieAuth: []
+      requestBody:
+        required: true
+        description: Batch metric payload with matching strategy and element values
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushMetricValuesRequest'
+            examples:
+              GitLabOpenMergeRequests:
+                summary: GitLab Open Merge Requests by Project Alias
+                value:
+                  matchBy: ALIAS
+                  values:
+                    - element: payment-gateway
+                      value: "1"
+                      level: OK
+                      link: https://gitlab.example.com/services/payment-gateway/-/merge_requests
+                      linkText: "MRs (1)"
+                      badges: {}
+                    - element: auth-service
+                      value: "6"
+                      level: WARNING
+                      description: "auth-service: 6 open merge requests"
+                      link: https://gitlab.example.com/services/auth-service/-/merge_requests
+                      linkText: "MRs (6)"
+                      badges: {}
+              SonarQubeQualityGate:
+                summary: SonarQube Quality Gate Status
+                value:
+                  matchBy: ALIAS
+                  values:
+                    - element: com.example:billing-api
+                      value: PASSED
+                      level: OK
+                      link: https://sonarqube.example.com/dashboard?id=com.example:billing-api
+                      linkText: "SonarQube (OK)"
+                    - element: com.example:legacy-worker
+                      value: FAILED
+                      level: ERROR
+                      description: "Coverage is 45.2% (minimum required 80.0%)"
+                      link: https://sonarqube.example.com/dashboard?id=com.example:legacy-worker
+                      linkText: "SonarQube (FAIL)"
+              WizCloudVulnerabilities:
+                summary: Wiz Cloud Security Finding Count
+                value:
+                  matchBy: ALIAS
+                  values:
+                    - element: prod-cluster-k8s
+                      value: "0 High / 2 Med"
+                      level: OK
+                      link: https://app.wiz.io/findings?resource=prod-cluster-k8s
+                    - element: data-lake-s3
+                      value: "3 Critical"
+                      level: ERROR
+                      description: "Critical public access policy misconfiguration detected"
+                      link: https://app.wiz.io/findings?resource=data-lake-s3
+      responses:
+        '200':
+          description: Metric values ingested and applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushMetricValuesResponse'
+              example:
+                updatedCount: 2
+                unmatchedElements: []
+                warnings: []
+        '400':
+          description: Invalid request body, malformed JSON, or invalid UUID parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "values[0].element: must not be blank"
+                status: 400
+        '401':
+          description: Unauthorized - missing or expired authentication credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Unauthorized"
+                status: 401
+        '403':
+          description: Forbidden - token is not scoped to this session/metric, missing CSRF header, or insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Push token is not authorized for this metric"
+                status: 403
+        '404':
+          description: Session or Metric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Metric not found: 1d9de74c-e6bb-4c65-a120-03e08ebb366c"
+                status: 404
+
+  /sessions/{id}/metrics/{metricId}/token:
+    post:
+      tags:
+        - Metric Push & Ingestion
+      summary: Generate a scoped push token (JWT)
+      description: |
+        Generates a long-lived, restart-resilient HMAC-SHA256 JWT scoped specifically to pushing values
+        for this session and metric. Scoped tokens can be used in CI/CD pipelines without exposing user credentials.
+        
+        Requires full interactive collaborator or admin access to the session.
+      operationId: generatePushToken
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique session UUID
+          schema:
+            type: string
+            format: uuid
+            example: "c7b1f47c-f757-3242-96ad-fa057795d0a1"
+        - name: metricId
+          in: path
+          required: true
+          description: Unique metric UUID
+          schema:
+            type: string
+            format: uuid
+            example: "1d9de74c-e6bb-4c65-a120-03e08ebb366c"
+        - name: X-Requested-With
+          in: header
+          required: true
+          description: Custom CSRF prevention header
+          schema:
+            type: string
+            enum: [XMLHttpRequest]
+            example: XMLHttpRequest
+      security:
+        - SessionCookieAuth: []
+      responses:
+        '200':
+          description: Scoped push JWT token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushTokenResponse'
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Invalid session or metric UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - caller does not have permission or tried to use a scoped push token to generate another token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session or Metric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{id}/metrics/{metricId}/transformations:
+    put:
+      tags:
+        - Metric Transformations
+      summary: Save or update a metric ingestion transformation
+      description: |
+        Persists a reusable transformation configuration for fetching, transforming (via JQ), and pushing foreign API payloads.
+      operationId: saveMetricTransformation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique session UUID
+          schema:
+            type: string
+            format: uuid
+        - name: metricId
+          in: path
+          required: true
+          description: Unique metric UUID
+          schema:
+            type: string
+            format: uuid
+        - name: X-Requested-With
+          in: header
+          required: true
+          description: Custom CSRF prevention header
+          schema:
+            type: string
+            enum: [XMLHttpRequest]
+      security:
+        - SessionCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricTransformationDto'
+            example:
+              id: "550e8400-e29b-41d4-a716-446655440000"
+              name: "GitLab Open Merge Requests"
+              requestUrl: "https://gitlab.example.com/api/v4/groups/$group_id/merge_requests?state=opened&include_subgroups=true&per_page=$per_page"
+              httpMethod: "GET"
+              parameters:
+                group_id: "1385"
+                per_page: "100"
+              authHeader: "PRIVATE-TOKEN: $PRIVATE_TOKEN"
+              jqFilter: "group_by(.project_id) | [.[] | { element: (.[0].references.full | split(\"!\")[0] | split(\"/\")[-1]), value: \"\\(length)\", level: (if length > 10 then \"ERROR\" elif length > 3 then \"WARNING\" else \"OK\" end), link: \"\\(.[0].web_url | split(\"/-/merge_requests/\")[0])/-/merge_requests\", linkText: \"MRs (\\(length))\", badges: {} }]"
+              matchBy: "ALIAS"
+              lastPayloadSample: "[{\"id\": 1, \"project_id\": 10, \"references\": {\"full\": \"org/service!1\"}}]"
+      responses:
+        '200':
+          description: Transformation saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Updated Session State
+        '400':
+          description: Validation error or invalid UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session or Metric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{id}/metrics/{metricId}/transformations/{transformationId}:
+    delete:
+      tags:
+        - Metric Transformations
+      summary: Delete a metric ingestion transformation
+      description: Removes a saved transformation configuration from the specified metric.
+      operationId: deleteMetricTransformation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique session UUID
+          schema:
+            type: string
+            format: uuid
+        - name: metricId
+          in: path
+          required: true
+          description: Unique metric UUID
+          schema:
+            type: string
+            format: uuid
+        - name: transformationId
+          in: path
+          required: true
+          description: Unique transformation UUID
+          schema:
+            type: string
+            format: uuid
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [XMLHttpRequest]
+      security:
+        - SessionCookieAuth: []
+      responses:
+        '200':
+          description: Transformation deleted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Session, metric, or transformation not found
+
+  /sessions/{id}/elements/{elementId}/metrics/{metricId}:
+    put:
+      tags:
+        - Element Metrics
+      summary: Set metric evaluation on a single element
+      description: Sets or updates the evaluation value, status level, description, and link for a specific element and metric.
+      operationId: setElementMetric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: elementId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metricId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [XMLHttpRequest]
+      security:
+        - SessionCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetElementMetricRequest'
+      responses:
+        '200':
+          description: Element metric updated successfully
+        '400':
+          description: Invalid quality level or request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Session, element, or metric not found
+
+    delete:
+      tags:
+        - Element Metrics
+      summary: Clear metric evaluation from a single element
+      description: Clears the metric evaluation from the specified element.
+      operationId: clearElementMetric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: elementId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metricId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Requested-With
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [XMLHttpRequest]
+      security:
+        - SessionCookieAuth: []
+      responses:
+        '200':
+          description: Element metric cleared successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Session, element, or metric not found
+
+components:
+  securitySchemes:
+    PushTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Scoped HMAC-SHA256 JWT generated for automated CI/CD metric pushing.
+        Format: `Authorization: Bearer <token>`
+    SessionCookieAuth:
+      type: apiKey
+      in: cookie
+      name: porthole_auth
+      description: Interactive user session authentication cookie.
+
+  schemas:
+    PushMetricValuesRequest:
+      type: object
+      required:
+        - values
+      properties:
+        matchBy:
+          $ref: '#/components/schemas/MatchStrategy'
+          default: NAME
+        matchKey:
+          type: string
+          nullable: true
+          description: Optional link map key used when `matchBy` is set to `LINK`.
+          example: "gitlab"
+        values:
+          type: array
+          description: List of metric values evaluated per element.
+          items:
+            $ref: '#/components/schemas/MetricElementValueDto'
+
+    MetricElementValueDto:
+      type: object
+      required:
+        - element
+      properties:
+        element:
+          type: string
+          description: Element name, alias, slug, or identifier to match.
+          example: "payment-gateway"
+        value:
+          type: string
+          nullable: true
+          description: Human-readable display value.
+          example: "94% coverage"
+        level:
+          $ref: '#/components/schemas/QualityLevel'
+          default: NONE
+        description:
+          type: string
+          nullable: true
+          description: Extended description or tooltip details.
+          example: "Branch coverage is 94.2% across 142 unit tests"
+        link:
+          type: string
+          nullable: true
+          description: External target URL (e.g. dashboard, pipeline, repository).
+          example: "https://sonar.example.com/dashboard?id=payment-gateway"
+        linkText:
+          type: string
+          nullable: true
+          description: Custom text for the external link button.
+          example: "View Sonar Report"
+        badges:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value map of secondary badges or quick links.
+          example:
+            pipeline: "https://ci.example.com/build/123"
+
+    PushMetricValuesResponse:
+      type: object
+      required:
+        - updatedCount
+      properties:
+        updatedCount:
+          type: integer
+          description: Total number of elements successfully updated with new metric values.
+          example: 8
+        unmatchedElements:
+          type: array
+          items:
+            type: string
+          description: List of element identifiers that did not match any element in the session.
+          example:
+            - "legacy-batch-service"
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Non-fatal diagnostic warnings generated during push execution.
+          example:
+            - "Multiple elements (2) matched element 'auth-proxy'"
+
+    PushTokenResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Signed scoped JWT token valid for pushing metric values.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    MetricTransformationDto:
+      type: object
+      required:
+        - name
+        - requestUrl
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Unique transformation UUID. If omitted on creation, a UUID is generated.
+        name:
+          type: string
+          maxLength: 200
+          description: Title of the transformation configuration.
+          example: "GitLab Open PRs"
+        requestUrl:
+          type: string
+          description: Target foreign API endpoint URL.
+          example: "https://gitlab.example.com/api/v4/groups/$group_id/merge_requests"
+        httpMethod:
+          type: string
+          default: "GET"
+          description: HTTP method used when fetching foreign API data.
+          example: "GET"
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value parameter map for URL and body template substitution.
+          example:
+            group_id: "1385"
+            per_page: "100"
+        authHeader:
+          type: string
+          nullable: true
+          description: Authorization header template (e.g. PRIVATE-TOKEN or Bearer token).
+          example: "PRIVATE-TOKEN: $PRIVATE_TOKEN"
+        requestBody:
+          type: string
+          nullable: true
+          description: Optional request payload (e.g. GraphQL query or POST JSON body).
+        jqFilter:
+          type: string
+          default: "."
+          description: JQ expression transforming raw foreign API response to batch push schema.
+          example: "group_by(.project_id) | [.[] | { element: (.[0].references.full | split(\"!\")[0] | split(\"/\")[-1]), value: \"\\(length)\", level: (if length > 10 then \"ERROR\" elif length > 3 then \"WARNING\" else \"OK\" end), link: \"\\(.[0].web_url | split(\"/-/merge_requests/\")[0])/-/merge_requests\", linkText: \"MRs (\\(length))\", badges: {} }]"
+        matchBy:
+          $ref: '#/components/schemas/MatchStrategy'
+          default: NAME
+        matchKey:
+          type: string
+          nullable: true
+          description: Optional link property key when matching strategy is LINK.
+        lastPayloadSample:
+          type: string
+          nullable: true
+          description: Sample raw JSON payload for preview, dry-runs, and debugging.
+
+    SetElementMetricRequest:
+      type: object
+      required:
+        - level
+      properties:
+        value:
+          type: string
+          nullable: true
+          description: Display value for the metric evaluation.
+        level:
+          type: string
+          description: Metric severity level ("NONE", "OK", "WARNING", "ERROR").
+          example: "OK"
+        link:
+          type: string
+          nullable: true
+          description: External target URL.
+        linkText:
+          type: string
+          nullable: true
+          description: Label for the external link.
+        description:
+          type: string
+          nullable: true
+          description: Extended description / tooltip text.
+        badges:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+
+    MatchStrategy:
+      type: string
+      enum:
+        - NAME
+        - ALIAS
+        - LINK
+      description: |
+        Strategy used to match pushed metric elements to elements:
+        - `NAME`: Matches element name.
+        - `ALIAS`: Matches element aliases list (case-insensitive). Supports comma-separated aliases.
+        - `LINK`: Matches element external link values by `matchKey`.
+
+    QualityLevel:
+      type: string
+      enum:
+        - NONE
+        - OK
+        - WARNING
+        - ERROR
+      description: Quality severity level. Used for worst-of calculation and heatmap rendering.
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - status
+      properties:
+        message:
+          type: string
+          description: Human-readable error explanation.
+          example: "Validation failed"
+        status:
+          type: integer
+          description: HTTP status code.
+          example: 400

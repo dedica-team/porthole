@@ -83,6 +83,7 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    maxHeapSize = "1g"
     environment("DOCKER_API_VERSION", "1.44")
     systemProperty("api.version", "1.44")
     systemProperty("docker.api.version", "1.44")
