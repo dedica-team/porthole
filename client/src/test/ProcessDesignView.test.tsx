@@ -402,6 +402,88 @@ describe('ProcessDesignView', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Connection updated.');
   });
 
+  it('opens edit connection modal when clicking SVG connection title and saves updates', async () => {
+    const updatedMapWithEditedConn = {
+      ...map,
+      connections: {
+        c1: { id: 'c1', originId: 'a', targetId: 'b', name: 'Title Edited Pipe', type: 'ROAD' },
+      },
+    } as unknown as SessionState;
+
+    vi.mocked(api.editConnection).mockResolvedValue(updatedMapWithEditedConn);
+    useMapStore.setState({ currentMap: map, processes: [process] });
+    show('/session/map/process-design/p1');
+
+    // Click SVG connection title button
+    const svgTitleBtn = screen.getByRole('button', { name: 'Edit connection Main' });
+    fireEvent.click(svgTitleBtn);
+
+    // Edit connection modal opens
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Edit Connection' })).toBeInTheDocument();
+    expect(within(dialog).getByText('Alpha → Beta')).toBeInTheDocument();
+
+    const nameInput = within(dialog).getByPlaceholderText('Connection name (optional)');
+    fireEvent.change(nameInput, { target: { value: 'Title Edited Pipe' } });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(api.editConnection).toHaveBeenCalledWith(
+        'map',
+        'c1',
+        'PIPE',
+        'Title Edited Pipe',
+        undefined,
+        false,
+        true
+      );
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Connection updated.');
+  });
+
+  it('opens edit connection modal when clicking connection title in stage list and saves updates', async () => {
+    const updatedMapWithEditedConn = {
+      ...map,
+      connections: {
+        c1: { id: 'c1', originId: 'a', targetId: 'b', name: 'Row Edited Pipe', type: 'ROAD' },
+      },
+    } as unknown as SessionState;
+
+    vi.mocked(api.editConnection).mockResolvedValue(updatedMapWithEditedConn);
+    useMapStore.setState({ currentMap: map, processes: [process] });
+    show('/session/map/process-design/p1');
+
+    // Click connection label in stage row
+    const rowTitleBtn = screen.getByRole('button', { name: 'Edit connection Alpha → Beta (Link)' });
+    fireEvent.click(rowTitleBtn);
+
+    // Edit connection modal opens
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Edit Connection' })).toBeInTheDocument();
+    expect(within(dialog).getByText('Alpha → Beta')).toBeInTheDocument();
+
+    const nameInput = within(dialog).getByPlaceholderText('Connection name (optional)');
+    fireEvent.change(nameInput, { target: { value: 'Row Edited Pipe' } });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(api.editConnection).toHaveBeenCalledWith(
+        'map',
+        'c1',
+        'PIPE',
+        'Row Edited Pipe',
+        undefined,
+        false,
+        true
+      );
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Connection updated.');
+  });
+
   it('deletes map connection via three-dot options menu with confirmation and removes from stages', async () => {
     const mapAfterConnDeletion = {
       ...map,

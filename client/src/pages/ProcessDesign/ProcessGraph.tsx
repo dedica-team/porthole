@@ -20,6 +20,7 @@ export interface ProcessGraphProps {
   onSelect?: (selection: ProcessGraphSelection) => void;
   onConnectNodes?: (sourceLandmarkId: string, targetLandmarkId: string) => void;
   onDropLandmark?: (landmarkId: string, position: { x: number; y: number }) => void;
+  onEditConnection?: (connectionId: string) => void;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ export default function ProcessGraph({
   onSelect,
   onConnectNodes,
   onDropLandmark,
+  onEditConnection,
   className,
 }: ProcessGraphProps) {
   const graph = useMemo(
@@ -503,6 +505,9 @@ export default function ProcessGraph({
               selection.stageConnectionId === stageConnection.id;
             const label = stageConnection.title || connection.name || connection.id;
             const stageName = stage.name || `Stage ${stage.order}`;
+            const labelText = `${stageName} · ${label}`;
+            const badgeWidth = Math.max(48, labelText.length * 6.5 + 14);
+
             return (
               <g
                 key={`${stage.id}:${stageConnection.id}`}
@@ -510,6 +515,9 @@ export default function ProcessGraph({
                 tabIndex={onSelect ? 0 : undefined}
                 aria-label={`${stageName}: ${label}, ${stageConnection.direction.toLowerCase()}`}
                 aria-pressed={onSelect ? selected : undefined}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
                 onClick={() => onSelect?.(value)}
                 onKeyDown={(event) => activate(event, value)}
                 className={
@@ -527,21 +535,58 @@ export default function ProcessGraph({
                   markerStart={stageConnection.direction !== 'FORWARD' ? `url(#${markerId})` : undefined}
                   markerEnd={stageConnection.direction !== 'REVERSE' ? `url(#${markerId})` : undefined}
                 />
-                <text
-                  x={labelX}
-                  y={labelY - 7}
-                  textAnchor="middle"
-                  fontSize="11"
-                  fontWeight="600"
-                  fill={selected ? '#22d3ee' : '#e5e5e5'}
-                  paintOrder="stroke"
-                  stroke="#1c1c1c"
-                  strokeWidth="4"
-                  strokeLinejoin="round"
-                  fontFamily="monospace"
+
+                {/* Connection Title Badge (Click to edit) */}
+                <g
+                  role={onEditConnection ? 'button' : undefined}
+                  tabIndex={onEditConnection ? 0 : undefined}
+                  aria-label={`Edit connection ${label}`}
+                  className={onEditConnection ? 'cursor-pointer select-none' : undefined}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onPointerUp={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    if (onEditConnection) {
+                      e.stopPropagation();
+                      onSelect?.(value);
+                      onEditConnection(connection.id);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (onEditConnection && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelect?.(value);
+                      onEditConnection(connection.id);
+                    }
+                  }}
                 >
-                  {stageName} · {label}
-                </text>
+                  <rect
+                    x={labelX - badgeWidth / 2}
+                    y={labelY - 17}
+                    width={badgeWidth}
+                    height="17"
+                    rx="3"
+                    fill="#181818"
+                    stroke={selected ? '#22d3ee' : '#525252'}
+                    strokeWidth={selected ? 1.5 : 1}
+                  />
+                  <text
+                    x={labelX}
+                    y={labelY - 5}
+                    textAnchor="middle"
+                    fontSize="10"
+                    fontWeight="600"
+                    fill={selected ? '#22d3ee' : '#e5e5e5'}
+                    fontFamily="monospace"
+                    className="pointer-events-none select-none"
+                  >
+                    {labelText}
+                  </text>
+                </g>
               </g>
             );
           })}

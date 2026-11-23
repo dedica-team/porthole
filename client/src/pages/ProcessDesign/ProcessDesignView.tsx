@@ -337,6 +337,7 @@ function EditConnectionModal({
   targetName,
   onSave,
   loading = false,
+  busy = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -345,7 +346,9 @@ function EditConnectionModal({
   targetName: string;
   onSave: (type: ConnectionType, name?: string, description?: string) => Promise<void>;
   loading?: boolean;
+  busy?: boolean;
 }) {
+  const isLoading = loading || busy;
   const [type, setType] = useState<ConnectionType>('PIPE');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -416,12 +419,12 @@ function EditConnectionModal({
             variant="ghost"
             size="sm"
             className="h-8 text-xs"
-            disabled={loading}
+            disabled={isLoading}
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
-          <Button type="submit" size="sm" className="h-8 text-xs" disabled={loading}>
+          <Button type="submit" size="sm" className="h-8 text-xs" disabled={isLoading}>
             Save
           </Button>
         </div>
@@ -581,7 +584,20 @@ function CompactConnectionRow({
           : 'bg-background/60 border-border/80 text-foreground hover:border-border'
       }`}
     >
-      <div className="flex-1 min-w-0 font-medium truncate" title={label}>
+      <div
+        className="flex-1 min-w-0 font-medium truncate cursor-pointer hover:text-primary hover:underline"
+        title={`Click to edit connection: ${label}`}
+        aria-label={`Edit connection ${label}`}
+        role="button"
+        tabIndex={0}
+        onClick={onEditConnection}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onEditConnection();
+          }
+        }}
+      >
         {label}
       </div>
 
@@ -818,7 +834,7 @@ function StageSection({
 
       {/* Quick Add Connection Bar */}
       <div className="pt-2 border-t border-border/40 flex items-center gap-2 flex-wrap">
-        <div className="flex-1 min-w-[200px] flex items-center gap-1.5">
+        <div className="flex-1 min-w-50 flex items-center gap-1.5">
           <select
             className="w-full rounded-md border border-input bg-background px-2.5 h-7 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
             value={quickSelect}
@@ -1871,6 +1887,7 @@ export default function ProcessDesignView() {
                       onSelect={setSelection}
                       onConnectNodes={handleConnectNodes}
                       onDropLandmark={handleDropLandmark}
+                      onEditConnection={(connId) => setEditingConnId(connId)}
                     />
                   </div>
                 </div>

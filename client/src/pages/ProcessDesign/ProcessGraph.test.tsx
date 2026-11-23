@@ -279,4 +279,35 @@ describe('process graph', () => {
     // Ungrouped nodes do not render a group tag
     expect(screen.queryByTestId('landmark-group-tag-c')).not.toBeInTheDocument();
   });
+
+  it('invokes onEditConnection when clicking, pointer down/up, or pressing Enter on a connection title', () => {
+    const onEditConnection = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <ProcessGraph
+        process={process}
+        landmarks={landmarks}
+        connections={connections}
+        onSelect={onSelect}
+        onEditConnection={onEditConnection}
+      />
+    );
+
+    const titleButton = screen.getByRole('button', { name: 'Edit connection Send' });
+    expect(titleButton).toBeInTheDocument();
+
+    fireEvent.pointerDown(titleButton);
+    fireEvent.pointerUp(titleButton);
+    fireEvent.click(titleButton);
+    expect(onEditConnection).toHaveBeenCalledWith('ab');
+    expect(onSelect).toHaveBeenCalledWith({
+      type: 'connection',
+      stageId: 's1',
+      stageConnectionId: 'forward',
+    });
+
+    onEditConnection.mockClear();
+    fireEvent.keyDown(titleButton, { key: 'Enter' });
+    expect(onEditConnection).toHaveBeenCalledWith('ab');
+  });
 });
