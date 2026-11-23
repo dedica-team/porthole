@@ -88,7 +88,7 @@ class ProcessUseCaseTest {
         val processes = createUseCase.execute(state.id, "Flow", null, collaboratorId)
         val processId = processes.first().id
         val useCase = EditProcessUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        assertThrows(team.dedica.porthole.domain.AccessDeniedException::class.java) {
+        assertThrows(AccessDeniedException::class.java) {
             useCase.execute(state.id, processId, "Hack", null, UUID.randomUUID())
         }
     }

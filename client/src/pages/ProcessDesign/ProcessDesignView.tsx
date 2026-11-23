@@ -488,6 +488,64 @@ function DeleteConnectionConfirmModal({
   );
 }
 
+function DeleteStageConfirmModal({
+  open,
+  onOpenChange,
+  stageName,
+  stageIndex,
+  connectionCount,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  stageName?: string;
+  stageIndex: number;
+  connectionCount: number;
+  onConfirm: () => void;
+}) {
+  const title = stageName
+    ? `Delete «${stageName}» (Stage ${stageIndex + 1})?`
+    : `Delete Stage ${stageIndex + 1}?`;
+
+  return (
+    <Popup title={title} open={open} onOpenChange={onOpenChange} className="max-w-sm">
+      <div className="flex flex-col gap-3">
+        <p className="text-xs text-muted-foreground">
+          {connectionCount > 0
+            ? `This will remove the stage and its ${connectionCount} connection assignment${
+                connectionCount === 1 ? '' : 's'
+              } from the process. Map connections will not be deleted.`
+            : 'This will remove the stage from the process.'}
+        </p>
+
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => {
+              onConfirm();
+              onOpenChange(false);
+            }}
+          >
+            Yes, delete stage
+          </Button>
+        </div>
+      </div>
+    </Popup>
+  );
+}
+
 function CompactConnectionRow({
   connection,
   label,
@@ -834,6 +892,7 @@ export default function ProcessDesignView() {
   const [canvasNotice, setCanvasNotice] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [editingConnId, setEditingConnId] = useState<string | null>(null);
   const [deletingConnId, setDeletingConnId] = useState<string | null>(null);
+  const [deletingStageId, setDeletingStageId] = useState<string | null>(null);
   const [connActionBusy, setConnActionBusy] = useState(false);
   const [createConnModal, setCreateConnModal] = useState<{
     open: boolean;
@@ -997,6 +1056,12 @@ export default function ProcessDesignView() {
       .sort((a, b) => a.order - b.order)
       .map((s, idx) => ({ ...s, order: idx }));
     setDraftProcess({ ...draftProcess, stages: remaining });
+    if (activeTargetStageId === stageId) {
+      setActiveTargetStageId('');
+    }
+    if (selection && selection.type === 'connection' && selection.stageId === stageId) {
+      setSelection(null);
+    }
   };
 
   const handleAddStage = (name: string) => {
@@ -1409,6 +1474,12 @@ export default function ProcessDesignView() {
 
   const stages = draftProcess ? [...draftProcess.stages].sort((a, b) => a.order - b.order) : [];
 
+  const deletingStage = deletingStageId ? draftProcess?.stages.find((s) => s.id === deletingStageId) ?? null : null;
+  const deletingStageIndex =
+    deletingStage && draftProcess
+      ? Math.max(0, [...draftProcess.stages].sort((a, b) => a.order - b.order).findIndex((s) => s.id === deletingStage.id))
+      : 0;
+
   const editingConn = editingConnId ? (map?.connections ?? {})[editingConnId] ?? null : null;
   const editingOriginName = editingConn ? (map?.landmarks[editingConn.originId]?.name ?? editingConn.originId) : '';
   const editingTargetName = editingConn ? (map?.landmarks[editingConn.targetId]?.name ?? editingConn.targetId) : '';
@@ -1818,7 +1889,7 @@ export default function ProcessDesignView() {
                       selection={selection}
                       onMove={(offset) => handleMoveStage(index, offset)}
                       onUpdateName={(name) => handleUpdateStageName(stage.id, name)}
-                      onDelete={() => handleDeleteStage(stage.id)}
+                      onDelete={() => setDeletingStageId(stage.id)}
                       onToggleConnectionDirection={(connId) => handleToggleConnectionDirection(stage.id, connId)}
                       onUpdateConnectionTitle={(connId, title) => handleUpdateConnectionTitle(stage.id, connId, title)}
                       onRemoveConnection={(connId) => handleRemoveConnection(stage.id, connId)}
@@ -1941,6 +2012,22 @@ export default function ProcessDesignView() {
         targetName={deletingTargetName}
         onConfirm={handleDeleteConnection}
         loading={connActionBusy}
+      />
+
+      <DeleteStageConfirmModal
+        open={Boolean(deletingStageId && deletingStage)}
+        onOpenChange={(open) => {
+          if (!open) setDeletingStageId(null);
+        }}
+        stageName={deletingStage?.name}
+        stageIndex={deletingStageIndex}
+        connectionCount={deletingStage?.connections.length ?? 0}
+        onConfirm={() => {
+          if (deletingStageId) {
+            handleDeleteStage(deletingStageId);
+            setDeletingStageId(null);
+          }
+        }}
       />
     </div>
   );

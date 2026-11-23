@@ -450,6 +450,39 @@ describe('ProcessDesignView', () => {
     });
   });
 
+  it('opens confirmation modal when clicking delete stage and removes stage upon confirmation', async () => {
+    useMapStore.setState({ processes: [process] });
+    show('/session/map/process-design/p1');
+
+    // Initially both stages are present
+    expect(screen.getByLabelText('Stage 1 name')).toHaveValue('First');
+    expect(screen.getByLabelText('Stage 2 name')).toHaveValue('Second');
+
+    // Click delete stage button for Stage 1 (has 1 connection)
+    const deleteStageBtns = screen.getAllByRole('button', { name: 'Delete this stage' });
+    fireEvent.click(deleteStageBtns[0]);
+
+    // Confirmation modal opens
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: /Delete «First» \(Stage 1\)\?/i })).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/This will remove the stage and its 1 connection assignment from the process\./i)
+    ).toBeInTheDocument();
+
+    // Clicking cancel keeps the stage
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByLabelText('Stage 1 name')).toHaveValue('First');
+
+    // Click delete again and confirm
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete this stage' })[0]);
+    const confirmDialog = await screen.findByRole('dialog');
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Yes, delete stage' }));
+
+    // Stage 1 is removed, remaining stage becomes Stage 1
+    expect(screen.getByLabelText('Stage 1 name')).toHaveValue('Second');
+    expect(screen.queryByLabelText('Stage 2 name')).not.toBeInTheDocument();
+  });
+
   it('shows loading errors and retries', async () => {
     useMapStore.setState({ processesFetched: false });
     vi.mocked(api.fetchProcesses).mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce([]);

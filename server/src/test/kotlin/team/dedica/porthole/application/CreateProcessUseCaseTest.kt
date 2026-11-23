@@ -1,16 +1,18 @@
 package team.dedica.porthole.application
-import java.util.UUID
 
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.processes.CreateProcessUseCase
-import team.dedica.porthole.domain.*
+import team.dedica.porthole.domain.Collaborator
+import team.dedica.porthole.domain.HexMap
+import team.dedica.porthole.domain.SessionState
+import java.util.*
 
 class CreateProcessUseCaseTest {
     private val collaborator2 = Collaborator(id = UUID.nameUUIDFromBytes("p2".toByteArray()), username = "Bob")

@@ -1,27 +1,14 @@
 package team.dedica.porthole.application.session.game
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import team.dedica.porthole.application.InMemorySessionStatePort
 import team.dedica.porthole.application.port.BroadcastPort
-import team.dedica.porthole.domain.Bug
-import team.dedica.porthole.domain.ChoreList
-import team.dedica.porthole.domain.CollaboratorMatrix
-import team.dedica.porthole.domain.GamePhase
-import team.dedica.porthole.domain.GameState
-import team.dedica.porthole.domain.GreenkeepingRotation
-import team.dedica.porthole.domain.HexCoordinate
-import team.dedica.porthole.domain.HexMap
-import team.dedica.porthole.domain.Landmark
-import team.dedica.porthole.domain.LandmarkType
-import team.dedica.porthole.domain.PortholeGameProperties
-import team.dedica.porthole.domain.QualityMetric
-import team.dedica.porthole.domain.SessionState
+import team.dedica.porthole.domain.*
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 class GameTickUseCaseTest {
 
