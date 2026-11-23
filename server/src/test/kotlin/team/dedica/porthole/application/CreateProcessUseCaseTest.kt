@@ -4,6 +4,10 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.adapter.out.repository.UserRecord
 import team.dedica.porthole.application.session.processes.CreateProcessUseCase
 import team.dedica.porthole.domain.*
@@ -16,6 +20,7 @@ class CreateProcessUseCaseTest {
     private lateinit var mapStatePort: InMemorySessionStatePort
     private lateinit var authorizationPort: InMemoryAuthorizationPort
     private lateinit var useCase: CreateProcessUseCase
+    private val broadcast: BroadcastPort = mock()
 
     @BeforeEach
     fun setup() {
@@ -24,7 +29,7 @@ class CreateProcessUseCaseTest {
         state.collaborators.add(Collaborator(id = UUID.nameUUIDFromBytes("p1".toByteArray()), username = "Alice"))
         mapStatePort = InMemorySessionStatePort().also { it.save(state) }
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
-        useCase = CreateProcessUseCase(mapStatePort, authorizationPort)
+        useCase = CreateProcessUseCase(mapStatePort, broadcast, authorizationPort)
     }
 
     @Test
@@ -32,6 +37,7 @@ class CreateProcessUseCaseTest {
         val result = useCase.execute(state.id, "Deploy Pipeline", null, collaborator.id)
         assertEquals(1, result.size)
         assertEquals("Deploy Pipeline", result[0].name)
+        verify(broadcast).sendProcesses(state.id)
     }
 
     @Test
@@ -52,6 +58,7 @@ class CreateProcessUseCaseTest {
         assertThrows(IllegalArgumentException::class.java) {
             useCase.execute(state.id, "   ", null, collaborator.id)
         }
+        verify(broadcast, never()).sendProcesses(state.id)
     }
 
     @Test

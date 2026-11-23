@@ -3,6 +3,7 @@ import {
   fetchProcesses,
   createProcess,
   editProcess,
+  saveProcess,
   removeProcess,
   createProcessStage,
   removeProcessStage,
@@ -100,6 +101,32 @@ describe('editProcess', () => {
     const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}`);
     expect(init.method).toBe('PATCH');
+  });
+});
+
+// ── saveProcess ───────────────────────────────────────────────────────────────
+
+describe('saveProcess', () => {
+  it('sends PUT with complete process data', async () => {
+    mockFetch(mockProcesses);
+    await saveProcess(MAP_ID, PROC_ID, {
+      name: 'Full Process',
+      description: 'Desc',
+      stages: [
+        {
+          id: STAGE_ID,
+          name: 'Stage 1',
+          order: 0,
+          connections: [{ id: SC_ID, connectionId: CONN_ID, direction: 'BIDIRECTIONAL' }],
+        },
+      ],
+    });
+    const [url, init] = (vi.mocked(fetch) as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`/api/sessions/${MAP_ID}/processes/${PROC_ID}`);
+    expect(init.method).toBe('PUT');
+    const body = JSON.parse(init.body as string);
+    expect(body.name).toBe('Full Process');
+    expect(body.stages[0].connections[0].direction).toBe('BIDIRECTIONAL');
   });
 });
 

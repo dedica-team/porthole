@@ -15,6 +15,7 @@ const LobbyPage = lazy(() => import('./pages/LobbyPage/LobbyPage'));
 const MapPage = lazy(() => import('./pages/MapPage/MapPage'));
 const RegularMapView = lazy(() => import('./pages/MapPage/RegularMapView'));
 const ProcessMapView = lazy(() => import('./pages/MapPage/ProcessMapView'));
+const ProcessDesignView = lazy(() => import('./pages/ProcessDesign/ProcessDesignView'));
 const MetricsView = lazy(() => import('./components/MetricsView/MetricsView'));
 const MetricPushView = lazy(() => import('./components/MetricsView/MetricPushView'));
 const CollaboratorMatrixView = lazy(() => import('./components/CollaboratorMatrixView/CollaboratorMatrixView'));
@@ -61,6 +62,8 @@ function App() {
                 <Route index element={<SessionOverviewView />} />
                 <Route path="map" element={<RegularMapView />} />
                 <Route path="processes" element={<ProcessMapView />} />
+                <Route path="process-design" element={<ProcessDesignView />} />
+                <Route path="process-design/:processId" element={<ProcessDesignView />} />
                 <Route path="editor" element={<EditorMapView />} />
                 <Route path="metrics" element={<MetricsView />} />
                 <Route path="metrics/push" element={<MetricPushView />} />

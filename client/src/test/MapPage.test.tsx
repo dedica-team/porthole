@@ -792,13 +792,13 @@ describe('MapPage – process mode: processRenderMode', () => {
     });
     renderMapPage(`/session/${MAP_ID}/processes`);
     await waitFor(() => {
-      expect(screen.getByText('Processes')).toBeInTheDocument();
       expect(screen.getByText('Order Processing')).toBeInTheDocument();
       expect(screen.getByText('Delivery Pipeline')).toBeInTheDocument();
       expect(screen.getByTitle('Create process')).toBeInTheDocument();
     });
 
-    const processesBox = screen.getByText('Processes').closest('.flex-col')!;
+    const processesBox = screen.getByTitle('Create process').closest('.flex-col')!;
+    expect(processesBox).toHaveTextContent('Processes');
     const noneBtn = Array.from(processesBox.querySelectorAll('button')).find((b) => b.textContent?.includes('None'))!;
     expect(noneBtn).toBeInTheDocument();
     expect(noneBtn.className).toContain('text-primary');

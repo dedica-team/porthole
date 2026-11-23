@@ -793,6 +793,33 @@ export async function editProcess(mapId: string, processId: string, name?: strin
   return handleResponse<Process[]>(res);
 }
 
+export async function saveProcess(
+  mapId: string,
+  processId: string,
+  data: {
+    name: string;
+    description?: string;
+    stages: Array<{
+      id?: string;
+      name?: string;
+      order: number;
+      connections: Array<{
+        id?: string;
+        connectionId: string;
+        title?: string;
+        direction: StageConnectionDirection;
+      }>;
+    }>;
+  },
+): Promise<Process[]> {
+  const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Process[]>(res);
+}
+
 export async function removeProcess(mapId: string, processId: string): Promise<Process[]> {
   const res = await fetch(`${BASE_URL}/sessions/${encodeURIComponent(mapId)}/processes/${encodeURIComponent(processId)}`, {
     method: 'DELETE',

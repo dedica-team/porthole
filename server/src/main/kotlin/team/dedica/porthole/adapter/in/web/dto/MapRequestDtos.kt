@@ -200,6 +200,29 @@ data class ReorderProcessStagesRequest(
     val stageIds: List<String>,
 )
 
+@Introspected
+data class SaveProcessStageConnectionRequest(
+    val id: UUID? = null,
+    val connectionId: String,
+    @field:Size(max = NAME_MAX_LENGTH) val title: String? = null,
+    val direction: String = "FORWARD",
+)
+
+@Introspected
+data class SaveProcessStageRequest(
+    val id: UUID? = null,
+    @field:Size(max = NAME_MAX_LENGTH) val name: String? = null,
+    val order: Int = 0,
+    val connections: List<SaveProcessStageConnectionRequest> = emptyList(),
+)
+
+@Introspected
+data class SaveProcessRequest(
+    @field:NotBlank @field:Size(max = NAME_MAX_LENGTH) val name: String,
+    @field:Size(max = DESCRIPTION_MAX_LENGTH) val description: String? = null,
+    val stages: List<SaveProcessStageRequest> = emptyList(),
+)
+
 // ── Chore Lists ───────────────────────────────────────────────────────────────
 
 @Introspected

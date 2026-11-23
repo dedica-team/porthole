@@ -16,6 +16,7 @@ interface BroadcastPort {
     fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix)
     fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>)
     fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>)
+    fun sendProcesses(sessionId: UUID)
     fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>)
     fun sendGame(sessionId: UUID, gameState: GameState)
 }

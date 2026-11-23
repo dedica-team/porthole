@@ -23,9 +23,10 @@ class RemoveLandmarkUseCase(
             .map { it.id }
         connectionIdsToRemove.forEach { state.connections.remove(it) }
         // Cascade: remove StageConnection entries referencing any of the removed connections
+        var processesChanged = false
         state.processes.values.forEach { process ->
             process.stages.forEach { stage ->
-                stage.connections.removeIf { it.connectionId in connectionIdsToRemove }
+                if (stage.connections.removeIf { it.connectionId in connectionIdsToRemove }) processesChanged = true
             }
         }
         state.landmarks.remove(landmarkId)
@@ -36,6 +37,7 @@ class RemoveLandmarkUseCase(
         // clean up chore list entries for the removed landmark
         state.choreLists.values.forEach { it.entries.remove(landmarkId) }
         sessionStatePort.save(state)
+        if (processesChanged) broadcastPort.sendProcesses(sessionId)
         broadcastPort.send(sessionId, state)
         return state
     }

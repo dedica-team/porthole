@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,13 +22,23 @@ import type { SessionState } from '@/types/session';
 import { ALL_CONNECTION_TYPES, CONNECTION_TYPE_LABELS } from '@/types/connection';
 import { createConnection } from '@/api/mapApi';
 
+export interface StageOption {
+  id: string;
+  name?: string;
+  order: number;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
   mapId: string;
   landmarks: Landmark[]; // already filtered to positioned only
   existingConnections: Connection[];
-  onCreated: (map: SessionState) => void;
+  onCreated: (map: SessionState, targetStageId?: string) => void;
+  defaultOrigin?: Landmark | null;
+  defaultTarget?: Landmark | null;
+  stages?: StageOption[];
+  defaultStageId?: string;
 }
 
 function LandmarkCombobox({
@@ -120,19 +130,43 @@ export default function CreateConnectionDialog({
   landmarks,
   existingConnections,
   onCreated,
+  defaultOrigin,
+  defaultTarget,
+  stages,
+  defaultStageId,
 }: Props) {
   const [name, setName] = useState('');
   const [type, setType] = useState<ConnectionType>('PIPE');
-  const [origin, setOrigin] = useState<Landmark | null>(null);
-  const [target, setTarget] = useState<Landmark | null>(null);
+  const [origin, setOrigin] = useState<Landmark | null>(defaultOrigin ?? null);
+  const [target, setTarget] = useState<Landmark | null>(defaultTarget ?? null);
+  const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setOrigin(defaultOrigin ?? null);
+      setTarget(defaultTarget ?? null);
+      setName('');
+      setType('PIPE');
+      setError('');
+      if (defaultStageId !== undefined) {
+        setSelectedStageId(defaultStageId);
+      } else if (stages && stages.length > 0) {
+        setSelectedStageId(stages[0].id);
+      } else if (stages) {
+        setSelectedStageId('__NEW_STAGE__');
+      } else {
+        setSelectedStageId('');
+      }
+    }
+  }, [open, defaultOrigin, defaultTarget, defaultStageId, stages]);
 
   const reset = () => {
     setName('');
     setType('PIPE');
-    setOrigin(null);
-    setTarget(null);
+    setOrigin(defaultOrigin ?? null);
+    setTarget(defaultTarget ?? null);
     setError('');
   };
 
@@ -163,7 +197,11 @@ export default function CreateConnectionDialog({
     setError('');
     try {
       const updated = await createConnection(mapId, origin.id, target.id, type, name || undefined);
-      onCreated(updated);
+      if (stages !== undefined) {
+        onCreated(updated, selectedStageId);
+      } else {
+        onCreated(updated);
+      }
       handleClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create connection.');
@@ -212,6 +250,34 @@ export default function CreateConnectionDialog({
               ))}
             </select>
           </div>
+
+          {/* Stage (optional if stages supplied) */}
+          {stages !== undefined && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="conn-stage" className="text-sm text-muted-foreground">
+                Stage
+              </Label>
+              <select
+                id="conn-stage"
+                aria-label="Stage"
+                value={selectedStageId}
+                onChange={(e) => setSelectedStageId(e.target.value)}
+                className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {stages.length === 0 ? (
+                  <option value="__NEW_STAGE__">New stage (Stage 1)</option>
+                ) : (
+                  stages.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name ? `${s.name} (Stage ${s.order + 1})` : `Stage ${s.order + 1}`}
+                    </option>
+                  ))
+                )}
+                {stages.length > 0 && <option value="__NEW_STAGE__">+ New stage</option>}
+                <option value="__NONE__">None (do not add to stage)</option>
+              </select>
+            </div>
+          )}
 
           {/* Start landmark */}
           <LandmarkCombobox

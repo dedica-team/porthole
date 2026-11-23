@@ -34,7 +34,7 @@ class AddProcessStageUseCaseTest {
         mapStatePort.save(state)
         processId = process.id
 
-        addStageUseCase = AddProcessStageUseCase(mapStatePort, authorizationPort)
+        addStageUseCase = AddProcessStageUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
     }
 
     @Test

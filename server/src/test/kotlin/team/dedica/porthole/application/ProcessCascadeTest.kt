@@ -4,6 +4,10 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.session.landscaping.RemoveConnectionUseCase
 import team.dedica.porthole.application.session.landscaping.RemoveLandmarkUseCase
 import team.dedica.porthole.domain.*
@@ -17,6 +21,7 @@ class ProcessCascadeTest {
     private lateinit var state: SessionState
     private lateinit var mapStatePort: InMemorySessionStatePort
     private lateinit var authorizationPort: InMemoryAuthorizationPort
+    private val broadcast: BroadcastPort = mock()
     private lateinit var removeConnectionUseCase: RemoveConnectionUseCase
     private lateinit var removeLandmarkUseCase: RemoveLandmarkUseCase
     private lateinit var processId: UUID
@@ -59,8 +64,8 @@ class ProcessCascadeTest {
 
         mapStatePort = InMemorySessionStatePort().also { it.save(state) }
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
-        removeConnectionUseCase = RemoveConnectionUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
-        removeLandmarkUseCase = RemoveLandmarkUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
+        removeConnectionUseCase = RemoveConnectionUseCase(mapStatePort, broadcast, authorizationPort)
+        removeLandmarkUseCase = RemoveLandmarkUseCase(mapStatePort, broadcast, authorizationPort)
     }
 
     @Test
@@ -70,6 +75,7 @@ class ProcessCascadeTest {
         val stage = saved.processes[processId]!!.stages.find { it.id == stageId }!!
         assertFalse(stage.connections.any { it.connectionId == c1Id })
         assertTrue(stage.connections.any { it.connectionId == c2Id })
+        verify(broadcast).sendProcesses(state.id)
     }
 
     @Test
@@ -79,6 +85,7 @@ class ProcessCascadeTest {
         val saved = mapStatePort.findById(state.id)!!
         val stage = saved.processes[processId]!!.stages.find { it.id == stageId }!!
         assertTrue(stage.connections.isEmpty())
+        verify(broadcast).sendProcesses(state.id)
     }
 
     @Test
@@ -92,6 +99,7 @@ class ProcessCascadeTest {
         val saved = mapStatePort.findById(state.id)!!
         val stage = saved.processes[processId]!!.stages.find { it.id == stageId }!!
         assertEquals(2, stage.connections.size)
+        verify(broadcast, never()).sendProcesses(state.id)
     }
 
     @Test

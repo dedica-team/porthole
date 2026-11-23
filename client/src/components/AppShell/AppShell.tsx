@@ -9,7 +9,7 @@ export default function AppShell({ children, sidebar }: Props) {
     <div className="flex flex-col w-full h-full overflow-hidden">
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
-        <main className="flex-1 relative overflow-hidden">
+        <main className="flex-1 relative overflow-hidden h-full">
           {children}
         </main>
         {sidebar}

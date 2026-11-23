@@ -20,12 +20,14 @@ class RemoveConnectionUseCase(
         require(state.connections.containsKey(connectionId)) { "Connection $connectionId not found" }
         state.connections.remove(connectionId)
         // Cascade: remove StageConnection entries referencing this connection
+        var processesChanged = false
         state.processes.values.forEach { process ->
             process.stages.forEach { stage ->
-                stage.connections.removeIf { it.connectionId == connectionId }
+                if (stage.connections.removeIf { it.connectionId == connectionId }) processesChanged = true
             }
         }
         sessionStatePort.save(state)
+        if (processesChanged) broadcastPort.sendProcesses(sessionId)
         broadcastPort.send(sessionId, state)
         return state
     }

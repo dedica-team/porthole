@@ -13,6 +13,7 @@ class ProcessController(
     private val listProcessesUseCase: ListProcessesUseCase,
     private val createProcessUseCase: CreateProcessUseCase,
     private val editProcessUseCase: EditProcessUseCase,
+    private val saveProcessUseCase: SaveProcessUseCase,
     private val removeProcessUseCase: RemoveProcessUseCase,
     private val addProcessStageUseCase: AddProcessStageUseCase,
     private val editProcessStageUseCase: EditProcessStageUseCase,
@@ -34,13 +35,31 @@ class ProcessController(
     fun createProcess(
         @PathVariable id: String,
         @Valid @Body request: CreateProcessRequest,
-         user: PortholePrincipal,
+        user: PortholePrincipal,
     ): HttpResponse<*> =
         HttpResponse.ok(
             createProcessUseCase.execute(
                 UUID.fromString(id),
                 request.name,
                 request.description,
+                user.userId
+            )
+        )
+
+    @Put("/{processId}")
+    fun saveProcess(
+        @PathVariable id: String,
+        @PathVariable processId: String,
+        @Valid @Body request: SaveProcessRequest,
+        user: PortholePrincipal,
+    ): HttpResponse<*> =
+        HttpResponse.ok(
+            saveProcessUseCase.execute(
+                UUID.fromString(id),
+                UUID.fromString(processId),
+                request.name,
+                request.description,
+                request.stages,
                 user.userId
             )
         )

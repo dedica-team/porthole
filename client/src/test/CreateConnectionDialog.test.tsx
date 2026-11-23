@@ -156,5 +156,87 @@ describe('CreateConnectionDialog', () => {
     fireEvent.click(screen.getByText('Cancel'));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('renders stage dropdown when stages prop is provided and passes selected stage to onCreated', async () => {
+    const onCreated = vi.fn();
+    const stages = [
+      { id: 's1', name: 'Preparation', order: 0 },
+      { id: 's2', name: 'Execution', order: 1 },
+    ];
+
+    render(
+      <CreateConnectionDialog
+        open={true}
+        onClose={vi.fn()}
+        mapId="map-1"
+        landmarks={LANDMARKS}
+        existingConnections={EMPTY_CONNECTIONS}
+        onCreated={onCreated}
+        stages={stages}
+        defaultStageId="s2"
+      />,
+    );
+
+    const stageSelect = screen.getByLabelText('Stage') as HTMLSelectElement;
+    expect(stageSelect).toBeInTheDocument();
+    expect(stageSelect.value).toBe('s2');
+
+    // Change stage selection to 'Preparation'
+    fireEvent.change(stageSelect, { target: { value: 's1' } });
+    expect(stageSelect.value).toBe('s1');
+
+    // Select start and end landmarks
+    act(() => { fireEvent.click(getLandmarkTrigger(0)); });
+    fireEvent.click(await screen.findByText('Alpha'));
+
+    act(() => { fireEvent.click(getLandmarkTrigger(1)); });
+    fireEvent.click(await screen.findByText('Beta'));
+
+    fireEvent.click(screen.getByText('Create Connection'));
+
+    await waitFor(() =>
+      expect(mapApi.createConnection).toHaveBeenCalledWith('map-1', 'lm-1', 'lm-2', 'PIPE', undefined),
+    );
+    expect(onCreated).toHaveBeenCalledWith(STUB_MAP, 's1');
+  });
+
+  it('allows choosing new stage or none from stage dropdown', async () => {
+    const onCreated = vi.fn();
+    const stages = [
+      { id: 's1', name: 'Stage 1', order: 0 },
+    ];
+
+    render(
+      <CreateConnectionDialog
+        open={true}
+        onClose={vi.fn()}
+        mapId="map-1"
+        landmarks={LANDMARKS}
+        existingConnections={EMPTY_CONNECTIONS}
+        onCreated={onCreated}
+        stages={stages}
+      />,
+    );
+
+    const stageSelect = screen.getByLabelText('Stage') as HTMLSelectElement;
+    expect(screen.getByText('+ New stage')).toBeInTheDocument();
+    expect(screen.getByText('None (do not add to stage)')).toBeInTheDocument();
+
+    // Select + New stage
+    fireEvent.change(stageSelect, { target: { value: '__NEW_STAGE__' } });
+
+    act(() => { fireEvent.click(getLandmarkTrigger(0)); });
+    fireEvent.click(await screen.findByText('Alpha'));
+
+    act(() => { fireEvent.click(getLandmarkTrigger(1)); });
+    fireEvent.click(await screen.findByText('Beta'));
+
+    fireEvent.click(screen.getByText('Create Connection'));
+
+    await waitFor(() =>
+      expect(mapApi.createConnection).toHaveBeenCalledWith('map-1', 'lm-1', 'lm-2', 'PIPE', undefined),
+    );
+    expect(onCreated).toHaveBeenCalledWith(STUB_MAP, '__NEW_STAGE__');
+  });
 });
 

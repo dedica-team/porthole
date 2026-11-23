@@ -43,7 +43,7 @@ class AddStageConnectionUseCaseTest {
 
         mapStatePort = InMemorySessionStatePort().also { it.save(state) }
         authorizationPort = InMemoryAuthorizationPort(mapStatePort)
-        useCase = AddStageConnectionUseCase(mapStatePort, authorizationPort)
+        useCase = AddStageConnectionUseCase(mapStatePort, NoOpBroadcastPort(), authorizationPort)
     }
 
     @Test

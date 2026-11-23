@@ -2,6 +2,7 @@ package team.dedica.porthole.application.session.processes
 
 import jakarta.inject.Singleton
 import team.dedica.porthole.application.port.AuthorizationPort
+import team.dedica.porthole.application.port.BroadcastPort
 import team.dedica.porthole.application.port.SessionStatePort
 import team.dedica.porthole.domain.Process
 import team.dedica.porthole.domain.SessionRole
@@ -10,6 +11,7 @@ import java.util.UUID
 @Singleton
 class ReorderProcessStagesUseCase(
     private val sessionStatePort: SessionStatePort,
+    private val broadcastPort: BroadcastPort,
     private val authorizationPort: AuthorizationPort,
 ) {
     /**
@@ -30,6 +32,7 @@ class ReorderProcessStagesUseCase(
         }
         process.stages.sortBy { it.order }
         sessionStatePort.save(state)
+        broadcastPort.sendProcesses(sessionId)
         return state.processes.values.sortedBy { it.name }
     }
 }

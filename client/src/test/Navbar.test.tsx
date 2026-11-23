@@ -198,6 +198,8 @@ describe('Navbar – tab navigation', () => {
             <Route path="chores" element={<div data-testid="view-chores" />} />
             <Route path="greenkeeping" element={<div data-testid="view-greenkeeping" />} />
             <Route path="processes" element={<div data-testid="view-processes" />} />
+            <Route path="process-design" element={<div data-testid="view-process-design" />} />
+            <Route path="process-design/:processId" element={<div data-testid="view-process-designer" />} />
             <Route path="editor" element={<div data-testid="view-editor" />} />
           </Route>
         </Routes>
@@ -245,6 +247,18 @@ describe('Navbar – tab navigation', () => {
     renderWithRoutes();
     fireEvent.click(screen.getByText('X-Ray'));
     expect(screen.getByTestId('view-processes')).toBeInTheDocument();
+  });
+
+  it('navigates to the process list separately from X-Ray', () => {
+    renderWithRoutes();
+    fireEvent.click(screen.getByText('Processes'));
+    expect(screen.getByTestId('view-process-design')).toBeInTheDocument();
+  });
+
+  it('keeps the Processes tab active on a designer deep link', () => {
+    renderWithRoutes(`/session/${MAP_ID}/process-design/p1`);
+    expect(screen.getByTestId('view-process-designer')).toBeInTheDocument();
+    expect(screen.getByText('Processes').closest('button')).toHaveClass('border-primary');
   });
 
   it('navigates back to map index when Flight mode tab is clicked from another view', () => {

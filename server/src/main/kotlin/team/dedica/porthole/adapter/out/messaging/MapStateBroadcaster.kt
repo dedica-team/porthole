@@ -34,6 +34,11 @@ class MapStateBroadcaster(private val broker: StompBroker) : BroadcastPort {
     override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) =
         broker.publish("/topic/map/$sessionId/chore-lists", choreLists.toMap())
 
+    override fun sendProcesses(sessionId: UUID) {
+        // Topic subscriptions are not authorized, so process data must be fetched through the API.
+        broker.publish("/topic/map/$sessionId/processes", mapOf("invalidated" to true))
+    }
+
     override fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>) =
         broker.publish("/topic/map/$sessionId/greenkeeping-rotations", rotations.toMap())
 

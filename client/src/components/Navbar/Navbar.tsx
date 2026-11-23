@@ -12,6 +12,7 @@ import {
   Search,
   X,
   Radiation,
+  Workflow,
   CheckSquare,
   Trees,
   Sprout
@@ -217,6 +218,7 @@ export default function Navbar() {
   const matchChores       = useMatch('/session/:id/chores');
   const matchGreenkeeping = useMatch({ path: '/session/:id/greenkeeping', end: false });
   const matchProcesses    = useMatch('/session/:id/processes');
+  const matchProcessDesign = useMatch({ path: '/session/:id/process-design', end: false });
   const matchEditor       = useMatch('/session/:id/editor');
   const matchMapIndex     = useMatch('/session/:id/map');
   const matchOverview     = useMatch({ path: '/session/:id', end: true });
@@ -295,6 +297,7 @@ export default function Navbar() {
   const isGreenkeepingActive = !!matchGreenkeeping;
   const isEditorActive       = !!matchEditor;
   const isXRayActive         = !!matchProcesses;
+  const isProcessDesignActive = !!matchProcessDesign;
   const isFlightActive       = !!matchMapIndex;
   const isOverviewActive     = !!matchOverview;
 
@@ -363,6 +366,14 @@ export default function Navbar() {
       icon: <Radiation className="h-3.5 w-3.5 shrink-0" />,
       isActive: isXRayActive,
       onClick: () => goTo(isXRayActive ? 'map' : 'processes'),
+    },
+    {
+      id: 'process-design',
+      label: 'Processes',
+      tooltip: 'Design processes',
+      icon: <Workflow className="h-3.5 w-3.5 shrink-0" />,
+      isActive: isProcessDesignActive,
+      onClick: () => goTo('process-design'),
     },
     {
       id: 'landscape',

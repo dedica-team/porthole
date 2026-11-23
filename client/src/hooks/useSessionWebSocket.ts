@@ -56,6 +56,7 @@ export function useSessionWebSocket(mapId: string | undefined) {
     if (!mapId) return;
 
     let cancelled = false;
+    let processRevision = 0;
     const currentMapId = useMapStore.getState().currentMap?.id;
 
     const runIfPromise = <T>(
@@ -66,6 +67,15 @@ export function useSessionWebSocket(mapId: string | undefined) {
       request.then((value) => {
         if (!cancelled) onSuccess(value);
       }).catch(() => { /* ignore – WS broadcast will update */ });
+    };
+
+    const hydrateProcesses = () => {
+      const revision = ++processRevision;
+      runIfPromise(fetchProcesses(mapId), (processes) => {
+        if (revision !== processRevision) return;
+        setProcessesRef.current(processes);
+        setProcessesFetchedRef.current(true);
+      });
     };
 
     const hydrateAuxiliarySlices = () => {
@@ -83,10 +93,7 @@ export function useSessionWebSocket(mapId: string | undefined) {
         setGreenkeepingRotationsRef.current(rotations);
         setGreenkeepingRotationsFetchedRef.current(true);
       });
-      runIfPromise(fetchProcesses(mapId), (processes) => {
-        setProcessesRef.current(processes);
-        setProcessesFetchedRef.current(true);
-      });
+      hydrateProcesses();
       runIfPromise(fetchGameState(mapId), (game) => {
         setGameStateRef.current(game);
       });
@@ -147,6 +154,10 @@ export function useSessionWebSocket(mapId: string | undefined) {
             console.error('Failed to parse greenkeeping rotations update', message.body);
           }
         });
+        client.subscribe(`/topic/map/${mapId}/processes`, () => {
+          // Topic subscriptions are not authorized; fetch data through the REST API.
+          hydrateProcesses();
+        });
         client.subscribe(`/topic/map/${mapId}/game`, (message) => {
           try {
             const game = JSON.parse(message.body) as GameState;
@@ -158,6 +169,7 @@ export function useSessionWebSocket(mapId: string | undefined) {
         runIfPromise(fetchGameState(mapId), (game) => {
           setGameStateRef.current(game);
         });
+        hydrateProcesses();
       },
       onStompError: (frame) => {
         console.error('STOMP error', frame);

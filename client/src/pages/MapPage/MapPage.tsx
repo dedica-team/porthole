@@ -78,7 +78,8 @@ export default function MapPage() {
   const matchChores      = useMatch('/session/:id/chores');
   const matchGreenkeeping = useMatch({ path: '/session/:id/greenkeeping', end: false });
   const matchEditor      = useMatch('/session/:id/editor');
-  const isPanelRoute = !!(matchMetrics || matchMatrix || matchChores || matchGreenkeeping || matchEditor);
+  const matchProcessDesign = useMatch({ path: '/session/:id/process-design', end: false });
+  const isPanelRoute = !!(matchMetrics || matchMatrix || matchChores || matchGreenkeeping || matchEditor || matchProcessDesign);
 
   if (!currentMap) {
     return <LoadingOverlay label={LOADING_COPY.session} />;

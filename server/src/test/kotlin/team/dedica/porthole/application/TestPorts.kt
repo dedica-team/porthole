@@ -38,6 +38,7 @@ class NoOpBroadcastPort : BroadcastPort {
     override fun sendMatrix(sessionId: UUID, matrix: CollaboratorMatrix) {}
     override fun sendMetrics(sessionId: UUID, metrics: Map<UUID, QualityMetric>) {}
     override fun sendChoreLists(sessionId: UUID, choreLists: Map<UUID, ChoreList>) {}
+    override fun sendProcesses(sessionId: UUID) {}
     override fun sendGreenkeepingRotations(sessionId: UUID, rotations: Map<UUID, GreenkeepingRotation>) {}
     override fun sendGame(sessionId: UUID, gameState: GameState) {}
 }
