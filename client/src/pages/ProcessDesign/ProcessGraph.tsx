@@ -2,7 +2,7 @@ import { useId, useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import type { Connection } from '@/types/connection';
-import type { Landmark } from '@/types/landmark';
+import type { Landmark, LandmarkGroup } from '@/types/landmark';
 import type { Process } from '@/types/process';
 import { projectProcessGraph, computeProcessGraphEdges } from './ProcessGraphLayout';
 
@@ -14,6 +14,7 @@ export interface ProcessGraphProps {
   process: Process;
   landmarks: Landmark[];
   connections: Connection[];
+  groups?: Record<string, LandmarkGroup> | LandmarkGroup[];
   extraLandmarkIds?: string[];
   selection?: ProcessGraphSelection | null;
   onSelect?: (selection: ProcessGraphSelection) => void;
@@ -26,6 +27,7 @@ export default function ProcessGraph({
   process,
   landmarks,
   connections,
+  groups,
   extraLandmarkIds,
   selection,
   onSelect,
@@ -37,6 +39,15 @@ export default function ProcessGraph({
     () => projectProcessGraph(process, landmarks, connections, extraLandmarkIds),
     [process, landmarks, connections, extraLandmarkIds]
   );
+
+  const groupsMap = useMemo(() => {
+    if (!groups) return new Map<string, LandmarkGroup>();
+    if (Array.isArray(groups)) {
+      return new Map(groups.map((g) => [g.id, g]));
+    }
+    return new Map(Object.entries(groups));
+  }, [groups]);
+
   const markerId = useId();
   const gridId = useId();
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -553,6 +564,10 @@ export default function ProcessGraph({
             const selected = selection?.type === 'landmark' && selection.landmarkId === landmark.id;
             const isHoveredTarget = connectingLine?.hoveredTargetId === landmark.id;
             const isConnectSource = connectingLine?.sourceLandmarkId === landmark.id;
+            const group = landmark.groupId ? groupsMap.get(landmark.groupId) : undefined;
+            const groupColor = group?.color;
+            const groupName = group?.name;
+            const tagWidth = groupName ? Math.min(74, Math.max(22, groupName.length * 5.5 + 8)) : 0;
 
             return (
               <g
@@ -592,8 +607,8 @@ export default function ProcessGraph({
                       ? 'rgba(34, 211, 238, 0.15)'
                       : '#2a2a2a'
                   }
-                  stroke={isHoveredTarget || isConnectSource || selected ? '#22d3ee' : '#525252'}
-                  strokeWidth={isHoveredTarget ? 2.5 : selected || isConnectSource ? 2 : 1}
+                  stroke={isHoveredTarget || isConnectSource || selected ? '#22d3ee' : (groupColor || '#525252')}
+                  strokeWidth={isHoveredTarget ? 2.5 : selected || isConnectSource ? 2 : groupColor ? 1.5 : 1}
                 />
                 {/* Top Header Bar */}
                 <line
@@ -601,13 +616,39 @@ export default function ProcessGraph({
                   y1={y - 24}
                   x2={x + 42}
                   y2={y - 24}
-                  stroke={isHoveredTarget || selected ? '#22d3ee' : '#737373'}
-                  strokeWidth={selected || isHoveredTarget ? 2 : 1}
+                  stroke={isHoveredTarget || selected ? '#22d3ee' : (groupColor || '#737373')}
+                  strokeWidth={selected || isHoveredTarget ? 2 : groupColor ? 1.5 : 1}
                 />
+                {/* Attached Group Tag */}
+                {group && groupName && (
+                  <g data-testid={`landmark-group-tag-${landmark.id}`}>
+                    <rect
+                      x={x - 37}
+                      y={y - 19}
+                      width={tagWidth}
+                      height="11"
+                      rx="2"
+                      fill={groupColor ? `${groupColor}25` : 'rgba(255, 255, 255, 0.1)'}
+                      stroke={groupColor || '#737373'}
+                      strokeWidth="0.75"
+                    />
+                    <text
+                      x={x - 37 + tagWidth / 2}
+                      y={y - 10.5}
+                      textAnchor="middle"
+                      fontSize="7.5"
+                      fontWeight="700"
+                      fill={groupColor || '#e5e5e5'}
+                      fontFamily="monospace"
+                    >
+                      {groupName.length > 11 ? `${groupName.slice(0, 10)}…` : groupName}
+                    </text>
+                  </g>
+                )}
                 {/* Landmark Name */}
                 <text
                   x={x}
-                  y={y + 4}
+                  y={group ? y + 8 : y + 4}
                   textAnchor="middle"
                   fontSize="11"
                   fontWeight="600"

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { Connection } from '@/types/connection';
-import type { Landmark } from '@/types/landmark';
+import type { Landmark, LandmarkGroup } from '@/types/landmark';
 import type { Process } from '@/types/process';
 import ProcessGraph from './ProcessGraph';
 import { projectProcessGraph } from './ProcessGraphLayout';
@@ -234,5 +234,49 @@ describe('process graph', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Landmark: Standalone' })).toBeInTheDocument();
+  });
+
+  it('renders SVG elements with group color borders and attached group tags', () => {
+    const groups: Record<string, LandmarkGroup> = {
+      g1: { id: 'g1', name: 'Frontend', color: '#3b82f6' },
+      g2: { id: 'g2', name: 'Backend', color: '#10b981' },
+    };
+    const groupedLandmarks: Landmark[] = [
+      { id: 'a', name: 'Alpha', ownerId: null, type: 'HOUSE', groupId: 'g1' },
+      { id: 'b', name: 'Beta', ownerId: null, type: 'HOUSE', groupId: 'g2' },
+      { id: 'c', name: 'Gamma', ownerId: null, type: 'HOUSE' }, // Ungrouped
+    ];
+
+    render(
+      <ProcessGraph
+        process={process}
+        landmarks={groupedLandmarks}
+        connections={connections}
+        groups={groups}
+      />
+    );
+
+    const alphaNode = screen.getByRole('button', { name: 'Landmark: Alpha' });
+    const betaNode = screen.getByRole('button', { name: 'Landmark: Beta' });
+
+    // Alpha node rectangle has group 1 color border
+    const alphaRect = alphaNode.querySelector('rect')!;
+    expect(alphaRect.getAttribute('stroke')).toBe('#3b82f6');
+
+    // Alpha node has attached group tag with Frontend name
+    const alphaTag = screen.getByTestId('landmark-group-tag-a');
+    expect(alphaTag).toBeInTheDocument();
+    expect(within(alphaTag).getByText('Frontend')).toBeInTheDocument();
+    expect(alphaTag.querySelector('rect')!.getAttribute('stroke')).toBe('#3b82f6');
+
+    // Beta node rectangle has group 2 color border and Backend tag
+    const betaRect = betaNode.querySelector('rect')!;
+    expect(betaRect.getAttribute('stroke')).toBe('#10b981');
+    const betaTag = screen.getByTestId('landmark-group-tag-b');
+    expect(betaTag).toBeInTheDocument();
+    expect(within(betaTag).getByText('Backend')).toBeInTheDocument();
+
+    // Ungrouped nodes do not render a group tag
+    expect(screen.queryByTestId('landmark-group-tag-c')).not.toBeInTheDocument();
   });
 });

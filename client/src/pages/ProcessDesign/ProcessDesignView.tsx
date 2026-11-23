@@ -16,7 +16,6 @@ import {
   X,
   Search,
   Layers,
-  GripVertical,
   MapPin,
   MoreHorizontal,
 } from 'lucide-react';
@@ -1797,6 +1796,7 @@ export default function ProcessDesignView() {
                         ) : (
                           filteredElements.map((lm) => {
                             const onCanvas = canvasLandmarkIdSet.has(lm.id);
+                            const lmGroup = lm.groupId ? (map?.groups ?? {})[lm.groupId] : undefined;
                             return (
                               <div
                                 key={lm.id}
@@ -1810,11 +1810,22 @@ export default function ProcessDesignView() {
                                 }`}
                               >
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                  <GripVertical className="h-3 w-3 text-muted-foreground/60 cursor-grab shrink-0" />
                                   <div className="truncate">
-                                    <div className="font-medium text-foreground truncate">{lm.name}</div>
-                                    {lm.type && (
-                                      <div className="text-[10px] text-muted-foreground font-mono truncate">{lm.type}</div>
+                                    <div className="font-medium text-foreground truncate flex items-center gap-1.5">
+                                      <span className="truncate">{lm.name}</span>
+
+                                    </div>
+                                    {lmGroup && (
+                                        <span
+                                            className="text-[9px] px-1 py-0.2 rounded font-mono truncate border shrink-0"
+                                            style={{
+                                              color: lmGroup.color,
+                                              borderColor: `${lmGroup.color}60`,
+                                              backgroundColor: `${lmGroup.color}15`,
+                                            }}
+                                        >
+                                          {lmGroup.name}
+                                        </span>
                                     )}
                                   </div>
                                 </div>
@@ -1830,7 +1841,7 @@ export default function ProcessDesignView() {
                                       size="sm"
                                       type="button"
                                       aria-label={`Add ${lm.name} to canvas`}
-                                      className="h-6 px-1.5 text-[11px] text-primary hover:bg-primary/20"
+                                      className="h-6 px-1.5 text-[11px] text-primary "
                                       onClick={() => handleAddElementToCanvas(lm.id)}
                                     >
                                       <Plus className="h-3 w-3 mr-0.5" /> Add
@@ -1854,6 +1865,7 @@ export default function ProcessDesignView() {
                       process={draftProcess}
                       landmarks={allMapLandmarks}
                       connections={Object.values(map?.connections ?? {})}
+                      groups={map?.groups ?? {}}
                       extraLandmarkIds={Array.from(canvasLandmarkIdSet)}
                       selection={selection}
                       onSelect={setSelection}
