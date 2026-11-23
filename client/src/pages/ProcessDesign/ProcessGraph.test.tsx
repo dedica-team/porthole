@@ -132,8 +132,8 @@ describe('process graph', () => {
     fireEvent.pointerUp(alphaNode, { pointerId: 1 });
 
     const rectAfter = alphaNode.querySelector('rect')!;
-    expect(Number(rectAfter.getAttribute('x'))).not.toBe(initialX);
-    expect(Number(rectAfter.getAttribute('y'))).not.toBe(initialY);
+    expect(Number(rectAfter.getAttribute('x'))).toBe(initialX + 60);
+    expect(Number(rectAfter.getAttribute('y'))).toBe(initialY + 40);
 
     // Selection callback should not be invoked after dragging
     expect(onSelect).not.toHaveBeenCalled();

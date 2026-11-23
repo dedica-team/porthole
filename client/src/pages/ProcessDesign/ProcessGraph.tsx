@@ -40,6 +40,7 @@ export default function ProcessGraph({
   const markerId = useId();
   const gridId = useId();
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const canvasGroupRef = useRef<SVGGElement | null>(null);
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -80,18 +81,76 @@ export default function ProcessGraph({
   // Helper to map screen coordinates to SVG canvas space (accounting for pan & zoom)
   const getCanvasCoordinates = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } => {
+      const group = canvasGroupRef.current;
+      if (group && typeof group.getScreenCTM === 'function') {
+        const ctm = group.getScreenCTM();
+        if (ctm) {
+          const inverse = ctm.inverse();
+          if (typeof DOMPoint !== 'undefined') {
+            const pt = new DOMPoint(clientX, clientY).matrixTransform(inverse);
+            return { x: Math.round(pt.x), y: Math.round(pt.y) };
+          } else if (svgRef.current && typeof svgRef.current.createSVGPoint === 'function') {
+            const pt = svgRef.current.createSVGPoint();
+            pt.x = clientX;
+            pt.y = clientY;
+            const transformed = pt.matrixTransform(inverse);
+            return { x: Math.round(transformed.x), y: Math.round(transformed.y) };
+          }
+        }
+      }
       const svg = svgRef.current;
       if (!svg) return { x: graph.width / 2, y: graph.height / 2 };
       const rect = svg.getBoundingClientRect();
-      const scaleX = rect.width > 0 ? graph.width / rect.width : 1;
-      const scaleY = rect.height > 0 ? graph.height / rect.height : 1;
-      const viewBoxX = (clientX - rect.left) * scaleX;
-      const viewBoxY = (clientY - rect.top) * scaleY;
+      const effectiveScale =
+        rect.width > 0 && rect.height > 0
+          ? Math.min(rect.width / graph.width, rect.height / graph.height)
+          : 1;
+      const scale = effectiveScale > 0 ? 1 / effectiveScale : 1;
+      const offsetX = rect.width > 0 ? (rect.width - graph.width * effectiveScale) / 2 : 0;
+      const offsetY = rect.height > 0 ? (rect.height - graph.height * effectiveScale) / 2 : 0;
+      const viewBoxX = (clientX - (rect.left + offsetX)) * scale;
+      const viewBoxY = (clientY - (rect.top + offsetY)) * scale;
       const canvasX = (viewBoxX - pan.x - graph.width / 2) / zoom + graph.width / 2;
       const canvasY = (viewBoxY - pan.y - graph.height / 2) / zoom + graph.height / 2;
       return { x: Math.round(canvasX), y: Math.round(canvasY) };
     },
     [graph.width, graph.height, pan.x, pan.y, zoom]
+  );
+
+  // Helper to map screen coordinates to SVG viewBox space (for panning)
+  const getSvgCoordinates = useCallback(
+    (clientX: number, clientY: number): { x: number; y: number } => {
+      const svg = svgRef.current;
+      if (svg && typeof svg.getScreenCTM === 'function') {
+        const ctm = svg.getScreenCTM();
+        if (ctm) {
+          const inverse = ctm.inverse();
+          if (typeof DOMPoint !== 'undefined') {
+            const pt = new DOMPoint(clientX, clientY).matrixTransform(inverse);
+            return { x: pt.x, y: pt.y };
+          } else if (typeof svg.createSVGPoint === 'function') {
+            const pt = svg.createSVGPoint();
+            pt.x = clientX;
+            pt.y = clientY;
+            const transformed = pt.matrixTransform(inverse);
+            return { x: transformed.x, y: transformed.y };
+          }
+        }
+      }
+      if (!svg) return { x: 0, y: 0 };
+      const rect = svg.getBoundingClientRect();
+      const effectiveScale =
+        rect.width > 0 && rect.height > 0
+          ? Math.min(rect.width / graph.width, rect.height / graph.height)
+          : 1;
+      const scale = effectiveScale > 0 ? 1 / effectiveScale : 1;
+      const offsetX = rect.width > 0 ? (rect.width - graph.width * effectiveScale) / 2 : 0;
+      const offsetY = rect.height > 0 ? (rect.height - graph.height * effectiveScale) / 2 : 0;
+      const viewBoxX = (clientX - (rect.left + offsetX)) * scale;
+      const viewBoxY = (clientY - (rect.top + offsetY)) * scale;
+      return { x: viewBoxX, y: viewBoxY };
+    },
+    [graph.width, graph.height]
   );
 
   // Re-sync or clean up custom positions when landmarks or process change
@@ -152,9 +211,10 @@ export default function ProcessGraph({
   ) => {
     if (e.button !== 0 || connectDragRef.current) return;
     e.stopPropagation();
+    const pt = getCanvasCoordinates(e.clientX, e.clientY);
     dragRef.current = {
       landmarkId,
-      startPointer: { x: e.clientX, y: e.clientY },
+      startPointer: pt,
       startNode: { x: nodeX, y: nodeY },
       moved: false,
     };
@@ -168,17 +228,13 @@ export default function ProcessGraph({
   const handleNodePointerMove = (e: ReactPointerEvent<SVGGElement>) => {
     if (!dragRef.current || !svgRef.current) return;
     const { landmarkId, startPointer, startNode } = dragRef.current;
-    const dxScreen = e.clientX - startPointer.x;
-    const dyScreen = e.clientY - startPointer.y;
-    if (!dragRef.current.moved && Math.hypot(dxScreen, dyScreen) > 3) {
+    const pt = getCanvasCoordinates(e.clientX, e.clientY);
+    const dx = pt.x - startPointer.x;
+    const dy = pt.y - startPointer.y;
+    if (!dragRef.current.moved && Math.hypot(dx, dy) > 2) {
       dragRef.current.moved = true;
     }
     if (dragRef.current.moved) {
-      const rect = svgRef.current.getBoundingClientRect();
-      const scaleX = rect.width > 0 ? graph.width / rect.width : 1;
-      const scaleY = rect.height > 0 ? graph.height / rect.height : 1;
-      const dx = (dxScreen * scaleX) / zoom;
-      const dy = (dyScreen * scaleY) / zoom;
       setCustomPositions((prev) => ({
         ...prev,
         [landmarkId]: { x: startNode.x + dx, y: startNode.y + dy },
@@ -271,8 +327,9 @@ export default function ProcessGraph({
   // Canvas panning handlers
   const handleCanvasPointerDown = (e: ReactPointerEvent<SVGSVGElement>) => {
     if (e.button !== 0 || connectDragRef.current || dragRef.current) return;
+    const pt = getSvgCoordinates(e.clientX, e.clientY);
     panRef.current = {
-      startPointer: { x: e.clientX, y: e.clientY },
+      startPointer: pt,
       startPan: { ...pan },
       moved: false,
     };
@@ -291,18 +348,16 @@ export default function ProcessGraph({
     }
     if (!panRef.current || !svgRef.current) return;
     const { startPointer, startPan } = panRef.current;
-    const dxScreen = e.clientX - startPointer.x;
-    const dyScreen = e.clientY - startPointer.y;
-    if (!panRef.current.moved && Math.hypot(dxScreen, dyScreen) > 3) {
+    const pt = getSvgCoordinates(e.clientX, e.clientY);
+    const dx = pt.x - startPointer.x;
+    const dy = pt.y - startPointer.y;
+    if (!panRef.current.moved && Math.hypot(dx, dy) > 2) {
       panRef.current.moved = true;
     }
     if (panRef.current.moved) {
-      const rect = svgRef.current.getBoundingClientRect();
-      const scaleX = rect.width > 0 ? graph.width / rect.width : 1;
-      const scaleY = rect.height > 0 ? graph.height / rect.height : 1;
       setPan({
-        x: startPan.x + dxScreen * scaleX,
-        y: startPan.y + dyScreen * scaleY,
+        x: startPan.x + dx,
+        y: startPan.y + dy,
       });
     }
   };
@@ -420,6 +475,7 @@ export default function ProcessGraph({
         )}
 
         <g
+          ref={canvasGroupRef}
           transform={`translate(${pan.x}, ${pan.y}) translate(${graph.width / 2}, ${
             graph.height / 2
           }) scale(${zoom}) translate(${-graph.width / 2}, ${-graph.height / 2})`}
